@@ -1,3 +1,4 @@
+/* General styling for the website */
 body{
     font-family: 'Roboto', sans-serif;
     width: 99vw;
@@ -6,6 +7,7 @@ body{
     overflow: hidden;
 }
 
+/* General elements */
 hr{
     border: 1px solid #3a3a3a;
     margin-top: 0.5rem;
@@ -15,4 +17,56 @@ hr{
 h2, h3{
     margin-top:0.3rem;
     margin-bottom:0.7rem;
+}
+
+form{
+    display: flex;
+    flex-direction: column;
+
+    & input, & textarea, & select{
+        padding: 5px;
+        border-radius: 3px;
+        background-color: #424242;
+        border: none;
+        color: #f5f5f5;
+
+        &:focus{
+            background-color: #3a3a3a;
+            outline: 1px solid #4e4e4e;
+        }
+    }
+
+    & label{
+        margin-bottom: 5px;
+    }
+    
+    & .form-group{
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 10px;
+    }
+}
+
+button, select{
+    padding: 5px;
+    border-radius: 3px;
+    border: 1px solid #3a3a3a;
+    background-color: #0e0e0e;
+    cursor: pointer;
+    color: #f5f5f5;
+
+    &:active{
+        filter: brightness(0.8);
+    }
+}
+
+/* Basic components */
+.card{
+    margin: 10px;
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid #141414;
+    box-shadow: 0 0 10px #141414;
+    border-radius: 5px;
+    background-color: #2c2c2c;
 }
