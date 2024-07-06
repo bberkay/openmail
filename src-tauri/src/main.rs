@@ -2,17 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::process::{Command, Stdio};
-use std::io::Write;
 
-fn main() {
-  tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![emails])
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
-}
-
+// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn emails() -> Result<String, String> {
+fn greet() -> Result<String, String> {
     let mut child = Command::new("python")
         .arg("./src/imap.py")
         .stdout(Stdio::piped())
@@ -30,4 +23,12 @@ fn emails() -> Result<String, String> {
         let error = String::from_utf8(output.stderr).expect("Invalid UTF-8 sequence");
         Err(error)
     }
+}
+
+fn main() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .invoke_handler(tauri::generate_handler![greet])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }

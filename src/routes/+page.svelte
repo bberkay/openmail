@@ -1,2 +1,17 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script lang="ts">
+  import { invoke } from "@tauri-apps/api/core";
+
+  let greetMsg = "";
+
+  async function greet() {
+    greetMsg = await invoke("greet");
+  }
+</script>
+
+<div class="container">
+  <h1>Welcome to Tauri!</h1>
+
+   <button type="submit" on:click={greet}>Greet</button>
+
+  <p>{greetMsg}</p>
+</div>
