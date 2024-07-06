@@ -66,7 +66,7 @@ button, select{
     margin-bottom: 20px;
     padding: 10px;
     border: 1px solid #141414;
-    box-shadow: 0 0 10px #141414;
+    box-shadow: 0 0 10px #0f0f0f;
     border-radius: 5px;
     background-color: #2c2c2c;
 }
