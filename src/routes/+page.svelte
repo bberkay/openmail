@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Alert from "$lib/components/Alert.svelte";
-	import Login from "$lib/components/Login.svelte";
+	import AddEmail from "$lib/components/AddEmail.svelte";
 	import { invoke } from "@tauri-apps/api/core";
 	
 	let emails = "";
@@ -13,7 +13,7 @@
 
 <!--<Alert message="This is a success message" type="success" />-->
 <main class="container">
-	<Login />
+	<!--<AddEmail />-->
 </main>
 
 <style>
