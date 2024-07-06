@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Alert from "$lib/Alert.svelte";
 	import { invoke } from "@tauri-apps/api/core";
 	
 	let emails = "";
@@ -10,8 +11,15 @@
 </script>
 
 <div class="container">
-	<h1>Welcome to Tauri!</h1>
+	<Alert message="This is a success message" type="success" />
 	<input type="text" placeholder="Enter email" />
 	<button type="submit" on:click={getEmails}>Get Emails</button>
 	<p>{emails}</p>
 </div>
+
+<style>
+	.container{
+		max-height: 100vh;
+		max-width: 100vw;
+	}
+</style>

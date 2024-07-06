@@ -1,13 +1,21 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tauri + SvelteKit + Typescript App</title>
+    <title>Open Mail</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bberkay/lightweight-wysiwyg-editor@main/src/wysiwyg.css">
+    <link rel="stylesheet" href="%sveltekit.assets%/css/style.css" />
+    
     %sveltekit.head%
-  </head>
-  <body data-sveltekit-preload-data="hover">
+</head>
+<body data-sveltekit-preload-data="hover">
     <div style="display: contents">%sveltekit.body%</div>
-  </body>
+
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/gh/bberkay/lightweight-wysiwyg-editor@main/src/wysiwyg.js"></script>
+</body>
 </html>
