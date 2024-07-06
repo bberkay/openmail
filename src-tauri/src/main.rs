@@ -5,9 +5,10 @@ use std::process::{Command, Stdio};
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn greet() -> Result<String, String> {
-    let mut child = Command::new("python")
-        .arg("./src/imap.py")
+fn get_emails(email: &str) -> Result<String, String> {
+    let child = Command::new("python")
+        .arg("./src/python_scripts/main.py")
+        .arg(email)
         .stdout(Stdio::piped())
         .spawn()
         .expect("Failed to start python script");
@@ -28,7 +29,8 @@ fn greet() -> Result<String, String> {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![get_emails])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+

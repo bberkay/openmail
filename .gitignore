@@ -1,6 +1,7 @@
 .DS_Store
 node_modules
 /build
+src-tauri/target
 /.svelte-kit
 /package
 .env
@@ -8,3 +9,4 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+src-tauri/src/python_scripts/accounts.json
