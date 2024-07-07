@@ -1,6 +1,10 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { get, writable } from 'svelte/store';
+    import GetEmails from './GetEmails.svelte';
+    import SendEmail from './SendEmail.svelte';
+    import FolderManagement from './FolderManagement.svelte';
+    import AddAccount from './AddAccount.svelte';
 
     let prevOperationButton: HTMLButtonElement, nextOperationButton: HTMLButtonElement;
     let operations: string[] = ["Get Emails", "Send Email", "Folder Management", "Add Account"];
@@ -36,23 +40,46 @@
 
         checkPrevNextButtonAvailability();
     }
+
+    function getOperationComponent(operation: string) {
+        switch (operation) {
+            case "Get Emails":
+                return GetEmails;
+            case "Send Email":
+                return SendEmail;
+            case "Folder Management":
+                return FolderManagement;
+            case "Add Account":
+                return AddAccount;
+            default:
+                return GetEmails;
+        }
+    }
 </script>
 
-<section class="operation-navigator">
-    <div class="card">
-        <div class="previous">
-            <button on:click={previousOperation} disabled>&lt;</button>
+<section>
+    <div class="operation-navigator">
+        <div class="card">
+            <div class="previous">
+                <button on:click={previousOperation} disabled>&lt;</button>
+            </div>
+            <div class="operations">
+                {#each operations as operation, index}
+                    <div class="operation-item {index === $currentOperationIndex ? 'active' : ''}">
+                        {operation}
+                    </div>
+                {/each}
+            </div>
+            <div class="next">
+                <button on:click={nextOperation}>&gt;</button>
+            </div>
         </div>
-        <div class="operations">
-            {#each operations as operation, index}
-                <div class="operation-item {index === $currentOperationIndex ? 'active' : ''}">
-                    {operation}
-                </div>
-            {/each}
-        </div>
-        <div class="next">
-            <button on:click={nextOperation}>&gt;</button>
-        </div>
+    </div>
+
+    <div class="operation">
+        {#if $currentOperationIndex !== undefined}
+            <svelte:component this={getOperationComponent(operations[$currentOperationIndex])} />
+        {/if}
     </div>
 </section>
 
