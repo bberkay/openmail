@@ -1,7 +1,8 @@
 <script lang="ts">
     import InboxItem from './Inbox/InboxItem.svelte';
 
-    let emails = [
+    export let inboxName = "Inbox";
+    export let emails = [
         {
             from: "From",
             date: "03/03/2021",
@@ -31,7 +32,7 @@
 
 <section class = "card">
     <div class="inbox-header">
-        <h2>Inbox</h2>
+        <h2>{inboxName}</h2>
         <hr>
         <div class="inbox-pagination">
             <button>Previous</button>
@@ -39,11 +40,11 @@
             <button>Next</button>
         </div>
         <hr>
-        <div class="inbox-content">
-            {#each emails as email}
-                <InboxItem {email}/>
-            {/each}
-        </div>
+    </div>
+    <div class="inbox-content">
+        {#each emails as email}
+            <InboxItem {email}/>
+        {/each}
     </div>
 </section>
 

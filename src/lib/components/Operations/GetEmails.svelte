@@ -33,12 +33,16 @@
                         <div class="form-group">
                             <label for="from">From</label>
                             <input type="text" name="from" id="from">
-                            <div class="tags"></div>
+                            <div class="tags">
+                                <!-- Emails -->
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="to">To</label>
                             <input type="text" name="to" id="to">
-                            <div class="tags"></div>
+                            <div class="tags">
+                                <!-- Emails -->
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">

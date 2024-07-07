@@ -2,6 +2,7 @@
 	import Alert from "$lib/components/Alert.svelte";
 	import Sidebar from "$lib/components/Sidebar.svelte";
 	import Inbox from "$lib/components/Inbox.svelte";
+	import Email from "$lib/components/Email.svelte";
 	import { invoke } from "@tauri-apps/api/core";
 	
 	let emails = "";
@@ -16,6 +17,7 @@
 <main class="container">
 	<Sidebar />
 	<Inbox />
+	<Email />
 </main>
 
 <style>
