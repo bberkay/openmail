@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Alert from "$lib/components/Alert.svelte";
-	import OperationNavigator from "$lib/components/OperationNavigator.svelte";
+	import Sidebar from "$lib/components/Sidebar.svelte";
+	import Inbox from "$lib/components/Inbox.svelte";
 	import { invoke } from "@tauri-apps/api/core";
 	
 	let emails = "";
@@ -13,7 +14,8 @@
 
 <Alert message="This is a success message" type="success" />
 <main class="container">
-	<OperationNavigator />
+	<Sidebar />
+	<Inbox />
 </main>
 
 <style>

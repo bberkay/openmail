@@ -3,11 +3,11 @@
     import { get, writable } from 'svelte/store';
     import GetEmails from './Operations/GetEmails.svelte';
     import SendEmail from './Operations/SendEmail.svelte';
+    import AddEmail from './Operations/AddEmail.svelte';
     import FolderManagement from './Operations/FolderManagement.svelte';
-    import AddAccount from './Operations/AddAccount.svelte';
 
     let prevOperationButton: HTMLButtonElement, nextOperationButton: HTMLButtonElement;
-    let operations: string[] = ["Get Emails", "Send Email", "Folder Management", "Add Account"];
+    let operations: string[] = ["Get Emails", "Send Email", "Folder Management", "Add Email"];
     let currentOperationIndex = writable(0);
 
     onMount(() => {
@@ -49,8 +49,8 @@
                 return SendEmail;
             case "Folder Management":
                 return FolderManagement;
-            case "Add Account":
-                return AddAccount;
+            case "Add Email":
+                return AddEmail;
             default:
                 return GetEmails;
         }
