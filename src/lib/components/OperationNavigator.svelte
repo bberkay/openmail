@@ -1,10 +1,10 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { get, writable } from 'svelte/store';
-    import GetEmails from './GetEmails.svelte';
-    import SendEmail from './SendEmail.svelte';
-    import FolderManagement from './FolderManagement.svelte';
-    import AddAccount from './AddAccount.svelte';
+    import GetEmails from './Operations/GetEmails.svelte';
+    import SendEmail from './Operations/SendEmail.svelte';
+    import FolderManagement from './Operations/FolderManagement.svelte';
+    import AddAccount from './Operations/AddAccount.svelte';
 
     let prevOperationButton: HTMLButtonElement, nextOperationButton: HTMLButtonElement;
     let operations: string[] = ["Get Emails", "Send Email", "Folder Management", "Add Account"];
@@ -57,8 +57,8 @@
     }
 </script>
 
-<section>
-    <div class="operation-navigator">
+<section class="operation-navigator">
+    <div class="navigator">
         <div class="card">
             <div class="previous">
                 <button on:click={previousOperation} disabled>&lt;</button>
@@ -85,6 +85,11 @@
 
 <style>
     .operation-navigator{
+        position: relative;
+        width: 50%;
+    }
+
+    .navigator{
         & .card{
             display: flex;
             flex-wrap: wrap;
@@ -111,5 +116,9 @@
             display: flex;
             align-items: center;
         }
+    }
+
+    .operation{
+        width: 100%;
     }
 </style>

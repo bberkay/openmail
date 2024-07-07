@@ -14,7 +14,7 @@
             <div class="form-group">
                 <label for="receiver_emails">Receiver(s)</label>
                 <input type="email" name="receiver_emails" id="receiver_emails" required>
-                <div class="receivers"></div>
+                <div class="tags"></div>
             </div>
             <div class="form-group">
                 <label for="subject">Subject</label>

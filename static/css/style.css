@@ -43,7 +43,7 @@ form{
     & .form-group{
         display: flex;
         flex-direction: column;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
     }
 }
 
@@ -55,7 +55,7 @@ button, select{
     cursor: pointer;
     color: #f5f5f5;
 
-    &:active, &:not(&:disabled){
+    &:active{
         filter: brightness(0.8);
     }
 
@@ -63,7 +63,19 @@ button, select{
         cursor: not-allowed;
         background-color: #3a3a3a;
         color: #7a7a7a;
+        filter: brightness(0.8);
     }
+}
+
+/* General layout */
+.column{
+    display: flex;
+    flex-direction: column;
+}
+
+.row{
+    display: flex;
+    flex-direction: row;
 }
 
 /* Basic components */
@@ -75,4 +87,34 @@ button, select{
     box-shadow: 0 0 10px #0f0f0f;
     border-radius: 5px;
     background-color: #2c2c2c;
+}
+
+.tags{
+    display: none;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+
+    & span{
+        padding: 5px;
+        margin-right:5px;
+        margin-bottom:5px;
+        border-radius: 5px;
+        background-color: #f8f3c7;
+        color: #121212;
+        font-size:11px;
+
+        & button{
+            margin-left: 5px;
+            cursor: pointer;
+            background-color: #922626;
+            border: 1px solid #922626;
+            border-radius: 50%;
+            color: #f5f5f5;
+            padding: 0 5px;
+
+            &::after{
+                content: 'x';
+            }
+        }
+    }
 }
