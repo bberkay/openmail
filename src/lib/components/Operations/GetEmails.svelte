@@ -55,53 +55,53 @@
                             <input type="date" name="end_date" id="end_date">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="has_attachments">Has Attachment(s)</label>
-                        <div class="input-group">
-                            <input type="checkbox" name="has_attachments" id="has_attachments">
-                            <label for="has_attachments">Yes</label>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="flags">Include Flag</label>
-                        <div class="row">
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="has_attachments">Has Attachment(s)</label>
                             <div class="input-group">
-                                <input type="checkbox" name="flags" value="Seen">
-                                <label for="flags">Seen</label>
-                            </div>
-                            <div class="input-group">
-                                <input type="checkbox" name="flags" value="Unseen">
-                                <label for="flags">Unseen</label>
+                                <input type="checkbox" name="has_attachments" id="has_attachments">
+                                <label for="has_attachments">Yes</label>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="input-group">
-                                <input type="checkbox" name="flags" value="Answered">
-                                <label for="flags">Answered</label>
-                            </div>
-                            <div class="input-group">
-                                <input type="checkbox" name="flags" value="Unanswered">
-                                <label for="flags">Unanswered</label>
-                            </div>  
-                        </div>
-                        <div class="row">
-                            <div class="input-group">
-                                <input type="checkbox" name="flags" value="Flagged">
-                                <label for="flags">Flagged</label>
-                            </div>
-                            <div class="input-group">
-                                <input type="checkbox" name="flags" value="Unflagged">
-                                <label for="flags">Unflagged</label>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="input-group">
-                                <input type="checkbox" name="flags" value="Draft">
-                                <label for="flags">Draft</label>
-                            </div>
-                            <div class="input-group">
-                                <input type="checkbox" name="flags" value="Undraft">
-                                <label for="flags">Undraft</label>
+                        <div class="form-group">
+                            <label for="flags">Include Flag</label>
+                            <div class="row">
+                                <div class="column" style="align-items:start;">
+                                    <div class="input-group">
+                                        <input type="checkbox" name="flags" value="Seen">
+                                        <label for="flags">Seen</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="checkbox" name="flags" value="Answered">
+                                        <label for="flags">Answered</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="checkbox" name="flags" value="Flagged">
+                                        <label for="flags">Flagged</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="checkbox" name="flags" value="Draft">
+                                        <label for="flags">Draft</label>
+                                    </div>
+                                </div>
+                                <div class="column" style="align-items:start;">
+                                    <div class="input-group">
+                                        <input type="checkbox" name="flags" value="Unseen">
+                                        <label for="flags">Unseen</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="checkbox" name="flags" value="Unanswered">
+                                        <label for="flags">Unanswered</label>
+                                    </div>  
+                                    <div class="input-group">
+                                        <input type="checkbox" name="flags" value="Unflagged">
+                                        <label for="flags">Unflagged</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="checkbox" name="flags" value="Undraft">
+                                        <label for="flags">Undraft</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -146,7 +146,7 @@
             width: 100%;
         }
 
-        & input, & select{
+        & input:not(& input[type="checkbox"]), & select{
             margin: 5px 0;
             padding: 5px;
             border-radius: 3px;
@@ -154,7 +154,7 @@
             border: 1px solid #a7a7a7;
             color: #ffffff;
             
-            &:focus{
+            &:focus:not(& input[type="checkbox"]){
                 background-color: #868686;
             }
         }

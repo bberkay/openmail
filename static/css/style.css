@@ -44,6 +44,22 @@ form{
         display: flex;
         flex-direction: column;
         margin-bottom: 15px;
+        width: 100%;
+
+        & .input-group{
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 3px;
+
+            & input:not([type="checkbox"]){
+                width: 100%;
+            }
+
+            & input[type="checkbox"] + label{
+                margin-top: 5px;
+            }
+        }
     }
 }
 
@@ -76,6 +92,7 @@ button, select{
 .row{
     display: flex;
     flex-direction: row;
+    gap: 10px;
 }
 
 /* Basic components */
