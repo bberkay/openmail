@@ -81,6 +81,12 @@ button, select{
         color: #7a7a7a;
         filter: brightness(0.8);
     }
+
+    &.button-text{
+        background-color: transparent;
+        border: none;
+        color: #f5f5f5;
+    }
 }
 
 /* General layout */
