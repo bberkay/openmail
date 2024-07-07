@@ -86,7 +86,6 @@
 <style>
     .operation-navigator{
         position: relative;
-        width: 50%;
     }
 
     .navigator{

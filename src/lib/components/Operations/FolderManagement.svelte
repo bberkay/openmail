@@ -10,13 +10,13 @@
 
 <section class="folder-management">
     <div class="folder-management-buttons card">
-        <button class="button-text active" data-form-target-id="create-folder-form" on:click={showFolderManagementForm}>Create Folder</button>
+        <button class="button-text active" data-form-target-id="create-folder-form" on:click={showFolderManagementForm}>Create</button>
         <span>/</span>
-        <button class="button-text" data-form-target-id="rename-folder-form" on:click={showFolderManagementForm}>Rename Folder</button>
+        <button class="button-text" data-form-target-id="rename-folder-form" on:click={showFolderManagementForm}>Rename</button>
         <span>/</span>
-        <button class="button-text" data-form-target-id="delete-folder-form" on:click={showFolderManagementForm}>Delete Folder</button>
+        <button class="button-text" data-form-target-id="delete-folder-form" on:click={showFolderManagementForm}>Delete</button>
         <span>/</span>
-        <button class="button-text" data-form-target-id="move-folder-form" on:click={showFolderManagementForm}>Move Folder</button>
+        <button class="button-text" data-form-target-id="move-folder-form" on:click={showFolderManagementForm}>Move</button>
     </div>
     <div class="card">
         <form class = "folder-management-form active" id="create-folder-form">
@@ -79,7 +79,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.25rem;
 
         & :not(.active){
             opacity: 0.7;

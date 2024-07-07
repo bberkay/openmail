@@ -59,54 +59,29 @@
                             <input type="date" name="end_date" id="end_date">
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label for="has_attachments">Has Attachment(s)</label>
-                            <div class="input-group">
-                                <input type="checkbox" name="has_attachments" id="has_attachments">
-                                <label for="has_attachments">Yes</label>
-                            </div>
-                        </div>
+                    <div class="column">
                         <div class="form-group">
                             <label for="flags">Include Flag</label>
-                            <div class="row">
-                                <div class="column" style="align-items:start;">
-                                    <div class="input-group">
-                                        <input type="checkbox" name="flags" value="Seen">
-                                        <label for="flags">Seen</label>
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="checkbox" name="flags" value="Answered">
-                                        <label for="flags">Answered</label>
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="checkbox" name="flags" value="Flagged">
-                                        <label for="flags">Flagged</label>
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="checkbox" name="flags" value="Draft">
-                                        <label for="flags">Draft</label>
-                                    </div>
-                                </div>
-                                <div class="column" style="align-items:start;">
-                                    <div class="input-group">
-                                        <input type="checkbox" name="flags" value="Unseen">
-                                        <label for="flags">Unseen</label>
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="checkbox" name="flags" value="Unanswered">
-                                        <label for="flags">Unanswered</label>
-                                    </div>  
-                                    <div class="input-group">
-                                        <input type="checkbox" name="flags" value="Unflagged">
-                                        <label for="flags">Unflagged</label>
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="checkbox" name="flags" value="Undraft">
-                                        <label for="flags">Undraft</label>
-                                    </div>
-                                </div>
+                            <div class="input-group">
+                                <select name="flags" id="flags">
+                                    <optgroup>
+                                        <option value="Seen">Seen</option>
+                                        <option value="Answered">Answered</option>
+                                        <option value="Flagged">Flagged</option>
+                                        <option value="Draft">Draft</option>
+                                    </optgroup>
+                                    <optgroup>
+                                        <option value="Unseen">Unseen</option>
+                                        <option value="Unanswered">Unanswered</option>
+                                        <option value="Unflagged">Unflagged</option>
+                                        <option value="Undraft">Undraft</option>
+                                    </optgroup>
+                                </select>
+                                <button>+</button>
                             </div>
+                        </div>
+                        <div class="tags">
+                            <!-- Flags -->
                         </div>
                     </div>
                     <div class="form-group">
@@ -120,6 +95,13 @@
                     <div class="form-group">
                         <label for="exclude_words">Exclude Words</label>
                         <input type="text" name="exclude_words" id="exclude_words">
+                    </div>
+                    <div class="form-group">
+                        <label for="has_attachments">Has Attachment(s)</label>
+                        <div class="input-group">
+                            <input type="checkbox" name="has_attachments" id="has_attachments">
+                            <label for="has_attachments">Yes</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -145,11 +127,6 @@
             display: flex;
         }
 
-        & .row{
-            justify-content: space-between;
-            width: 100%;
-        }
-
         & input:not(& input[type="checkbox"]), & select{
             margin: 5px 0;
             padding: 5px;
@@ -157,9 +134,20 @@
             background-color: #747474;
             border: 1px solid #a7a7a7;
             color: #ffffff;
-            
+
             &:focus:not(& input[type="checkbox"]){
                 background-color: #868686;
+            }
+        }
+
+        & .input-group{
+            & select{
+                width: 100%;
+            }
+            
+            & select + button{
+                border: 1px solid #a7a7a7;
+                padding: 6px;
             }
         }
     }

@@ -15,9 +15,15 @@
 
 <Alert message="This is a success message" type="success" />
 <main class="container">
-	<Sidebar />
-	<Inbox />
-	<Email />
+	<div class="sidebar-container">
+		<Sidebar />
+	</div>
+	<div class="inbox-container">
+		<Inbox />
+	</div>
+	<div class="email-container">
+		<Email />		
+	</div>
 </main>
 
 <style>
@@ -25,5 +31,17 @@
 		max-height: 100vh;
 		max-width: 100vw;
 		display: flex;
+	}
+
+	.sidebar-container{
+		width: 25%;
+	}
+
+	.inbox-container{
+		width: 35%;
+	}
+
+	.email-container{
+		width: 40%;
 	}
 </style>
