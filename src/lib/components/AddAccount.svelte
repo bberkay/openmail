@@ -1,5 +1,5 @@
 <script lang="ts">
-    function handleAddEmail(event: Event) {
+    function handleAddAccount(event: Event) {
         event.preventDefault();
         const form = event.target;
         if (!(form instanceof HTMLFormElement))
@@ -13,9 +13,9 @@
 
 <section class="add-email">
     <div class="card">
-        <h2>Add Email</h2>
+        <h2>Add Account</h2>
         <hr>
-        <form on:submit={handleAddEmail}>
+        <form on:submit={handleAddAccount}>
             <div class="form-group">
                 <label for="email_address">Email Address</label>
                 <input type="email" name="email_address" id="email_address" required>
@@ -24,8 +24,8 @@
                 <label for="password">Password</label>
                 <input type="password" name="password" id="password" required>
             </div>
-            <input type="hidden" name="operation" value="add-email">
-            <button type="submit">Connect</button>
+            <input type="hidden" name="operation" value="add-account">
+            <button type="submit">Add</button>
         </form>
     </div>
 </section>

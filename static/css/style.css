@@ -55,8 +55,14 @@ button, select{
     cursor: pointer;
     color: #f5f5f5;
 
-    &:active{
+    &:active, &:not(&:disabled){
         filter: brightness(0.8);
+    }
+
+    &:disabled{
+        cursor: not-allowed;
+        background-color: #3a3a3a;
+        color: #7a7a7a;
     }
 }
 
