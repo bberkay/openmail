@@ -11,7 +11,7 @@
     }
 </script>
 
-<section class="login">
+<section class="add-email">
     <div class="card">
         <h2>Add Email</h2>
         <hr>
@@ -24,14 +24,14 @@
                 <label for="password">Password</label>
                 <input type="password" name="password" id="password" required>
             </div>
-            <input type="hidden" name="operation" value="login">
+            <input type="hidden" name="operation" value="add-email">
             <button type="submit">Connect</button>
         </form>
     </div>
 </section>
 
 <style>
-    .login{
+    .add-email{
         width: 100%;
         height: 100vh;
         display: flex;
