@@ -1,33 +1,11 @@
 <script lang="ts">
     import InboxItem from './Inbox/InboxItem.svelte';
 
-    export let inboxName = "Inbox";
-    export let emails = [
-        {
-            from: "From",
-            date: "03/03/2021",
-            to: "someone@mail.com",
-            subject: "A Very Important Email",
-            body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illo, illum. Odio beatae, aperiam cupiditate",
-            flags: "Seen"
-        },
-        {
-            from: "From",
-            date: "03/03/2022",
-            to: "god@mail.com",
-            subject: "Lorem Ipsum Dolor Sit Amet",
-            body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illo, illum. Odio beatae, aperiam cupiditate",
-            flags: "Flagged"
-        },
-        {
-            from: "From",
-            date: "03/03/2023",
-            to: "me@mail.com",
-            subject: "Most Important Email",
-            body: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Illo, illum. Odio beatae, aperiam cupiditate",
-            flags: ""
-        }
-    ];
+    export let inbox_data: any;
+    let inboxName = inbox_data.folder.slice(0, 1).toUpperCase() + inbox_data.folder.slice(1);
+    let totalEmailCount: number = inbox_data.total;
+    let offsetEnd: number = 10;
+    let emails = inbox_data.emails;
 </script>
 
 <section class = "card">
@@ -36,14 +14,14 @@
         <hr>
         <div class="inbox-pagination">
             <button>Previous</button>
-            <small>15 - 35 of 1792</small>
+            <small>{offsetEnd - 10} - {offsetEnd} of {totalEmailCount}</small>
             <button>Next</button>
         </div>
         <hr>
     </div>
     <div class="inbox-content">
         {#each emails as email}
-            <InboxItem {email}/>
+            <InboxItem email={email} folder={inboxName}/>
         {/each}
     </div>
 </section>
@@ -56,6 +34,9 @@
     }
 
     .inbox-content{
+        max-height: 85vh;
+        overflow-y: auto;
+        
         & h3{
             margin: 0;
         }

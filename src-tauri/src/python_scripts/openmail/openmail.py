@@ -252,7 +252,7 @@ class OpenMail:
                 "flags": self.__fetch_flags(uid) or []
             })
 
-        return True, "Emails fetched successfully", {"emails": emails, "total": len(uids)}
+        return True, "Emails fetched successfully", {"folder": folder, "emails": emails, "total": len(uids)}
 
     @__handle_imap_conn
     def get_email_content(self, uid: str, folder: str = "inbox") -> tuple[bool, str, dict] | tuple[bool, str]:
@@ -288,8 +288,12 @@ class OpenMail:
 
         return True, "Email fetched successfully", {
             "id": uid,
+            "from": message["From"],
+            "to": message["To"] if "To" in message else "",
             "subject": message["Subject"],
             "body": body,
+            "date": datetime.strptime(message["Date"], "%a, %d %b %Y %H:%M:%S %z").strftime("%Y-%m-%d %H:%M:%S"),
+            "flags": self.__fetch_flags(uid) or [],
             "attachments": attachments
         }
 

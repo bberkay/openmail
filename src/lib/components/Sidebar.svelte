@@ -123,8 +123,6 @@
         & .card{
             max-height: 80vh;
             overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #888 transparent;
         }
     }
 </style>

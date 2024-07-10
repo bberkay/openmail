@@ -1,22 +1,24 @@
 <script lang="ts">
+    import { clickedEmailId  } from "$lib/stores";
+    export let folder: string;
     export let email: {
+        id: string,
         from: string,
-        date: string,
         to: string,
         subject: string,
-        body: string,
+        body_short: string,
+        date: string,
         flags: string
-    } = {
-        from: "From",
-        date: "03/03/2021",
-        to: "someone@mail.com",
-        subject: "Subject",
-        body: "Body",
-        flags: ""
     };
+
+    function handleEmailClick(){
+        clickedEmailId.set(email.id);
+    }
 </script>
 
-<div class="inbox-item" data-flags={email.flags}>
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div class="inbox-item" data-email-flags = {email.flags} on:click={handleEmailClick}>
     <h3>{email.from}</h3>
     <small>
         <span>{email.date}</span> &lt;<span>{email.to}</span>&gt;
@@ -24,7 +26,7 @@
     <br>
     <small>{email.subject}</small>
     <br>
-    <small>{email.body}</small>
+    <small>{email.body_short}</small>
 </div>
 
 <style>

@@ -6,8 +6,10 @@
 	import Login from "$lib/components/Login.svelte";
 
 	let is_logged_in: boolean = false;
+	let inbox_data: any;
 	async function handleLoginDispatch(event: CustomEvent){
 		is_logged_in = event.detail["success"];
+		inbox_data = event.detail["data"];
 	}
 </script>
 
@@ -20,8 +22,7 @@
 			<Sidebar />
 		</div>
 		<div class="inbox-container">
-			<!--<Inbox emails={inbox_data} />-->
-			<Inbox />
+			<Inbox inbox_data={inbox_data}/>
 		</div>
 		<div class="email-container">
 			<Email />		

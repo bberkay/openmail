@@ -28,7 +28,7 @@
         <form on:submit={handleLoginOnSubmit}>
             <div class="form-group">
                 <label for="email_address">Email Address</label>
-                <input type="email" name="email_address" id="email_address" autocomplete="off" required>
+                <input type="email" name="email_address" id="email_address" autocomplete="off" value="testforprojects42webio@gmail.com" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
