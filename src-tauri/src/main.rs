@@ -27,7 +27,7 @@ fn get_emails(email: &str) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn login(email: &str, password: &str) -> Result<String, String> {
+async fn login(email: &str, password: &str) -> Result<String, String> {
     let child = Command::new("python")
         .arg("./src/python_scripts/main.py")
         .arg(email)

@@ -5,26 +5,29 @@
 	import Email from "$lib/components/Email.svelte";
 	import Login from "$lib/components/Login.svelte";
 
-	let is_logged_in = false;
+	let is_logged_in: boolean = false;
+	async function handleLoginDispatch(event: CustomEvent){
+		is_logged_in = event.detail["success"];
+	}
 </script>
 
 <Alert message="This is a success message" type="success" />
 {#if !is_logged_in}
-	<Login />
+	<Login on:login={handleLoginDispatch} />
 {:else}
 	<main class="container">
 		<div class="sidebar-container">
 			<Sidebar />
 		</div>
 		<div class="inbox-container">
+			<!--<Inbox emails={inbox_data} />-->
 			<Inbox />
 		</div>
 		<div class="email-container">
 			<Email />		
 		</div>
-</main>
+	</main>
 {/if}
-
 
 <style>
 	.container{

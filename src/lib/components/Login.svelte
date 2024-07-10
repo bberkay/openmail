@@ -1,24 +1,27 @@
 <script lang="ts">
+    import type { OpenMailDataString } from "$lib/types";
+    import { createEventDispatcher } from "svelte";
 	import { invoke } from "@tauri-apps/api/core";
 
-    let is_logged_in = false;
-    async function handleAddAccount(event: Event) {
+    const dispatch = createEventDispatcher();
+    
+    async function handleLoginOnSubmit(event: Event) {
         event.preventDefault();
         const form = event.target;
         if (!(form instanceof HTMLFormElement))
             return;
         
-        is_logged_in = await invoke('login', { email: form.email_address.value, password: form.password.value });
-        console.log(is_logged_in);
+        const response: OpenMailDataString = await invoke('login', { email: form.email_address.value, password: form.password.value });
+        dispatch('login', JSON.parse(response));
     }
 </script>
 
 <section class="add-email">
     <div class="card">
-        <form on:submit={handleAddAccount}>
+        <form on:submit={handleLoginOnSubmit}>
             <div class="form-group">
                 <label for="email_address">Email Address</label>
-                <input type="email" name="email_address" id="email_address" required>
+                <input type="email" name="email_address" id="email_address" autocomplete="off" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
@@ -30,9 +33,11 @@
     </div>
 </section>
 
-<p>{is_logged_in}</p>
-
 <style>
+    input:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0 1000px white inset;
+    }
+
     .add-email{
         width: 100%;
         height: 100vh;
