@@ -1,16 +1,23 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import type { OpenMailDataString } from "$lib/types";
     import { createEventDispatcher } from "svelte";
 	import { invoke } from "@tauri-apps/api/core";
 
     const dispatch = createEventDispatcher();
-    
+    let loginButton: HTMLButtonElement;
+    onMount(() => {
+        loginButton = document.getElementById('login-button')! as HTMLButtonElement;
+    });
+
     async function handleLoginOnSubmit(event: Event) {
         event.preventDefault();
         const form = event.target;
         if (!(form instanceof HTMLFormElement))
             return;
-        
+
+        loginButton.disabled = true;
+        loginButton.textContent = 'Logging in...';
         const response: OpenMailDataString = await invoke('login', { email: form.email_address.value, password: form.password.value });
         dispatch('login', JSON.parse(response));
     }
@@ -28,7 +35,7 @@
                 <input type="password" name="password" id="password" required>
             </div>
             <input type="hidden" name="operation" value="add-account">
-            <button type="submit">Login to your Email</button>
+            <button type="submit" id="login-button">Login to your Email</button>
         </form>
     </div>
 </section>
