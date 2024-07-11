@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { OpenMailDataString } from "$lib/types";
+    import type { OpenMailDataString, OpenMailData } from "$lib/types";
     import { invoke } from "@tauri-apps/api/core";
     import { clickedEmailId } from "$lib/stores";
     import { onMount } from "svelte";
@@ -11,7 +11,8 @@
         subject: string,
         body: string,
         date: string,
-        flags: string
+        flags: string[],
+        attachments: any[]
     } = {
         id: "",
         from: "",
@@ -19,7 +20,8 @@
         subject: "",
         body: "",
         date: "",
-        flags: ""
+        flags: "",
+        attachments: []
     };
 
     clickedEmailId.subscribe(value => {
@@ -40,10 +42,14 @@
     });
 
     async function getEmailContent(email_id: string){
+        contentBody.innerHTML = "";
+        attachments.innerHTML = "";
+        flags.innerHTML = "";
+
         let response: OpenMailDataString = await invoke('get_email_content', { id: email_id });
-        response = JSON.parse(response);
-        if(response["success"] === true)
-            email = response["data"];
+        response = JSON.parse(response) as OpenMailData;
+        if(response.success === true)
+            email = response.data;
 
         // Flags
         if(email["flags"].length > 0){

@@ -7,6 +7,11 @@ body{
     overflow: hidden;
 }
 
+*{
+    scrollbar-width: thin;
+    scrollbar-color: #888 transparent;
+}
+
 /* General elements */
 hr{
     border: 1px solid #3a3a3a;
