@@ -33,7 +33,7 @@
     onMount(() => {
         contentBody = document.getElementById('body')!;
         attachments = document.getElementById('attachments')!;
-        flags = document.querySelector('.tags')!;
+        flags = document.querySelector('.email-content .tags')!;
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
         flags.innerHTML = "";
@@ -44,21 +44,23 @@
         response = JSON.parse(response);
         if(response["success"] === true)
             email = response["data"];
-        
-        // Flags
-        email["flags"].forEach(flag => {
-            console.log(flag);
-            const flagElement = document.createElement('span');
-            flagElement.classList.add('flag');
-            flagElement.innerText = flag;
-            flags.appendChild(flagElement)
-            /*flag = flag.trim().toLowerCase();
-            const markButton = document.querySelector(`[data-mark-as="${flag}"]`);
-            if(!markButton) return
-            markButton.setAttribute("data-mark-as", "un" + flag);
-            markButton.innerText = markButtonTextMap[flag];*/
-        });
 
+        // Flags
+        if(email["flags"].length > 0){
+            flags.style.display = "flex";
+            email["flags"].forEach(flag => {
+                const flagElement = document.createElement('span');
+                flagElement.classList.add('flag');
+                flagElement.innerText = flag;
+                flags.appendChild(flagElement)
+                /*flag = flag.trim().toLowerCase();
+                const markButton = document.querySelector(`[data-mark-as="${flag}"]`);
+                if(!markButton) return
+                markButton.setAttribute("data-mark-as", "un" + flag);
+                markButton.innerText = markButtonTextMap[flag];*/
+            });
+        }
+    
         // Body
         let iframe = document.createElement('iframe');
         contentBody.appendChild(iframe);
