@@ -11,4 +11,5 @@ src-tauri/target
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 src-tauri/src/python_scripts/accounts.json
+**/__pycache__/
 /notes.txt

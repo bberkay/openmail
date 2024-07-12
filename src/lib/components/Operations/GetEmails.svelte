@@ -9,11 +9,16 @@
     function showSearchMenu(){
         searchMenu.classList.toggle('show');
     }
+
+    function handleGetEmails(event: Event){
+        event.preventDefault();
+        console.log('Get Emails');
+    }
 </script>
 
 <section class="get-emails">
     <div class="card">
-        <form id="get-emails-form">
+        <form id="get-emails-form" on:submit={handleGetEmails}>
             <div class="form-group">
                 <label for="email_address">Email Address</label>
                 <input type="email" name="email_address" id="email_address" required>

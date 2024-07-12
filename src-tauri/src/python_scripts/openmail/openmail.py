@@ -267,6 +267,7 @@ class OpenMail:
             file_name = part.get_filename()
             if file_name:
                 attachments.append({
+                    "cid": part.get("X-Attachment-Id"),
                     "name": file_name,
                     "data": base64.b64encode(part.get_payload(decode=True)).decode("utf-8", errors="ignore"),
                     "type": content_type
@@ -280,8 +281,8 @@ class OpenMail:
             for match in re.finditer(r'<img src="cid:([^"]+)"', body):
                 cid = match.group(1)
                 for attachment in attachments:
-                    if cid in attachment["name"]:
-                        body = body.replace(f'cid:{cid}', f'data:{attachment["type"]};base64,{attachment["data"]}')                    
+                    if cid in attachment["name"] or cid in attachment["cid"]:
+                        body = body.replace(f'cid:{cid}', f'data:{attachment["type"]};base64,{attachment["data"]}')
 
         if "Seen" not in self.__fetch_flags(uid):
             self.mark_email(uid, "seen", folder)

@@ -37,11 +37,11 @@
         cursor: pointer;
         background-color: #414040;
         
-        &[data-flags*="Seen"], &[data-flags*="seen"]{
+        &[data-email-flags*="Seen"], &[data-email-flags*="seen"]{
            background-color: #2c2c2c;
         }
         
-        &[data-flags*="Flagged"], &[data-flags*="flagged"]{
+        &[data-email-flags*="Flagged"], &[data-email-flags*="flagged"]{
             background-color: #f8f3c7;
             color: #121212;
 

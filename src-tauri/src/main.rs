@@ -3,12 +3,12 @@
 
 use std::process::{Command, Stdio};
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn get_emails(email: &str) -> Result<String, String> {
+const PYTHON_SCRIPT_PATH: &str = "./src/python_scripts/main.py";
+
+fn run_python_script(args: Vec<&str>) -> Result<String, String> {
     let child = Command::new("python")
-        .arg("./src/python_scripts/main.py")
-        .arg(email)
+        .arg(PYTHON_SCRIPT_PATH)
+        .args(args)
         .stdout(Stdio::piped())
         .spawn()
         .expect("Failed to start python script");
@@ -24,58 +24,27 @@ fn get_emails(email: &str) -> Result<String, String> {
         let error = String::from_utf8(output.stderr).expect("Invalid UTF-8 sequence");
         Err(error)
     }
-}
-
-#[tauri::command]
-async fn get_email_content(id: &str) -> Result<String, String> {
-    let child = Command::new("python")
-        .arg("./src/python_scripts/main.py")
-        .arg(id)
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Failed to start python script");
-
-    let output = child
-        .wait_with_output()
-        .expect("Failed to read stdout");
-
-    if output.status.success() {
-        let result = String::from_utf8(output.stdout).expect("Invalid UTF-8 sequence");
-        Ok(result)
-    } else {
-        let error = String::from_utf8(output.stderr).expect("Invalid UTF-8 sequence");
-        Err(error)
-    }
-
 }
 
 #[tauri::command]
 async fn login(email: &str, password: &str) -> Result<String, String> {
-    let child = Command::new("python")
-        .arg("./src/python_scripts/main.py")
-        .arg(email)
-        .arg(password)
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Failed to start python script");
+    run_python_script(vec!["login", email, password])
+}
 
-    let output = child
-        .wait_with_output()
-        .expect("Failed to read stdout");
+#[tauri::command]
+async fn get_emails(email: &str) -> Result<String, String> {
+    run_python_script(vec!["get_emails", email])
+}
 
-    if output.status.success() {
-        let result = String::from_utf8(output.stdout).expect("Invalid UTF-8 sequence");
-        Ok(result)
-    } else {
-        let error = String::from_utf8(output.stderr).expect("Invalid UTF-8 sequence");
-        Err(error)
-    }
+#[tauri::command]
+async fn get_email_content(id: &str) -> Result<String, String> {
+    run_python_script(vec!["get_email_content", id])
 }
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![login, get_email_content])
+        .invoke_handler(tauri::generate_handler![login, get_emails, get_email_content])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

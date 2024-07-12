@@ -34,7 +34,7 @@
     }
 
     .inbox-content{
-        max-height: 85vh;
+        max-height: 82vh;
         overflow-y: auto;
         
         & h3{

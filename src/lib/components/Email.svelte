@@ -20,7 +20,7 @@
         subject: "",
         body: "",
         date: "",
-        flags: "",
+        flags: [],
         attachments: []
     };
 
@@ -42,9 +42,12 @@
     });
 
     async function getEmailContent(email_id: string){
-        contentBody.innerHTML = "";
-        attachments.innerHTML = "";
-        flags.innerHTML = "";
+        if(contentBody !== undefined)
+            contentBody.innerHTML = "";
+        if(attachments !== undefined)
+            attachments.innerHTML = "";
+        if(flags !== undefined)
+            flags.innerHTML = "";
 
         let response: OpenMailDataString = await invoke('get_email_content', { id: email_id });
         response = JSON.parse(response) as OpenMailData;
@@ -59,11 +62,6 @@
                 flagElement.classList.add('flag');
                 flagElement.innerText = flag;
                 flags.appendChild(flagElement)
-                /*flag = flag.trim().toLowerCase();
-                const markButton = document.querySelector(`[data-mark-as="${flag}"]`);
-                if(!markButton) return
-                markButton.setAttribute("data-mark-as", "un" + flag);
-                markButton.innerText = markButtonTextMap[flag];*/
             });
         }
     
