@@ -2,8 +2,9 @@
     import type { Email } from "$lib/types";
     import { onMount } from "svelte";
     import { currentEmail, folders } from "$lib/stores";
+    import { get } from "svelte/store";
     
-    let folderSelectOptions: NodeListOf<HTMLFormElement>;
+    let moveToFolderSelectOption: HTMLFormElement;
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
     let flags: HTMLElement;
@@ -19,20 +20,6 @@
             if(value && Object.keys(value).length > 0)
                 getEmailContent(value);
         });
-
-        folderSelectOptions = document.querySelectorAll('.flag-operations select[name*="folder"]');
-        folders.subscribe(value => {
-            if(value.length > 0){
-                folderSelectOptions.forEach(select => {
-                    value.forEach(folder => {
-                        const option = document.createElement('option');
-                        option.value = folder;
-                        option.innerText = folder;
-                        select.appendChild(option);
-                    });
-                });
-            }
-        })
     });
 
     async function getEmailContent(email: Email){
@@ -42,6 +29,15 @@
         attachments.innerHTML = "";
         flags.innerHTML = "";
     
+        // Folders
+        moveToFolderSelectOption = document.querySelector('.flag-operations select[name="move_to_folder"]')!;
+        get(folders).forEach(folder => {
+            const option = document.createElement('option');
+            option.value = folder;
+            option.innerText = folder;
+            moveToFolderSelectOption.appendChild(option);
+        });
+
         // Body
         if(!email.body)
             return;
@@ -95,7 +91,7 @@
             <div class="flag-operations">
                 <button>Read</button>
                 <button>Star</button>
-                <select>
+                <select name="move_to_folder">
                     <option value="">Move To Folder</option>
                 </select>
                 <button>Delete</button>
@@ -138,7 +134,8 @@
 
     .email-content{
         width: 100%;
-        border-top:3px solid #3a3a3a;
+        border-top:2px solid #3a3a3a;
+        margin-top: 0.5rem;
         
         & iframe{
             border: none;
@@ -147,6 +144,8 @@
         }
 
         & .tags {
+            margin-top:10px;
+
             & button{
                 display: none;
             }
