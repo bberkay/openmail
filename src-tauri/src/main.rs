@@ -5,10 +5,12 @@ use std::process::{Command, Stdio};
 
 const PYTHON_SCRIPT_PATH: &str = "./src/python_scripts/main.py";
 
-fn run_python_script(args: Vec<&str>) -> Result<String, String> {
+fn run_python_script(operation: &str, params: Vec<&str>) -> Result<String, String> {
+    println!("Running python script with operation: {} and params: {:?}", operation, params);
     let child = Command::new("python")
         .arg(PYTHON_SCRIPT_PATH)
-        .args(args)
+        .arg(operation)
+        .args(params)
         .stdout(Stdio::piped())
         .spawn()
         .expect("Failed to start python script");
@@ -28,17 +30,17 @@ fn run_python_script(args: Vec<&str>) -> Result<String, String> {
 
 #[tauri::command]
 async fn login(email: &str, password: &str) -> Result<String, String> {
-    run_python_script(vec!["login", email, password])
+    run_python_script("login", vec![email, password])
 }
 
 #[tauri::command]
-async fn get_emails(email: &str) -> Result<String, String> {
-    run_python_script(vec!["get_emails", email])
+async fn get_emails(offset: &str) -> Result<String, String> {
+    run_python_script("get_emails", vec![offset])
 }
 
 #[tauri::command]
 async fn get_email_content(id: &str) -> Result<String, String> {
-    run_python_script(vec!["get_email_content", id])
+    run_python_script("get_email_content", vec![id])
 }
 
 fn main() {

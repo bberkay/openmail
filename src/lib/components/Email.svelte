@@ -24,19 +24,11 @@
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
         flags.innerHTML = "";
-
-        // Flags
-        if(email["flags"].length > 0){
-            flags.style.display = "flex";
-            email["flags"].forEach(flag => {
-                const flagElement = document.createElement('span');
-                flagElement.classList.add('flag');
-                flagElement.innerText = flag;
-                flags.appendChild(flagElement)
-            });
-        }
     
         // Body
+        if(!email.body)
+            return;
+
         let iframe = document.createElement('iframe');
         contentBody.appendChild(iframe);
 
@@ -49,6 +41,17 @@
 
             contentBody.style.height = iframeDoc.body.scrollHeight + 'px';
             iframeDoc.body.style.overflow = 'hidden';
+        }
+
+        // Flags
+        if(Object.hasOwn(email, "flags") && email["flags"].length > 0){
+            flags.style.display = "flex";
+            email["flags"].forEach(flag => {
+                const flagElement = document.createElement('span');
+                flagElement.classList.add('flag');
+                flagElement.innerText = flag;
+                flags.appendChild(flagElement)
+            });
         }
 
         // Attachment
@@ -92,10 +95,10 @@
             <!-- Flags -->
         </div>
         <div id="subject">
-            <h3>{$currentEmail.subject}</h3>
-            <p>From: {$currentEmail.from}</p>
-            <p>To: {$currentEmail.to}</p>
-            <p>Date: {$currentEmail.date}</p>
+            <h3>{$currentEmail.subject || ""}</h3>
+            <p>From: {$currentEmail.from || ""}</p>
+            <p>To: {$currentEmail.to || ""}</p>
+            <p>Date: {$currentEmail.date || ""}</p>
         </div>
         <div id="body"></div>
         <div id="attachments"></div>

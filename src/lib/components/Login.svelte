@@ -28,11 +28,12 @@
         <form on:submit={handleLoginOnSubmit}>
             <div class="form-group">
                 <label for="email_address">Email Address</label>
-                <input type="email" name="email_address" id="email_address" autocomplete="off" value="testforprojects42webio@gmail.com" required>
+                <!-- svelte-ignore a11y-autofocus -->
+                <input type="email" name="email_address" id="email_address" autocomplete="off" value="testforprojects42webio@gmail.com" autofocus required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" name="password" id="password" required>
+                <input type="password" name="password" id="password" autocomplete="off" required>
             </div>
             <input type="hidden" name="operation" value="add-account">
             <button type="submit" id="login-button">Login to your Email</button>

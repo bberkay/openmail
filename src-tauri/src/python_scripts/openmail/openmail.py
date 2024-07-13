@@ -181,15 +181,15 @@ class OpenMail:
         return uids[0].split()[::-1] if uids else []
     
     @__handle_imap_conn  
-    def get_emails(self, folder: str = "inbox", search: str = "ALL", offset: int = 0) -> tuple[bool, str, list] | tuple[bool, str]:
+    def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, list] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder_name(folder), readonly=True)
         
-        search_criteria = search
-        if search != "ALL" and search != "":
+        search_criteria = None
+        if isinstance(search, dict):
             search = json.loads(search)
             search_criteria = self.__build_search_criteria(search)
 
-        uids = self.__search_with_criteria(search_criteria or 'ALL')
+        uids = self.__search_with_criteria(search_criteria or search)
         if len(uids) == 0:
             return True, "No emails found", []
 
