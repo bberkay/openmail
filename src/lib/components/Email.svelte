@@ -2,8 +2,7 @@
     import type { Email } from "$lib/types";
     import { onMount } from "svelte";
     import { currentEmail } from "$lib/stores";
-    import { get } from "svelte/store";
-
+    
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
     let flags: HTMLElement;
@@ -16,12 +15,14 @@
         flags.innerHTML = "";
 
         currentEmail.subscribe(value => {
-            if(value)
+            if(value && Object.keys(value).length > 0)
                 getEmailContent(value);
         });
     });
 
     async function getEmailContent(email: Email){
+        (document.querySelector(".email-operations") as HTMLElement).style.display = "flex";
+        (document.querySelector(".email-content") as HTMLElement).style.display = "block";
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
         flags.innerHTML = "";
@@ -90,7 +91,6 @@
             </div>
         </div>
     </div>
-    <hr>
     <div class="email-content">
         <div class="tags">
             <!-- Flags -->
@@ -107,8 +107,11 @@
 </section>
 
 <style>
+    .email-operations, .email-content{
+        display:none;
+    }
+
     .email-operations{
-        display: flex;
         justify-content:space-between;
         align-items: center;
 
@@ -120,6 +123,7 @@
 
     .email-content{
         width: 100%;
+        border-top:3px solid #3a3a3a;
         
         & iframe{
             border: none;

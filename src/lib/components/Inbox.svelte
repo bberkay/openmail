@@ -46,7 +46,7 @@
 
 <section class = "card">
     <div class="inbox-header">
-        <h3>{$currentFolder}</h3>
+        <h2>{$currentFolder == "inbox" ? "Inbox" : $currentFolder}</h2>
         <hr>
         <div class="inbox-pagination">
             <button id="prev-button" on:click={getPreviousEmails}>Previous</button>
