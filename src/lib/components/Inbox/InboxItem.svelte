@@ -1,18 +1,17 @@
 <script lang="ts">
-    import { clickedEmailId  } from "$lib/stores";
-    export let folder: string;
-    export let email: {
-        id: string,
-        from: string,
-        to: string,
-        subject: string,
-        body_short: string,
-        date: string,
-        flags: string
-    };
+    import { invoke } from "@tauri-apps/api/core";
+    import { currentEmail } from "$lib/stores";
+    import type { OpenMailDataString, OpenMailData, Email } from "$lib/types";
 
-    function handleEmailClick(){
-        clickedEmailId.set(email.id);
+    export let email: Email;
+
+    async function handleEmailClick(){
+        const response: OpenMailDataString = await invoke('get_email_content', { id: email.id });
+        const parsedResponse = JSON.parse(response) as OpenMailData;
+        if (parsedResponse.success)
+            currentEmail.set(parsedResponse.data as Email);
+        else
+            console.error(parsedResponse);
     }
 </script>
 

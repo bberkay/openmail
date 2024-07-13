@@ -119,10 +119,5 @@
 
     .operation{
         width: 100%;
-
-        & .card{
-            max-height: 80vh;
-            overflow-y: auto;
-        }
     }
 </style>

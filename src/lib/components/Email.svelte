@@ -1,33 +1,7 @@
 <script lang="ts">
-    import type { OpenMailDataString, OpenMailData } from "$lib/types";
-    import { invoke } from "@tauri-apps/api/core";
-    import { clickedEmailId } from "$lib/stores";
+    import type { Email } from "$lib/types";
     import { onMount } from "svelte";
-
-    let email: {
-        id: string,
-        from: string,
-        to: string,
-        subject: string,
-        body: string,
-        date: string,
-        flags: string[],
-        attachments: any[]
-    } = {
-        id: "",
-        from: "",
-        to: "",
-        subject: "",
-        body: "",
-        date: "",
-        flags: [],
-        attachments: []
-    };
-
-    clickedEmailId.subscribe(value => {
-        if(value)
-            getEmailContent(value);
-    });
+    import { currentEmail } from "$lib/stores";
 
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
@@ -39,20 +13,17 @@
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
         flags.innerHTML = "";
+
+        currentEmail.subscribe(value => {
+            if(value)
+                getEmailContent(value);
+        });
     });
 
-    async function getEmailContent(email_id: string){
-        if(contentBody !== undefined)
-            contentBody.innerHTML = "";
-        if(attachments !== undefined)
-            attachments.innerHTML = "";
-        if(flags !== undefined)
-            flags.innerHTML = "";
-
-        let response: OpenMailDataString = await invoke('get_email_content', { id: email_id });
-        response = JSON.parse(response) as OpenMailData;
-        if(response.success === true)
-            email = response.data;
+    async function getEmailContent(email: Email){
+        contentBody.innerHTML = "";
+        attachments.innerHTML = "";
+        flags.innerHTML = "";
 
         // Flags
         if(email["flags"].length > 0){
@@ -68,27 +39,31 @@
         // Body
         let iframe = document.createElement('iframe');
         contentBody.appendChild(iframe);
-        iframe = iframe.contentWindow ? iframe.contentWindow.document : (iframe.document || iframe.contentDocument);
-        iframe.open();
-        iframe.writeln(email.body);
-        iframe.close();
-        contentBody.style.height = iframe.body.scrollHeight + 'px';
-        iframe.body.style.overflow = 'hidden';
+
+        let iframeDoc: Document | null;
+        iframeDoc = iframe.contentWindow ? iframe.contentWindow.document : iframe.contentDocument;
+        if(iframeDoc){
+            iframeDoc.open();
+            iframeDoc.writeln(email.body!);
+            iframeDoc.close();
+
+            contentBody.style.height = iframeDoc.body.scrollHeight + 'px';
+            iframeDoc.body.style.overflow = 'hidden';
+        }
 
         // Attachment
-        email["attachments"].forEach(attachment => {
-            const decodedData = atob(attachment["data"]);
-            const byteNumbers = new Array(decodedData.length);
-            for(let i=0; i<decodedData.length; i++){
-                byteNumbers[i] = decodedData.charCodeAt(i);
-            }
-            const link = document.createElement('a');
-            link.classList.add('attachment');
-            link.href = URL.createObjectURL(new Blob([new Uint8Array(byteNumbers)], {type: attachment["type"]}));
-            link.download = attachment["name"];
-            link.innerText = attachment["name"];
-            attachments.appendChild(link);
-        });
+        if(Object.hasOwn(email, "attachments")){
+            email["attachments"]!.forEach(attachment => {
+                const decodedData = atob(attachment.data);
+                const byteNumbers = Array.from(decodedData, char => char.charCodeAt(0));
+                const link = document.createElement('a');
+                link.classList.add('attachment');
+                link.href = URL.createObjectURL(new Blob([new Uint8Array(byteNumbers)], {type: attachment.type}));
+                link.download = attachment.name;
+                link.innerText = attachment.name + " (" + attachment.size + ")";
+                attachments.appendChild(link);
+            });
+        }
     }
 </script>
 
@@ -117,10 +92,10 @@
             <!-- Flags -->
         </div>
         <div id="subject">
-            <h3>{email.subject}</h3>
-            <p>From: {email.from}</p>
-            <p>To: {email.to}</p>
-            <p>Date: {email.date}</p>
+            <h3>{$currentEmail.subject}</h3>
+            <p>From: {$currentEmail.from}</p>
+            <p>To: {$currentEmail.to}</p>
+            <p>Date: {$currentEmail.date}</p>
         </div>
         <div id="body"></div>
         <div id="attachments"></div>
@@ -141,9 +116,6 @@
 
     .email-content{
         width: 100%;
-        max-height: 85vh;
-        overflow-y: auto;
-        overflow-x: hidden;
         
         & iframe{
             border: none;
@@ -154,6 +126,25 @@
         & .tags {
             & button{
                 display: none;
+            }
+        }
+
+        & #attachments{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+
+            & a.attachment{
+                padding: 0.5rem;
+                background-color: #f8f3c7;
+                color: #121212;
+                text-decoration: none;
+                border-radius: 0.5rem;
+                transition: background-color 0.2s;
+
+                &:hover{
+                    background-color: #f8f4d4;
+                }
             }
         }
     }

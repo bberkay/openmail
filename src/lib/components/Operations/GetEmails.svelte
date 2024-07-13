@@ -1,18 +1,39 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { invoke } from "@tauri-apps/api/core";
+    import { emails, currentFolder, totalEmailCount } from '$lib/stores';
+    import type { Email, OpenMailData, OpenMailDataString } from '$lib/types';
 
     let searchMenu: HTMLElement;
+    let getEmailButton: HTMLButtonElement;
     onMount(() => {
         searchMenu = document.querySelector('.search-menu')!;
+        getEmailButton = document.querySelector('button[type="submit"]')!;
     });
 
     function showSearchMenu(){
         searchMenu.classList.toggle('show');
     }
 
-    function handleGetEmails(event: Event){
+    async function handleGetEmails(event: Event){ 
         event.preventDefault();
-        console.log('Get Emails');
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement))
+            return;
+
+        getEmailButton.disabled = true;
+        getEmailButton.textContent = 'Loading...';
+        let response: OpenMailDataString = await invoke('get_emails', { email: form.email_address.value });
+        try{
+            let parseResponse = JSON.parse(response) as OpenMailData;
+            if(parseResponse.success){
+                emails.set(parseResponse.data["emails"] as Email[]);
+                currentFolder.set(parseResponse.data["folder"]);
+                totalEmailCount.set(parseResponse.data["total"]);
+            }
+        }catch{
+            console.error(response);
+        }
     }
 </script>
 
@@ -21,7 +42,7 @@
         <form id="get-emails-form" on:submit={handleGetEmails}>
             <div class="form-group">
                 <label for="email_address">Email Address</label>
-                <input type="email" name="email_address" id="email_address" required>
+                <input type="email" name="email_address" id="email_address" autocomplete="off" value="testforprojects42webio@gmail.com" required>
             </div>
             <div class="form-group">
                 <label for="folder">Folder</label>

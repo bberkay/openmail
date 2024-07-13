@@ -9,7 +9,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
-from .utils import decode_modified_utf7, encode_modified_utf7, convert_to_imap_date, check_json_value
+from .utils import decode_modified_utf7, encode_modified_utf7, convert_to_imap_date, check_json_value, make_size_human_readable
 from .imap import IMAP
 from .smtp import SMTP
 
@@ -270,6 +270,7 @@ class OpenMail:
                     "cid": part.get("X-Attachment-Id"),
                     "name": file_name,
                     "data": base64.b64encode(part.get_payload(decode=True)).decode("utf-8", errors="ignore"),
+                    "size": make_size_human_readable(len(part.get_payload(decode=True))),
                     "type": content_type
                 })
             elif content_type == "text/html" or (content_type == "text/plain" and not body):

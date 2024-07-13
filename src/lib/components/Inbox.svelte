@@ -1,27 +1,24 @@
 <script lang="ts">
     import InboxItem from './Inbox/InboxItem.svelte';
+    import { emails, currentFolder, totalEmailCount } from '$lib/stores';
 
-    export let inbox_data: any;
-    let inboxName = inbox_data.folder.slice(0, 1).toUpperCase() + inbox_data.folder.slice(1);
-    let totalEmailCount: number = inbox_data.total;
-    let offsetEnd: number = 10;
-    let emails = inbox_data.emails;
+    let offsetEnd = 10;
 </script>
 
 <section class = "card">
     <div class="inbox-header">
-        <h2>{inboxName}</h2>
+        <h3>{$currentFolder}</h3>
         <hr>
         <div class="inbox-pagination">
             <button>Previous</button>
-            <small>{offsetEnd - 10} - {offsetEnd} of {totalEmailCount}</small>
+            <small>{offsetEnd - 9} - {offsetEnd} of {$totalEmailCount}</small>
             <button>Next</button>
         </div>
         <hr>
     </div>
     <div class="inbox-content">
-        {#each emails as email}
-            <InboxItem email={email} folder={inboxName}/>
+        {#each $emails as email}
+            <InboxItem email={email}/>
         {/each}
     </div>
 </section>
@@ -34,9 +31,6 @@
     }
 
     .inbox-content{
-        max-height: 82vh;
-        overflow-y: auto;
-        
         & h3{
             margin: 0;
         }
