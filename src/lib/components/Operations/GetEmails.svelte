@@ -1,10 +1,11 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { invoke } from "@tauri-apps/api/core";
-    import { emails, currentFolder, totalEmailCount } from '$lib/stores';
+    import { emails, currentFolder, totalEmailCount, folders } from '$lib/stores';
     import type { Email, OpenMailData, OpenMailDataString } from '$lib/types';
     import { get } from 'svelte/store';
 
+    let folderSelectOptions: NodeListOf<HTMLFormElement>;
     let searchMenu: HTMLElement;
     let getEmailForm: HTMLFormElement;
     let getEmailButton: HTMLButtonElement;
@@ -12,6 +13,20 @@
         searchMenu = document.querySelector('.search-menu')!;
         getEmailForm = document.getElementById('get-emails-form') as HTMLFormElement;
         getEmailButton = getEmailForm.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+        folderSelectOptions = document.querySelectorAll('#get-emails-form select[name*="folder"]');
+        folders.subscribe(value => {
+            if(value.length > 0){
+                folderSelectOptions.forEach(select => {
+                    value.forEach(folder => {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        option.innerText = folder;
+                        select.appendChild(option);
+                    });
+                });
+            }
+        });
     });
 
     function showSearchMenu(){

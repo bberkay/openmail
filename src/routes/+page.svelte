@@ -7,28 +7,8 @@
 	import { emails, totalEmailCount, currentFolder, folders } from "$lib/stores";
 	import { invoke } from "@tauri-apps/api/core";
     import type { OpenMailData, OpenMailDataString } from "$lib/types";
-	import { onMount } from "svelte";
 
 	let is_logged_in: boolean = false;
-    let folderSelectOptions: NodeListOf<HTMLFormElement>;
-    onMount(() => {
-        folderSelectOptions = document.querySelectorAll('select[name*="folder"]');
-		if(!is_logged_in)
-			return;
-
-        folders.subscribe(value => {
-            if(value.length > 0){
-                folderSelectOptions.forEach(select => {
-                    value.forEach(folder => {
-                        const option = document.createElement('option');
-                        option.value = folder;
-                        option.innerText = folder;
-                        select.appendChild(option);
-                    });
-                });
-            }
-        })
-    });
 
 	async function handleLoginDispatch(event: CustomEvent){
 		is_logged_in = event.detail.success;

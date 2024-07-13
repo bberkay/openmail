@@ -4,7 +4,7 @@
 
     let folderSelectOptions: NodeListOf<HTMLFormElement>;
     onMount(() => {
-        folderSelectOptions = document.querySelectorAll('select[name*="folder"]');
+        folderSelectOptions = document.querySelectorAll('.folder-management-form select[name*="folder"]');
         folders.subscribe(value => {
             if(value.length > 0){
                 folderSelectOptions.forEach(select => {

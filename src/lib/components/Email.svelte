@@ -1,8 +1,9 @@
 <script lang="ts">
     import type { Email } from "$lib/types";
     import { onMount } from "svelte";
-    import { currentEmail } from "$lib/stores";
+    import { currentEmail, folders } from "$lib/stores";
     
+    let folderSelectOptions: NodeListOf<HTMLFormElement>;
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
     let flags: HTMLElement;
@@ -18,6 +19,20 @@
             if(value && Object.keys(value).length > 0)
                 getEmailContent(value);
         });
+
+        folderSelectOptions = document.querySelectorAll('.flag-operations select[name*="folder"]');
+        folders.subscribe(value => {
+            if(value.length > 0){
+                folderSelectOptions.forEach(select => {
+                    value.forEach(folder => {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        option.innerText = folder;
+                        select.appendChild(option);
+                    });
+                });
+            }
+        })
     });
 
     async function getEmailContent(email: Email){
