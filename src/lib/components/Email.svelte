@@ -2,6 +2,7 @@
     import type { Email } from "$lib/types";
     import { onMount } from "svelte";
     import { currentEmail } from "$lib/stores";
+    import { get } from "svelte/store";
 
     let contentBody: HTMLElement;
     let attachments: HTMLElement;

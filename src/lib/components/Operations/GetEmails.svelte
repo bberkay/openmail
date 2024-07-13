@@ -3,16 +3,23 @@
     import { invoke } from "@tauri-apps/api/core";
     import { emails, currentFolder, totalEmailCount } from '$lib/stores';
     import type { Email, OpenMailData, OpenMailDataString } from '$lib/types';
+    import { get } from 'svelte/store';
 
     let searchMenu: HTMLElement;
+    let getEmailForm: HTMLFormElement;
     let getEmailButton: HTMLButtonElement;
     onMount(() => {
         searchMenu = document.querySelector('.search-menu')!;
-        getEmailButton = document.querySelector('button[type="submit"]')!;
+        getEmailForm = document.getElementById('get-emails-form') as HTMLFormElement;
+        getEmailButton = getEmailForm.querySelector('button[type="submit"]') as HTMLButtonElement;
     });
 
     function showSearchMenu(){
         searchMenu.classList.toggle('show');
+    }
+
+    function getFormKeyValues(){
+        return Object.fromEntries(new FormData(getEmailForm).entries());
     }
 
     async function handleGetEmails(event: Event){ 
@@ -23,7 +30,8 @@
 
         getEmailButton.disabled = true;
         getEmailButton.textContent = 'Loading...';
-        let response: OpenMailDataString = await invoke('get_emails', { email: form.email_address.value });
+        console.log(getFormKeyValues());
+        /*let response: OpenMailDataString = await invoke('get_emails', getFormKeyValues());
         try{
             let parseResponse = JSON.parse(response) as OpenMailData;
             if(parseResponse.success){
@@ -33,7 +41,7 @@
             }
         }catch{
             console.error(response);
-        }
+        }*/
     }
 </script>
 
@@ -131,7 +139,6 @@
                     </div>
                 </div>
             </div>
-            <input type="hidden" name="operation" value="get-emails">
             <button type="submit">Get Emails</button>
         </form>
     </div>

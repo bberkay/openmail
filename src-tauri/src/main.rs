@@ -34,8 +34,8 @@ async fn login(email: &str, password: &str) -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn get_emails(offset: &str) -> Result<String, String> {
-    run_python_script("get_emails", vec![offset])
+async fn get_emails(folder: &str, search: &str, offset: &str) -> Result<String, String> {
+    run_python_script("get_emails", vec![folder, search, offset])
 }
 
 #[tauri::command]
@@ -43,10 +43,15 @@ async fn get_email_content(id: &str) -> Result<String, String> {
     run_python_script("get_email_content", vec![id])
 }
 
+#[tauri::command]
+async fn get_folders() -> Result<String, String> {
+    run_python_script("get_folders", vec![])
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![login, get_emails, get_email_content])
+        .invoke_handler(tauri::generate_handler![login, get_emails, get_email_content, get_folders])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

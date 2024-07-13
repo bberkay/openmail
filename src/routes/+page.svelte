@@ -4,16 +4,54 @@
 	import Inbox from "$lib/components/Inbox.svelte";
 	import Email from "$lib/components/Email.svelte";
 	import Login from "$lib/components/Login.svelte";
-	import { emails, totalEmailCount, currentFolder } from "$lib/stores";
+	import { emails, totalEmailCount, currentFolder, folders } from "$lib/stores";
+	import { invoke } from "@tauri-apps/api/core";
+    import type { OpenMailData, OpenMailDataString } from "$lib/types";
+	import { onMount } from "svelte";
 
 	let is_logged_in: boolean = false;
+    let folderSelectOptions: NodeListOf<HTMLFormElement>;
+    onMount(() => {
+        folderSelectOptions = document.querySelectorAll('select[name*="folder"]');
+		if(!is_logged_in)
+			return;
+
+        folders.subscribe(value => {
+            if(value.length > 0){
+                folderSelectOptions.forEach(select => {
+                    value.forEach(folder => {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        option.innerText = folder;
+                        select.appendChild(option);
+                    });
+                });
+            }
+        })
+    });
+
 	async function handleLoginDispatch(event: CustomEvent){
 		is_logged_in = event.detail.success;
 		if(is_logged_in){
+			getEmails(event);
+			getFolders();
+		}
+	}
+
+	async function getEmails(event: CustomEvent){
+		// TODO: Implement this
+		if(event.detail.success){
 			emails.set(event.detail.data["emails"]);
 			totalEmailCount.set(event.detail.data["total"]);
 			currentFolder.set(event.detail.data["folder"]);
 		}
+	}
+
+	async function getFolders(){
+		let response: OpenMailDataString = await invoke('get_folders', {});
+		let parsedResponse: OpenMailData = JSON.parse(response);
+		if(parsedResponse.success)
+			folders.set(parsedResponse.data);
 	}
 </script>
 

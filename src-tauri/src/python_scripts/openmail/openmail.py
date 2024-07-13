@@ -189,7 +189,7 @@ class OpenMail:
             search = json.loads(search)
             search_criteria = self.__build_search_criteria(search)
 
-        uids = self.__search_with_criteria(search_criteria or search)
+        uids = self.__search_with_criteria(search_criteria or search or "ALL")
         if len(uids) == 0:
             return True, "No emails found", []
 

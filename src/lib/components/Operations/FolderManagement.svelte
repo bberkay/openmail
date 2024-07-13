@@ -1,4 +1,24 @@
 <script lang="ts">
+    import { folders } from '$lib/stores';
+    import { onMount } from 'svelte';
+
+    let folderSelectOptions: NodeListOf<HTMLFormElement>;
+    onMount(() => {
+        folderSelectOptions = document.querySelectorAll('select[name*="folder"]');
+        folders.subscribe(value => {
+            if(value.length > 0){
+                folderSelectOptions.forEach(select => {
+                    value.forEach(folder => {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        option.innerText = folder;
+                        select.appendChild(option);
+                    });
+                });
+            }
+        })
+    });
+
     function showFolderManagementForm(event: Event): void {
         const formId = (event.target as HTMLButtonElement).dataset.formTargetId;
         document.querySelector('.folder-management-form.active')!.classList.remove('active');
