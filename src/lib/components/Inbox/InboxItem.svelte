@@ -5,6 +5,13 @@
 
     export let email: Email;
 
+    currentEmail.subscribe(value => {
+        if(value.id === email.id){
+            email.flags = value.flags;
+            document.querySelector(`[data-email-id*="${email.id}"]`)?.setAttribute('data-email-flags', email.flags.join(','));
+        }
+    });
+
     async function handleEmailClick(){
         const response: OpenMailDataString = await invoke('get_email_content', { id: email.id });
         const parsedResponse = JSON.parse(response) as OpenMailData;
@@ -17,7 +24,7 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="inbox-item" data-email-flags = {email.flags} on:click={handleEmailClick}>
+<div class="inbox-item" data-email-id={email.id} data-email-flags={email.flags} on:click={handleEmailClick}>
     <h3>{email.from}</h3>
     <small>
         <span>{email.date}</span> &lt;<span>{email.to}</span>&gt;

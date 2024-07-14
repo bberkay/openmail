@@ -1,17 +1,27 @@
 <script lang="ts">
-    import type { Email } from "$lib/types";
+    import type { Email, OpenMailData, OpenMailDataString } from "$lib/types";
     import { onMount } from "svelte";
-    import { currentEmail, folders } from "$lib/stores";
+    import { currentEmail, currentFolder, folders } from "$lib/stores";
     import { get } from "svelte/store";
+    import { invoke } from "@tauri-apps/api/core";
+
+    const markStatus: {[key: string]: string} = {
+        flagged: "Star",
+        seen: "Read",
+        unflagged: "Remove Star",
+        unseen: "Mark as Unread"
+    };
     
     let moveToFolderSelectOption: HTMLFormElement;
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
     let flags: HTMLElement;
+    let markButtons: NodeListOf<HTMLButtonElement>;
     onMount(() => {
         contentBody = document.getElementById('body')!;
         attachments = document.getElementById('attachments')!;
         flags = document.querySelector('.email-content .tags')!;
+        markButtons = document.querySelectorAll('.flag-operations [data-mark-as]');
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
         flags.innerHTML = "";
@@ -25,10 +35,15 @@
     async function getEmailContent(email: Email){
         (document.querySelector(".email-operations") as HTMLElement).style.display = "flex";
         (document.querySelector(".email-content") as HTMLElement).style.display = "block";
+        (document.querySelectorAll('[data-default-mark]') as NodeListOf<HTMLButtonElement>).forEach(button => {
+            const mark = button.getAttribute('data-default-mark')!;
+            button.innerText = markStatus[mark];
+            button.setAttribute('data-mark-as', mark);
+        });
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
         flags.innerHTML = "";
-    
+        
         // Folders
         moveToFolderSelectOption = document.querySelector('.flag-operations select[name="move_to_folder"]')!;
         get(folders).forEach(folder => {
@@ -64,9 +79,16 @@
                 flagElement.classList.add('flag');
                 flagElement.innerText = flag;
                 flags.appendChild(flagElement)
+                flag = flag.toLowerCase();
+                if(Object.hasOwn(markStatus, flag)){
+                    const markButton = document.querySelector('[data-default-mark="' + flag + '"]') as HTMLButtonElement;
+                    flag = "un" + flag;
+                    markButton.innerText = markStatus[flag];
+                    markButton.setAttribute('data-mark-as', flag);
+                }
             });
         }
-
+        
         // Attachment
         if(Object.hasOwn(email, "attachments")){
             email["attachments"]!.forEach(attachment => {
@@ -81,6 +103,27 @@
             });
         }
     }
+
+    async function markEmail(event: Event){
+        const mark = (event.target as HTMLButtonElement).getAttribute('data-mark-as')!;
+        let response: OpenMailDataString = await invoke('mark_email', { id: get(currentEmail).id, mark: mark, folder: get(currentFolder) });    
+        let parsedResponse: OpenMailData = JSON.parse(response);
+        if(parsedResponse.success){
+            currentEmail.update(value => {
+                if(value && Object.keys(value).length > 0){
+                    console.log("Current Flags", value.flags);
+                    console.log("Marking Email", mark);
+                    if(mark.startsWith("un"))
+                        value.flags = value.flags.filter(flag => flag.toLowerCase() != mark.slice(2));
+                    else
+                        value.flags.push(mark.slice(0, 1).toUpperCase() + mark.slice(1).toLowerCase());
+                    console.log("New Flags", value.flags);
+                    return value;
+                }
+                return value;
+            })
+        }
+    }
 </script>
 
 <section class="card">
@@ -89,8 +132,8 @@
         <hr>
         <div class="email-operations">
             <div class="flag-operations">
-                <button>Read</button>
-                <button>Star</button>
+                <button data-mark-as = "seen" data-default-mark="seen" on:click={markEmail}>Read</button>
+                <button data-mark-as = "flagged" data-default-mark="flagged" on:click={markEmail}>Star</button>
                 <select name="move_to_folder">
                     <option value="">Move To Folder</option>
                 </select>

@@ -48,10 +48,15 @@ async fn get_folders() -> Result<String, String> {
     run_python_script("get_folders", vec![])
 }
 
+#[tauri::command]
+async fn mark_email(id: &str, mark: &str, folder: &str) -> Result<String, String> {
+    run_python_script("mark_email", vec![id, mark, folder])
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![login, get_emails, get_email_content, get_folders])
+        .invoke_handler(tauri::generate_handler![login, get_emails, get_email_content, get_folders, mark_email])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
