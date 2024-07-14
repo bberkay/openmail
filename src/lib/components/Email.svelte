@@ -27,7 +27,9 @@
         flags.innerHTML = "";
 
         currentEmail.subscribe(value => {
-            if(Object.keys(value).length == 0){
+            if(value && Object.keys(value).length > 0){
+                getEmailContent(value);
+            }else{
                 (document.querySelector(".email-operations") as HTMLElement).style.display = "none";
                 (document.querySelector(".email-content") as HTMLElement).style.display = "none";
                 (document.querySelectorAll('[data-default-mark]') as NodeListOf<HTMLButtonElement>).forEach(button => {
@@ -41,14 +43,13 @@
                 attachments.innerHTML = "";
                 flags.innerHTML = "";
             }
-
-            if(value && Object.keys(value).length > 0){
-                getEmailContent(value);
-            }
         });
     });
 
     async function getEmailContent(email: Email): Promise<void>{
+        (document.querySelector(".email-operations") as HTMLElement).style.display = "flex";
+        (document.querySelector(".email-content") as HTMLElement).style.display = "block";
+
         // Folders
         moveToFolderSelectOption = document.querySelector('.flag-operations select[name="move_to_folder"]')!;
         get(folders).forEach(folder => {

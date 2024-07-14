@@ -11,8 +11,32 @@
     onMount(() => {
         prevButton = document.getElementById('prev-button') as HTMLButtonElement;
         nextButton = document.getElementById('next-button') as HTMLButtonElement;
-    });
 
+        currentOffset.subscribe(async (value) => {
+            prevButton.disabled = value - 10 <= 0;
+            nextButton.disabled = value + 10 >= get(totalEmailCount);
+            
+            if(value == 0)
+                return;
+
+            /**
+             * If user move email to another folder, the offset will not be a multiple of 10.
+             * In this case, we need to fetch the emails from the previous page to complete the page.
+             * For example, if the offset is 13, we need to fetch the emails from 10 to 20. 
+             * This is not a good solution but it is enough for now.
+             */
+            const complete_to_ten = $currentOffset - $currentOffset % 10;
+            if(complete_to_ten != $currentOffset){
+                let response: OpenMailDataString = await invoke('get_emails', { folder: get(currentFolder), search: '', offset: complete_to_ten.toString() });
+                let parsedResponse: OpenMailData = JSON.parse(response);
+                if(parsedResponse.success){
+                    emails.set(parsedResponse.data["emails"]);
+                    currentOffset.update(value => 10 + complete_to_ten);
+                }
+            }
+        });
+    });
+    
     async function getPreviousEmails(e: Event){
         if(get(currentOffset) < 10)
             return;
@@ -48,7 +72,7 @@
         <hr>
         <div class="inbox-pagination">
             <button id="prev-button" on:click={getPreviousEmails}>Previous</button>
-            <small>{Math.max(0, $currentOffset - 9)} - {$currentOffset} of {get(totalEmailCount)}</small>
+            <small>{Math.max(1, $currentOffset - 9)} - {$currentOffset} of {get(totalEmailCount)}</small>
             <button id="next-button" on:click={getNextEmails}>Next</button>
         </div>
         <hr>
