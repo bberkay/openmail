@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Email, OpenMailData, OpenMailDataString } from "$lib/types";
     import { onMount } from "svelte";
-    import { currentEmail, currentFolder, folders } from "$lib/stores";
+    import { currentEmail, currentFolder, emails, folders } from "$lib/stores";
     import { get } from "svelte/store";
     import { invoke } from "@tauri-apps/api/core";
 
@@ -27,23 +27,27 @@
         flags.innerHTML = "";
 
         currentEmail.subscribe(value => {
-            if(value && Object.keys(value).length > 0)
+            if(value && Object.keys(value).length > 0){
                 getEmailContent(value);
+            }
+            else{
+                (document.querySelector(".email-operations") as HTMLElement).style.display = "none";
+                (document.querySelector(".email-content") as HTMLElement).style.display = "none";
+                (document.querySelectorAll('[data-default-mark]') as NodeListOf<HTMLButtonElement>).forEach(button => {
+                    const mark = button.getAttribute('data-default-mark')!;
+                    button.innerText = markStatus[mark];
+                    button.setAttribute('data-mark-as', mark);
+                });
+                (document.querySelector('select[name="move_to_folder"]') as HTMLSelectElement).selectedIndex = 0;
+                contentBody.innerHTML = "";
+                contentBody.querySelector("iframe")?.remove();
+                attachments.innerHTML = "";
+                flags.innerHTML = "";
+            }
         });
     });
 
-    async function getEmailContent(email: Email){
-        (document.querySelector(".email-operations") as HTMLElement).style.display = "flex";
-        (document.querySelector(".email-content") as HTMLElement).style.display = "block";
-        (document.querySelectorAll('[data-default-mark]') as NodeListOf<HTMLButtonElement>).forEach(button => {
-            const mark = button.getAttribute('data-default-mark')!;
-            button.innerText = markStatus[mark];
-            button.setAttribute('data-mark-as', mark);
-        });
-        contentBody.innerHTML = "";
-        attachments.innerHTML = "";
-        flags.innerHTML = "";
-        
+    async function getEmailContent(email: Email): Promise<void>{
         // Folders
         moveToFolderSelectOption = document.querySelector('.flag-operations select[name="move_to_folder"]')!;
         get(folders).forEach(folder => {
@@ -104,24 +108,32 @@
         }
     }
 
-    async function markEmail(event: Event){
+    async function markEmail(event: Event): Promise<void>{
         const mark = (event.target as HTMLButtonElement).getAttribute('data-mark-as')!;
         let response: OpenMailDataString = await invoke('mark_email', { id: get(currentEmail).id, mark: mark, folder: get(currentFolder) });    
         let parsedResponse: OpenMailData = JSON.parse(response);
         if(parsedResponse.success){
             currentEmail.update(value => {
                 if(value && Object.keys(value).length > 0){
-                    console.log("Current Flags", value.flags);
-                    console.log("Marking Email", mark);
                     if(mark.startsWith("un"))
                         value.flags = value.flags.filter(flag => flag.toLowerCase() != mark.slice(2));
                     else
                         value.flags.push(mark.slice(0, 1).toUpperCase() + mark.slice(1).toLowerCase());
-                    console.log("New Flags", value.flags);
+
                     return value;
                 }
                 return value;
             })
+        }
+    }
+
+    async function moveEmail(event: Event): Promise<void>{
+        const folder = (event.target as HTMLSelectElement).value;
+        let response: OpenMailDataString = await invoke('move_email', { id: get(currentEmail).id, source: get(currentFolder), destination: folder });
+        let parsedResponse: OpenMailData = JSON.parse(response);
+        if(parsedResponse.success){
+            emails.update(value => value.filter(email => email.id != get(currentEmail).id));
+            currentEmail.set({} as Email);
         }
     }
 </script>
@@ -132,9 +144,9 @@
         <hr>
         <div class="email-operations">
             <div class="flag-operations">
-                <button data-mark-as = "seen" data-default-mark="seen" on:click={markEmail}>Read</button>
-                <button data-mark-as = "flagged" data-default-mark="flagged" on:click={markEmail}>Star</button>
-                <select name="move_to_folder">
+                <button data-mark-as="seen" data-default-mark="seen" on:click={markEmail}>Read</button>
+                <button data-mark-as="flagged" data-default-mark="flagged" on:click={markEmail}>Star</button>
+                <select name="move_to_folder" on:change={moveEmail}>
                     <option value="">Move To Folder</option>
                 </select>
                 <button>Delete</button>

@@ -7,3 +7,4 @@ export const emails: Writable<Email[]> = writable([]);
 export const currentFolder: Writable<string> = writable('Inbox');
 export const folders: Writable<string[]> = writable([]);
 export const totalEmailCount: Writable<number> = writable(0);
+export const currentOffset: Writable<number> = writable(0);

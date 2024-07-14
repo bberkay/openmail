@@ -326,8 +326,8 @@ class OpenMail:
         return True, "Email marked successfully"
     
     @__handle_imap_conn
-    def move_email(self, uid: str, folder: str, destination_folder: str) -> tuple[bool, str]:
-        self.__imap.select(self.__encode_folder_name(folder))
+    def move_email(self, uid: str, source_folder: str, destination_folder: str) -> tuple[bool, str]:
+        self.__imap.select(self.__encode_folder_name(source_folder))
         self.__imap.uid('COPY', uid, self.__encode_folder_name(destination_folder))
         self.__imap.uid('STORE', uid , '+FLAGS', '(\Deleted)')
         self.__imap.expunge()

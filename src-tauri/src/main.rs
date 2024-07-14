@@ -53,10 +53,28 @@ async fn mark_email(id: &str, mark: &str, folder: &str) -> Result<String, String
     run_python_script("mark_email", vec![id, mark, folder])
 }
 
+#[tauri::command]
+async fn delete_email(id: &str, folder: &str) -> Result<String, String> {
+    run_python_script("delete_email", vec![id, folder])
+}
+
+#[tauri::command]
+async fn move_email(id: &str, source: &str, destination: &str) -> Result<String, String> {
+    run_python_script("move_email", vec![id, source, destination])
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![login, get_emails, get_email_content, get_folders, mark_email])
+        .invoke_handler(tauri::generate_handler![
+            login, 
+            get_emails, 
+            get_email_content, 
+            get_folders, 
+            mark_email, 
+            delete_email,
+            move_email
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
