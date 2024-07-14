@@ -19,7 +19,7 @@
 	}
 
 	async function getEmails(event: CustomEvent){
-		// TODO: Implement this
+		// TODO: Implement this after the login is done.
 		if(event.detail.success){
 			emails.set(event.detail.data["emails"]);
 			totalEmailCount.set(event.detail.data["total"]);

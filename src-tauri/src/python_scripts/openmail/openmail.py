@@ -191,7 +191,7 @@ class OpenMail:
 
         uids = self.__search_with_criteria(search_criteria or search or "ALL")
         if len(uids) == 0:
-            return True, "No emails found", []
+            return True, "No emails found", {"folder": folder, "emails": [], "total": 0}
 
         """
             Attachments and include/exclude search criteria are handled here
@@ -210,7 +210,7 @@ class OpenMail:
                 uids = list(set(uids).intersection(self.__search_with_literal(search["exclude"])))
 
             if len(uids) == 0:
-                return True, "No emails found", []
+                return True, "No emails found", {"folder": folder, "emails": [], "total": 0}
 
         emails = []
         for uid in uids[offset: offset + 10]:

@@ -72,7 +72,7 @@
         <hr>
         <div class="inbox-pagination">
             <button id="prev-button" on:click={getPreviousEmails}>Previous</button>
-            <small>{Math.max(1, $currentOffset - 9)} - {$currentOffset} of {get(totalEmailCount)}</small>
+            <small>{Math.max(1, $currentOffset - 9)} - {$currentOffset} of {$totalEmailCount}</small>
             <button id="next-button" on:click={getNextEmails}>Next</button>
         </div>
         <hr>

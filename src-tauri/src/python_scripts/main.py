@@ -27,6 +27,8 @@ if __name__ == "__main__":
         success, message = OpenMail(email_address, password).delete_email(sys.argv[2], sys.argv[3])
     elif operation == "move_email":
         success, message = OpenMail(email_address, password).move_email(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif operation == "send_email":
+        success, message = OpenMail(email_address, password).send_email(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     elif operation == "get_email_content":
         success, message, data = OpenMail(email_address, password).get_email_content(sys.argv[2])
     

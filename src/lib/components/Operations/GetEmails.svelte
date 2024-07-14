@@ -3,14 +3,14 @@
     import { invoke } from "@tauri-apps/api/core";
     import { emails, currentFolder, totalEmailCount, folders } from '$lib/stores';
     import type { Email, OpenMailData, OpenMailDataString } from '$lib/types';
-    import { get } from 'svelte/store';
+    import SearchMenu from './SearchMenu.svelte';
 
+    let getSearchMenuDict: () => { offset: string; folder: string; search: string };
     let folderSelectOptions: NodeListOf<HTMLFormElement>;
-    let searchMenu: HTMLElement;
+    let isSearchMenuOpen = false;
     let getEmailForm: HTMLFormElement;
     let getEmailButton: HTMLButtonElement;
     onMount(() => {
-        searchMenu = document.querySelector('.search-menu')!;
         getEmailForm = document.getElementById('get-emails-form') as HTMLFormElement;
         getEmailButton = getEmailForm.querySelector('button[type="submit"]') as HTMLButtonElement;
 
@@ -29,12 +29,23 @@
         });
     });
 
-    function showSearchMenu(){
-        searchMenu.classList.toggle('show');
+    function toggleSearchMenu(e: Event){
+        isSearchMenuOpen = !isSearchMenuOpen;
+        (e.target as HTMLButtonElement).textContent = isSearchMenuOpen ? 'X' : '∨';
     }
 
     function getFormKeyValues(){
-        return Object.fromEntries(new FormData(getEmailForm).entries());
+        if(isSearchMenuOpen){
+            // TODO: Implement the advanced search menu
+            return getSearchMenuDict();
+        }else{
+            const search = (document.getElementById('search') as HTMLInputElement).value;
+            return {
+                "offset": "0",
+                "folder": (document.getElementById('folder_name') as HTMLSelectElement).value,
+                "search": `FROM "${search}" OR TO "${search}" OR SUBJECT "${search}"` // TODO: This may change after the advanced search menu is implemented
+            }
+        }
     }
 
     async function handleGetEmails(event: Event){ 
@@ -45,8 +56,7 @@
 
         getEmailButton.disabled = true;
         getEmailButton.textContent = 'Loading...';
-        console.log(getFormKeyValues());
-        /*let response: OpenMailDataString = await invoke('get_emails', getFormKeyValues());
+        let response: OpenMailDataString = await invoke('get_emails', getFormKeyValues());
         try{
             let parseResponse = JSON.parse(response) as OpenMailData;
             if(parseResponse.success){
@@ -54,9 +64,11 @@
                 currentFolder.set(parseResponse.data["folder"]);
                 totalEmailCount.set(parseResponse.data["total"]);
             }
+            getEmailButton.disabled = false;
+            getEmailButton.textContent = isSearchMenuOpen ? "Search Emails" : "Get Emails";
         }catch{
             console.error(response);
-        }*/
+        }
     }
 </script>
 
@@ -74,129 +86,15 @@
             <div class="form-group">
                 <label for="search">Search</label>
                 <div class="input-group">
-                    <input type="text" name="search" id="search">
-                    <button type="button" on:click={showSearchMenu}>⇅</button>
+                    <input type="text" name="search" id="search" placeholder="Subject or Person">
+                    <button type="button" on:click={toggleSearchMenu}>∨</button>
                 </div>
-                <div class="search-menu">
-                    <div class="row">
-                        <div class="form-group">
-                            <label for="from">From</label>
-                            <input type="text" name="from" id="from">
-                            <div class="tags">
-                                <!-- Emails -->
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="to">To</label>
-                            <input type="text" name="to" id="to">
-                            <div class="tags">
-                                <!-- Emails -->
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="subject">Subject</label>
-                        <input type="text" name="subject" id="subject">
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label for="start_date">Start Date</label>
-                            <input type="date" name="start_date" id="start_date">
-                        </div>
-                        <div class="form-group">
-                            <label for="end_date">End Date</label>
-                            <input type="date" name="end_date" id="end_date">
-                        </div>
-                    </div>
-                    <div class="column">
-                        <div class="form-group">
-                            <label for="flags">Include Flag</label>
-                            <div class="input-group">
-                                <select name="flags" id="flags">
-                                    <optgroup>
-                                        <option value="Seen">Seen</option>
-                                        <option value="Answered">Answered</option>
-                                        <option value="Flagged">Flagged</option>
-                                        <option value="Draft">Draft</option>
-                                    </optgroup>
-                                    <optgroup>
-                                        <option value="Unseen">Unseen</option>
-                                        <option value="Unanswered">Unanswered</option>
-                                        <option value="Unflagged">Unflagged</option>
-                                        <option value="Undraft">Undraft</option>
-                                    </optgroup>
-                                </select>
-                                <button>+</button>
-                            </div>
-                        </div>
-                        <div class="tags">
-                            <!-- Flags -->
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="in_folder">In Folder</label>
-                        <select name="in_folder" id="in_folder"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="include_words">Include Words</label>
-                        <input type="text" name="include_words" id="include_words">
-                    </div>
-                    <div class="form-group">
-                        <label for="exclude_words">Exclude Words</label>
-                        <input type="text" name="exclude_words" id="exclude_words">
-                    </div>
-                    <div class="form-group">
-                        <label for="has_attachments">Has Attachment(s)</label>
-                        <div class="input-group">
-                            <input type="checkbox" name="has_attachments" id="has_attachments">
-                            <label for="has_attachments">Yes</label>
-                        </div>
-                    </div>
-                </div>
+                {#if isSearchMenuOpen}
+                    <SearchMenu bind:getSearchMenuDict={getSearchMenuDict} />
+                {/if}
             </div>
-            <button type="submit">Get Emails</button>
+            <button type="submit">{isSearchMenuOpen ? "Search Emails" : "Get Emails"}</button>
         </form>
     </div>
 </section>
 
-<style>
-    .search-menu{
-        background-color: #444;
-        border: 1px solid #5a5a5a;
-        padding: 10px;
-        margin-top: 5px;
-        display: none;
-        justify-content: space-between;
-        flex-direction: column;
-        box-shadow: 0 0 10px #202020;
-        border-radius: 5px;
-
-        &.show{
-            display: flex;
-        }
-
-        & input:not(& input[type="checkbox"]), & select{
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 3px;
-            background-color: #747474;
-            border: 1px solid #a7a7a7;
-            color: #ffffff;
-
-            &:focus:not(& input[type="checkbox"]){
-                background-color: #868686;
-            }
-        }
-
-        & .input-group{
-            & select{
-                width: 100%;
-            }
-            
-            & select + button{
-                border: 1px solid #a7a7a7;
-                padding: 6px;
-            }
-        }
-    }
-</style>

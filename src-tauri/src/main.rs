@@ -63,6 +63,11 @@ async fn move_email(id: &str, source: &str, destination: &str) -> Result<String,
     run_python_script("move_email", vec![id, source, destination])
 }
 
+#[tauri::command]
+async fn send_email(receivers: &str, subject: &str, body: &str, attachments: &str) -> Result<String, String> {
+    run_python_script("send_email", vec![receivers, subject, body, attachments])
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -73,7 +78,8 @@ fn main() {
             get_folders, 
             mark_email, 
             delete_email,
-            move_email
+            move_email,
+            send_email
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

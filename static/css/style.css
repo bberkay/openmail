@@ -136,7 +136,7 @@ select{
 .tags{
     display: none;
     flex-wrap: wrap;
-    margin-bottom: 15px;
+    margin-top: 5px;
 
     & span{
         padding: 5px;
