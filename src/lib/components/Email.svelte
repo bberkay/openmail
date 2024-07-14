@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Email, OpenMailData, OpenMailDataString } from "$lib/types";
     import { onMount } from "svelte";
-    import { currentEmail, currentFolder, emails, folders } from "$lib/stores";
+    import { currentEmail, currentFolder, currentOffset, emails, folders } from "$lib/stores";
     import { get } from "svelte/store";
     import { invoke } from "@tauri-apps/api/core";
 
@@ -27,10 +27,7 @@
         flags.innerHTML = "";
 
         currentEmail.subscribe(value => {
-            if(value && Object.keys(value).length > 0){
-                getEmailContent(value);
-            }
-            else{
+            if(Object.keys(value).length == 0){
                 (document.querySelector(".email-operations") as HTMLElement).style.display = "none";
                 (document.querySelector(".email-content") as HTMLElement).style.display = "none";
                 (document.querySelectorAll('[data-default-mark]') as NodeListOf<HTMLButtonElement>).forEach(button => {
@@ -43,6 +40,10 @@
                 contentBody.querySelector("iframe")?.remove();
                 attachments.innerHTML = "";
                 flags.innerHTML = "";
+            }
+
+            if(value && Object.keys(value).length > 0){
+                getEmailContent(value);
             }
         });
     });
@@ -134,6 +135,7 @@
         if(parsedResponse.success){
             emails.update(value => value.filter(email => email.id != get(currentEmail).id));
             currentEmail.set({} as Email);
+            currentOffset.update(value => value - 1);
         }
     }
 </script>

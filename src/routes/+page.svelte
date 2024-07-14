@@ -4,7 +4,7 @@
 	import Inbox from "$lib/components/Inbox.svelte";
 	import Email from "$lib/components/Email.svelte";
 	import Login from "$lib/components/Login.svelte";
-	import { emails, totalEmailCount, currentFolder, folders } from "$lib/stores";
+	import { emails, totalEmailCount, currentFolder, folders, currentOffset } from "$lib/stores";
 	import { invoke } from "@tauri-apps/api/core";
     import type { OpenMailData, OpenMailDataString } from "$lib/types";
 
@@ -24,6 +24,7 @@
 			emails.set(event.detail.data["emails"]);
 			totalEmailCount.set(event.detail.data["total"]);
 			currentFolder.set(event.detail.data["folder"]);
+			currentOffset.set(event.detail.data["emails"].length);
 		}
 	}
 

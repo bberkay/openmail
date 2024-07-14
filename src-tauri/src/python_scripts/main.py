@@ -15,8 +15,10 @@ if __name__ == "__main__":
     password = accounts[0]["password"]
 
     success, message, data = False, "", None
-    if operation in ["login", "get_emails"]:
-        success, message, data = OpenMail(email_address, password).get_emails(offset=(int(sys.argv[2]) if operation == "get_emails" else 0))
+    if operation == "login":
+        success, message, data = OpenMail(email_address, password).get_emails()
+    elif operation == "get_emails":
+        success, message, data = OpenMail(email_address, password).get_emails(sys.argv[2], sys.argv[3], int(sys.argv[4]))
     elif operation == "get_folders":
         success, message, data = OpenMail(email_address, password).get_folders()
     elif operation == "mark_email":
