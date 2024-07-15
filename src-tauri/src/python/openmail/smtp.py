@@ -6,6 +6,7 @@ class SMTP(smtplib.SMTP):
         self.__email_address = email_address
         self.__password = password
         self.try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up    
+        self.__is_logged_in = False
         super().__init__(
             self.__find_smtp_server(email_address), 
             port or 587, 
@@ -24,7 +25,11 @@ class SMTP(smtplib.SMTP):
             raise Exception("Unsupported email domain")
 
     def is_logged_in(self) -> bool:
-        return self.noop()[0] == 250
+        """
+        I couldn't find a way to check if the user is logged in like in the IMAP class.
+        If you have better ideas, let me know please.
+        """
+        return self.__is_logged_in
     
     def login(self) -> None:
         try_count = self.try_limit
@@ -35,12 +40,14 @@ class SMTP(smtplib.SMTP):
                     self.starttls()
                     self.ehlo()
                     super().login(self.__email_address, self.__password)
+                    self.__is_logged_in = True
                 break
             except Exception as e:
+                self.__is_logged_in = False
                 try_count -= 1
                 if try_count == 0:
                     raise Exception("Could not connect to the target smtp server: {}".format(str(e)))
-                
+
     def quit(self) -> None:
         try:
             if self.is_logged_in():

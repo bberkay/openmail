@@ -3,9 +3,10 @@
     import { invoke } from "@tauri-apps/api/core";
     import type { OpenMailData, OpenMailDataString } from '$lib/types';
 
+    // @ts-ignore
+    let body: WYSIWYGEditor;
     let receivers: HTMLElement;
     let sendEmailButton: HTMLButtonElement;
-    let body: WYSIWYGEditor;
     onMount(() => {
         // @ts-ignore
         body = new WYSIWYGEditor('body');
@@ -33,20 +34,47 @@
         }
     }
 
-    function getFormKeyValues(){
+    function getFormKeyValues() {
         return {
-            "receivers": Array.from(document.getElementById('receiver_emails')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent),
+            "receivers": Array.from(document.getElementById('receiver_emails')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent).join(","),
             "subject": (document.getElementById('subject') as HTMLInputElement).value,
             "body": body.getHTMLContent(),
-            "attachments": (document.getElementById('attachments') as HTMLInputElement).files,
+            //"attachments": Array.from((document.getElementById('attachments') as HTMLInputElement).files || []),
         }
     }
 
-    async function handleSendEmail(){
+    function fileToBase64(file: File): Promise<{ filename: string, size: number, data: string }> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve({ filename: file.name, size: file.size, data: reader.result as string });
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    async function handleSendEmail(e: Event){
         sendEmailButton.disabled = true;
         sendEmailButton.textContent = 'Sending...';
-        let response: OpenMailDataString = await invoke('send_email', getFormKeyValues());
-        try{
+        const formData = getFormKeyValues();
+        /*if(formData.attachments.length > 0){
+            formData.attachments = await Promise.all(formData.attachments.map(fileToBase64));
+            formData.attachments = JSON.stringify(formData.attachments);
+        }*/
+        
+        /*const testFormData = new FormData(e.target as HTMLFormElement);
+        testFormData.delete('attachments');
+        testFormData.delete('receiver_emails');
+        testFormData.append('to', formData.receivers);
+        testFormData.append('body', formData.body);
+        let response = await fetch('http://127.0.0.1:8000/send-email', {
+            method: 'POST',
+            body: testFormData
+        });
+        response = await response.json();*/
+
+        let response: OpenMailDataString = await invoke('send_email', formData);
+        console.log("Response: ", response);
+        /*try{
             let parseResponse = JSON.parse(response) as OpenMailData;
             if(parseResponse.success){
                 // Show alert
@@ -55,7 +83,7 @@
             sendEmailButton.textContent = "Send";
         }catch{
             console.error(response);
-        }
+        }*/
     }
 </script>
 
@@ -81,7 +109,6 @@
                 <label for="attachments">Attachment(s)</label>
                 <input type="file" name="attachments" id="attachments" multiple>
             </div>
-            <input type="number" name="message_id" tabindex="-1" hidden>
             <button type="submit">Send</button>
         </form>
     </div>

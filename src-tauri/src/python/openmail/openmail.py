@@ -3,6 +3,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from typing import List, TypedDict
 
+import smtplib
 import email
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
