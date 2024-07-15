@@ -1,8 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import type { OpenMailDataString } from "$lib/types";
+    import type { OpenMailData } from "$lib/types";
     import { createEventDispatcher } from "svelte";
-	import { invoke } from "@tauri-apps/api/core";
 
     const dispatch = createEventDispatcher();
     let loginButton: HTMLButtonElement;
@@ -18,8 +17,12 @@
 
         loginButton.disabled = true;
         loginButton.textContent = 'Logging in...';
-        const response: OpenMailDataString = await invoke('login', { email: form.email_address.value, password: form.password.value });
-        dispatch('login', JSON.parse(response));
+        // TODO: Change this after the login system is done.
+        const response: OpenMailData = await fetch('http://127.0.0.1:8000/login', {
+            method: 'POST',
+            body: new FormData(form)
+        }).then(res => res.json());
+        dispatch('login', response);
     }
 </script>
 
@@ -27,25 +30,20 @@
     <div class="card">
         <form on:submit={handleLoginOnSubmit}>
             <div class="form-group">
-                <label for="email_address">Email Address</label>
+                <label for="email">Email Address</label>
                 <!-- svelte-ignore a11y-autofocus -->
-                <input type="email" name="email_address" id="email_address" autocomplete="off" value="testforprojects42webio@gmail.com" autofocus required>
+                <input type="email" name="email" id="email" autocomplete="off" value="testforprojects42webio@gmail.com" autofocus required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" name="password" id="password" autocomplete="off" required>
             </div>
-            <input type="hidden" name="operation" value="add-account">
             <button type="submit" id="login-button">Login to your Email</button>
         </form>
     </div>
 </section>
 
 <style>
-    input:-webkit-autofill {
-        -webkit-box-shadow: 0 0 0 1000px white inset;
-    }
-
     .add-email{
         width: 100%;
         height: 100vh;

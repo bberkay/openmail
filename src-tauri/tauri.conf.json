@@ -1,6 +1,6 @@
 {
   "productName": "open-mail",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "identifier": "com.tauri.dev",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -12,8 +12,8 @@
     "windows": [
       {
         "title": "open-mail",
-        "width": 800,
-        "height": 600
+        "width": 1200,
+        "height": 700
       }
     ],
     "security": {

@@ -13,11 +13,11 @@
         nextButton = document.getElementById('next-button') as HTMLButtonElement;
 
         currentOffset.subscribe(async (value) => {
-            prevButton.disabled = value - 10 <= 0;
+            /*prevButton.disabled = value - 10 <= 0;
             nextButton.disabled = value + 10 >= get(totalEmailCount);
             
             if(value == 0)
-                return;
+                return;*/
 
             /**
              * If user move email to another folder, the offset will not be a multiple of 10.
@@ -25,7 +25,7 @@
              * For example, if the offset is 13, we need to fetch the emails from 10 to 20. 
              * This is not a good solution but it is enough for now.
              */
-            const complete_to_ten = $currentOffset - $currentOffset % 10;
+            /*const complete_to_ten = $currentOffset - $currentOffset % 10;
             if(complete_to_ten != $currentOffset){
                 let response: OpenMailDataString = await invoke('get_emails', { folder: get(currentFolder), search: '', offset: complete_to_ten.toString() });
                 let parsedResponse: OpenMailData = JSON.parse(response);
@@ -33,11 +33,19 @@
                     emails.set(parsedResponse.data["emails"]);
                     currentOffset.update(value => 10 + complete_to_ten);
                 }
-            }
+            }*/
         });
     });
     
-    async function getPreviousEmails(e: Event){
+    function getPreviousEmails(){
+
+    }
+
+    function getNextEmails(){
+
+    }
+    
+    /*async function getPreviousEmails(e: Event){
         if(get(currentOffset) < 10)
             return;
 
@@ -63,7 +71,7 @@
             emails.set(parsedResponse.data["emails"]);
         }
         nextButton.disabled = false;
-    }
+    }*/
 </script>
 
 <section class = "card">

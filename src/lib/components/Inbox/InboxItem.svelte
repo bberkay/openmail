@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { invoke } from "@tauri-apps/api/core";
-    import { currentEmail } from "$lib/stores";
-    import type { OpenMailDataString, OpenMailData, Email } from "$lib/types";
+    import { currentEmail, currentFolder } from "$lib/stores";
+    import type { OpenMailData, Email } from "$lib/types";
+    import { get } from "svelte/store";
 
     export let email: Email;
 
@@ -13,12 +13,11 @@
     });
 
     async function handleEmailClick(){
-        const response: OpenMailDataString = await invoke('get_email_content', { id: email.id });
-        const parsedResponse = JSON.parse(response) as OpenMailData;
-        if (parsedResponse.success)
-            currentEmail.set(parsedResponse.data as Email);
+        const response: OpenMailData = await fetch(`http://127.0.0.1:8000/get-email-content/${get(currentFolder)}/${email.id}`).then(res => res.json());
+        if (response.success)
+            currentEmail.set(response.data as Email);
         else
-            console.error(parsedResponse);
+            console.error(response);
     }
 </script>
 

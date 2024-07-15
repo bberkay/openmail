@@ -1,8 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { invoke } from "@tauri-apps/api/core";
     import { emails, currentFolder, totalEmailCount, folders } from '$lib/stores';
-    import type { Email, OpenMailData, OpenMailDataString } from '$lib/types';
+    import type { Email, OpenMailData } from '$lib/types';
     import SearchMenu from './SearchMenu.svelte';
 
     let getSearchMenuDict: () => { offset: string; folder: string; search: string };
@@ -56,13 +55,13 @@
 
         getEmailButton.disabled = true;
         getEmailButton.textContent = 'Loading...';
-        let response: OpenMailDataString = await invoke('get_emails', getFormKeyValues());
+        // TODO: Add the search functionality
+        const response: OpenMailData = await fetch('http://127.0.0.1:8000/get-emails').then(res => res.json());
         try{
-            let parseResponse = JSON.parse(response) as OpenMailData;
-            if(parseResponse.success){
-                emails.set(parseResponse.data["emails"] as Email[]);
-                currentFolder.set(parseResponse.data["folder"]);
-                totalEmailCount.set(parseResponse.data["total"]);
+            if(response.success){
+                emails.set(response.data["emails"] as Email[]);
+                currentFolder.set(response.data["folder"]);
+                totalEmailCount.set(response.data["total"]);
             }
             getEmailButton.disabled = false;
             getEmailButton.textContent = isSearchMenuOpen ? "Search Emails" : "Get Emails";

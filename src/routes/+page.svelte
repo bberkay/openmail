@@ -5,8 +5,7 @@
 	import Email from "$lib/components/Email.svelte";
 	import Login from "$lib/components/Login.svelte";
 	import { emails, totalEmailCount, currentFolder, folders, currentOffset } from "$lib/stores";
-	import { invoke } from "@tauri-apps/api/core";
-    import type { OpenMailData, OpenMailDataString } from "$lib/types";
+    import type { OpenMailData } from "$lib/types";
 
 	let is_logged_in: boolean = false;
 
@@ -29,10 +28,9 @@
 	}
 
 	async function getFolders(){
-		let response: OpenMailDataString = await invoke('get_folders', {});
-		let parsedResponse: OpenMailData = JSON.parse(response);
-		if(parsedResponse.success)
-			folders.set(parsedResponse.data);
+		const response: OpenMailData = await fetch('http://127.0.0.1:8000/get-folders').then(res => res.json());
+		console.log(response);
+		folders.set(response.data);
 	}
 </script>
 

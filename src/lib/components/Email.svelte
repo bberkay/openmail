@@ -1,9 +1,8 @@
 <script lang="ts">
-    import type { Email, OpenMailData, OpenMailDataString } from "$lib/types";
+    import type { Email, OpenMailData } from "$lib/types";
     import { onMount } from "svelte";
     import { currentEmail, currentFolder, currentOffset, emails, folders } from "$lib/stores";
     import { get } from "svelte/store";
-    import { invoke } from "@tauri-apps/api/core";
 
     const markStatus: {[key: string]: string} = {
         flagged: "Star",
@@ -112,9 +111,14 @@
 
     async function markEmail(event: Event): Promise<void>{
         const mark = (event.target as HTMLButtonElement).getAttribute('data-mark-as')!;
-        let response: OpenMailDataString = await invoke('mark_email', { id: get(currentEmail).id, mark: mark, folder: get(currentFolder) });    
-        let parsedResponse: OpenMailData = JSON.parse(response);
-        if(parsedResponse.success){
+        const response: OpenMailData = await fetch('http://127.0.0.1:8000/mark-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ uid: get(currentEmail).id, mark: mark, folder: get(currentFolder) })
+        }).then(res => res.json());
+        if(response.success){
             currentEmail.update(value => {
                 if(value && Object.keys(value).length > 0){
                     if(mark.startsWith("un"))
@@ -131,9 +135,14 @@
 
     async function moveEmail(event: Event): Promise<void>{
         const folder = (event.target as HTMLSelectElement).value;
-        let response: OpenMailDataString = await invoke('move_email', { id: get(currentEmail).id, source: get(currentFolder), destination: folder });
-        let parsedResponse: OpenMailData = JSON.parse(response);
-        if(parsedResponse.success){
+        const response: OpenMailData = await fetch('http://127.0.0.1:8000/move-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ uid: get(currentEmail).id, source: get(currentFolder), destination: folder })
+        }).then(res => res.json());
+        if(response.success){
             emails.update(value => value.filter(email => email.id != get(currentEmail).id));
             currentEmail.set({} as Email);
             currentOffset.update(value => value - 1);

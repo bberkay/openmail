@@ -10,6 +10,6 @@ src-tauri/target
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-src-tauri/src/python/accounts.json
+src-tauri/src/server/accounts.json
 **/__pycache__/
 /notes.txt
