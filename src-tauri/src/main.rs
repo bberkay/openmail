@@ -61,10 +61,9 @@ fn main() {
             }
             RunEvent::ExitRequested { api, .. } => {
                 api.prevent_exit();
-                println!("Python server stopping...");
                 if let Some(mut child) = child_process.lock().unwrap().take() {
                     println!("Python server stopping...");
-                    let _ = child.terminate(); // Terminate the child process
+                    let _ = child.kill();
                 }
                 std::process::exit(0);
             }
