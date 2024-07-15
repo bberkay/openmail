@@ -1,23 +1,24 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::process::{Command, Stdio};
+use std::process::{Command, Child, Stdio};
 use std::thread;
+use tauri::RunEvent;
 use std::io::{BufRead, BufReader};
+use std::sync::{Arc, Mutex};
 
 const PYTHON_SERVER_DIR: &str = "src/server";
 const PYTHON_SERVER_MODULE: &str = "main:app";
 
-fn start_python_server() -> Result<String, String> {
+fn start_python_server() -> Result<Child, String> {
     println!("Python server starting...");
     let mut child = Command::new("uvicorn")
         .current_dir(PYTHON_SERVER_DIR)
         .arg(PYTHON_SERVER_MODULE)
-        .arg("--reload")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| e.to_string())?;
+        .map_err(|err| format!("Failed to start Python server: {}", err))?;
 
     let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
@@ -44,26 +45,29 @@ fn start_python_server() -> Result<String, String> {
         }
     });
 
-    Ok("Python server started".to_string())
-}
-
-#[tauri::command]
-fn hello() -> String {
-    "Hello from Rust!".to_string()
+    Ok(child)
 }
 
 fn main() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![
-            hello
-        ])
-        .setup(|_app| {
-            // Start the python server
-            start_python_server().expect("Failed to start python server");
-            Ok(())
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
+    let child_process = Arc::new(Mutex::new(None));
 
+    tauri::Builder::default()
+        .build(tauri::generate_context!())
+        .expect("Error building app")
+        .run(move |app_handle, event| match event {
+            RunEvent::Ready => {
+                let child = start_python_server().expect("Failed to start Python server");
+                *child_process.lock().unwrap() = Some(child);
+            }
+            RunEvent::ExitRequested { api, .. } => {
+                api.prevent_exit();
+                println!("Python server stopping...");
+                if let Some(mut child) = child_process.lock().unwrap().take() {
+                    println!("Python server stopping...");
+                    let _ = child.terminate(); // Terminate the child process
+                }
+                std::process::exit(0);
+            }
+            _ => {}
+        });
+}
