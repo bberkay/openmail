@@ -1,10 +1,9 @@
 <script lang="ts">
     import InboxItem from './Inbox/InboxItem.svelte';
     import { emails, currentFolder, totalEmailCount, currentOffset } from '$lib/stores';
-    import { invoke } from '@tauri-apps/api/core';
     import { get } from 'svelte/store';
     import { onMount } from 'svelte';
-    import type { OpenMailDataString, OpenMailData } from '$lib/types';
+    import type { OpenMailData } from '$lib/types';
 
     let prevButton: HTMLButtonElement;
     let nextButton: HTMLButtonElement;
@@ -13,48 +12,50 @@
         nextButton = document.getElementById('next-button') as HTMLButtonElement;
 
         currentOffset.subscribe(async (value) => {
-            /*prevButton.disabled = value - 10 <= 0;
+            prevButton.disabled = value - 10 <= 0;
             nextButton.disabled = value + 10 >= get(totalEmailCount);
             
             if(value == 0)
-                return;*/
+                return;
 
             /**
-             * If user move email to another folder, the offset will not be a multiple of 10.
+             * If user moves email to another folder, the offset will not be a multiple of 10.
              * In this case, we need to fetch the emails from the previous page to complete the page.
              * For example, if the offset is 13, we need to fetch the emails from 10 to 20. 
              * This is not a good solution but it is enough for now.
              */
-            /*const complete_to_ten = $currentOffset - $currentOffset % 10;
+            const complete_to_ten = $currentOffset - $currentOffset % 10;
             if(complete_to_ten != $currentOffset){
-                let response: OpenMailDataString = await invoke('get_emails', { folder: get(currentFolder), search: '', offset: complete_to_ten.toString() });
-                let parsedResponse: OpenMailData = JSON.parse(response);
-                if(parsedResponse.success){
-                    emails.set(parsedResponse.data["emails"]);
+                let response: OpenMailData = await fetch(
+                    `http://127.0.0.1:8000/get-emails?${getDictAsString({
+                        "folder": get(currentFolder),
+                        "offset": complete_to_ten.toString(),
+                        "search": ''
+                    })}`
+                ).then(response => response.json());
+                if(response.success){
+                    emails.set(response.data["emails"]);
                     currentOffset.update(value => 10 + complete_to_ten);
                 }
-            }*/
+            }
         });
     });
-    
-    function getPreviousEmails(){
 
+    function getDictAsString(dict: {[key: string]: string}){
+        return Object.keys(dict).map(key => `${key}=${dict[key]}`).join('&');
     }
 
-    function getNextEmails(){
-
-    }
-    
-    /*async function getPreviousEmails(e: Event){
+    async function getPreviousEmails(e: Event){
         if(get(currentOffset) < 10)
             return;
 
         prevButton.disabled = true;
-        let response: OpenMailDataString = await invoke('get_emails', { folder: get(currentFolder), search: '', offset: (get(currentOffset) - 20).toString() });
-        let parsedResponse: OpenMailData = JSON.parse(response);
-        if(parsedResponse.success){
+        let response: OpenMailData = await fetch(
+            `http://127.0.0.1:8000/get-emails/${get(currentFolder)}/${(get(currentOffset) - 20)}/`
+        ).then(response => response.json());
+        if(response.success){
             currentOffset.update(value => value - 10);
-            emails.set(parsedResponse.data["emails"]);
+            emails.set(response.data["emails"]);
         }
         prevButton.disabled = false;
     }
@@ -64,14 +65,15 @@
             return;
 
         nextButton.disabled = true;
-        let response: OpenMailDataString = await invoke('get_emails', { folder: get(currentFolder), search: '', offset: get(currentOffset).toString() });
-        let parsedResponse: OpenMailData = JSON.parse(response);
-        if(parsedResponse.success){
+        let response: OpenMailData = await fetch(
+            `http://127.0.0.1:8000/get-emails/${get(currentFolder)}/${get(currentOffset)}/`
+        ).then(response => response.json());
+        if(response.success){
             currentOffset.update(value => value + 10);
-            emails.set(parsedResponse.data["emails"]);
+            emails.set(response.data["emails"]);
         }
         nextButton.disabled = false;
-    }*/
+    }
 </script>
 
 <section class = "card">

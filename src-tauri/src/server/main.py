@@ -15,6 +15,11 @@ class LoginRequest(BaseModel):
     email: str = Form(...)
     password: str = Form(...)
 
+class GetEmailsRequest(BaseModel):
+    offset: Optional[int] = 0
+    folder: Optional[str] = 'INBOX'
+    search: Optional[str] = ''
+
 class SendEmailRequest(BaseModel):
     to: str = Form(...)
     subject: str = Form(...)
@@ -50,9 +55,9 @@ def login(email = Form(...), password = Form(...)) -> Response:
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails()
     return {"success": success, "message": message, "data": data}
 
-@app.get("/get-emails")
-def get_emails() -> Response: # TODO: Add search query
-    success, message, data = OpenMail(EMAIL, PASSWORD).get_emails()
+@app.get("/get-emails/{folder}/{offset}")
+def get_emails(folder: str, offset: str) -> Response: # TODO: Add search query
+    success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(folder, '', int(offset))
     return {"success": success, "message": message, "data": data}
 
 @app.get("/get-email-content/{folder}/{uid}")

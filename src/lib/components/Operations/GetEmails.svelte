@@ -47,6 +47,11 @@
         }
     }
 
+    function getFormKeyValuesAsString(){
+        const keyValues: {[key: string]: string} = getFormKeyValues();
+        return Object.keys(keyValues).map(key => `${key}=${keyValues[key]}`).join('&');
+    }
+
     async function handleGetEmails(event: Event){ 
         event.preventDefault();
         const form = event.target;
@@ -56,7 +61,9 @@
         getEmailButton.disabled = true;
         getEmailButton.textContent = 'Loading...';
         // TODO: Add the search functionality
-        const response: OpenMailData = await fetch('http://127.0.0.1:8000/get-emails').then(res => res.json());
+        const response: OpenMailData = await fetch(
+            `http://127.0.0.1:8000/get-emails?${getFormKeyValuesAsString()}`
+        ).then(res => res.json());
         try{
             if(response.success){
                 emails.set(response.data["emails"] as Email[]);
