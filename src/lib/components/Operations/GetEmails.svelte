@@ -4,7 +4,7 @@
     import type { Email, OpenMailData } from '$lib/types';
     import SearchMenu from './SearchMenu.svelte';
 
-    let getSearchMenuDict: () => { offset: string; folder: string; search: string };
+    let getSearchMenuValues: () => string;
     let folderSelectOptions: NodeListOf<HTMLFormElement>;
     let isSearchMenuOpen = false;
     let getEmailForm: HTMLFormElement;
@@ -33,23 +33,15 @@
         (e.target as HTMLButtonElement).textContent = isSearchMenuOpen ? 'X' : '∨';
     }
 
-    function getFormKeyValues(){
+    function getFormKeyValuesAsString(){
         if(isSearchMenuOpen){
             // TODO: Implement the advanced search menu
-            return getSearchMenuDict();
+            return getSearchMenuValues();
         }else{
+             // TODO: This may change after the advanced search menu is implemented
             const search = (document.getElementById('search') as HTMLInputElement).value;
-            return {
-                "offset": "0",
-                "folder": (document.getElementById('folder_name') as HTMLSelectElement).value,
-                "search": `FROM "${search}" OR TO "${search}" OR SUBJECT "${search}"` // TODO: This may change after the advanced search menu is implemented
-            }
+            return `${(document.getElementById('folder_name') as HTMLSelectElement).value}/0/'FROM "${search}" OR TO "${search}" OR SUBJECT "${search}"'`;
         }
-    }
-
-    function getFormKeyValuesAsString(){
-        const keyValues: {[key: string]: string} = getFormKeyValues();
-        return Object.keys(keyValues).map(key => `${key}=${keyValues[key]}`).join('&');
     }
 
     async function handleGetEmails(event: Event){ 
@@ -62,7 +54,7 @@
         getEmailButton.textContent = 'Loading...';
         // TODO: Add the search functionality
         const response: OpenMailData = await fetch(
-            `http://127.0.0.1:8000/get-emails?${getFormKeyValuesAsString()}`
+            `http://127.0.0.1:8000/get-emails/${getFormKeyValuesAsString()}`
         ).then(res => res.json());
         try{
             if(response.success){
@@ -96,7 +88,7 @@
                     <button type="button" on:click={toggleSearchMenu}>∨</button>
                 </div>
                 {#if isSearchMenuOpen}
-                    <SearchMenu bind:getSearchMenuDict={getSearchMenuDict} />
+                    <SearchMenu bind:getSearchMenuValues={getSearchMenuValues} />
                 {/if}
             </div>
             <button type="submit">{isSearchMenuOpen ? "Search Emails" : "Get Emails"}</button>

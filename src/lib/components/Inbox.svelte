@@ -27,11 +27,7 @@
             const complete_to_ten = $currentOffset - $currentOffset % 10;
             if(complete_to_ten != $currentOffset){
                 let response: OpenMailData = await fetch(
-                    `http://127.0.0.1:8000/get-emails?${getDictAsString({
-                        "folder": get(currentFolder),
-                        "offset": complete_to_ten.toString(),
-                        "search": ''
-                    })}`
+                    `http://127.0.0.1:8000/get-emails/${get(currentFolder)}/${complete_to_ten.toString()}/`
                 ).then(response => response.json());
                 if(response.success){
                     emails.set(response.data["emails"]);
@@ -40,10 +36,6 @@
             }
         });
     });
-
-    function getDictAsString(dict: {[key: string]: string}){
-        return Object.keys(dict).map(key => `${key}=${dict[key]}`).join('&');
-    }
 
     async function getPreviousEmails(e: Event){
         if(get(currentOffset) < 10)

@@ -17,12 +17,8 @@
         })
     });
 
-    export const getSearchMenuDict = () => {
-        return {
-            "offset": "0",
-            "folder": (document.getElementById('in_folder') as HTMLSelectElement).value,
-            "search": "Advanced search"
-        }
+    export const getSearchMenuValues = () => {
+        return ""
     }
 </script>
 
