@@ -8,6 +8,7 @@ body{
 *{
     scrollbar-width: thin;
     scrollbar-color: #888 transparent;
+    user-select: none;
 }
 
 /* General elements */

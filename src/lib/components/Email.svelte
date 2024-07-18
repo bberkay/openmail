@@ -69,9 +69,9 @@
         // Flags
         if(Object.hasOwn(email, "flags") && email["flags"].length > 0){
             email["flags"].forEach(flag => {
+                flag = flag.toLowerCase();
                 if(Object.hasOwn(markStatus, flag)){
                     const markButton = document.querySelector('[data-default-mark="' + flag + '"]') as HTMLButtonElement;
-                    console.log(markButton, markStatus["un" + flag]);
                     flag = "un" + flag;
                     markButton.innerText = markStatus[flag];
                     markButton.setAttribute('data-mark-as', flag);
