@@ -11,20 +11,15 @@
         unseen: "Mark as Unread"
     };
     
-    let moveToFolderSelectOption: HTMLFormElement;
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
-    let flags: HTMLElement;
     let markButtons: NodeListOf<HTMLButtonElement>;
+    let defaultMarkButtons: NodeListOf<HTMLButtonElement>;    
     onMount(() => {
         contentBody = document.getElementById('body')!;
         attachments = document.getElementById('attachments')!;
-        flags = document.querySelector('.email-content .tags')!;
         markButtons = document.querySelectorAll('.flag-operations [data-mark-as]');
-        contentBody.querySelector("iframe")?.remove();
-        contentBody.innerHTML = "";
-        attachments.innerHTML = "";
-        flags.innerHTML = "";
+        defaultMarkButtons = document.querySelectorAll('.flag-operations [data-default-mark]');
 
         currentEmail.subscribe(value => {
             if(value && Object.keys(value).length > 0)
@@ -37,7 +32,7 @@
     function clearEmailContent(){
         (document.querySelector(".email-operations") as HTMLElement).style.display = "none";
         (document.querySelector(".email-content") as HTMLElement).style.display = "none";
-        (document.querySelectorAll('[data-default-mark]') as NodeListOf<HTMLButtonElement>).forEach(button => {
+        defaultMarkButtons.forEach(button => {
             const mark = button.getAttribute('data-default-mark')!;
             button.innerText = markStatus[mark];
             button.setAttribute('data-mark-as', mark);
@@ -46,22 +41,12 @@
         contentBody.querySelector("iframe")?.remove();
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
-        flags.innerHTML = "";
     }
 
     async function getEmailContent(email: Email): Promise<void>{
         clearEmailContent();
         (document.querySelector(".email-operations") as HTMLElement).style.display = "flex";
         (document.querySelector(".email-content") as HTMLElement).style.display = "block";
-
-        // Folders
-        moveToFolderSelectOption = document.querySelector('.flag-operations select[name="move_to_folder"]')!;
-        get(folders).forEach(folder => {
-            const option = document.createElement('option');
-            option.value = folder;
-            option.innerText = folder;
-            moveToFolderSelectOption.appendChild(option);
-        });
 
         // Body
         if(!email.body)
@@ -82,22 +67,17 @@
         }
 
         // Flags
-        /*if(Object.hasOwn(email, "flags") && email["flags"].length > 0){
-            flags.style.display = "flex";
+        if(Object.hasOwn(email, "flags") && email["flags"].length > 0){
             email["flags"].forEach(flag => {
-                const flagElement = document.createElement('span');
-                flagElement.classList.add('flag');
-                flagElement.innerText = flag;
-                flags.appendChild(flagElement)
-                flag = flag.toLowerCase();
                 if(Object.hasOwn(markStatus, flag)){
                     const markButton = document.querySelector('[data-default-mark="' + flag + '"]') as HTMLButtonElement;
+                    console.log(markButton, markStatus["un" + flag]);
                     flag = "un" + flag;
                     markButton.innerText = markStatus[flag];
                     markButton.setAttribute('data-mark-as', flag);
                 }
             });
-        }*/
+        }
         
         // Attachment
         if(Object.hasOwn(email, "attachments")){
@@ -165,6 +145,11 @@
                 <button data-mark-as="flagged" data-default-mark="flagged" on:click={markEmail}>Star</button>
                 <select name="move_to_folder" on:change={moveEmail}>
                     <option value="">Move To Folder</option>
+                    {#if get(folders) && get(folders).length > 0}
+                        {#each get(folders) as folder}
+                            <option value={folder}>{folder}</option>
+                        {/each}
+                    {/if}
                 </select>
                 <button>Delete</button>
             </div>
@@ -176,9 +161,12 @@
     </div>
     <div class="email-content">
         <div class="tags">
-           {#each $currentEmail.flags as flag}
-                <span class="flag">{flag}</span>
-           {/each}
+            <span>{$currentEmail.flags}</span>
+            <!--{#if $currentEmail.flags && $currentEmail.flags.length > 0}
+                {#each get(currentEmail).flags as flag}
+                    <span class="flag">{flag}</span>
+                {/each}
+            {/if}-->
         </div>
         <div id="subject">
             <h3>{$currentEmail.subject || ""}</h3>
@@ -218,6 +206,7 @@
         }
 
         & .tags {
+            display: flex;
             margin-top:10px;
 
             & button{
