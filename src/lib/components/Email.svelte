@@ -21,31 +21,36 @@
         attachments = document.getElementById('attachments')!;
         flags = document.querySelector('.email-content .tags')!;
         markButtons = document.querySelectorAll('.flag-operations [data-mark-as]');
+        contentBody.querySelector("iframe")?.remove();
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
         flags.innerHTML = "";
 
         currentEmail.subscribe(value => {
-            if(value && Object.keys(value).length > 0){
+            if(value && Object.keys(value).length > 0)
                 getEmailContent(value);
-            }else{
-                (document.querySelector(".email-operations") as HTMLElement).style.display = "none";
-                (document.querySelector(".email-content") as HTMLElement).style.display = "none";
-                (document.querySelectorAll('[data-default-mark]') as NodeListOf<HTMLButtonElement>).forEach(button => {
-                    const mark = button.getAttribute('data-default-mark')!;
-                    button.innerText = markStatus[mark];
-                    button.setAttribute('data-mark-as', mark);
-                });
-                (document.querySelector('select[name="move_to_folder"]') as HTMLSelectElement).selectedIndex = 0;
-                contentBody.innerHTML = "";
-                contentBody.querySelector("iframe")?.remove();
-                attachments.innerHTML = "";
-                flags.innerHTML = "";
-            }
+            else
+                clearEmailContent();
         });
     });
 
+    function clearEmailContent(){
+        (document.querySelector(".email-operations") as HTMLElement).style.display = "none";
+        (document.querySelector(".email-content") as HTMLElement).style.display = "none";
+        (document.querySelectorAll('[data-default-mark]') as NodeListOf<HTMLButtonElement>).forEach(button => {
+            const mark = button.getAttribute('data-default-mark')!;
+            button.innerText = markStatus[mark];
+            button.setAttribute('data-mark-as', mark);
+        });
+        (document.querySelector('select[name="move_to_folder"]') as HTMLSelectElement).selectedIndex = 0;
+        contentBody.querySelector("iframe")?.remove();
+        contentBody.innerHTML = "";
+        attachments.innerHTML = "";
+        flags.innerHTML = "";
+    }
+
     async function getEmailContent(email: Email): Promise<void>{
+        clearEmailContent();
         (document.querySelector(".email-operations") as HTMLElement).style.display = "flex";
         (document.querySelector(".email-content") as HTMLElement).style.display = "block";
 
@@ -77,7 +82,7 @@
         }
 
         // Flags
-        if(Object.hasOwn(email, "flags") && email["flags"].length > 0){
+        /*if(Object.hasOwn(email, "flags") && email["flags"].length > 0){
             flags.style.display = "flex";
             email["flags"].forEach(flag => {
                 const flagElement = document.createElement('span');
@@ -92,7 +97,7 @@
                     markButton.setAttribute('data-mark-as', flag);
                 }
             });
-        }
+        }*/
         
         // Attachment
         if(Object.hasOwn(email, "attachments")){
@@ -171,7 +176,9 @@
     </div>
     <div class="email-content">
         <div class="tags">
-            <!-- Flags -->
+           {#each $currentEmail.flags as flag}
+                <span class="flag">{flag}</span>
+           {/each}
         </div>
         <div id="subject">
             <h3>{$currentEmail.subject || ""}</h3>

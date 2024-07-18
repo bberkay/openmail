@@ -13,3 +13,4 @@ vite.config.ts.timestamp-*
 src-tauri/src/server/accounts.json
 **/__pycache__/
 /notes.txt
+**/.venv/

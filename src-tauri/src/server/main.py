@@ -45,7 +45,8 @@ EMAIL = accounts[0]["email"]
 PASSWORD = accounts[0]["password"]
 
 @app.post("/login") # TODO: This is temporary until the login system is implemented
-def login(login_request: LoginRequest) -> Response:
+def login(email = Form(...), password = Form(...)) -> Response:
+    print(email, password)
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails()
     return {"success": success, "message": message, "data": data}
 
