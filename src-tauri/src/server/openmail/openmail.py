@@ -19,10 +19,10 @@ class SearchCriteria(TypedDict):
     subject: str
     since: str
     before: str
-    has_attachments: bool
     flags: List[str]
     include: str
     exclude: str
+    has_attachments: bool
     
 class OpenMail:
     def __init__(self, email_address: str, password: str, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):

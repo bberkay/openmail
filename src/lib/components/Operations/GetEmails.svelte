@@ -4,7 +4,18 @@
     import type { Email, OpenMailData } from '$lib/types';
     import SearchMenu from './SearchMenu.svelte';
 
-    let getSearchMenuValues: () => string;
+    let getSearchMenuValues: () => { 
+        "from_": string[], 
+        "to": string[], 
+        "subject": string, 
+        "since": string, 
+        "before": string, 
+        "flags": string[], 
+        "folder": string, 
+        "include": string, 
+        "exclude": string, 
+        "has_attachments": boolean 
+    };
     let folderSelectOptions: NodeListOf<HTMLFormElement>;
     let isSearchMenuOpen = false;
     let getEmailForm: HTMLFormElement;
@@ -35,8 +46,10 @@
 
     function getFormKeyValuesAsString(){
         if(isSearchMenuOpen){
+            console.log(getSearchMenuValues());
             // TODO: Implement the advanced search menu
-            return getSearchMenuValues();
+            //return getSearchMenuValues();
+            return "";
         }else{
              // TODO: This may change after the advanced search menu is implemented
             const search = (document.getElementById('search') as HTMLInputElement).value;

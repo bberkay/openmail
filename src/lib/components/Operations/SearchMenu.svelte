@@ -2,8 +2,11 @@
     import { folders } from '$lib/stores';
     import { onMount } from 'svelte';
 
+    let searchMenu: HTMLDivElement;
     let folderSelectOption: HTMLFormElement;
     onMount(() => {
+        searchMenu = document.querySelector('.search-menu')!;
+        
         folderSelectOption = document.querySelector('select[name*="in_folder"]')!;
         folders.subscribe(value => {
             if(value.length > 0){
@@ -17,8 +20,50 @@
         })
     });
 
+    function handleMultipleTextOption(e: KeyboardEvent, formId: string, regExpMatch: RegExp | null = null){
+        const receivers = document.querySelector(`#${formId}`)! as HTMLDivElement;
+        receivers.style.display = 'flex';
+        const target = e.target as HTMLInputElement;
+        if((e.key === 'Spacebar' || e.key === ' ')){
+            target.value = target.value.trim();
+            if(target.value !== '' && (!regExpMatch || target.value.match(regExpMatch))){
+                receivers.style.display = 'flex';
+                receivers.innerHTML += `<span>${target.value}<button onclick="this.parentElement.remove()"></button></span>`;
+                target.value = '';
+            }
+            else{
+                target.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                    target.style.transform = 'scale(1)';
+                }, 100);
+            }
+        }
+    }
+
+    function handleMultipleSelectOption(selectId: string, formId: string){
+        const select = document.querySelector(`#${selectId}`) as HTMLSelectElement;
+        const tags = document.querySelector(`#${formId}`) as HTMLDivElement;
+        tags.style.display = 'flex';
+        if(select.value !== ''){
+            tags.innerHTML += `<span>${select.value}<button onclick="this.parentElement.remove()"></button></span>`;
+            select.value = '';
+        }
+    }
+
     export const getSearchMenuValues = () => {
-        return ""
+        console.log("burada", searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span"));
+        return {
+            "from_": Array.from(searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
+            "to": Array.from(searchMenu.querySelector("#to-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
+            "subject": (searchMenu.querySelector("input[name*='subject']") as HTMLInputElement).value,
+            "since": (searchMenu.querySelector("input[name*='since']") as HTMLInputElement).value,
+            "before": (searchMenu.querySelector("input[name*='before']") as HTMLInputElement).value,
+            "flags": Array.from(searchMenu.querySelector("#flags")!.querySelectorAll("span")).map(span => span.textContent),
+            "folder": (searchMenu.querySelector("select[name*='in_folder']") as HTMLSelectElement).value,
+            "include": (searchMenu.querySelector("input[name*='include_words']") as HTMLInputElement).value,
+            "exclude": (searchMenu.querySelector("input[name*='exclude_words']") as HTMLInputElement).value,
+            "has_attachments": (searchMenu.querySelector("input[name*='has_attachments']") as HTMLInputElement).checked
+        }
     }
 </script>
 
@@ -26,15 +71,15 @@
     <div class="row">
         <div class="form-group">
             <label for="from">From</label>
-            <input type="text" name="from" id="from">
-            <div class="tags">
+            <input type="text" name="from" id="from" on:keyup={(e) => handleMultipleTextOption(e, 'from-email-addresses', /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/)}>
+            <div class="tags" id="from-email-addresses">
                 <!-- Emails -->
             </div>
         </div>
         <div class="form-group">
             <label for="to">To</label>
-            <input type="text" name="to" id="to">
-            <div class="tags">
+            <input type="text" name="to" id="to" on:keyup={(e) => handleMultipleTextOption(e, 'to-email-addresses', /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/)}>
+            <div class="tags" id="to-email-addresses">
                 <!-- Emails -->
             </div>
         </div>
@@ -45,19 +90,19 @@
     </div>
     <div class="row">
         <div class="form-group">
-            <label for="start_date">Start Date</label>
-            <input type="date" name="start_date" id="start_date">
+            <label for="since">Since</label>
+            <input type="date" name="since" id="since">
         </div>
         <div class="form-group">
-            <label for="end_date">End Date</label>
-            <input type="date" name="end_date" id="end_date">
+            <label for="before">Before</label>
+            <input type="date" name="before" id="before">
         </div>
     </div>
     <div class="column">
         <div class="form-group">
-            <label for="flags">Include Flag</label>
+            <label for="includes-flags">Includes Flag</label>
             <div class="input-group">
-                <select name="flags" id="flags">
+                <select name="includes-flags" id="includes-flags">
                     <optgroup>
                         <option value="Seen">Seen</option>
                         <option value="Answered">Answered</option>
@@ -71,10 +116,10 @@
                         <option value="Undraft">Undraft</option>
                     </optgroup>
                 </select>
-                <button>+</button>
+                <button type="button" on:click={() => handleMultipleSelectOption("includes-flags", "flags")}>+</button>
             </div>
         </div>
-        <div class="tags">
+        <div class="tags" id="flags">
             <!-- Flags -->
         </div>
     </div>

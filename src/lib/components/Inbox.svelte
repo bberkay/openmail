@@ -35,6 +35,7 @@
     });
 
     function getSearchMenuValue(){
+        // TODO: This is a temporary solution until the offset system is improved.
         const search = (document.getElementById('search') as HTMLInputElement).value;
         return search.trim() == "" ? "" : `OR (OR (FROM "${search}") (TO "${search}")) (SUBJECT "${search}")`;
     }
