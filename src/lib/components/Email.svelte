@@ -101,7 +101,7 @@
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ uid: get(currentEmail).id, mark: mark, folder: get(currentFolder) })
+            body: JSON.stringify({ uid: get(currentEmail).uid, mark: mark, folder: get(currentFolder) })
         }).then(res => res.json());
         if(response.success){
             currentEmail.update(value => {
@@ -125,10 +125,10 @@
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ uid: get(currentEmail).id, source: get(currentFolder), destination: folder })
+            body: JSON.stringify({ uid: get(currentEmail).uid, source: get(currentFolder), destination: folder })
         }).then(res => res.json());
         if(response.success){
-            emails.update(value => value.filter(email => email.id != get(currentEmail).id));
+            emails.update(value => value.filter(email => email.uid != get(currentEmail).uid));
             currentEmail.set({} as Email);
             currentOffset.update(value => value - 1);
         }

@@ -29,7 +29,6 @@
 
 	async function getFolders(){
 		const response: OpenMailData = await fetch('http://127.0.0.1:8000/get-folders').then(res => res.json());
-		console.log(response);
 		folders.set(response.data);
 	}
 </script>

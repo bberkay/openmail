@@ -15,7 +15,7 @@ export interface Attachment {
 }
 
 export interface Email {
-    id: string,
+    uid: string,
     from: string,
     to: string,
     subject: string,
