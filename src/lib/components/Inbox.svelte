@@ -12,9 +12,6 @@
         nextButton = document.getElementById('next-button') as HTMLButtonElement;
 
         currentOffset.subscribe(async (value) => {
-            prevButton.disabled = value - 10 <= 0;
-            nextButton.disabled = value + 10 >= get(totalEmailCount);
-
             if(value <= 0)
                 return;
 
@@ -39,11 +36,11 @@
 
     function getSearchMenuValue(){
         const search = (document.getElementById('search') as HTMLInputElement).value;
-        return `OR (OR (FROM "${search}") (TO "${search}")) (SUBJECT "${search}")`;
+        return search.trim() == "" ? "" : `OR (OR (FROM "${search}") (TO "${search}")) (SUBJECT "${search}")`;
     }
 
-    async function getPreviousEmails(e: Event){
-        if(get(currentOffset) < 10)
+    async function getPreviousEmails(){
+        if(get(currentOffset) <= 10)
             return;
 
         prevButton.disabled = true;
@@ -63,7 +60,7 @@
 
         nextButton.disabled = true;
         let response: OpenMailData = await fetch(
-            `http://127.0.0.1:8000/get-emails/?offset=${get(currentFolder)}&offset=${get(currentOffset)}&search=${getSearchMenuValue()}`
+            `http://127.0.0.1:8000/get-emails/?folder=${get(currentFolder)}&offset=${get(currentOffset)}&search=${getSearchMenuValue()}`
         ).then(response => response.json());
         if(response.success){
             currentOffset.update(value => value + 10);
@@ -78,9 +75,9 @@
         <h2>{$currentFolder == "inbox" ? "Inbox" : $currentFolder}</h2>
         <hr>
         <div class="inbox-pagination">
-            <button id="prev-button" on:click={getPreviousEmails}>Previous</button>
+            <button id="prev-button" on:click={getPreviousEmails} disabled={$currentOffset <= 10}>Previous</button>
             <small>{Math.max(1, $currentOffset - 9)} - {$currentOffset} of {$totalEmailCount}</small>
-            <button id="next-button" on:click={getNextEmails}>Next</button>
+            <button id="next-button" on:click={getNextEmails} disabled={$currentOffset >= $totalEmailCount}>Next</button>
         </div>
         <hr>
     </div>

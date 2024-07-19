@@ -10,35 +10,6 @@ class Response(BaseModel):
     success: bool
     message: Optional[str] = ''
     data: Optional[dict | list] = {}
-    
-class LoginRequest(BaseModel):
-    email: str = Form(...)
-    password: str = Form(...)
-
-class GetEmailsRequest(BaseModel):
-    offset: Optional[int] = 0
-    folder: Optional[str] = 'INBOX'
-    search: Optional[str] = 'ALL'
-
-class GetEmailContentRequest(BaseModel):
-    folder: str
-    uid: str
-
-class SendEmailRequest(BaseModel):
-    to: str = Form(...)
-    subject: str = Form(...)
-    body: str = Form(...)
-    attachments: Optional[List[str]] = []
-
-class MarkEmailRequest(BaseModel):
-    uid: str
-    mark: str
-    folder: Optional[str] = 'INBOX'
-
-class MoveEmailRequest(BaseModel):
-    uid: str
-    source: str
-    destination: str
 
 app = FastAPI()
 app.add_middleware(
@@ -60,30 +31,18 @@ def login(email = Form(...), password = Form(...)) -> Response:
     return {"success": success, "message": message, "data": data}
 
 @app.get("/get-emails")
-def get_emails(get_emails_request: GetEmailsRequest) -> Response:
-    success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(
-        get_emails_request.folder, 
-        get_emails_request.search, 
-        int(get_emails_request.offset)
-    )
+def get_emails(folder: str = 'INBOX', search: str = 'ALL', offset: str = '0') -> Response:
+    success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(folder, search, int(offset))
     return {"success": success, "message": message, "data": data}
 
 @app.get("/get-email-content/{folder}/{uid}")
-def get_email_content(get_email_content_request: GetEmailContentRequest) -> Response:
-    success, message, data = OpenMail(EMAIL, PASSWORD).get_email_content(
-        get_email_content_request.folder,
-        get_email_content_request.uid
-    )
+def get_email_content(folder: str, uid: str) -> Response:
+    success, message, data = OpenMail(EMAIL, PASSWORD).get_email_content(folder, uid)
     return {"success": success, "message": message, "data": data}
 
 @app.post("/send-email")
-def send_email(send_email_request: SendEmailRequest) -> Response:
-    success, message = OpenMail(EMAIL, PASSWORD).send_email(
-        send_email_request.to, 
-        send_email_request.subject, 
-        send_email_request.body, 
-        send_email_request.attachments
-    )
+def send_email(to: str = Form(...), subject: str = Form(...), body: str = Form(...), attachments: List[str] = []) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).send_email(to, subject, body, attachments)
     return {"success": success, "message": message}
 
 @app.get("/get-folders")
@@ -92,19 +51,11 @@ def get_folders() -> Response:
     return {"success": success, "message": message, "data": data}
 
 @app.post("/mark-email")
-async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
-    success, message = OpenMail(EMAIL, PASSWORD).mark_email(
-        mark_email_request.uid, 
-        mark_email_request.mark, 
-        mark_email_request.folder
-    )
+async def mark_email(uid: str, mark: str, folder: str = 'INBOX') -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).mark_email(uid, mark, folder)
     return {"success": success, "message": message}
 
 @app.post("/move-email")
-async def move_email(move_email_request: MoveEmailRequest) -> Response:
-    success, message = OpenMail(EMAIL, PASSWORD).move_email(
-        move_email_request.uid, 
-        move_email_request.source, 
-        move_email_request.destination
-    )
+async def move_email(uid: str, source: str, destination: str) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).move_email(uid, source, destination)
     return {"success": success, "message": message}
