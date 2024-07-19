@@ -9,18 +9,18 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
-from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_date, make_size_human_readable, convert_dict_value_to_list, check_json_value
+from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_date, make_size_human_readable, check_json_value
 from .imap import IMAP
 from .smtp import SMTP
 
 class SearchCriteria(TypedDict):
-    from_: List[str] | str
-    to: List[str] | str
+    from_: List[str]
+    to: List[str]
     subject: str
     since: str
     before: str
     has_attachments: bool
-    flags: List[str] | str
+    flags: List[str]
     include: str
     exclude: str
     
@@ -156,9 +156,6 @@ class OpenMail:
             Preparing to convert search_json to search_criteria string:
             https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
         """
-        for i in ["from_", "to", "flags"]:
-            convert_dict_value_to_list(i, search_json)
-            
         search_criteria = ""
         search_criteria += f'FROM' + ' OR '.join([f'"{i}"' for i in search_json["from_"]]) + ' ' if check_json_value(search_json, "from_") else ""
         search_criteria += f'TO' + ' OR '.join([f'"{i}"' for i in search_json["to"]]) + ' ' if check_json_value(search_json, "to") else ""
