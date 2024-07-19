@@ -43,6 +43,10 @@ def convert_to_imap_date(date: str) -> str:
     # https://datatracker.ietf.org/doc/html/rfc5322#section-3.3
     return datetime.datetime.strptime(date, '%Y-%m-%d').strftime('%d-%b-%Y')
 
+def convert_dict_value_to_list(key: str, your_json: dict) -> list:
+    if your_json[key] and not isinstance(your_json[key], list):
+        your_json[key] = [your_json[key]]
+
 def make_size_human_readable(size: int) -> str:
     if size < 1024:
         return f"{size} B"

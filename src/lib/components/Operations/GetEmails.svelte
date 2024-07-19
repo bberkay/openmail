@@ -40,7 +40,7 @@
         }else{
              // TODO: This may change after the advanced search menu is implemented
             const search = (document.getElementById('search') as HTMLInputElement).value;
-            return `${(document.getElementById('folder_name') as HTMLSelectElement).value}/0/'FROM "${search}" OR TO "${search}" OR SUBJECT "${search}"'`;
+            return `folder=${(document.getElementById('folder_name') as HTMLSelectElement).value}&offset=0&search=OR (OR (FROM "${search}") (TO "${search}")) (SUBJECT "${search}")`;
         }
     }
 
@@ -52,9 +52,8 @@
 
         getEmailButton.disabled = true;
         getEmailButton.textContent = 'Loading...';
-        // TODO: Add the search functionality
         const response: OpenMailData = await fetch(
-            `http://127.0.0.1:8000/get-emails/${getFormKeyValuesAsString()}`
+            `http://127.0.0.1:8000/get-emails/?${getFormKeyValuesAsString()}`
         ).then(res => res.json());
         try{
             if(response.success){
