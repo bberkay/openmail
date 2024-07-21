@@ -218,7 +218,6 @@ class OpenMail:
             search_criteria_query = self.__build_search_criteria_query(search)
 
         search_critera_query = search_criteria_query or 'TEXT "{}"'.format(search) if search != 'ALL' and search != '' else 'ALL'
-        print("Search Criteria Query: ", search_critera_query)
         uids = self.__search_with_criteria(search_critera_query)
 
         if len(uids) == 0:
