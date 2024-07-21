@@ -75,7 +75,7 @@
         if(response.success){
             emails.set(response.data["emails"] as Email[]);
             currentFolder.set(response.data["folder"]);
-            currentOffset.set(0);
+            currentOffset.set(response.data["total"] < 10 ? response.data["total"] : 10);
             totalEmailCount.set(response.data["total"]);
         }
         getEmailButton.disabled = false;
