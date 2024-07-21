@@ -24,7 +24,7 @@
             const complete_to_ten = $currentOffset - $currentOffset % 10;
             if(complete_to_ten != $currentOffset){
                 let response: OpenMailData = await fetch(
-                    `http://127.0.0.1:8000/get-emails/?folder=${get(currentFolder)}&offset=${complete_to_ten.toString()}&search=${getSearchMenuValue()}`
+                    `http://127.0.0.1:8000/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${complete_to_ten.toString()}&search=${getSearchMenuValue()}`
                 ).then(response => response.json());
                 if(response.success){
                     emails.set(response.data["emails"]);
@@ -37,7 +37,7 @@
     function getSearchMenuValue(){
         // TODO: This is a temporary solution until the offset system is improved.
         const search = (document.getElementById('search') as HTMLInputElement).value;
-        return search.trim() == "" ? "" : `OR (OR (FROM "${search}") (TO "${search}")) (SUBJECT "${search}")`;
+        return search.trim() == "" ? "" : `TEXT "${search}"`;
     }
 
     async function getPreviousEmails(){
@@ -46,7 +46,7 @@
 
         prevButton.disabled = true;
         let response: OpenMailData = await fetch(
-            `http://127.0.0.1:8000/get-emails/?folder=${get(currentFolder)}&offset=${(get(currentOffset) - 20)}&search=${getSearchMenuValue()}`
+            `http://127.0.0.1:8000/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${(get(currentOffset) - 20)}&search=${getSearchMenuValue()}`
         ).then(response => response.json());
         if(response.success){
             currentOffset.update(value => value - 10);
@@ -61,7 +61,7 @@
 
         nextButton.disabled = true;
         let response: OpenMailData = await fetch(
-            `http://127.0.0.1:8000/get-emails/?folder=${get(currentFolder)}&offset=${get(currentOffset)}&search=${getSearchMenuValue()}`
+            `http://127.0.0.1:8000/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${get(currentOffset)}&search=${getSearchMenuValue()}`
         ).then(response => response.json());
         if(response.success){
             currentOffset.update(value => value + 10);

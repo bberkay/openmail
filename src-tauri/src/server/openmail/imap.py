@@ -5,7 +5,7 @@ class IMAP(imaplib.IMAP4_SSL):
     def __init__(self, email_address: str, password: str, port: int = 993, try_limit: int = 3, timeout: int = 30):
         self.__email_address = email_address
         self.__password = password
-        self.try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up
+        self.__try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up
         super().__init__(
             self.__find_imap_server(email_address), 
             port or 993, 
@@ -27,7 +27,7 @@ class IMAP(imaplib.IMAP4_SSL):
         return self.state == "AUTH"
     
     def login(self) -> None:
-        try_count = self.try_limit
+        try_count = self.__try_limit
         for _ in range(try_count):
             try:
                 if not self.is_logged_in():

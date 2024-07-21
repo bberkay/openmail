@@ -1,4 +1,4 @@
-import re, base64, json
+import re, base64
 from datetime import datetime
 from bs4 import BeautifulSoup
 from typing import List, TypedDict
@@ -12,19 +12,19 @@ from email.mime.multipart import MIMEMultipart
 from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_date, make_size_human_readable, get_json_value
 from .imap import IMAP
 from .smtp import SMTP
-
-class SearchCriteria(TypedDict):
-    from_: List[str]
-    to: List[str]
-    subject: str
-    since: str
-    before: str
-    flags: List[str]
-    include: str
-    exclude: str
-    has_attachments: bool
     
 class OpenMail:
+    class SearchCriteria(TypedDict):
+        from_: List[str]
+        to: List[str]
+        subject: str
+        since: str
+        before: str
+        flags: List[str]
+        include: str
+        exclude: str
+        has_attachments: bool
+        
     def __init__(self, email_address: str, password: str, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):
         self.__email_address = email_address
         self.__imap = IMAP(email_address, password, imap_port, try_limit, timeout)
@@ -178,21 +178,20 @@ class OpenMail:
         if search_criteria.to:
             search_criteria_query += recursive_or_query([f'TO "{email}"' for email in search_criteria.to]) if len(search_criteria.to) > 1 else f'TO "{search_criteria.to[0]}"' + ' '
         if search_criteria.subject:
-            search_criteria_query += 'SUBJECT "' + search_criteria.subject + '" ' 
+            search_criteria_query += 'SUBJECT "' + search_criteria.subject + '" '    
         if search_criteria.since:
             search_criteria_query += 'SINCE "' + convert_to_imap_date(search_criteria.since) + '" '
         if search_criteria.before:
             search_criteria_query += 'BEFORE "' + convert_to_imap_date(search_criteria.before) + '" '
         if search_criteria.include:
-            search_criteria_query += '"TEXT "' + search_criteria["include"] + '" '
+            search_criteria_query += 'TEXT "' + search_criteria.include + '" '
         if search_criteria.exclude:
-            search_criteria_query += 'NOT TEXT "' + search_criteria["exclude"] + '" '
+            search_criteria_query += 'NOT TEXT "' + search_criteria.exclude + '" '
         if search_criteria.flags:
             pass
         if search_criteria.has_attachments:
             search_criteria_query += 'HEADER Content-Disposition attachment'
 
-        print("Build search criteria: ", search_criteria_query)
         return search_criteria_query.strip()
     
     def __search_with_criteria(self, criteria: str) -> list:
@@ -209,7 +208,7 @@ class OpenMail:
         self.__imap.literal = search.encode("utf-8")
         _, uids = self.__imap.uid('search', 'CHARSET', 'UTF-8', 'TEXT')
         return uids[0].split()[::-1] if uids else []
-    
+
     @__handle_imap_conn  
     def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, list] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder_name(folder), readonly=True)
@@ -218,7 +217,9 @@ class OpenMail:
         if not isinstance(search, str):
             search_criteria_query = self.__build_search_criteria_query(search)
 
-        uids = self.__search_with_criteria(search_criteria_query or 'TEXT "${search}"' if search != 'ALL' else "ALL")
+        search_critera_query = search_criteria_query or 'TEXT "{}"'.format(search) if search != 'ALL' and search != '' else 'ALL'
+        uids = self.__search_with_criteria(search_critera_query)
+
         if len(uids) == 0:
             return True, "No emails found", {"folder": folder, "emails": [], "total": 0}
 

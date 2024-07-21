@@ -1,5 +1,6 @@
 <script lang="ts">
     import { folders } from '$lib/stores';
+    import type { SearchCriteria } from '$lib/types';
     import { onMount } from 'svelte';
 
     let searchMenu: HTMLDivElement;
@@ -50,8 +51,9 @@
         }
     }
 
-    export const getSearchMenuValues = () => {
-        return {
+    export function getSearchMenuValues(): SearchCriteria | ""
+    {
+        const searchMenuData: SearchCriteria = {
             "from_": Array.from(searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
             "to": Array.from(searchMenu.querySelector("#to-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
             "subject": (searchMenu.querySelector("input[name*='subject']") as HTMLInputElement).value,
@@ -61,7 +63,20 @@
             "include": (searchMenu.querySelector("input[name*='include_words']") as HTMLInputElement).value,
             "exclude": (searchMenu.querySelector("input[name*='exclude_words']") as HTMLInputElement).value,
             "has_attachments": (searchMenu.querySelector("input[name*='has_attachments']") as HTMLInputElement).checked
-        }
+        };
+
+        // If every key is null or empty and has_attachments is false, return null
+        if(Object.values(searchMenuData).every(value => {
+            if(typeof value === 'string')
+                return value === '';
+            if(Array.isArray(value))
+                return value.length === 0;
+            if(typeof value === 'boolean')
+                return value === false;
+        }))
+            return "";
+
+        return searchMenuData;
     }
 </script>
 

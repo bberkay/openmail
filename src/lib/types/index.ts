@@ -25,3 +25,15 @@ export interface Email {
     attachments?: Attachment[], 
     flags: string[]
 }
+
+export interface SearchCriteria {
+    from_: (string | null)[],
+    to: (string | null)[],
+    subject: string | null,
+    since: string | null,
+    before: string | null,
+    flags: (string | null)[],
+    include: string | null,
+    exclude: string | null,
+    has_attachments: boolean
+}
