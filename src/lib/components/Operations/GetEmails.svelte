@@ -49,8 +49,11 @@
         getEmailButton.disabled = true;
         getEmailButton.textContent = 'Loading...';
         let response: OpenMailData;
-        if(isSearchMenuOpen && typeof getSearchMenuValues === 'function'){
-            const searchMenuValues = getSearchMenuValues();
+        let searchMenuValues: SearchCriteria | "" = "";
+        if(typeof getSearchMenuValues === 'function')
+            searchMenuValues = getSearchMenuValues();
+
+        if(isSearchMenuOpen && searchMenuValues != ""){
             response = await fetch(
                 `http://127.0.0.1:8000/search-emails`
                 , {

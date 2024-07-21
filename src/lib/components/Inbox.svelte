@@ -12,7 +12,7 @@
         nextButton = document.getElementById('next-button') as HTMLButtonElement;
 
         currentOffset.subscribe(async (value) => {
-            if(value <= 0)
+            if(value < 10)
                 return;
 
             /**
@@ -35,9 +35,8 @@
     });
 
     function getSearchMenuValue(){
-        // TODO: This is a temporary solution until the offset system is improved.
         const search = (document.getElementById('search') as HTMLInputElement).value;
-        return search.trim() == "" ? "" : `TEXT "${search}"`;
+        return search.trim() == "" ? "" : search;
     }
 
     async function getPreviousEmails(){

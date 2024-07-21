@@ -160,7 +160,7 @@ class OpenMail:
             """
             Example: 
                 search_keys = ["johndoe@mail.com", "janedoe@mail.com", "person@mail.com"]
-                return: "OR (FROM "johndoe@mail.com" OR (FROM "janedoe@mail.com" FROM person@mail.com ))"
+                return: 'OR (FROM "johndoe@mail.com") (OR (FROM "janedoe@mail.com") (FROM "person@mail.com"))'
             """
             len_search_keys = len(search_keys)
             if len_search_keys == 1:
@@ -170,7 +170,7 @@ class OpenMail:
             left_part = recursive_or_query(search_keys[:mid])
             right_part = recursive_or_query(search_keys[mid:])
 
-            return query + f'OR ({left_part} {right_part})'
+            return query + f'OR ({left_part}) ({right_part})'
          
         search_criteria_query = ''
         if search_criteria.from_:
@@ -218,6 +218,7 @@ class OpenMail:
             search_criteria_query = self.__build_search_criteria_query(search)
 
         search_critera_query = search_criteria_query or 'TEXT "{}"'.format(search) if search != 'ALL' and search != '' else 'ALL'
+        print("Search Criteria Query: ", search_critera_query)
         uids = self.__search_with_criteria(search_critera_query)
 
         if len(uids) == 0:
