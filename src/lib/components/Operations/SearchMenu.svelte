@@ -6,7 +6,7 @@
     let folderSelectOption: HTMLFormElement;
     onMount(() => {
         searchMenu = document.querySelector('.search-menu')!;
-        
+
         folderSelectOption = document.querySelector('select[name*="in_folder"]')!;
         folders.subscribe(value => {
             if(value.length > 0){
@@ -51,7 +51,6 @@
     }
 
     export const getSearchMenuValues = () => {
-        console.log("burada", searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span"));
         return {
             "from_": Array.from(searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
             "to": Array.from(searchMenu.querySelector("#to-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
@@ -59,7 +58,6 @@
             "since": (searchMenu.querySelector("input[name*='since']") as HTMLInputElement).value,
             "before": (searchMenu.querySelector("input[name*='before']") as HTMLInputElement).value,
             "flags": Array.from(searchMenu.querySelector("#flags")!.querySelectorAll("span")).map(span => span.textContent),
-            "folder": (searchMenu.querySelector("select[name*='in_folder']") as HTMLSelectElement).value,
             "include": (searchMenu.querySelector("input[name*='include_words']") as HTMLInputElement).value,
             "exclude": (searchMenu.querySelector("input[name*='exclude_words']") as HTMLInputElement).value,
             "has_attachments": (searchMenu.querySelector("input[name*='has_attachments']") as HTMLInputElement).checked

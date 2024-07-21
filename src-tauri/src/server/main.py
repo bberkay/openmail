@@ -1,5 +1,6 @@
 from openmail import OpenMail
 from fastapi import FastAPI, Form
+from urllib.parse import unquote
 import json
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +11,22 @@ class Response(BaseModel):
     success: bool
     message: Optional[str] = ''
     data: Optional[dict | list] = {}
+
+class SearchCriteria(BaseModel):
+    from_: List[str]
+    to: List[str]
+    subject: str
+    since: str
+    before: str
+    flags: List[str]
+    include: str
+    exclude: str
+    has_attachments: bool
+
+class Search(BaseModel):
+    folder: str
+    search: SearchCriteria
+    offset: int
 
 app = FastAPI()
 app.add_middleware(
@@ -32,11 +49,19 @@ def login(email = Form(...), password = Form(...)) -> Response:
 
 @app.get("/get-emails")
 def get_emails(folder: str = 'INBOX', search: str = 'ALL', offset: str = '0') -> Response:
+    folder = unquote(folder)
+    search = unquote(search)
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(folder, search, int(offset))
+    return {"success": success, "message": message, "data": data}
+
+@app.post("/search-emails")
+def search_emails(search: Search) -> Response:
+    success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(search.folder, search.search, search.offset)
     return {"success": success, "message": message, "data": data}
 
 @app.get("/get-email-content/{folder}/{uid}")
 def get_email_content(folder: str, uid: str) -> Response:
+    folder = unquote(folder)
     success, message, data = OpenMail(EMAIL, PASSWORD).get_email_content(folder, uid)
     return {"success": success, "message": message, "data": data}
 

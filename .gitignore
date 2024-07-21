@@ -14,3 +14,4 @@ src-tauri/src/server/accounts.json
 **/__pycache__/
 /notes.txt
 **/.venv/
+

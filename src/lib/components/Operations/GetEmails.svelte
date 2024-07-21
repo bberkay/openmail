@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { emails, currentFolder, totalEmailCount, folders } from '$lib/stores';
+    import { emails, currentFolder, totalEmailCount, folders, currentOffset } from '$lib/stores';
     import type { Email, OpenMailData } from '$lib/types';
     import SearchMenu from './SearchMenu.svelte';
 
@@ -45,16 +45,8 @@
     }
 
     function getFormKeyValuesAsString(){
-        if(isSearchMenuOpen){
-            console.log(getSearchMenuValues());
-            // TODO: Implement the advanced search menu
-            //return getSearchMenuValues();
-            return "";
-        }else{
-             // TODO: This may change after the advanced search menu is implemented
-            const search = (document.getElementById('search') as HTMLInputElement).value;
-            return `folder=${(document.getElementById('folder_name') as HTMLSelectElement).value}&offset=0&search=OR (OR (FROM "${search}") (TO "${search}")) (SUBJECT "${search}")`;
-        }
+        const search = (document.getElementById('search') as HTMLInputElement).value;
+        return `folder=${encodeURIComponent((document.getElementById('folder_name') as HTMLSelectElement).value)}&offset=0&search=${encodeURIComponent(search)}`;
     }
 
     async function handleGetEmails(event: Event){ 
@@ -65,13 +57,33 @@
 
         getEmailButton.disabled = true;
         getEmailButton.textContent = 'Loading...';
-        const response: OpenMailData = await fetch(
-            `http://127.0.0.1:8000/get-emails/?${getFormKeyValuesAsString()}`
-        ).then(res => res.json());
+        let response: OpenMailData;
+        if(isSearchMenuOpen){
+            response = await fetch(
+                `http://127.0.0.1:8000/search-emails`
+                , {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        folder: (document.querySelector(".search-menu select[name*='in_folder']") as HTMLSelectElement).value,
+                        search: getSearchMenuValues(),
+                        offset: 0
+                    })
+                }
+            ).then(res => res.json());
+        }else{
+            response = await fetch(
+                `http://127.0.0.1:8000/get-emails/?${getFormKeyValuesAsString()}`
+            ).then(res => res.json());
+        }
+
         try{
             if(response.success){
                 emails.set(response.data["emails"] as Email[]);
                 currentFolder.set(response.data["folder"]);
+                currentOffset.set(0);
                 totalEmailCount.set(response.data["total"]);
             }
             getEmailButton.disabled = false;

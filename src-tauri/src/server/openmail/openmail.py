@@ -9,7 +9,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
-from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_date, make_size_human_readable, check_json_value
+from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_date, make_size_human_readable, get_json_value
 from .imap import IMAP
 from .smtp import SMTP
 
@@ -151,19 +151,49 @@ class OpenMail:
             flags = re.findall(r'\\([a-zA-Z]+)', flags)
         return flags or []
 
-    def __build_search_criteria(self, search_json: SearchCriteria) -> str:
+    def __build_search_criteria_query(self, search_criteria: SearchCriteria) -> str:
         """
             Preparing to convert search_json to search_criteria string:
             https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
         """
-        search_criteria = ""
-        search_criteria += f'FROM' + ' OR '.join([f'"{i}"' for i in search_json["from_"]]) + ' ' if check_json_value(search_json, "from_") else ""
-        search_criteria += f'TO' + ' OR '.join([f'"{i}"' for i in search_json["to"]]) + ' ' if check_json_value(search_json, "to") else ""
-        search_criteria += f'SUBJECT "{search_json["subject"]}" ' if check_json_value(search_json, "subject") else ""
-        search_criteria += f'SINCE {convert_to_imap_date(search_json["since"])} ' if check_json_value(search_json, "since") else ""
-        search_criteria += f'BEFORE {convert_to_imap_date(search_json["before"])} ' if check_json_value(search_json, "before") else ""
-        search_criteria += f' '.join(search_json["flags"]) + ' ' if check_json_value(search_json, "flags") else ""
-        return search_criteria
+        def recursive_or_query(search_keys: List[str], query="") -> str:
+            """
+            Example: 
+                search_keys = ["johndoe@mail.com", "janedoe@mail.com", "person@mail.com"]
+                return: "OR (FROM "johndoe@mail.com" OR (FROM "janedoe@mail.com" FROM person@mail.com ))"
+            """
+            len_search_keys = len(search_keys)
+            if len_search_keys == 1:
+                return search_keys[0]
+            
+            mid = len_search_keys // 2
+            left_part = recursive_or_query(search_keys[:mid])
+            right_part = recursive_or_query(search_keys[mid:])
+
+            return query + f'OR ({left_part} {right_part})'
+         
+        search_criteria_query = ''
+        if search_criteria.from_:
+            search_criteria_query += recursive_or_query([f'FROM "{email}"' for email in search_criteria.from_]) if len(search_criteria.from_) > 1 else f'FROM "{search_criteria.from_[0]}"' + ' '
+        if search_criteria.to:
+            search_criteria_query += recursive_or_query([f'TO "{email}"' for email in search_criteria.to]) if len(search_criteria.to) > 1 else f'TO "{search_criteria.to[0]}"' + ' '
+        if search_criteria.subject:
+            search_criteria_query += 'SUBJECT "' + search_criteria.subject + '" ' 
+        if search_criteria.since:
+            search_criteria_query += 'SINCE "' + convert_to_imap_date(search_criteria.since) + '" '
+        if search_criteria.before:
+            search_criteria_query += 'BEFORE "' + convert_to_imap_date(search_criteria.before) + '" '
+        if search_criteria.include:
+            search_criteria_query += '"TEXT "' + search_criteria["include"] + '" '
+        if search_criteria.exclude:
+            search_criteria_query += 'NOT TEXT "' + search_criteria["exclude"] + '" '
+        if search_criteria.flags:
+            pass
+        if search_criteria.has_attachments:
+            search_criteria_query += 'HEADER Content-Disposition attachment'
+
+        print("Build search criteria: ", search_criteria_query)
+        return search_criteria_query.strip()
     
     def __search_with_criteria(self, criteria: str) -> list:
         if self.__imap.state != "SELECTED":
@@ -184,12 +214,11 @@ class OpenMail:
     def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, list] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder_name(folder), readonly=True)
         
-        search_criteria = None
-        if isinstance(search, dict):
-            search = json.loads(search)
-            search_criteria = self.__build_search_criteria(search)
+        search_criteria_query = None
+        if not isinstance(search, str):
+            search_criteria_query = self.__build_search_criteria_query(search)
 
-        uids = self.__search_with_criteria(search_criteria or search or "ALL")
+        uids = self.__search_with_criteria(search_criteria_query or 'TEXT "${search}"' if search != 'ALL' else "ALL")
         if len(uids) == 0:
             return True, "No emails found", {"folder": folder, "emails": [], "total": 0}
 
@@ -198,6 +227,7 @@ class OpenMail:
             because imap search command does not support attachments and
             if include/exclude contains special characters, imap search command
             does not work properly.
+        """
         """
         must_have_attachment = False
         if isinstance(search, dict):
@@ -211,6 +241,7 @@ class OpenMail:
 
             if len(uids) == 0:
                 return True, "No emails found", {"folder": folder, "emails": [], "total": 0}
+        """
 
         emails = []
         for uid in uids[offset: offset + 10]:
@@ -226,9 +257,9 @@ class OpenMail:
                 content_type = part.get_content_type()
                 file_name = part.get_filename()
 
-                if must_have_attachment and not file_name:
+                """if must_have_attachment and not file_name:
                     skip_email_due_to_attachments = True
-                    break
+                    break"""
                 
                 is_body_html = content_type == "text/html"
                 if (file_name is None and content_type == "text/plain") or (is_body_html and not body):
