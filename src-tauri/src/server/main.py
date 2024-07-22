@@ -23,11 +23,6 @@ class SearchCriteria(BaseModel):
     exclude: str
     has_attachments: bool
 
-class Search(BaseModel):
-    folder: str
-    search: SearchCriteria
-    offset: int
-
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -54,9 +49,18 @@ def get_emails(folder: str = 'INBOX', search: str = 'ALL', offset: str = '0') ->
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(folder, search, int(offset))
     return {"success": success, "message": message, "data": data}
 
+class SearchRequest(BaseModel):
+    folder: str
+    search: SearchCriteria
+    offset: int
+
 @app.post("/search-emails")
-def search_emails(search: Search) -> Response:
-    success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(search.folder, search.search, search.offset)
+def search_emails(search_request: SearchRequest) -> Response:
+    success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(
+        search_request.folder, 
+        search_request.search, 
+        search_request.offset
+    )
     return {"success": success, "message": message, "data": data}
 
 @app.get("/get-email-content/{folder}/{uid}")
@@ -75,12 +79,30 @@ def get_folders() -> Response:
     success, message, data = OpenMail(EMAIL, PASSWORD).get_folders()
     return {"success": success, "message": message, "data": data}
 
+class MarkEmailRequest(BaseModel):
+    uid: str
+    mark: str
+    folder: str = 'INBOX'
+
 @app.post("/mark-email")
-async def mark_email(uid: str, mark: str, folder: str = 'INBOX') -> Response:
-    success, message = OpenMail(EMAIL, PASSWORD).mark_email(uid, mark, folder)
+async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).mark_email(
+        mark_email_request.uid, 
+        mark_email_request.mark, 
+        mark_email_request.folder
+    )
     return {"success": success, "message": message}
 
+class MarkEmailRequest(BaseModel):
+    uid: str
+    source: str
+    destination: str
+
 @app.post("/move-email")
-async def move_email(uid: str, source: str, destination: str) -> Response:
-    success, message = OpenMail(EMAIL, PASSWORD).move_email(uid, source, destination)
+async def move_email(move_email_request: MarkEmailRequest) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).move_email(
+        move_email_request.uid, 
+        move_email_request.source, 
+        move_email_request.destination
+    )
     return {"success": success, "message": message}

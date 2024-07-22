@@ -108,12 +108,14 @@
                         <option value="Answered">Answered</option>
                         <option value="Flagged">Flagged</option>
                         <option value="Draft">Draft</option>
+                        <option value="Deleted">Deleted</option>
                     </optgroup>
                     <optgroup>
                         <option value="Unseen">Unseen</option>
                         <option value="Unanswered">Unanswered</option>
                         <option value="Unflagged">Unflagged</option>
                         <option value="Undraft">Undraft</option>
+                        <option value="Undeleted">Undeleted</option>
                     </optgroup>
                 </select>
                 <button type="button" on:click={() => handleMultipleSelectOption("includes-flags", "flags")}>+</button>

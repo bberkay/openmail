@@ -189,7 +189,7 @@ class OpenMail:
         if search_criteria.exclude:
             search_criteria_query += 'NOT TEXT "' + search_criteria.exclude + '" '
         if search_criteria.flags:
-            pass
+            search_criteria_query += ' '.join([flag.upper() for flag in search_criteria.flags]) + ' '
         if search_criteria.has_attachments:
             search_criteria_query += 'HEADER Content-Disposition attachment'
 
@@ -213,7 +213,8 @@ class OpenMail:
     @__handle_imap_conn  
     def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, list] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder_name(folder), readonly=True)
-        
+
+        print("Search Criteria:", search)        
         search_criteria_query = None
         if not isinstance(search, str):
             search_criteria_query = self.__build_search_criteria_query(search)
