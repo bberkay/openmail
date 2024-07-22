@@ -50,8 +50,6 @@
 	</main>
 {/if}
 
-<footer></footer>
-
 <style>
 	.container{
 		display: flex;

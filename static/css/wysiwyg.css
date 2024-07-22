@@ -1,0 +1,177 @@
+/**
+ * Default styles for the WYSIWYG editor.
+ * You can override/extend these styles as
+ * needed to match your application's design.
+ */
+
+/* Basic Variables */
+:root{
+    --wysiwyg-background-color: #f5f5f5;
+    --wysiwyg-text-color: #333;
+    --wysiwyg-border-color: #ccc;
+    --wysiwyg-border-radius: 4px;
+    --wysiwyg-max-body-height: 300px; /* 301px will show a scrollbar */
+}
+
+/* Toolbar */
+.wysiwyg-toolbar{
+    background-color: var(--wysiwyg-background-color);
+    border-bottom: 1px solid var(--wysiwyg-border-color);
+    border-radius: var(--wysiwyg-border-radius) var(--wysiwyg-border-radius) 0 0;
+    margin: 0;
+    padding: 5px;
+    padding-bottom: 0;
+    
+    &.wysiwyg-toolbar--popover, &.wysiwyg-toolbar--tooltip{
+        position: absolute;
+        background-color: var(--wysiwyg-background-color);
+        border: 1px solid var(--wysiwyg-border-color);
+        border-radius: var(--wysiwyg-border-radius);
+        box-shadow: 0 0 5px rgba(0,0,0,.1);
+        padding: 5px;
+        padding-bottom: 0;
+        z-index: 1;
+        display: none;
+    }
+
+    .wysiwyg-toolbar-group{
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+        vertical-align: middle;
+        margin-right: 15px;
+
+        [data-command], .wysiwyg-toolbar-dropdown-toggle{
+            background-color: var(--wysiwyg-background-color);
+            border: 1px solid var(--wysiwyg-border-color);
+            border-radius: var(--wysiwyg-border-radius);
+            color: var(--wysiwyg-text-color);
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+            margin-bottom: 5px;
+            padding: 4px 8px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            vertical-align: middle;
+            white-space: nowrap;
+            user-select: none;
+            position: relative;
+        }
+
+        input[data-command]{
+            text-align: start;
+            cursor: text;
+        }
+
+        button[data-command]{
+            &:hover{
+                filter: brightness(95%);
+            }
+        
+            &:active{
+                filter: brightness(90%);
+            }
+
+            &.active{
+                filter: brightness(90%);
+            }
+        }
+    }
+
+    .wysiwyg-toolbar-dropdown{
+        position: relative;
+        display: inline-block;
+
+        .wysiwyg-toolbar-dropdown-toggle{
+            width: 90px;
+            text-align: start;
+
+            &:hover{
+                filter: brightness(95%);
+            }
+
+            &:active{
+                filter: brightness(90%);
+            }
+
+            &::after{
+                content: '\25BC';
+                display: inline-block;
+                margin-left: 5px;
+                font-size: 11px;
+                right: 5px;
+                top: 50%;
+                transform: translateY(-50%);
+                position: absolute;
+            }
+        }
+    
+        .wysiwyg-toolbar-dropdown-content{
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            width: 100%;
+            z-index: 1;
+
+            &.show{
+                display: flex;
+                z-index: 2;
+            }
+
+            & button[data-command]{
+                margin:0;
+                border: 1px solid var(--wysiwyg-border-color);
+                border-bottom: none;
+                border-radius: 0;
+                text-align: start;
+            }
+
+            & button[data-command]:first-child{
+                border-radius: var(--wysiwyg-border-radius) var(--wysiwyg-border-radius) 0 0;
+            }
+
+            & button[data-command]:last-child{
+                border-bottom: 1px solid var(--wysiwyg-border-color);
+                border-radius: 0 0 var(--wysiwyg-border-radius) var(--wysiwyg-border-radius);
+            }
+        }
+    }
+}
+
+/* Body */
+.wysiwyg-body{
+    cursor: text;
+    padding: 10px;
+    outline: none;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.5;
+    color: var(--wysiwyg-text-color);
+    background-color: var(--wysiwyg-background-color);
+    border: 1px solid var(--wysiwyg-border-color);
+    border-radius: var(--wysiwyg-border-radius);
+    resize: vertical;
+    
+    /* Scrollbar */
+    max-height: var(--wysiwyg-max-body-height);
+    overflow: auto;
+
+    img{
+        width: 100%;
+        height: 100%;
+    }
+
+    iframe{
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+}
+
+.wysiwyg-toolbar + .wysiwyg-body{
+    border-top: none;
+    border-radius: 0 0 var(--wysiwyg-border-radius) var(--wysiwyg-border-radius);
+}

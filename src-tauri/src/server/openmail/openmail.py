@@ -156,6 +156,7 @@ class OpenMail:
             Preparing to convert search_json to search_criteria string:
             https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
         """
+        
         def recursive_or_query(search_keys: List[str], query="") -> str:
             """
             Example: 
@@ -178,7 +179,7 @@ class OpenMail:
         if search_criteria.to:
             search_criteria_query += recursive_or_query([f'TO "{email}"' for email in search_criteria.to]) if len(search_criteria.to) > 1 else f'TO "{search_criteria.to[0]}"' + ' '
         if search_criteria.subject:
-            search_criteria_query += 'SUBJECT "' + search_criteria.subject + '" '    
+            search_criteria_query += 'SUBJECT "' + search_criteria.subject + '" '
         if search_criteria.since:
             search_criteria_query += 'SINCE "' + convert_to_imap_date(search_criteria.since) + '" '
         if search_criteria.before:
