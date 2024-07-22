@@ -156,7 +156,7 @@ class OpenMail:
             Preparing to convert search_json to search_criteria string:
             https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
         """
-        
+
         def recursive_or_query(search_keys: List[str], query="") -> str:
             """
             Example: 
@@ -276,7 +276,7 @@ class OpenMail:
             body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
 
             emails.append({
-                "id": uid.decode(),
+                "uid": uid.decode(),
                 "from": message["From"],
                 "to": message["To"] if "To" in message else "",
                 "subject": message["Subject"],
@@ -322,7 +322,7 @@ class OpenMail:
             self.mark_email(uid, "seen", folder)
 
         return True, "Email fetched successfully", {
-            "id": uid,
+            "uid": uid,
             "from": message["From"],
             "to": message["To"] if "To" in message else "",
             "subject": message["Subject"],

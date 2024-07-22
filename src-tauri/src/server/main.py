@@ -62,7 +62,7 @@ def search_emails(search: Search) -> Response:
 @app.get("/get-email-content/{folder}/{uid}")
 def get_email_content(folder: str, uid: str) -> Response:
     folder = unquote(folder)
-    success, message, data = OpenMail(EMAIL, PASSWORD).get_email_content(folder, uid)
+    success, message, data = OpenMail(EMAIL, PASSWORD).get_email_content(uid, folder)
     return {"success": success, "message": message, "data": data}
 
 @app.post("/send-email")

@@ -8,7 +8,7 @@
     currentEmail.subscribe(value => {
         if(value.uid === email.uid){
             email.flags = value.flags;
-            document.querySelector(`[data-email-id*="${email.uid}"]`)?.setAttribute('data-email-flags', email.flags.join(','));
+            document.querySelector(`[data-email-uid*="${email.uid}"]`)?.setAttribute('data-email-flags', email.flags.join(','));
         }
     });
 
