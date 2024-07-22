@@ -5,27 +5,12 @@
     import SearchMenu from './SearchMenu.svelte';
 
     let getSearchMenuValues: () => SearchCriteria | "";
-    let folderSelectOptions: NodeListOf<HTMLFormElement>;
     let isSearchMenuOpen = false;
     let getEmailForm: HTMLFormElement;
     let getEmailButton: HTMLButtonElement;
     onMount(() => {
         getEmailForm = document.getElementById('get-emails-form') as HTMLFormElement;
         getEmailButton = getEmailForm.querySelector('button[type="submit"]') as HTMLButtonElement;
-
-        folderSelectOptions = document.querySelectorAll('#get-emails-form select[name*="folder"]');
-        folders.subscribe(value => {
-            if(value.length > 0){
-                folderSelectOptions.forEach(select => {
-                    value.forEach(folder => {
-                        const option = document.createElement('option');
-                        option.value = folder;
-                        option.innerText = folder;
-                        select.appendChild(option);
-                    });
-                });
-            }
-        });
     });
 
     function toggleSearchMenu(e: Event){
@@ -95,7 +80,13 @@
             </div>
             <div class="form-group">
                 <label for="folder">Folder</label>
-                <select name="folder_name" id="folder_name"></select>
+                <select name="folder_name" id="folder_name">
+                    {#if $folders && $folders.length > 0}
+                        {#each $folders as folder}
+                            <option value={folder}>{folder}</option>
+                        {/each}
+                    {/if}
+                </select>
             </div>
             <div class="form-group">
                 <label for="search">Search</label>

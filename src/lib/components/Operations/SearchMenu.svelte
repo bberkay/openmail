@@ -4,21 +4,8 @@
     import { onMount } from 'svelte';
 
     let searchMenu: HTMLDivElement;
-    let folderSelectOption: HTMLFormElement;
     onMount(() => {
         searchMenu = document.querySelector('.search-menu')!;
-
-        folderSelectOption = document.querySelector('select[name*="in_folder"]')!;
-        folders.subscribe(value => {
-            if(value.length > 0){
-                value.forEach(folder => {
-                    const option = document.createElement('option');
-                    option.value = folder;
-                    option.innerText = folder;
-                    folderSelectOption.appendChild(option);
-                });
-            }
-        })
     });
 
     function handleMultipleTextOption(e: KeyboardEvent, formId: string, regExpMatch: RegExp | null = null){
@@ -138,7 +125,13 @@
     </div>
     <div class="form-group">
         <label for="in_folder">In Folder</label>
-        <select name="in_folder" id="in_folder"></select>
+        <select name="in_folder" id="in_folder">
+            {#if $folders && $folders.length > 0}
+                {#each $folders as folder}
+                    <option value={folder}>{folder}</option>
+                {/each}
+            {/if}
+        </select>
     </div>
     <div class="form-group">
         <label for="include_words">Include Words</label>
