@@ -145,8 +145,8 @@
                 <button data-mark-as="flagged" data-default-mark="flagged" on:click={markEmail}>Star</button>
                 <select name="move_to_folder" on:change={moveEmail}>
                     <option value="">Move To Folder</option>
-                    {#if get(folders) && get(folders).length > 0}
-                        {#each get(folders) as folder}
+                    {#if $folders && $folders.length > 0}
+                        {#each $folders as folder}
                             <option value={folder}>{folder}</option>
                         {/each}
                     {/if}
