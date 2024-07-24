@@ -138,3 +138,15 @@ class DeleteFolderRequest(BaseModel):
 async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
     success, message = OpenMail(EMAIL, PASSWORD).delete_folder(delete_folder_request.folder_name)
     return {"success": success, "message": message}
+
+class MoveFolderRequest(BaseModel):
+    folder_name: str
+    destination_folder: str
+
+@app.post("/move-folder")
+async def move_folder(move_folder_request: MoveFolderRequest) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).move_folder(
+        move_folder_request.folder_name, 
+        move_folder_request.destination_folder
+    )
+    return {"success": success, "message": message}
