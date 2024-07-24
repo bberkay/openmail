@@ -13,8 +13,8 @@ class Response(BaseModel):
     data: Optional[dict | list] = {}
 
 class SearchCriteria(BaseModel):
-    from_: List[str]
-    to: List[str]
+    senders: List[str]
+    receivers: List[str]
     subject: str
     since: str
     before: str
@@ -70,8 +70,8 @@ def get_email_content(folder: str, uid: str) -> Response:
     return {"success": success, "message": message, "data": data}
 
 @app.post("/send-email")
-def send_email(to: str = Form(...), subject: str = Form(...), body: str = Form(...), attachments: List[str] = []) -> Response:
-    success, message = OpenMail(EMAIL, PASSWORD).send_email(to, subject, body, attachments)
+def send_email(sender: str = Form(...), receivers: str = Form(...), subject: str = Form(...), body: str = Form(...), attachments: List[str] = []) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).send_email(sender, receivers, subject, body, attachments)
     return {"success": success, "message": message}
 
 @app.get("/get-folders")

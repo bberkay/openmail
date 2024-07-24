@@ -3,8 +3,6 @@ from .utils import choose_positive, extract_domain
 
 class SMTP(smtplib.SMTP):
     def __init__(self, email_address: str, password: str, port: int = 587, try_limit: int = 3, timeout: int = 30):
-        self.__email_address = email_address
-        self.__password = password
         self.__try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up    
         self.__is_logged_in = False
         super().__init__(
@@ -12,6 +10,7 @@ class SMTP(smtplib.SMTP):
             port or 587, 
             timeout=choose_positive(timeout, 30)
         )
+        self.login(email_address, password)
                 
     def __find_smtp_server(self, email_address: str) -> str:
         try:
@@ -31,7 +30,7 @@ class SMTP(smtplib.SMTP):
         """
         return self.__is_logged_in
     
-    def login(self) -> None:
+    def login(self, email_address: str, password: str) -> None:
         try_count = self.__try_limit
         for _ in range(try_count):
             try:
@@ -39,7 +38,7 @@ class SMTP(smtplib.SMTP):
                     self.ehlo()
                     self.starttls()
                     self.ehlo()
-                    super().login(self.__email_address, self.__password)
+                    super().login(email_address, password)
                     self.__is_logged_in = True
                 break
             except Exception as e:

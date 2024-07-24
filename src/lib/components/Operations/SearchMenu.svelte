@@ -41,8 +41,8 @@
     export function getSearchMenuValues(): SearchCriteria | ""
     {
         const searchMenuData: SearchCriteria = {
-            "from_": Array.from(searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
-            "to": Array.from(searchMenu.querySelector("#to-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
+            "senders": Array.from(searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
+            "receivers": Array.from(searchMenu.querySelector("#to-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
             "subject": (searchMenu.querySelector("input[name*='subject']") as HTMLInputElement).value,
             "since": (searchMenu.querySelector("input[name*='since']") as HTMLInputElement).value,
             "before": (searchMenu.querySelector("input[name*='before']") as HTMLInputElement).value,

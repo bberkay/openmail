@@ -27,8 +27,8 @@ export interface Email {
 }
 
 export interface SearchCriteria {
-    from_: (string | null)[],
-    to: (string | null)[],
+    senders: (string | null)[],
+    receivers: (string | null)[],
     subject: string | null,
     since: string | null,
     before: string | null,

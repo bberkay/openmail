@@ -9,14 +9,14 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
-from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_date, make_size_human_readable, get_json_value
+from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_date, make_size_human_readable
 from .imap import IMAP
 from .smtp import SMTP
     
 class OpenMail:
     class SearchCriteria(TypedDict):
-        from_: List[str]
-        to: List[str]
+        senders: List[str]
+        receivers: List[str]
         subject: str
         since: str
         before: str
@@ -26,7 +26,6 @@ class OpenMail:
         has_attachments: bool
         
     def __init__(self, email_address: str, password: str, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):
-        self.__email_address = email_address
         self.__imap = IMAP(email_address, password, imap_port, try_limit, timeout)
         self.__smtp = SMTP(email_address, password, smtp_port, try_limit, timeout)
     
@@ -65,9 +64,9 @@ class OpenMail:
         return decode_modified_utf7(folder.decode().split(' "/" ')[1].replace('"', ''))
            
     @__handle_smtp_conn
-    def __send_email(self, receiver_emails: str, subject: str, body: str, attachments: list = None, msg_meta: dict = None) -> tuple[bool, str]:
+    def __send_email(self, sender_email: str, receiver_emails: str, subject: str, body: str, attachments: list = None, msg_meta: dict = None) -> tuple[bool, str]:
         msg = MIMEMultipart()
-        msg['From'] = self.__email_address
+        msg['From'] = sender_email
         msg['To'] = receiver_emails
         msg['Subject'] = subject
         if msg_meta:
@@ -96,19 +95,21 @@ class OpenMail:
                 part.add_header('content-disposition', 'attachment', filename=attachment.filename)
                 msg.attach(part)
 
-        self.__smtp.sendmail(self.__email_address, [email.strip() for email in receiver_emails.split(",")], msg.as_string())
+        self.__smtp.sendmail(sender_email, [email.strip() for email in receiver_emails.split(",")], msg.as_string())
         return True, "Email sent successfully"
 
-    def send_email(self, receiver_emails: str, subject: str, body: str, attachments: list = None) -> tuple[bool, str]:
+    def send_email(self, sender_email: str, receiver_emails: str, subject: str, body: str, attachments: list = None) -> tuple[bool, str]:
         return self.__send_email(
+            sender_email,
             receiver_emails, 
             subject, 
             body, 
             attachments
         )
 
-    def reply_email(self, receiver_emails: str, uid: str, body: str, attachments: list = None) -> tuple[bool, str]:
+    def reply_email(self, sender_email: str, receiver_emails: str, uid: str, body: str, attachments: list = None) -> tuple[bool, str]:
         result = self.__send_email(
+            sender_email,
             receiver_emails, 
             "Re: " + self.get_email_content(uid)[2]["subject"], 
             body, 
@@ -124,8 +125,9 @@ class OpenMail:
 
         return result
 
-    def forward_email(self, receiver_emails: str, uid: str, body: str, attachments: list = None) -> tuple[bool, str]:
+    def forward_email(self, sender_email: str, receiver_emails: str, uid: str, body: str, attachments: list = None) -> tuple[bool, str]:
         return self.__send_email(
+            sender_email,
             receiver_emails, 
             "Fwd: " + self.get_email_content(uid)[2]["subject"], 
             body, 
@@ -174,10 +176,10 @@ class OpenMail:
             return query + f'OR ({left_part}) ({right_part})'
          
         search_criteria_query = ''
-        if search_criteria.from_:
-            search_criteria_query += recursive_or_query([f'FROM "{email}"' for email in search_criteria.from_]) if len(search_criteria.from_) > 1 else f'FROM "{search_criteria.from_[0]}"' + ' '
-        if search_criteria.to:
-            search_criteria_query += recursive_or_query([f'TO "{email}"' for email in search_criteria.to]) if len(search_criteria.to) > 1 else f'TO "{search_criteria.to[0]}"' + ' '
+        if search_criteria.senders:
+            search_criteria_query += recursive_or_query([f'FROM "{email}"' for email in search_criteria.senders]) if len(search_criteria.senders) > 1 else f'FROM "{search_criteria.senders[0]}"' + ' '
+        if search_criteria.receivers:
+            search_criteria_query += recursive_or_query([f'TO "{email}"' for email in search_criteria.receivers]) if len(search_criteria.receivers) > 1 else f'TO "{search_criteria.receivers[0]}"' + ' '
         if search_criteria.subject:
             search_criteria_query += 'SUBJECT "' + search_criteria.subject + '" '
         if search_criteria.since:
@@ -191,7 +193,8 @@ class OpenMail:
         if search_criteria.flags:
             search_criteria_query += ' '.join([flag.upper() for flag in search_criteria.flags]) + ' '
         if search_criteria.has_attachments:
-            search_criteria_query += 'HEADER Content-Disposition attachment'
+            # TODO: This isn't working
+            search_criteria_query += 'HEADER Content-Disposition "attachment"'
 
         return search_criteria_query.strip()
     
@@ -199,6 +202,7 @@ class OpenMail:
         if self.__imap.state != "SELECTED":
             raise Exception("Folder should be selected before searching")
         
+        # https://github.com/python/cpython/blob/main/Lib/imaplib.py#L986
         _, uids = self.__imap.uid('search', None, criteria)
         return uids[0].split()[::-1] if uids else []
     
@@ -214,11 +218,11 @@ class OpenMail:
     def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, list] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder_name(folder), readonly=True)
 
-        print("Search Criteria:", search)        
         search_criteria_query = None
         if not isinstance(search, str):
             search_criteria_query = self.__build_search_criteria_query(search)
 
+        print("Search Criteria Query:", search_criteria_query)
         search_critera_query = search_criteria_query or 'TEXT "{}"'.format(search) if search != 'ALL' and search != '' else 'ALL'
         uids = self.__search_with_criteria(search_critera_query)
 
