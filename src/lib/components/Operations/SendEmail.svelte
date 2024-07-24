@@ -35,15 +35,15 @@
         }
     }
 
-    function getFormKeyValues() {
+    /*async function getFormData() {
         return {
             "sender_name": (document.getElementById('sender_name') as HTMLInputElement).value,
             "receivers": Array.from(document.getElementById('receiver_emails')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent),
             "subject": (document.getElementById('subject') as HTMLInputElement).value,
-            "body": body.getHTMLContent()
-            //"attachments": Array.from((document.getElementById('attachments') as HTMLInputElement).files || []),
+            "body": body.getHTMLContent(),
+            "attachments": await Promise.all(Array.from((document.getElementById('attachments') as HTMLInputElement).files || []).map(file => fileToBase64(file)))
         }
-    }
+    }*/
 
     function fileToBase64(file: File): Promise<{ filename: string, size: number, data: string }> {
         return new Promise((resolve, reject) => {
@@ -54,21 +54,17 @@
         });
     }
 
-    async function handleSendEmail(){
+    async function handleSendEmail(e: Event) {
         sendEmailButton.disabled = true;
         sendEmailButton.textContent = 'Sending...';
 
-        /*if(formData.attachments.length > 0){
-            formData.attachments = await Promise.all(formData.attachments.map(fileToBase64));
-            formData.attachments = JSON.stringify(formData.attachments);
-        }*/
+        const formData = new FormData(e.target as HTMLFormElement);
+        formData.set('receivers', Array.from(document.getElementById('receivers')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent).join(','));
+        formData.set('body', body.getHTMLContent());
 
         const response: OpenMailData = await fetch('http://127.0.0.1:8000/send-email', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(getFormKeyValues()),
+            body: formData
         }).then(res => res.json());
 
         if (response.success) {
@@ -91,8 +87,8 @@
                 <small style="margin-top:2px;font-style:italic;">{fullname} &lt;{$user.email}&gt;</small>
             </div>
             <div class="form-group">
-                <label for="receiver_emails">Receiver(s)</label>
-                <input type="email" name="receiver_emails" id="receiver_emails" on:keyup={handleReceivers}>
+                <label for="receivers">Receiver(s)</label>
+                <input type="email" name="receivers" id="receivers" on:keyup={handleReceivers}>
                 <div class="tags" tabindex="-1">
                     <!-- Receivers -->
                 </div>
@@ -108,7 +104,7 @@
             <div class="form-group">
                 <label for="attachments">Attachment(s)</label>
                 <input type="file" name="attachments" id="attachments" multiple>
-            </div>
+            </div>-
             <button type="submit">Send</button>
         </form>
     </div>

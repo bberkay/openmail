@@ -64,14 +64,14 @@ class OpenMail:
         return decode_modified_utf7(folder.decode().split(' "/" ')[1].replace('"', ''))
            
     @__handle_smtp_conn
-    def __send_email(self, sender: str | Tuple[str, str], receiver_emails: str | List[str], subject: str, body: str, attachments: list = None, msg_meta: dict = None) -> tuple[bool, str]:
-        if isinstance(receiver_emails, str):
-            receiver_emails = [receiver_emails]
+    def __send_email(self, sender: str | Tuple[str, str], receiver_emails: str | List[str], subject: str, body: str, attachments: list = None, msg_meta: dict = None) -> tuple[bool, str]:            
+        if isinstance(receiver_emails, list):
+            receiver_emails = ", ".join(receiver_emails)
 
         # sender can be a string(just email) or a tuple (name, email)
         msg = MIMEMultipart()
         msg['From'] = sender if isinstance(sender, str) else f"{sender[0]} <{sender[1]}>"
-        msg['To'] = ",".join(receiver_emails)
+        msg['To'] = receiver_emails
         msg['Subject'] = subject
         if msg_meta:
             for key, value in msg_meta.items():
@@ -92,6 +92,7 @@ class OpenMail:
         msg.attach(MIMEText(body, 'html'))
         if attachments:
             for attachment in attachments:
+                print("Attachment:", attachment.filename)
                 if attachment.size > 25 * 1024 * 1024:
                     return False, "Attachment size limit is 25 MB"
                 
@@ -99,9 +100,10 @@ class OpenMail:
                 part.add_header('content-disposition', 'attachment', filename=attachment.filename)
                 msg.attach(part)
 
+        # receiver_emails can be a string or 
         self.__smtp.sendmail(
             sender if isinstance(sender, str) else sender[1], 
-            [email.strip() for email in receiver_emails], 
+            [email.strip() for email in receiver_emails.split(",")],
             msg.as_string()
         )
         return True, "Email sent successfully"
@@ -202,7 +204,7 @@ class OpenMail:
             search_criteria_query += ' '.join([flag.upper() for flag in search_criteria.flags]) + ' '
         if search_criteria.has_attachments:
             # TODO: This isn't working
-            search_criteria_query += 'HEADER Content-Disposition "attachment"'
+            search_criteria_query += 'HEADER content-disposition "attachment"'
 
         return search_criteria_query.strip()
     

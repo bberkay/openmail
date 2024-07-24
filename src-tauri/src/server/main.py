@@ -1,11 +1,11 @@
 from openmail import OpenMail
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, File, Form, UploadFile
 from urllib.parse import unquote
 import json
 from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel
-from typing import Optional, List, Tuple
+from typing import Annotated, Optional, List, Tuple
 
 class Response(BaseModel):
     success: bool
@@ -70,20 +70,26 @@ def get_email_content(folder: str, uid: str) -> Response:
     return {"success": success, "message": message, "data": data}
 
 class SendEmailRequest(BaseModel):
-    sender_name: str # This is going to change as sender: Tuple[str, str]
-    receivers: str | List[str]
-    subject: str
-    body: str
-    attachments: List[str] | None = []
+    sender_name: str = Form()
+    receivers: List[str] = Form()
+    subject: str = Form()
+    body: str = Form()
 
 @app.post("/send-email")
-async def send_email(send_email_request: SendEmailRequest) -> Response:
+async def send_email(
+    sender_name: str = Form(...), 
+    receivers: str = Form(...), # mail addresses separated by comma
+    subject: str = Form(...), 
+    body: str = Form(...), 
+    attachments: List[UploadFile] = File(None)
+) -> Response:
+    print(sender_name, receivers, subject, body, attachments)
     success, message = OpenMail(EMAIL, PASSWORD).send_email(
-        (send_email_request.sender_name, EMAIL) if send_email_request.sender_name else EMAIL,
-        send_email_request.receivers,
-        send_email_request.subject,
-        send_email_request.body,
-        send_email_request.attachments
+        (sender_name, EMAIL) if sender_name else EMAIL,
+        receivers,
+        subject,
+        body,
+        attachments
     )
     return {"success": success, "message": message}
 
