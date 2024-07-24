@@ -22,6 +22,12 @@
             method: 'POST',
             body: new FormData(form)
         }).then(res => res.json());
+        if(response.success){
+            response.data["user"] = {
+                "fullname": (form.querySelector('input[name="fullname"]') as HTMLInputElement).value,
+                "email": (form.querySelector('input[name="email"]') as HTMLInputElement).value
+            }
+        }
         dispatch('login', response);
     }
 </script>
@@ -30,9 +36,14 @@
     <div class="card">
         <form on:submit={handleLoginOnSubmit}>
             <div class="form-group">
-                <label for="email">Email Address</label>
+                <label for="fullname">Fullname (Optional)</label>
                 <!-- svelte-ignore a11y-autofocus -->
-                <input type="email" name="email" id="email" autocomplete="off" value="testforprojects42webio@gmail.com" autofocus required>
+                <input type="text" name="fullname" id="fullname" autocomplete="off" value="Test 42" autofocus>
+                <small style="font-style:italic;margn-top:5px;">Enter your fullname to be displayed in the email.</small>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" name="email" id="email" autocomplete="off" value="testforprojects42webio@gmail.com" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>

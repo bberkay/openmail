@@ -4,7 +4,7 @@
 	import Inbox from "$lib/components/Inbox.svelte";
 	import Email from "$lib/components/Email.svelte";
 	import Login from "$lib/components/Login.svelte";
-	import { emails, totalEmailCount, currentFolder, folders, currentOffset } from "$lib/stores";
+	import { emails, totalEmailCount, currentFolder, folders, currentOffset, user } from "$lib/stores";
     import type { OpenMailData } from "$lib/types";
 
 	let is_logged_in: boolean = false;
@@ -20,6 +20,7 @@
 	async function getEmails(event: CustomEvent){
 		// TODO: Implement this after the login is done.
 		if(event.detail.success){
+			user.set(event.detail.data["user"]);
 			emails.set(event.detail.data["emails"]);
 			totalEmailCount.set(event.detail.data["total"]);
 			currentFolder.set(event.detail.data["folder"]);

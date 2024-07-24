@@ -4,6 +4,11 @@ export interface OpenMailData {
     data?: any;
 }
 
+export interface User {
+    fullname: string;
+    email: string;
+}
+
 export type OpenMailDataString = string;
 
 export interface Attachment {

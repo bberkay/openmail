@@ -1,7 +1,8 @@
 import { writable } from 'svelte/store';
 import type { Writable } from 'svelte/store';
-import type { Email } from '../types';
+import type { User, Email } from '../types';
 
+export const user: Writable<User> = writable({ fullname: '', email: '' });
 export const emails: Writable<Email[]> = writable([]);
 export const folders: Writable<string[]> = writable([]);
 export const currentEmail: Writable<Email> = writable({} as Email);

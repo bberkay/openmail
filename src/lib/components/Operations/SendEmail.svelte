@@ -1,10 +1,11 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { invoke } from "@tauri-apps/api/core";
-    import type { OpenMailData, OpenMailDataString } from '$lib/types';
-
+    import { user } from '$lib/stores';
+    import type { OpenMailData } from '$lib/types';
+    
     // @ts-ignore
     let body: WYSIWYGEditor;
+    let fullname: string = $user.fullname;
     let receivers: HTMLElement;
     let sendEmailButton: HTMLButtonElement;
     onMount(() => {
@@ -36,7 +37,8 @@
 
     function getFormKeyValues() {
         return {
-            "receivers": Array.from(document.getElementById('receiver_emails')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent).join(","),
+            "sender_name": (document.getElementById('sender_name') as HTMLInputElement).value,
+            "receivers": Array.from(document.getElementById('receiver_emails')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent),
             "subject": (document.getElementById('subject') as HTMLInputElement).value,
             "body": body.getHTMLContent(),
             //"attachments": Array.from((document.getElementById('attachments') as HTMLInputElement).files || []),
@@ -52,44 +54,39 @@
         });
     }
 
-    async function handleSendEmail(e: Event){
+    async function handleSendEmail(){
         sendEmailButton.disabled = true;
         sendEmailButton.textContent = 'Sending...';
-        const formData = getFormKeyValues();
+
         /*if(formData.attachments.length > 0){
             formData.attachments = await Promise.all(formData.attachments.map(fileToBase64));
             formData.attachments = JSON.stringify(formData.attachments);
         }*/
-        
-        /*const testFormData = new FormData(e.target as HTMLFormElement);
-        testFormData.delete('attachments');
-        testFormData.delete('receiver_emails');
-        testFormData.append('to', formData.receivers);
-        testFormData.append('body', formData.body);
-        let response = await fetch('http://127.0.0.1:8000/send-email', {
-            method: 'POST',
-            body: testFormData
-        });
-        response = await response.json();*/
 
-        let response: OpenMailDataString = await invoke('send_email', formData);
-        console.log("Response: ", response);
-        /*try{
-            let parseResponse = JSON.parse(response) as OpenMailData;
-            if(parseResponse.success){
-                // Show alert
-            }
+        const response: OpenMailData = await fetch('http://127.0.0.1:8000/send-email', {
+            method: 'POST',
+            body: JSON.stringify(getFormKeyValues()),
+        }).then(res => res.json());
+
+        if (response.success) {
+            user.update(user => {
+                user.fullname = fullname;
+                return user;
+            });
+            sendEmailButton.textContent = 'Send';
             sendEmailButton.disabled = false;
-            sendEmailButton.textContent = "Send";
-        }catch{
-            console.error(response);
-        }*/
+        }
     }
 </script>
 
 <section class="send-email">
     <div class="card">
         <form id="send-email-form" on:submit|preventDefault={handleSendEmail}>
+            <div class="form-group">
+                <label for="sender_name">Fullname (Optional)</label>
+                <input type="text" name="sender_name" id="sender_name" bind:value={fullname}>
+                <small style="margin-top:2px;font-style:italic;">{fullname} &lt;{$user.email}&gt;</small>
+            </div>
             <div class="form-group">
                 <label for="receiver_emails">Receiver(s)</label>
                 <input type="email" name="receiver_emails" id="receiver_emails" on:keyup={handleReceivers}>

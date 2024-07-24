@@ -5,7 +5,7 @@ import json
 from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 class Response(BaseModel):
     success: bool
@@ -69,9 +69,22 @@ def get_email_content(folder: str, uid: str) -> Response:
     success, message, data = OpenMail(EMAIL, PASSWORD).get_email_content(uid, folder)
     return {"success": success, "message": message, "data": data}
 
+class SendEmailRequest(BaseModel):
+    sender_name: str # This is going to change as sender: Tuple[str, str]
+    receivers: List[str]
+    subject: str
+    body: str
+    attachments: List[str] = []
+
 @app.post("/send-email")
-def send_email(sender: str = Form(...), receivers: str = Form(...), subject: str = Form(...), body: str = Form(...), attachments: List[str] = []) -> Response:
-    success, message = OpenMail(EMAIL, PASSWORD).send_email(sender, receivers, subject, body, attachments)
+async def send_email(send_email_request: SendEmailRequest) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).send_email(
+        (send_email_request.sender_name, EMAIL) if send_email_request.sender_name else EMAIL,
+        send_email_request.receivers,
+        send_email_request.subject,
+        send_email_request.body,
+        send_email_request.attachments
+    )
     return {"success": success, "message": message}
 
 @app.get("/get-folders")
