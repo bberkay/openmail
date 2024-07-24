@@ -35,25 +35,6 @@
         }
     }
 
-    /*async function getFormData() {
-        return {
-            "sender_name": (document.getElementById('sender_name') as HTMLInputElement).value,
-            "receivers": Array.from(document.getElementById('receiver_emails')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent),
-            "subject": (document.getElementById('subject') as HTMLInputElement).value,
-            "body": body.getHTMLContent(),
-            "attachments": await Promise.all(Array.from((document.getElementById('attachments') as HTMLInputElement).files || []).map(file => fileToBase64(file)))
-        }
-    }*/
-
-    function fileToBase64(file: File): Promise<{ filename: string, size: number, data: string }> {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve({ filename: file.name, size: file.size, data: reader.result as string });
-            reader.onerror = error => reject(error);
-        });
-    }
-
     async function handleSendEmail(e: Event) {
         sendEmailButton.disabled = true;
         sendEmailButton.textContent = 'Sending...';

@@ -37,16 +37,54 @@ EMAIL = accounts[0]["email"]
 PASSWORD = accounts[0]["password"]
 
 @app.post("/login") # TODO: This is temporary until the login system is implemented
-def login(email = Form(...), password = Form(...)) -> Response:
+def login(
+    email = Form(...), 
+    password = Form(...)
+) -> Response:
     print(email, password)
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails()
     return {"success": success, "message": message, "data": data}
 
 @app.get("/get-emails")
-def get_emails(folder: str = 'INBOX', search: str = 'ALL', offset: str = '0') -> Response:
+def get_emails(
+    folder: str = 'INBOX', 
+    search: str = 'ALL', 
+    offset: str = '0'
+) -> Response:
     folder = unquote(folder)
     search = unquote(search)
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(folder, search, int(offset))
+    return {"success": success, "message": message, "data": data}
+
+@app.get("/get-email-content/{folder}/{uid}")
+def get_email_content(
+    folder: str, 
+    uid: str
+) -> Response:
+    folder = unquote(folder)
+    success, message, data = OpenMail(EMAIL, PASSWORD).get_email_content(uid, folder)
+    return {"success": success, "message": message, "data": data}
+
+@app.post("/send-email")
+async def send_email(
+    sender_name: str = Form(...), # TODO: This is going to change to sender: Tuple[str, str] 
+    receivers: str = Form(...), # mail addresses separated by comma
+    subject: str = Form(...), 
+    body: str = Form(...), 
+    attachments: List[UploadFile] = File(None)
+) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).send_email(
+        (sender_name, EMAIL) if sender_name else EMAIL,
+        receivers,
+        subject,
+        body,
+        attachments
+    )
+    return {"success": success, "message": message}
+
+@app.get("/get-folders")
+def get_folders() -> Response:
+    success, message, data = OpenMail(EMAIL, PASSWORD).get_folders()
     return {"success": success, "message": message, "data": data}
 
 class SearchRequest(BaseModel):
@@ -61,41 +99,6 @@ def search_emails(search_request: SearchRequest) -> Response:
         search_request.search, 
         search_request.offset
     )
-    return {"success": success, "message": message, "data": data}
-
-@app.get("/get-email-content/{folder}/{uid}")
-def get_email_content(folder: str, uid: str) -> Response:
-    folder = unquote(folder)
-    success, message, data = OpenMail(EMAIL, PASSWORD).get_email_content(uid, folder)
-    return {"success": success, "message": message, "data": data}
-
-class SendEmailRequest(BaseModel):
-    sender_name: str = Form()
-    receivers: List[str] = Form()
-    subject: str = Form()
-    body: str = Form()
-
-@app.post("/send-email")
-async def send_email(
-    sender_name: str = Form(...), 
-    receivers: str = Form(...), # mail addresses separated by comma
-    subject: str = Form(...), 
-    body: str = Form(...), 
-    attachments: List[UploadFile] = File(None)
-) -> Response:
-    print(sender_name, receivers, subject, body, attachments)
-    success, message = OpenMail(EMAIL, PASSWORD).send_email(
-        (sender_name, EMAIL) if sender_name else EMAIL,
-        receivers,
-        subject,
-        body,
-        attachments
-    )
-    return {"success": success, "message": message}
-
-@app.get("/get-folders")
-def get_folders() -> Response:
-    success, message, data = OpenMail(EMAIL, PASSWORD).get_folders()
     return {"success": success, "message": message, "data": data}
 
 class MarkEmailRequest(BaseModel):

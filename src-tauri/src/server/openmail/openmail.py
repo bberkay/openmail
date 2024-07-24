@@ -13,6 +13,8 @@ from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_d
 from .imap import IMAP
 from .smtp import SMTP
     
+SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
+
 class OpenMail:    
     class SearchCriteria(TypedDict):
         senders: List[str]
@@ -78,9 +80,8 @@ class OpenMail:
                 msg[key] = value
 
         # Attach inline images
-        supported_extensions = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
-        if re.search(r'<img src="data:image/(' + supported_extensions + r');base64,([^"]+)"', body):
-            for match in re.finditer(r'<img src="data:image/(' + supported_extensions + r');base64,([^"]+)"', body):
+        if re.search(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"', body):
+            for match in re.finditer(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"', body):
                 img_ext, img_data = match.group(1), match.group(2)
                 cid = f'image{match.start()}'
                 body = body.replace(f'data:image/{img_ext};base64,{img_data}', f'cid:{cid}')
