@@ -65,6 +65,7 @@ class OpenMail:
            
     @__handle_smtp_conn
     def __send_email(self, sender: str | Tuple[str, str], receiver_emails: str, subject: str, body: str, attachments: list = None, msg_meta: dict = None) -> tuple[bool, str]:
+        # sender can be a string(just email) or a tuple (name, email)
         msg = MIMEMultipart()
         msg['From'] = sender if isinstance(sender, str) else f"{sender[0]} <{sender[1]}>"
         msg['To'] = receiver_emails
@@ -383,7 +384,7 @@ class OpenMail:
         return True, "Email deleted successfully"
     
     @__handle_imap_conn
-    def create_folder(self, folder_name: str, parent_folder: str | None) -> tuple[bool, str]:
+    def create_folder(self, folder_name: str, parent_folder: str | None = None) -> tuple[bool, str]:
         if parent_folder:
             folder_name = f"{parent_folder}/{folder_name}"
         self.__imap.create(self.__encode_folder_name(folder_name))

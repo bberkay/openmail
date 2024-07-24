@@ -106,3 +106,15 @@ async def move_email(move_email_request: MarkEmailRequest) -> Response:
         move_email_request.destination
     )
     return {"success": success, "message": message}
+
+class CreateFolderRequest(BaseModel):
+    folder_name: str
+    parent_folder: str | None = None
+
+@app.post("/create-folder")
+async def create_folder(create_folder_request: CreateFolderRequest) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).create_folder(
+        create_folder_request.folder_name, 
+        create_folder_request.parent_folder
+    )
+    return {"success": success, "message": message}
