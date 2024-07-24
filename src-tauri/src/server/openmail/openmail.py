@@ -64,9 +64,9 @@ class OpenMail:
         return decode_modified_utf7(folder.decode().split(' "/" ')[1].replace('"', ''))
            
     @__handle_smtp_conn
-    def __send_email(self, sender: Tuple[str, str], receiver_emails: str, subject: str, body: str, attachments: list = None, msg_meta: dict = None) -> tuple[bool, str]:
+    def __send_email(self, sender: str | Tuple[str, str], receiver_emails: str, subject: str, body: str, attachments: list = None, msg_meta: dict = None) -> tuple[bool, str]:
         msg = MIMEMultipart()
-        msg['From'] = f"{sender[0]} <{sender[1]}>"
+        msg['From'] = sender if isinstance(sender, str) else f"{sender[0]} <{sender[1]}>"
         msg['To'] = receiver_emails
         msg['Subject'] = subject
         if msg_meta:
@@ -95,10 +95,14 @@ class OpenMail:
                 part.add_header('content-disposition', 'attachment', filename=attachment.filename)
                 msg.attach(part)
 
-        self.__smtp.sendmail(sender[1], [email.strip() for email in receiver_emails.split(",")], msg.as_string())
+        self.__smtp.sendmail(
+            sender if isinstance(sender, str) else sender[1], 
+            [email.strip() for email in receiver_emails.split(",")], 
+            msg.as_string()
+        )
         return True, "Email sent successfully"
 
-    def send_email(self, sender: Tuple[str, str], receiver_emails: str, subject: str, body: str, attachments: list = None) -> tuple[bool, str]:
+    def send_email(self, sender: str | Tuple[str, str], receiver_emails: str, subject: str, body: str, attachments: list = None) -> tuple[bool, str]:
         return self.__send_email(
             sender,
             receiver_emails, 
@@ -107,7 +111,7 @@ class OpenMail:
             attachments
         )
 
-    def reply_email(self, sender: Tuple[str, str], receiver_emails: str, uid: str, body: str, attachments: list = None) -> tuple[bool, str]:
+    def reply_email(self, sender: str | Tuple[str, str], receiver_emails: str, uid: str, body: str, attachments: list = None) -> tuple[bool, str]:
         result = self.__send_email(
             sender,
             receiver_emails, 
@@ -125,7 +129,7 @@ class OpenMail:
 
         return result
 
-    def forward_email(self, sender: Tuple[str, str], receiver_emails: str, uid: str, body: str, attachments: list = None) -> tuple[bool, str]:
+    def forward_email(self, sender: str | Tuple[str, str], receiver_emails: str, uid: str, body: str, attachments: list = None) -> tuple[bool, str]:
         return self.__send_email(
             sender,
             receiver_emails, 
