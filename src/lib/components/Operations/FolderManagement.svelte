@@ -9,6 +9,13 @@
         folders.subscribe(value => {
             if(value.length > 0){
                 folderSelectOptions.forEach(select => {
+                    select.innerHTML = '';
+                    if(select.name === 'parent_folder'){
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.innerText = 'Root';
+                        select.appendChild(option);
+                    }
                     value.forEach(folder => {
                         const option = document.createElement('option');
                         option.value = folder;
@@ -78,25 +85,25 @@
             </div>
             <button type="submit">Create</button>
         </form>
-        <form class = "folder-management-form" id="rename-folder">
+        <form class = "folder-management-form" id="rename-folder" on:submit|preventDefault={handleFormManagementOperation}>
             <div class="form-group">
                 <label for="folder_name">Folder</label>
                 <select name="folder_name" id="folder_name" required></select>
             </div>
             <div class="form-group">
-                <label for="new_folder_name">New Folder Name</label>
-                <input type="text" name="new_folder_name" id="new_folder_name" required>
+                <label for="new_name">New Folder Name</label>
+                <input type="text" name="new_name" id="new_name" required>
             </div>
             <button type="submit">Rename</button>
         </form>
-        <form class = "folder-management-form" id="delete-folder">
+        <form class = "folder-management-form" id="delete-folder" on:submit|preventDefault={handleFormManagementOperation}>
             <div class="form-group">
                 <label for="folder_name">Folder</label>
                 <select name="folder_name" id="folder_name"></select>
             </div>
             <button type="submit">Delete</button>
         </form>
-        <form class = "folder-management-form" id="move-folder">
+        <form class = "folder-management-form" id="move-folder" on:submit|preventDefault={handleFormManagementOperation}>
             <div class="form-group">
                 <label for="folder_name">Source Folder</label>
                 <select name="folder_name" id="folder_name" required></select>

@@ -118,3 +118,16 @@ async def create_folder(create_folder_request: CreateFolderRequest) -> Response:
         create_folder_request.parent_folder
     )
     return {"success": success, "message": message}
+
+class RenameFolderRequest(BaseModel):
+    folder_name: str
+    new_name: str
+
+@app.post("/rename-folder")
+async def rename_folder(rename_folder_request: RenameFolderRequest) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).rename_folder(
+        rename_folder_request.folder_name, 
+        rename_folder_request.new_name
+    )
+    return {"success": success, "message": message}
+    
