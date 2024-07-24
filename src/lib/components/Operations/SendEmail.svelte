@@ -40,7 +40,7 @@
             "sender_name": (document.getElementById('sender_name') as HTMLInputElement).value,
             "receivers": Array.from(document.getElementById('receiver_emails')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent),
             "subject": (document.getElementById('subject') as HTMLInputElement).value,
-            "body": body.getHTMLContent(),
+            "body": body.getHTMLContent()
             //"attachments": Array.from((document.getElementById('attachments') as HTMLInputElement).files || []),
         }
     }
@@ -65,6 +65,9 @@
 
         const response: OpenMailData = await fetch('http://127.0.0.1:8000/send-email', {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(getFormKeyValues()),
         }).then(res => res.json());
 

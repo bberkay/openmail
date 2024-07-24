@@ -71,10 +71,10 @@ def get_email_content(folder: str, uid: str) -> Response:
 
 class SendEmailRequest(BaseModel):
     sender_name: str # This is going to change as sender: Tuple[str, str]
-    receivers: List[str]
+    receivers: str | List[str]
     subject: str
     body: str
-    attachments: List[str] = []
+    attachments: List[str] | None = []
 
 @app.post("/send-email")
 async def send_email(send_email_request: SendEmailRequest) -> Response:
