@@ -1,11 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::process::{Command, Child, Stdio};
+use std::io::{BufRead, BufReader};
+use std::process::{Child, Command, Stdio};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::RunEvent;
-use std::io::{BufRead, BufReader};
-use std::sync::{Arc, Mutex};
 
 const PYTHON_SERVER_DIR: &str = "server";
 const PYTHON_SERVER_MODULE: &str = "main:app";
@@ -57,7 +57,7 @@ fn main() {
         .run(move |app_handle, event| match event {
             RunEvent::Ready => {
                 /*let child = start_python_server().expect("Failed to start Python server");
-                *child_process.lock().unwrap() = Some(child);*/
+                 *child_process.lock().unwrap() = Some(child);*/
             }
             RunEvent::ExitRequested { api, .. } => {
                 /*api.prevent_exit();

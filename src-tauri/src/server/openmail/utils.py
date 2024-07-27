@@ -35,9 +35,6 @@ def choose_positive(var1: int, var2: int) -> int:
 def extract_domain(email: str) -> str:
     return email.split('@')[1].split(".")[0]
 
-def get_json_value(json: dict, key: str) -> str:
-    return key in json and json[key]
-
 def convert_to_imap_date(date: str) -> str:
     # 1970-01-01 to 01-Jan-1970
     # https://datatracker.ietf.org/doc/html/rfc5322#section-3.3

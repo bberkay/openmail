@@ -3,14 +3,13 @@ from fastapi import FastAPI, File, Form, UploadFile
 from urllib.parse import unquote
 import json
 from fastapi.middleware.cors import CORSMiddleware
-
 from pydantic import BaseModel
-from typing import Annotated, Optional, List, Tuple
+from typing import Optional, List
 
 class Response(BaseModel):
     success: bool
-    message: Optional[str] = ''
-    data: Optional[dict | list] = {}
+    message: str
+    data: Optional[dict | list] = None
 
 class SearchCriteria(BaseModel):
     senders: List[str]
@@ -38,7 +37,7 @@ PASSWORD = accounts[0]["password"]
 
 @app.post("/login") # TODO: This is temporary until the login system is implemented
 def login(
-    email = Form(...), 
+    email = Form(...),
     password = Form(...)
 ) -> Response:
     print(email, password)
@@ -47,8 +46,8 @@ def login(
 
 @app.get("/get-emails")
 def get_emails(
-    folder: str = 'INBOX', 
-    search: str = 'ALL', 
+    folder: str = 'INBOX',
+    search: str = 'ALL',
     offset: str = '0'
 ) -> Response:
     folder = unquote(folder)
@@ -58,7 +57,7 @@ def get_emails(
 
 @app.get("/get-email-content/{folder}/{uid}")
 def get_email_content(
-    folder: str, 
+    folder: str,
     uid: str
 ) -> Response:
     folder = unquote(folder)
@@ -67,10 +66,10 @@ def get_email_content(
 
 @app.post("/send-email")
 async def send_email(
-    sender_name: str = Form(...), # TODO: This is going to change to sender: Tuple[str, str] 
+    sender_name: str = Form(...), # TODO: This is going to change to sender: Tuple[str, str]
     receivers: str = Form(...), # mail addresses separated by comma
-    subject: str = Form(...), 
-    body: str = Form(...), 
+    subject: str = Form(...),
+    body: str = Form(...),
     attachments: List[UploadFile] = File(None)
 ) -> Response:
     success, message = OpenMail(EMAIL, PASSWORD).send_email(
@@ -95,8 +94,8 @@ class SearchRequest(BaseModel):
 @app.post("/search-emails")
 def search_emails(search_request: SearchRequest) -> Response:
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails(
-        search_request.folder, 
-        search_request.search, 
+        search_request.folder,
+        search_request.search,
         search_request.offset
     )
     return {"success": success, "message": message, "data": data}
@@ -109,8 +108,8 @@ class MarkEmailRequest(BaseModel):
 @app.post("/mark-email")
 async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
     success, message = OpenMail(EMAIL, PASSWORD).mark_email(
-        mark_email_request.uid, 
-        mark_email_request.mark, 
+        mark_email_request.uid,
+        mark_email_request.mark,
         mark_email_request.folder
     )
     return {"success": success, "message": message}
@@ -123,9 +122,21 @@ class MarkEmailRequest(BaseModel):
 @app.post("/move-email")
 async def move_email(move_email_request: MarkEmailRequest) -> Response:
     success, message = OpenMail(EMAIL, PASSWORD).move_email(
-        move_email_request.uid, 
-        move_email_request.source, 
+        move_email_request.uid,
+        move_email_request.source,
         move_email_request.destination
+    )
+    return {"success": success, "message": message}
+
+class DeleteEmailRequest(BaseModel):
+    uid: str
+    folder: str = 'INBOX'
+
+@app.post("/delete-email")
+async def delete_email(delete_email_request: DeleteEmailRequest) -> Response:
+    success, message = OpenMail(EMAIL, PASSWORD).delete_email(
+        delete_email_request.uid,
+        delete_email_request.folder
     )
     return {"success": success, "message": message}
 
@@ -136,7 +147,7 @@ class CreateFolderRequest(BaseModel):
 @app.post("/create-folder")
 async def create_folder(create_folder_request: CreateFolderRequest) -> Response:
     success, message = OpenMail(EMAIL, PASSWORD).create_folder(
-        create_folder_request.folder_name, 
+        create_folder_request.folder_name,
         create_folder_request.parent_folder
     )
     return {"success": success, "message": message}
@@ -148,11 +159,11 @@ class RenameFolderRequest(BaseModel):
 @app.post("/rename-folder")
 async def rename_folder(rename_folder_request: RenameFolderRequest) -> Response:
     success, message = OpenMail(EMAIL, PASSWORD).rename_folder(
-        rename_folder_request.folder_name, 
+        rename_folder_request.folder_name,
         rename_folder_request.new_name
     )
     return {"success": success, "message": message}
-    
+
 class DeleteFolderRequest(BaseModel):
     folder_name: str
 
@@ -168,7 +179,7 @@ class MoveFolderRequest(BaseModel):
 @app.post("/move-folder")
 async def move_folder(move_folder_request: MoveFolderRequest) -> Response:
     success, message = OpenMail(EMAIL, PASSWORD).move_folder(
-        move_folder_request.folder_name, 
+        move_folder_request.folder_name,
         move_folder_request.destination_folder
     )
     return {"success": success, "message": message}

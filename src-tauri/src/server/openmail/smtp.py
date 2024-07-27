@@ -1,17 +1,17 @@
-import smtplib 
+import smtplib
 from .utils import choose_positive, extract_domain
 
 class SMTP(smtplib.SMTP):
     def __init__(self, email_address: str, password: str, port: int = 587, try_limit: int = 3, timeout: int = 30):
-        self.__try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up    
+        self.__try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up
         self.__is_logged_in = False
         super().__init__(
-            self.__find_smtp_server(email_address), 
-            port or 587, 
+            self.__find_smtp_server(email_address),
+            port or 587,
             timeout=choose_positive(timeout, 30)
         )
         self.login(email_address, password)
-                
+
     def __find_smtp_server(self, email_address: str) -> str:
         try:
             return {
@@ -29,7 +29,7 @@ class SMTP(smtplib.SMTP):
         If you have better ideas, let me know please.
         """
         return self.__is_logged_in
-    
+
     def login(self, email_address: str, password: str) -> None:
         try_count = self.__try_limit
         for _ in range(try_count):
@@ -53,4 +53,3 @@ class SMTP(smtplib.SMTP):
                 super().quit()
         except Exception as e:
             raise Exception("Could not disconnect from the target smtp server: {}".format(str(e)))
-

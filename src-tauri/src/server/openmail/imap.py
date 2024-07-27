@@ -5,12 +5,12 @@ class IMAP(imaplib.IMAP4_SSL):
     def __init__(self, email_address: str, password: str, port: int = 993, try_limit: int = 3, timeout: int = 30):
         self.__try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up
         super().__init__(
-            self.__find_imap_server(email_address), 
-            port or 993, 
+            self.__find_imap_server(email_address),
+            port or 993,
             timeout=choose_positive(timeout, 30)
         )
         self.login(email_address, password)
-        
+
     def __find_imap_server(self, email_address: str) -> str:
         try:
             return {
@@ -21,10 +21,10 @@ class IMAP(imaplib.IMAP4_SSL):
             }[extract_domain(email_address)]
         except KeyError:
             raise Exception("Unsupported email domain")
-        
+
     def is_logged_in(self) -> bool:
         return self.state == "AUTH"
-    
+
     def login(self, email_address: str, password: str) -> None:
         try_count = self.__try_limit
         for _ in range(try_count):
