@@ -1,5 +1,5 @@
 import imaplib
-from .utils import choose_positive, extract_domain
+from .utils import choose_positive, extract_domain, contains_non_ascii
 
 class IMAP(imaplib.IMAP4_SSL):
     def __init__(self, email_address: str, password: str, port: int = 993, try_limit: int = 3, timeout: int = 30):
@@ -30,7 +30,11 @@ class IMAP(imaplib.IMAP4_SSL):
         for _ in range(try_count):
             try:
                 if not self.is_logged_in():
-                    super().login(email_address, password)
+                    if contains_non_ascii(email_address) or contains_non_ascii(password):
+                        self.authenticate("PLAIN", lambda x: bytes("\x00" + email_address + "\x00" + password, "utf-8"))
+                    else:
+                        super().login(email_address, password)
+                    self._simple_command('ENABLE', 'UTF8=ACCEPT')
                 break
             except Exception as e:
                 try_count -= 1

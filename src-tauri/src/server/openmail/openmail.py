@@ -9,25 +9,15 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
-from .utils import encode_modified_utf7, decode_modified_utf7, convert_to_imap_date, make_size_human_readable
+from .utils import convert_to_imap_date, make_size_human_readable, contains_non_ascii
 from .imap import IMAP
 from .smtp import SMTP
+from .types import SearchCriteria
 
 SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
 CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
 
 class OpenMail:
-    class SearchCriteria(TypedDict):
-        senders: List[str]
-        receivers: List[str]
-        subject: str
-        since: str
-        before: str
-        flags: List[str]
-        include: str
-        exclude: str
-        has_attachments: bool
-
     def __init__(self, email_address: str, password: str, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):
         self.__imap = IMAP(email_address, password, imap_port, try_limit, timeout)
         self.__smtp = SMTP(email_address, password, smtp_port, try_limit, timeout)
@@ -56,15 +46,17 @@ class OpenMail:
             if not self.__imap.is_logged_in():
                 self.__imap.login()
             response = func(self, *args, **kwargs) # type: ignore
+            if self.__imap.state == "SELECTED":
+                self.__imap.close()
             self.__imap.logout()
             return response
         return wrapper
 
-    def __encode_folder_name(self, folder: str) -> str:
-        return '"' + encode_modified_utf7(folder) + '"'
+    def __encode_folder(self, folder: str) -> str:
+        return ('"' + folder + '"').encode("utf-8")
 
-    def __decode_folder_name(self, folder: bytes) -> str:
-        return decode_modified_utf7(folder.decode().split(' "/" ')[1].replace('"', ''))
+    def __decode_folder(self, folder: bytes) -> str:
+        return folder.decode().split(' "/" ')[1].replace('"', '')
 
     @__handle_smtp_conn
     def __send_email(self, sender: str | Tuple[str, str], receiver_emails: str | List[str], subject: str, body: str, attachments: list | None = None, msg_meta: dict | None = None) -> tuple[bool, str]:
@@ -152,8 +144,7 @@ class OpenMail:
 
     @__handle_imap_conn
     def get_folders(self) -> tuple[bool, str, list] | tuple[bool, str]:
-        # TODO: İlginç Folder lar dönüyor mesela [Gmail] gibi
-        return True, "Folders fetched successfully", [self.__decode_folder_name(i) for i in self.__imap.list()[1]]
+        return True, "Folders fetched successfully", [self.__decode_folder(i) for i in self.__imap.list()[1]]
 
     def __fetch_flags(self, uid: str) -> list:
         if self.__imap.state != "SELECTED":
@@ -188,51 +179,48 @@ class OpenMail:
 
             return query + f'OR ({left_part}) ({right_part})'
 
-        def add_criterion(criteria: str, *args: any) -> str:
-            query = f'{criteria} '
-            is_empty = True
-            for i in args:
-                if i:
-                    is_empty = False
-                    query += f'"{i}" '
+        def add_criterion(criteria: str, value: str | list, seperate_with_or: bool = False) -> str:
+            if not value:
+                return ''
 
-            return query if not is_empty else ''
+            if isinstance(value, list):
+                if criteria == '':
+                    # value=["Flagged", "Seen", "Answered"]
+                    return ' '.join([i.upper() for i in value])
+
+                if len(value) <= 1:
+                    return f' ({criteria} "{value[0]}")'
+
+            if seperate_with_or and len(value) > 1:
+                criteria = ''
+                value = recursive_or_query(criteria, value)
+
+            return f' ({criteria} "{value}")'
 
         search_criteria_query = ''
-        search_criteria_query += add_criterion('', recursive_or_query("FROM", search_criteria.senders)) if len(search_criteria.senders) > 1 else add_criterion("FROM", search_criteria.senders[0])
-        search_criteria_query += add_criterion('', recursive_or_query("TO", search_criteria.receivers)) if len(search_criteria.receivers) > 1 else add_criterion("TO", search_criteria.receivers[0])
+        search_criteria_query += add_criterion('FROM', search_criteria.senders, len(search_criteria.senders) > 1)
+        search_criteria_query += add_criterion('TO', search_criteria.receivers, len(search_criteria.receivers) > 1)
         search_criteria_query += add_criterion("SUBJECT", search_criteria.subject)
-        search_criteria_query += add_criterion("BODY", search_criteria.body)
         search_criteria_query += add_criterion("SINCE", search_criteria.since)
         search_criteria_query += add_criterion("BEFORE", search_criteria.before)
         search_criteria_query += add_criterion("TEXT", search_criteria.include)
         search_criteria_query += add_criterion("NOT TEXT", search_criteria.exclude)
-        search_criteria_query += add_criterion("HEADER", "Content-Type", "multipart/mixed") if search_criteria.has_attachments else ''
-        search_criteria_query += add_criterion('', ' '.join([flag.upper() for flag in search_criteria.flags]))
+        search_criteria_query += add_criterion('', search_criteria.flags)
         return search_criteria_query.strip()
 
     def __search_with_criteria(self, criteria: str) -> list:
         if self.__imap.state != "SELECTED":
             raise Exception("Folder should be selected before searching")
 
-        # https://github.com/python/cpython/blob/main/Lib/imaplib.py#L986
-        _, uids = self.__imap.uid('search', None, criteria)
+        _, uids = self.__imap.uid('search', None, criteria.encode("utf-8"))
         return uids[0].split()[::-1] if uids else []
-
-    """def __search_with_literal(self, search: str) -> list:
-        if self.__imap.state != "SELECTED":
-            raise Exception("Folder should be selected before searching")
-
-        self.__imap.literal = search.encode("utf-8")
-        _, uids = self.__imap.uid('search', 'CHARSET', 'UTF-8', 'TEXT')
-        return uids[0].split()[::-1] if uids else []"""
 
     @__handle_imap_conn
     def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, dict] | tuple[bool, str]:
-        self.__imap.select(self.__encode_folder_name(folder), readonly=True)
+        self.__imap.select(self.__encode_folder(folder), readonly=True)
 
         search_criteria_query = None
-        if not isinstance(search, str):
+        if isinstance(search, SearchCriteria):
             search_criteria_query = self.__build_search_criteria_query(search)
 
         print("Search Criteria Query:", search_criteria_query)
@@ -242,35 +230,13 @@ class OpenMail:
         if len(uids) == 0:
             return True, "No emails found", {"folder": folder, "emails": [], "total": 0}
 
-        """
-            Attachments and include/exclude search criteria are handled here
-            because imap search command does not support attachments and
-            if include/exclude contains special characters, imap search command
-            does not work properly.
-        """
-        """
-        must_have_attachment = False
-        if isinstance(search, dict):
-            must_have_attachment = search["has_attachments"] if check_json_value(search, "has_attachments") else False
-
-            if check_json_value(search, "include"):
-                uids = list(set(uids).intersection(self.__search_with_literal(search["include"])))
-
-            if check_json_value(search, "exclude"):
-                uids = list(set(uids).intersection(self.__search_with_literal(search["exclude"])))
-
-            if len(uids) == 0:
-                return True, "No emails found", {"folder": folder, "emails": [], "total": 0}
-        """
-
         emails = []
         for uid in uids[offset: offset + 10]:
-            """
-            if must_have_attachment:
+            """if must_have_attachment:
                 _, message = self.__imap.uid('fetch', uid, 'BODYSTRUCTURE')
-                if not re.search(r'attachment', message[0][1].decode()):
-                    continue
-            """
+                if not re.search(r'attachment', message[0][1].decode(), re.IGNORECASE):
+                    continue"""
+
             _, message = self.__imap.uid('fetch', uid, '(RFC822)')
             message = email.message_from_bytes(message[0][1], policy=email.policy.default)
 
@@ -313,7 +279,7 @@ class OpenMail:
 
     @__handle_imap_conn
     def get_email_content(self, uid: str, folder: str = "inbox") -> tuple[bool, str, dict] | tuple[bool, str]:
-        self.__imap.select(self.__encode_folder_name(folder))
+        self.__imap.select(self.__encode_folder(folder), readonly=True)
 
         _, message = self.__imap.uid('fetch', uid, '(RFC822)')
         message = email.message_from_bytes(message[0][1], policy=email.policy.default)
@@ -358,7 +324,7 @@ class OpenMail:
 
     @__handle_imap_conn
     def mark_email(self, uid: str, mark: str, folder: str = "inbox") -> tuple[bool, str]:
-        self.__imap.select(self.__encode_folder_name(folder))
+        self.__imap.select(self.__encode_folder(folder))
 
         mark = mark.lower()
         mark_type = "-" if mark[0] + mark[1] == "un" else "+"
@@ -384,8 +350,8 @@ class OpenMail:
 
     @__handle_imap_conn
     def move_email(self, uid: str, source_folder: str, destination_folder: str) -> tuple[bool, str]:
-        self.__imap.select(self.__encode_folder_name(source_folder))
-        self.__imap.uid('COPY', uid, self.__encode_folder_name(destination_folder))
+        self.__imap.select(self.__encode_folder(source_folder))
+        self.__imap.uid('COPY', uid, self.__encode_folder(destination_folder))
         self.__imap.uid('STORE', uid , '+FLAGS', '(\Deleted)')
         self.__imap.expunge()
         return True, "Email moved successfully"
@@ -393,7 +359,7 @@ class OpenMail:
     @__handle_imap_conn
     def delete_email(self, uid: str, folder: str) -> tuple[bool, str]:
         # If current folder isn't the trash bin, move it to the trash bin.
-        self.__imap.select(self.__encode_folder_name(folder))
+        self.__imap.select(self.__encode_folder(folder))
         self.__imap.uid('STORE', uid , '+FLAGS', '(\Deleted)')
         self.__imap.expunge()
         # TODO: Select the trash bin and delete it from there.
@@ -403,19 +369,19 @@ class OpenMail:
     def create_folder(self, folder_name: str, parent_folder: str | None = None) -> tuple[bool, str]:
         if parent_folder:
             folder_name = f"{parent_folder}/{folder_name}"
-        self.__imap.create(self.__encode_folder_name(folder_name))
+        self.__imap.create(self.__encode_folder(folder_name))
         return True, "Folder created successfully"
 
     @__handle_imap_conn
     def delete_folder(self, folder_name: str) -> tuple[bool, str]:
-        self.__imap.delete(self.__encode_folder_name(folder_name))
+        self.__imap.delete(self.__encode_folder(folder_name))
         return True, "Folder deleted successfully"
 
     @__handle_imap_conn
     def move_folder(self, folder_name: str, destination_folder: str) -> tuple[bool, str]:
         if "/" in folder_name:
             destination_folder = f"{destination_folder}/{folder_name.split("/")[-1]}"
-        self.__imap.rename(self.__encode_folder_name(folder_name), self.__encode_folder_name(destination_folder))
+        self.__imap.rename(self.__encode_folder(folder_name), self.__encode_folder(destination_folder))
         return True, "Folder moved successfully"
 
     @__handle_imap_conn
@@ -423,5 +389,5 @@ class OpenMail:
         # TODO: Burada "/" şeklinde kontrol yerine imap.list() kullanılabilir.
         if "/" in folder_name:
             new_folder_name = folder_name.replace(folder_name.split("/")[-1], new_folder_name)
-        self.__imap.rename(self.__encode_folder_name(folder_name), self.__encode_folder_name(new_folder_name))
+        self.__imap.rename(self.__encode_folder(folder_name), self.__encode_folder(new_folder_name))
         return True, "Folder renamed successfully"

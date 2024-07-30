@@ -1,4 +1,4 @@
-from openmail import OpenMail
+from openmail import OpenMail, SearchCriteria
 from fastapi import FastAPI, File, Form, UploadFile
 from urllib.parse import unquote
 import json
@@ -10,17 +10,6 @@ class Response(BaseModel):
     success: bool
     message: str
     data: Optional[dict | list] = None
-
-class SearchCriteria(BaseModel):
-    senders: List[str]
-    receivers: List[str]
-    subject: str
-    since: str
-    before: str
-    flags: List[str]
-    include: str
-    exclude: str
-    has_attachments: bool
 
 app = FastAPI()
 app.add_middleware(
@@ -42,6 +31,7 @@ def login(
 ) -> Response:
     print(email, password)
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails()
+    #success, message, data = OpenMail(email, password).get_emails()
     return {"success": success, "message": message, "data": data}
 
 @app.get("/get-emails")
