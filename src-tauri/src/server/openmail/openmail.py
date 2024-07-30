@@ -9,7 +9,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
-from .utils import convert_to_imap_date, make_size_human_readable, contains_non_ascii
+from .utils import convert_to_imap_date, make_size_human_readable
 from .imap import IMAP
 from .smtp import SMTP
 from .types import SearchCriteria
@@ -219,47 +219,47 @@ class OpenMail:
     def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, dict] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder(folder), readonly=True)
 
-        search_criteria_query = None
+        search_criteria_query = 'ALL'
+        must_have_attachment = False
         if isinstance(search, SearchCriteria):
             search_criteria_query = self.__build_search_criteria_query(search)
+            if search.has_attachments:
+                must_have_attachment = True
+                search_criteria_query = search_criteria_query.strip() or 'ALL'
+        else:
+            search_criteria_query = search
 
-        print("Search Criteria Query:", search_criteria_query)
-        search_critera_query = search_criteria_query or 'TEXT "{}"'.format(search) if search != 'ALL' and search != '' else 'ALL'
-        uids = self.__search_with_criteria(search_critera_query)
+        uids = self.__search_with_criteria(search_criteria_query)
 
         if len(uids) == 0:
             return True, "No emails found", {"folder": folder, "emails": [], "total": 0}
 
         emails = []
         for uid in uids[offset: offset + 10]:
-            """if must_have_attachment:
-                _, message = self.__imap.uid('fetch', uid, 'BODYSTRUCTURE')
-                if not re.search(r'attachment', message[0][1].decode(), re.IGNORECASE):
-                    continue"""
-
+            """
+            _, data = M.fetch(num, '(BODY.PEEK[HEADER.FIELDS (CONTENT-TYPE)])')
+            if b"multipart/mixed" in data[0][1]:
+                print("Found multipart/mixed: ", num
+            """
             _, message = self.__imap.uid('fetch', uid, '(RFC822)')
             message = email.message_from_bytes(message[0][1], policy=email.policy.default)
 
             payload = [message]
             if message.is_multipart():
+                if must_have_attachment and message.get_content_type() != "multipart/mixed":
+                    continue
                 payload = message.walk()
 
-            body, is_body_html, skip_email_due_to_attachments = "", False, False
+            body = ""
+            is_body_html = False
             for part in payload:
                 content_type = part.get_content_type()
                 file_name = part.get_filename()
-
-                """if must_have_attachment and not file_name:
-                    skip_email_due_to_attachments = True
-                    break"""
 
                 is_body_html = content_type == "text/html"
                 if (file_name is None and content_type == "text/plain") or (is_body_html and not body):
                     body = part.get_payload(decode=True)
                     body = body.decode(part.get_content_charset() or "utf-8") if body else ""
-
-            if skip_email_due_to_attachments:
-                continue
 
             body = BeautifulSoup(body, "html.parser").get_text() if is_body_html else body
             body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
@@ -275,7 +275,7 @@ class OpenMail:
                 "flags": self.__fetch_flags(uid) or []
             })
 
-        return True, "Emails fetched successfully", {"folder": folder, "emails": emails, "total": len(uids)}
+        return True, "Emails fetched successfully", {"folder": folder, "emails": emails, "total": len(emails)}
 
     @__handle_imap_conn
     def get_email_content(self, uid: str, folder: str = "inbox") -> tuple[bool, str, dict] | tuple[bool, str]:
