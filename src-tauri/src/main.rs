@@ -7,18 +7,21 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::RunEvent;
 
-const PYTHON_SERVER_DIR: &str = "server";
-const PYTHON_SERVER_MODULE: &str = "main:app";
+const SERVER_SCRIPT_PATH: &str = if cfg!(target_os = "windows") {
+    "./run_server_windows.bat"
+} else {
+    "./run_server_linux.sh"
+};
 
 fn start_python_server() -> Result<Child, String> {
-    println!("Python server starting...");
-    let mut child = Command::new("uvicorn")
-        .current_dir(PYTHON_SERVER_DIR)
-        .arg(PYTHON_SERVER_MODULE)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|err| format!("Failed to start Python server: {}", err))?;
+    let mut child = Command::new(if cfg!(target_os = "windows") { "cmd" } else { "sh" })
+    .current_dir("src/server")
+    .arg(if cfg!(target_os = "windows") { "/C" } else { "-c" })
+    .arg(SERVER_SCRIPT_PATH)
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .map_err(|err| format!("Failed to start Python server: {}", err))?;
 
     let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
@@ -49,23 +52,23 @@ fn start_python_server() -> Result<Child, String> {
 }
 
 fn main() {
-    //let child_process = Arc::new(Mutex::new(None));
+    let child_process = Arc::new(Mutex::new(None));
 
     tauri::Builder::default()
         .build(tauri::generate_context!())
         .expect("Error building app")
         .run(move |app_handle, event| match event {
             RunEvent::Ready => {
-                /*let child = start_python_server().expect("Failed to start Python server");
-                 *child_process.lock().unwrap() = Some(child);*/
+                let child = start_python_server().expect("Failed to start Python server");
+                *child_process.lock().unwrap() = Some(child);
             }
             RunEvent::ExitRequested { api, .. } => {
-                /*api.prevent_exit();
+                api.prevent_exit();
                 if let Some(mut child) = child_process.lock().unwrap().take() {
                     println!("Python server stopping...");
                     let _ = child.kill();
                 }
-                std::process::exit(0);*/
+                std::process::exit(0);
             }
             _ => {}
         });

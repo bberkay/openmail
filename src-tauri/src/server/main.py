@@ -1,34 +1,66 @@
+import json, logging, sys, socket, os
+from urllib.parse import unquote
+from typing import Optional, List
+
+import uvicorn
+from pydantic import BaseModel
 from openmail import OpenMail, SearchCriteria
 from fastapi import FastAPI, File, Form, UploadFile
-from urllib.parse import unquote
-import json
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List
 
 class Response(BaseModel):
     success: bool
     message: str
     data: Optional[dict | list] = None
 
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+logger = logging.getLogger("uvicorn")
+logger.setLevel(logging.DEBUG)
+log_dir = os.path.expanduser("~/.logs/openmail")
+os.makedirs(log_dir, exist_ok=True)
+stream_handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+logger.addHandler(logging.FileHandler(os.path.join(log_dir, 'uvicorn.log')))
 
-accounts = json.load(open("./accounts.json"))
-EMAIL = accounts[0]["email"]
-PASSWORD = accounts[0]["password"]
+try:
+    app = FastAPI()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-@app.post("/login") # TODO: This is temporary until the login system is implemented
+    logger.info("FastAPI server started")
+except Exception as e:
+    logger.critical(f"Error starting FastAPI server: {e}")
+    exit(1)
+
+try:
+    """
+    Temporary solution to get the email and password from the accounts.json file.
+    """
+    accounts = json.load(open("./accounts.json"))
+    EMAIL = accounts[0]["email"]
+    PASSWORD = accounts[0]["password"]
+except Exception as e:
+    logger.critical(f"Error loading accounts: {e}")
+    exit(1)
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    response = await call_next(request)
+    logger.info(f"{request.method} {request.url} - {response.status_code}")
+    return response
+
+@app.post("/login")
 def login(
     email = Form(...),
     password = Form(...)
 ) -> Response:
+     # TODO: This is temporary until the login system is implemented
     print(email, password)
     success, message, data = OpenMail(EMAIL, PASSWORD).get_emails()
     #success, message, data = OpenMail(email, password).get_emails()
@@ -173,3 +205,24 @@ async def move_folder(move_folder_request: MoveFolderRequest) -> Response:
         move_folder_request.destination_folder
     )
     return {"success": success, "message": message}
+
+
+def is_port_available(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) != 0
+
+def find_free_port(start_port, end_port):
+    for port in range(start_port, end_port + 1):
+        if is_port_available(port):
+            return port
+    raise RuntimeError("No free ports available in the specified range")
+
+if __name__ == "__main__":
+    logger.info("Server started listening on port")
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=find_free_port(8000, 9000),
+        reload=True,
+        reload_excludes=['*.log']
+    )

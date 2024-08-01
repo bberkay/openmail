@@ -219,13 +219,11 @@ class OpenMail:
     def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, dict] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder(folder), readonly=True)
 
-        search_criteria_query = 'ALL'
+        search_criteria_query = ''
         must_have_attachment = False
         if isinstance(search, SearchCriteria):
-            search_criteria_query = self.__build_search_criteria_query(search)
-            if search.has_attachments:
-                must_have_attachment = True
-                search_criteria_query = search_criteria_query.strip() or 'ALL'
+            must_have_attachment = search.has_attachments
+            search_criteria_query = self.__build_search_criteria_query(search) or 'ALL'
         else:
             search_criteria_query = search
 
@@ -386,7 +384,6 @@ class OpenMail:
 
     @__handle_imap_conn
     def rename_folder(self, folder_name: str, new_folder_name: str) -> tuple[bool, str]:
-        # TODO: Burada "/" şeklinde kontrol yerine imap.list() kullanılabilir.
         if "/" in folder_name:
             new_folder_name = folder_name.replace(folder_name.split("/")[-1], new_folder_name)
         self.__imap.rename(self.__encode_folder(folder_name), self.__encode_folder(new_folder_name))
