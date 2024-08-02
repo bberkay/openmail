@@ -148,7 +148,7 @@ async def send_email(
 
 @app.get("/get-folders")
 def get_folders() -> Response:
-    return as_response((EMAIL, PASSWORD).get_folders())
+    return as_response(OpenMail(EMAIL, PASSWORD).get_folders())
 
 class SearchRequest(BaseModel):
     folder: str

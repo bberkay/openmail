@@ -25,7 +25,7 @@ class OpenMail:
     def __handle_smtp_conn(func):
         def wrapper(self, *args, **kwargs):
             try:
-                self.__smtp.login()
+                #self.__smtp.login()
                 response = func(self, *args, **kwargs) # type: ignore
                 return response
             except Exception as e:
@@ -37,7 +37,7 @@ class OpenMail:
     def __handle_imap_conn(func):
         def wrapper(self, *args, **kwargs):
             try:
-                self.__imap.login()
+                #self.__imap.login()
                 response = func(self, *args, **kwargs) # type: ignore
                 return response
             except Exception as e:
@@ -219,7 +219,7 @@ class OpenMail:
             must_have_attachment = search.has_attachments
             search_criteria_query = self.__build_search_criteria_query(search) or 'ALL'
         else:
-            search_criteria_query = search
+            search_criteria_query = search or 'ALL'
 
         uids = self.__search_with_criteria(search_criteria_query)
 
