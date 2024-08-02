@@ -47,53 +47,53 @@ accounts = json.load(open("./accounts.json"))
 EMAIL = accounts[0]["email"]
 PASSWORD = accounts[0]["password"]
 
-TEMPORARY_REDIRECT = 307
-
 def summarize_data(response_data: any) -> any:
+    if isinstance(response_data, dict):
+        return {key: summarize_data(value) for key, value in response_data.items()}
+    elif isinstance(response_data, list):
+        return summarize_data(str(response_data))
+    elif isinstance(response_data, str) and len(response_data) >= 100:
+        return response_data[:100] + '...' + (']' if response_data.startswith('[') else '')
+    return response_data
+
+async def extract_response_body(response: FastAPIResponse) -> bytes:
+    response_body = b""
+    async for chunk in response.body_iterator:
+        response_body += chunk
+    return response_body
+
+def extract_response_data(response_body: bytes) -> any:
     try:
-        if isinstance(response_data, dict):
-            return {key: summarize_data(value) for key, value in response_data.items()}
-        elif isinstance(response_data, list):
-            return [summarize_data(item) for item in response_data]
-        elif isinstance(response_data, str) and len(response_data) >= 100:
-            return response_data[:100] + "..."
-        return response_data
+        return json.loads(response_body)
     except Exception as e:
-        logger.error(f"Error while summarizing data: {e}")
-        return response_data
+        return response_body.decode("utf-8")
 
 async def save_request_response_log(request: Request, response: FastAPIResponse):
     try:
-        response_body = b""
-        async for chunk in response.body_iterator:
-            response_body += chunk
-
-        response_data = {}
-        if response_body:
-            try:
-                response_data = json.loads(response_body)
-            except Exception as e:
-                response_data = response_body.decode("utf-8")
-                logger.error(f"Error while parsing response body: {e}")
-        else:
-            response_data = response.body.decode("utf-8")
-
-        log_message = f"{request.method} {request.url} - {response.status_code} - {summarize_data(response_data)} - {make_size_human_readable(int(response.headers.get('content-length')))}"
+        response_data = extract_response_data(response._body)
+        log_message = (
+            f"{request.method} {request.url} - {response.status_code} - "
+            f"{summarize_data(response_data)} - "
+            f"{make_size_human_readable(int(response.headers.get('content-length')))}"
+        )
         if response.status_code >= 400:
             logger.error(log_message)
-        elif response.status_code != TEMPORARY_REDIRECT:
+        elif response.status_code != 307: # Temporary Redirect
             logger.info(log_message)
     except Exception as e:
         logger.error(f"Error while logging request and response: {e}")
-    finally:
-        return response_body
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     response = await call_next(request)
-    response_body = await save_request_response_log(request, response)
-    return FastAPIResponse(content=response_body, status_code=response.status_code,
-            headers=dict(response.headers), media_type=response.media_type)
+    response._body = await extract_response_body(response)
+    await save_request_response_log(request, response)
+    return FastAPIResponse(
+        content=response._body,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.media_type
+    )
 
 def as_response(response: tuple) -> Response:
     if response[0]:
