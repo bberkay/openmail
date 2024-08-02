@@ -1,4 +1,4 @@
-import json, logging, sys, socket, os
+import json, logging, sys, socket, os, signal
 from urllib.parse import unquote
 from typing import Optional, List
 from logging.handlers import RotatingFileHandler
@@ -9,11 +9,6 @@ from openmail import OpenMail, SearchCriteria
 from openmail.utils import make_size_human_readable
 from fastapi import FastAPI, File, Form, UploadFile, Request, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
-
-class Response(BaseModel):
-    success: bool
-    message: str
-    data: Optional[dict | list] = None
 
 logger = logging.getLogger("server")
 logger.setLevel(logging.DEBUG)
@@ -95,6 +90,11 @@ async def log_requests(request: Request, call_next):
         media_type=response.media_type
     )
 
+class Response(BaseModel):
+        success: bool
+        message: str
+        data: Optional[dict | list] = None
+
 def as_response(response: tuple) -> Response:
     if response[0]:
         return Response(success=response[0], message=response[1], data=response[2])
@@ -144,7 +144,6 @@ async def send_email(
         body,
         attachments
     ))
-
 
 @app.get("/get-folders")
 def get_folders() -> Response:
@@ -250,13 +249,12 @@ def find_free_port(start_port, end_port):
             return port
     raise RuntimeError("No free ports available in the specified range")
 
-#if __name__ == "__main__":
-#    logger.info("Starting server...")
-#    host = "127.0.0.1"
-#    port = find_free_port(8000, 9000)
-#    uvicorn.run(
-#        app,
-#        host=host,
-#        port=find_free_port(8000, 9000)
-#    )
-#    logger.info(f"Server started at http://{host}:{port}")
+if __name__ == "__main__":
+    host = "127.0.0.1"
+    port = find_free_port(8000, 9000)
+    logger.info("Starting server at http://%s:%d | PID: %d", host, port, os.getpid())
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+    )

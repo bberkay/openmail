@@ -1,74 +1,42 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::io::{BufRead, BufReader};
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Command};
 use std::sync::{Arc, Mutex};
-use std::thread;
 use tauri::RunEvent;
 
-const SERVER_SCRIPT_PATH: &str = if cfg!(target_os = "windows") {
-    "./run_server_windows.bat"
-} else {
-    "./run_server_linux.sh"
-};
+const IS_WINDOWS: bool = cfg!(target_os = "windows");
+const COMMAND: &str = if IS_WINDOWS { "cmd" } else { "sh" };
+const ARGUMENT_FLAG: &str = if IS_WINDOWS{ "/C" } else { "-c" };
+const UVICORN_START_SCRIPT: &str = if IS_WINDOWS { "./windows/start_uvicorn.bat" } else { "./linux/start_uvicorn.sh" };
 
 fn start_python_server() -> Result<Child, String> {
-    let mut child = Command::new(if cfg!(target_os = "windows") { "cmd" } else { "sh" })
-    .current_dir("src/server")
-    .arg(if cfg!(target_os = "windows") { "/C" } else { "-c" })
-    .arg(SERVER_SCRIPT_PATH)
-    .stdout(Stdio::piped())
-    .stderr(Stdio::piped())
+    let child = Command::new(COMMAND)
+    .current_dir("src/server/shell")
+    .arg(ARGUMENT_FLAG)
+    .arg(UVICORN_START_SCRIPT)
     .spawn()
     .map_err(|err| format!("Failed to start Python server: {}", err))?;
-
-    let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
-    let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
-
-    // Spawning a new thread to read stdout
-    thread::spawn(move || {
-        let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            match line {
-                Ok(line) => println!("STDOUT: {}", line),
-                Err(err) => eprintln!("Error reading stdout: {}", err),
-            }
-        }
-    });
-
-    // Spawning a new thread to read stderr
-    thread::spawn(move || {
-        let reader = BufReader::new(stderr);
-        for line in reader.lines() {
-            match line {
-                Ok(line) => eprintln!("STDERR: {}", line),
-                Err(err) => eprintln!("Error reading stderr: {}", err),
-            }
-        }
-    });
 
     Ok(child)
 }
 
 fn main() {
-    //let child_process = Arc::new(Mutex::new(None));
-
+    let child_process = Arc::new(Mutex::new(None));
     tauri::Builder::default()
         .build(tauri::generate_context!())
         .expect("Error building app")
-        .run(move |app_handle, event| match event {
+        .run(move |_app_handle, event| match event {
             RunEvent::Ready => {
-                //let child = start_python_server().expect("Failed to start Python server");
-                //*child_process.lock().unwrap() = Some(child);
+                let child = start_python_server().expect("Failed to start Python server");
+                *child_process.lock().unwrap() = Some(child);
             }
             RunEvent::ExitRequested { api, .. } => {
-                /*api.prevent_exit();
+                api.prevent_exit();
                 if let Some(mut child) = child_process.lock().unwrap().take() {
-                    println!("Python server stopping...");
                     let _ = child.kill();
                 }
-                std::process::exit(0);*/
+                std::process::exit(0);
             }
             _ => {}
         });
