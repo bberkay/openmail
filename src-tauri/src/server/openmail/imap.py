@@ -1,5 +1,5 @@
 import imaplib
-from .utils import choose_positive, extract_domain, contains_non_ascii
+from .utils import extract_domain, choose_positive, contains_non_ascii
 
 class IMAP(imaplib.IMAP4_SSL):
     def __init__(self, email_address: str, password: str, port: int = 993, try_limit: int = 3, timeout: int = 30):
@@ -44,6 +44,8 @@ class IMAP(imaplib.IMAP4_SSL):
     def logout(self) -> None:
         try:
             if self.is_logged_in():
+                if self.state == "SELECTED":
+                    self.close()
                 super().logout()
         except Exception as e:
             raise Exception("Could not logout from the target imap server: {}".format(str(e)))

@@ -1,5 +1,5 @@
 import smtplib
-from .utils import choose_positive, extract_domain
+from .utils import extract_domain, choose_positive
 
 class SMTP(smtplib.SMTP):
     def __init__(self, email_address: str, password: str, port: int = 587, try_limit: int = 3, timeout: int = 30):

@@ -52,23 +52,23 @@ fn start_python_server() -> Result<Child, String> {
 }
 
 fn main() {
-    let child_process = Arc::new(Mutex::new(None));
+    //let child_process = Arc::new(Mutex::new(None));
 
     tauri::Builder::default()
         .build(tauri::generate_context!())
         .expect("Error building app")
         .run(move |app_handle, event| match event {
             RunEvent::Ready => {
-                let child = start_python_server().expect("Failed to start Python server");
-                *child_process.lock().unwrap() = Some(child);
+                //let child = start_python_server().expect("Failed to start Python server");
+                //*child_process.lock().unwrap() = Some(child);
             }
             RunEvent::ExitRequested { api, .. } => {
-                api.prevent_exit();
+                /*api.prevent_exit();
                 if let Some(mut child) = child_process.lock().unwrap().take() {
                     println!("Python server stopping...");
                     let _ = child.kill();
                 }
-                std::process::exit(0);
+                std::process::exit(0);*/
             }
             _ => {}
         });

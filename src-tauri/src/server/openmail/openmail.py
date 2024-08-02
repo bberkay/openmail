@@ -22,34 +22,28 @@ class OpenMail:
         self.__imap = IMAP(email_address, password, imap_port, try_limit, timeout)
         self.__smtp = SMTP(email_address, password, smtp_port, try_limit, timeout)
 
-    def __handle_errors(func):
-        def wrapper(self, *args, **kwargs):
-            try:
-                return func(self, *args, **kwargs) # type: ignore
-            except Exception as e:
-                return False, str(e)
-        return wrapper
-
-    @__handle_errors
     def __handle_smtp_conn(func):
         def wrapper(self, *args, **kwargs):
-            if not self.__smtp.is_logged_in():
+            try:
                 self.__smtp.login()
-            response = func(self, *args, **kwargs) # type: ignore
-            self.__smtp.quit()
-            return response
+                response = func(self, *args, **kwargs) # type: ignore
+                return response
+            except Exception as e:
+                return False, str(e)
+            finally:
+                self.__smtp.quit()
         return wrapper
 
-    @__handle_errors
     def __handle_imap_conn(func):
         def wrapper(self, *args, **kwargs):
-            if not self.__imap.is_logged_in():
+            try:
                 self.__imap.login()
-            response = func(self, *args, **kwargs) # type: ignore
-            if self.__imap.state == "SELECTED":
-                self.__imap.close()
-            self.__imap.logout()
-            return response
+                response = func(self, *args, **kwargs) # type: ignore
+                return response
+            except Exception as e:
+                return False, str(e)
+            finally:
+                self.__imap.logout()
         return wrapper
 
     def __encode_folder(self, folder: str) -> str:
@@ -273,7 +267,7 @@ class OpenMail:
                 "flags": self.__fetch_flags(uid) or []
             })
 
-        return True, "Emails fetched successfully", {"folder": folder, "emails": emails, "total": len(emails)}
+        return True, "Emails fetched successfully", {"folder": folder, "emails": emails, "total": len(uids)}
 
     @__handle_imap_conn
     def get_email_content(self, uid: str, folder: str = "inbox") -> tuple[bool, str, dict] | tuple[bool, str]:
