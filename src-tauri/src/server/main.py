@@ -68,28 +68,32 @@ async def save_request_response_log(request: Request, response: FastAPIResponse)
         async for chunk in response.body_iterator:
             response_body += chunk
 
+        response_data = {}
         if response_body:
             try:
-                response_body = json.loads(response_body)
+                response_data = json.loads(response_body)
             except Exception as e:
-                response_body = response_body.decode("utf-8")
+                response_data = response_body.decode("utf-8")
                 logger.error(f"Error while parsing response body: {e}")
         else:
-            response_body = response_body.decode("utf-8")
+            response_data = response.body.decode("utf-8")
 
-        log_message = f"{request.method} {request.url} - {response.status_code} - {summarize_data(response_body)} - {make_size_human_readable(int(response.headers.get('content-length')))}"
+        log_message = f"{request.method} {request.url} - {response.status_code} - {summarize_data(response_data)} - {make_size_human_readable(int(response.headers.get('content-length')))}"
         if response.status_code >= 400:
             logger.error(log_message)
         elif response.status_code != TEMPORARY_REDIRECT:
             logger.info(log_message)
     except Exception as e:
         logger.error(f"Error while logging request and response: {e}")
+    finally:
+        return response_body
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     response = await call_next(request)
-    await save_request_response_log(request, response)
-    return response
+    response_body = await save_request_response_log(request, response)
+    return FastAPIResponse(content=response_body, status_code=response.status_code,
+            headers=dict(response.headers), media_type=response.media_type)
 
 def as_response(response: tuple) -> Response:
     if response[0]:
