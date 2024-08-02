@@ -252,9 +252,12 @@ def find_free_port(start_port, end_port):
 if __name__ == "__main__":
     host = "127.0.0.1"
     port = find_free_port(8000, 9000)
-    logger.info("Starting server at http://%s:%d | PID: %d", host, port, os.getpid())
+    pid = str(os.getpid())
+    with open(os.path.expanduser("~/.openmail/server.pid"), "w") as pid_file:
+        pid_file.write(pid)
+    logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
     uvicorn.run(
         app,
         host=host,
-        port=port,
+        port=port
     )
