@@ -10,14 +10,14 @@ from openmail.utils import make_size_human_readable
 from fastapi import FastAPI, File, Form, UploadFile, Request, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-logger = logging.getLogger("server")
+logger = logging.getLogger("uvicorn")
 logger.setLevel(logging.DEBUG)
 log_dir = os.path.expanduser("~/.openmail/logs")
 os.makedirs(log_dir, exist_ok=True)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 stream_handler = logging.StreamHandler(sys.stdout)
 file_handler = RotatingFileHandler(
-    os.path.join(log_dir, 'server.log'),
+    os.path.join(log_dir, 'uvicorn.log'),
     maxBytes=1*1024*1024, # 1 MB
     backupCount=5
 )
