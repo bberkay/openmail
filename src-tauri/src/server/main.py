@@ -1,4 +1,4 @@
-import json, logging, sys, socket, os
+import json, logging, sys, socket, os, re
 from urllib.parse import unquote
 from typing import Optional, List, Callable
 from logging.handlers import RotatingFileHandler
@@ -69,9 +69,10 @@ def get_db_conn():
 def create_tables_if_not_exists():
     conn, cursor = get_db_conn()
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS credentials (
+        CREATE TABLE IF NOT EXISTS accounts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT NOT NULL,
+            fullname VARCHAR(50),
+            email VARCHAR(100) NOT NULL,
             password TEXT NOT NULL
         )
     """)
@@ -131,12 +132,7 @@ class Response(BaseModel):
         message: str
         data: Optional[dict | list] = None
 
-def as_response(response: tuple, success_callback: Optional[Callable] = None, failure_callback: Optional[Callable] = None) -> Response:
-    if response[0] and success_callback:
-        success_callback()
-    elif failure_callback:
-        failure_callback()
-
+def as_response(response: tuple) -> Response:
     if len(response) > 2:
         return Response(success=response[0], message=response[1], data=response[2])
     else:
@@ -149,48 +145,51 @@ accounts = json.load(open("./accounts.json"))
 EMAIL = accounts[0]["email"]
 PASSWORD = accounts[0]["password"]
 
-def register_email(email: str, password: str):
+def add_email_account_to_db(email: str, password: str, fullname: str = None) -> Response:
     cipher_key = get_cipher_key()
     conn, cursor = get_db_conn()
-    cursor.execute(
-        "INSERT INTO credentials (email, password) VALUES (?, ?)",
-        (email, Fernet(cipher_key).encrypt(password.encode()).decode())
-    )
-    conn.commit()
-    conn.close()
+    if not cursor.execute("SELECT email FROM accounts WHERE email = ?", (email,)).fetchone():
+        cursor.execute(
+            "INSERT INTO accounts (fullname, email, password) VALUES (?, ?, ?)",
+            (fullname, email, Fernet(cipher_key).encrypt(password.encode()).decode())
+        )
+        conn.commit()
+        conn.close()
+        return Response(success=True, message="Email registered successfully", data={"email": email, "fullname": fullname})
+    else:
+        conn.close()
+        return Response(success=False, message="Email already registered")
 
-@app.get("/get-accounts")
-def get_accounts():
+def is_email_valid(email: str) -> bool:
+    return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
+
+@app.post("/add-email-account")
+def add_email_account(
+    email = Form(...),
+    password = Form(...),
+    fullname = Form(None)
+) -> Response:
+    if not is_email_valid(EMAIL):
+        return Response(success=False, message="Invalid email address")
+    if not openmail.connect(EMAIL, PASSWORD):
+        return Response(success=False, message="Invalid email or password")
+    return add_email_account_to_db(EMAIL, PASSWORD, fullname)
+
+@app.get("/get-email-accounts")
+def get_email_accounts() -> Response:
     try:
         chiper_key = get_cipher_key()
         chiper_suite = Fernet(chiper_key)
         conn, cursor = get_db_conn()
-        cursor.execute("SELECT email, password FROM credentials")
+        cursor.execute("SELECT fullname, email FROM accounts")
         accounts = cursor.fetchall()
         conn.close()
         if accounts:
-            accounts = [
-                {
-                    "email": account[0],
-                    "password": chiper_suite.decrypt(account[1]).decode()
-                }
-                for account in accounts
-            ]
-        return Response(success=True, message="No accounts found")
+            accounts = [{"fullname": account[0], "email": account[1]} for account in accounts]
+            return Response(success=True, message="Email accounts found", data=accounts)
+        return Response(success=False, message="No accounts found")
     except Exception as e:
         return Response(success=False, message=str(e))
-
-@app.post("/register")
-def register(
-    fullname = Form(...),
-    email = Form(...),
-    password = Form(...)
-) -> Response:
-    return as_response(openmail.connect(EMAIL, PASSWORD), register_email(EMAIL, PASSWORD))
-
-@app.post("/login")
-def login():
-    pass
 
 @app.get("/get-emails")
 def get_emails(

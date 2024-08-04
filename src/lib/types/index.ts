@@ -4,12 +4,10 @@ export interface OpenMailData {
     data?: any;
 }
 
-export interface User {
+export interface Account {
     fullname: string;
     email: string;
 }
-
-export type OpenMailDataString = string;
 
 export interface Attachment {
     cid: string;
@@ -27,7 +25,7 @@ export interface Email {
     body_short?: string, // This or body is optional
     body?: string, // This or body_short is optional
     date: string,
-    attachments?: Attachment[], 
+    attachments?: Attachment[],
     flags: string[]
 }
 

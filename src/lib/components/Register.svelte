@@ -1,42 +1,43 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount, createEventDispatcher } from "svelte";
     import type { OpenMailData } from "$lib/types";
-    import { createEventDispatcher } from "svelte";
     import { get } from "svelte/store";
-    import { serverUrl } from "$lib/stores";
+    import { serverUrl, accounts } from "$lib/stores";
 
     const dispatch = createEventDispatcher();
-    let loginButton: HTMLButtonElement;
+    let addAccountBtn: HTMLButtonElement;
     onMount(() => {
-        loginButton = document.getElementById('login-button')! as HTMLButtonElement;
+        addAccountBtn = document.getElementById('add-account-btn')! as HTMLButtonElement;
     });
 
-    async function handleLoginOnSubmit(event: Event) {
+    async function handleAddAccount(event: Event) {
         event.preventDefault();
         const form = event.target;
         if (!(form instanceof HTMLFormElement))
             return;
 
-        loginButton.disabled = true;
-        loginButton.textContent = 'Logging in...';
-        // TODO: Change this after the login system is done.
-        const response: OpenMailData = await fetch(`${get(serverUrl)}/register`, {
+        addAccountBtn.disabled = true;
+        addAccountBtn.textContent = 'Adding Account...';
+        const response: OpenMailData = await fetch(`${get(serverUrl)}/add-email-account`, {
             method: 'POST',
             body: new FormData(form)
         }).then(res => res.json());
         if(response.success){
-            response["data"] = {
-                "fullname": (form.querySelector('input[name="fullname"]') as HTMLInputElement).value,
-                "email": (form.querySelector('input[name="email"]') as HTMLInputElement).value
-            }
+            accounts.update(accounts => [...accounts, response.data]);
+            addAccountBtn.disabled = false;
+            addAccountBtn.textContent = 'Add Account';
+            form.reset();
         }
-        dispatch('login', response);
+    }
+
+    function continueToInbox(){
+        dispatch('continueToInbox');
     }
 </script>
 
 <section class="add-email">
     <div class="card">
-        <form on:submit={handleLoginOnSubmit}>
+        <form on:submit={handleAddAccount}>
             <div class="form-group">
                 <label for="fullname">Fullname (Optional)</label>
                 <!-- svelte-ignore a11y-autofocus -->
@@ -51,9 +52,18 @@
                 <label for="password">Password</label>
                 <input type="password" name="password" id="password" value="123" autocomplete="off" required>
             </div>
-            <button type="submit" id="login-button">Login to your Email</button>
+            <button type="submit" id="add-account-btn">Add Account</button>
         </form>
     </div>
+    {#if $accounts && $accounts.length > 0}
+        <button on:click={continueToInbox}>Continue to Inbox</button>
+        <h3>Current Accounts</h3>
+        <ul>
+            {#each $accounts as account}
+                <li>{account.fullname} - {account.email}</li>
+            {/each}
+        </ul>
+    {/if}
 </section>
 
 <style>

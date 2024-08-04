@@ -25,9 +25,12 @@ class OpenMail:
         self.__timeout = timeout
 
     def connect(self, email_address: str, password: str):
-        self.__imap = IMAP(email_address, password, self.__imap_port, self.__try_limit, self.__timeout)
-        self.__smtp = SMTP(email_address, password, self.__smtp_port, self.__try_limit, self.__timeout)
-        return True, "Connected successfully"
+        try:
+            self.__imap = IMAP(email_address, password, self.__imap_port, self.__try_limit, self.__timeout)
+            self.__smtp = SMTP(email_address, password, self.__smtp_port, self.__try_limit, self.__timeout)
+            return True, "Connected successfully"
+        except Exception as e:
+            return False, str(e)
 
     def __handle_smtp_conn(func):
         def wrapper(self, *args, **kwargs):

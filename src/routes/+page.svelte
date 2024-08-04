@@ -3,55 +3,43 @@
 	import Sidebar from "$lib/components/Sidebar.svelte";
 	import Inbox from "$lib/components/Inbox.svelte";
 	import Content from "$lib/components/Content.svelte";
-	import Login from "$lib/components/Login.svelte";
-	import { serverUrl, emails, totalEmailCount, currentFolder, folders, currentOffset, user } from "$lib/stores";
+	import Register from "$lib/components/Register.svelte";
+	import { serverUrl, emails, totalEmailCount, currentFolder, folders, currentOffset, accounts } from "$lib/stores";
     import type { OpenMailData, Email } from "$lib/types";
     import { invoke } from '@tauri-apps/api/core';
     import { onMount } from "svelte";
     import { get } from "svelte/store";
 
-	let is_logged_in: boolean = false;
-
-	onMount(() => {
-	    setServerUrl();
-        //getAccounts();
+	let isLoading: boolean = true;
+	let continueToInbox: boolean = false;
+	onMount(async () => {
+	    await setServerUrl();
+        await getAccounts();
     });
 
 	async function setServerUrl(){
 	    await invoke('get_server_url').then(url => {
-			serverUrl.set(url && typeof url === "string" ? url : "http://127.0.0.1:8000");
+			serverUrl.set(url ? url as string : "http://127.0.0.1:8000");
         });
 	}
 
 	async function getAccounts(){
-        const response: OpenMailData = await fetch(`${get(serverUrl)}/get-accounts`).then(res => res.json());
-        if(Object.hasOwn(response, "data")){
-            is_logged_in = true;
-            /*user.set(response.data["user"]);
-            emails.set(response.data["emails"]);
-            totalEmailCount.set(response.data["total"]);
-            currentFolder.set(response.data["folder"]);
-            currentOffset.set(response.data["emails"].length);*/
-        }
-	}
-
-	async function handleLoginDispatch(event: CustomEvent){
-		is_logged_in = event.detail.success;
-		if(is_logged_in){
-		    user.set(event.detail.data);
-			getEmails();
-			//getFolders();
-		}
+        const response: OpenMailData = await fetch(`${get(serverUrl)}/get-email-accounts`).then(res => res.json());
+        if(Object.hasOwn(response, "data") && response.data)
+            accounts.set(response.data);
+        isLoading = false;
 	}
 
 	async function getEmails(){
-		const response: OpenMailData = await fetch(`${get(serverUrl)}/get-emails`).then(res => res.json());
+	    continueToInbox = true;
+		console.log("Getting emails...");
+		/*const response: OpenMailData = await fetch(`${get(serverUrl)}/get-emails`).then(res => res.json());
         if(response.success){
             emails.set(response.data["emails"] as Email[]);
             currentFolder.set(response.data["folder"]);
             currentOffset.set(response.data["total"] < 10 ? response.data["total"] : 10);
             totalEmailCount.set(response.data["total"]);
-        }
+        }*/
 	}
 
 	async function getFolders(){
@@ -62,20 +50,24 @@
 </script>
 
 <!--<Alert message="This is a success message" type="success" />-->
-{#if !is_logged_in}
-	<Login on:login={handleLoginDispatch} />
+{#if isLoading}
+    <p>Loading</p>
 {:else}
-	<main class="container">
-		<div class="sidebar-container">
-			<Sidebar />
-		</div>
-		<div class="inbox-container">
-			<Inbox/>
-		</div>
-		<div class="email-container">
-			<Content />
-		</div>
-	</main>
+    {#if !continueToInbox}
+    	<Register on:continueToInbox={getEmails} />
+    {:else}
+    	<main class="container">
+    		<div class="sidebar-container">
+    			<Sidebar />
+    		</div>
+    		<div class="inbox-container">
+    			<Inbox/>
+    		</div>
+    		<div class="email-container">
+    			<Content />
+    		</div>
+    	</main>
+     {/if}
 {/if}
 
 <style>

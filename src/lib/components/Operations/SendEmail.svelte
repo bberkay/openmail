@@ -1,12 +1,11 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { user, serverUrl } from '$lib/stores';
+    import { currentAccount, serverUrl } from '$lib/stores';
     import type { OpenMailData } from '$lib/types';
     import { get } from "svelte/store";
 
     // @ts-ignore
     let body: WYSIWYGEditor;
-    let fullname: string = $user.fullname;
     let receivers: HTMLElement;
     let sendEmailButton: HTMLButtonElement;
     onMount(() => {
@@ -50,10 +49,6 @@
         }).then(res => res.json());
 
         if (response.success) {
-            user.update(user => {
-                user.fullname = fullname;
-                return user;
-            });
             sendEmailButton.textContent = 'Send';
             sendEmailButton.disabled = false;
         }
@@ -65,8 +60,8 @@
         <form id="send-email-form" on:submit|preventDefault={handleSendEmail}>
             <div class="form-group">
                 <label for="sender_name">Fullname (Optional)</label>
-                <input type="text" name="sender_name" id="sender_name" bind:value={fullname}>
-                <small style="margin-top:2px;font-style:italic;">{fullname} &lt;{$user.email}&gt;</small>
+                <input type="text" name="sender_name" id="sender_name" bind:value={$currentAccount.fullname}>
+                <small style="margin-top:2px;font-style:italic;">{$currentAccount.fullname} &lt;{$currentAccount.email}&gt;</small>
             </div>
             <div class="form-group">
                 <label for="receivers">Receiver(s)</label>
