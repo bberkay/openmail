@@ -18,12 +18,12 @@
         loginButton.disabled = true;
         loginButton.textContent = 'Logging in...';
         // TODO: Change this after the login system is done.
-        const response: OpenMailData = await fetch('http://127.0.0.1:8000/login', {
+        const response: OpenMailData = await fetch('http://127.0.0.1:8006/register', {
             method: 'POST',
             body: new FormData(form)
         }).then(res => res.json());
         if(response.success){
-            response.data["user"] = {
+            response["data"] = {
                 "fullname": (form.querySelector('input[name="fullname"]') as HTMLInputElement).value,
                 "email": (form.querySelector('input[name="email"]') as HTMLInputElement).value
             }
@@ -43,11 +43,11 @@
             </div>
             <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" name="email" id="email" autocomplete="off" value="testforprojects42webio@gmail.com" required>
+                <input type="email" name="email" id="email" autocomplete="off" value="name@example.com" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" name="password" id="password" autocomplete="off" required>
+                <input type="password" name="password" id="password" value="123" autocomplete="off" required>
             </div>
             <button type="submit" id="login-button">Login to your Email</button>
         </form>

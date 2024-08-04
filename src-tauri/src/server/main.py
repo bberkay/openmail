@@ -1,31 +1,33 @@
-import json, logging, sys, socket, os, signal
+import json, logging, sys, socket, os
 from urllib.parse import unquote
-from typing import Optional, List
+from typing import Optional, List, Callable
 from logging.handlers import RotatingFileHandler
 
-import uvicorn
+import uvicorn, sqlcipher3
 from pydantic import BaseModel
 from openmail import OpenMail, SearchCriteria
 from openmail.utils import make_size_human_readable
 from fastapi import FastAPI, File, Form, UploadFile, Request, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
+from cryptography.fernet import Fernet
 
-logger = logging.getLogger("uvicorn")
-logger.setLevel(logging.DEBUG)
-log_dir = os.path.expanduser("~/.openmail/logs")
-os.makedirs(log_dir, exist_ok=True)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-stream_handler = logging.StreamHandler(sys.stdout)
-file_handler = RotatingFileHandler(
-    os.path.join(log_dir, 'uvicorn.log'),
-    maxBytes=1*1024*1024, # 1 MB
-    backupCount=5
-)
-stream_handler.setFormatter(formatter)
-file_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
-logger.addHandler(file_handler)
+from consts import *
 
+logger = None
+
+def setup_logger():
+    global logger
+    logger = logging.getLogger(APP_NAME)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    stream_handler = logging.StreamHandler(sys.stdout)
+    file_handler = RotatingFileHandler(UVICORN_LOG_FILE_PATH, maxBytes=1*1024*1024, backupCount=5)
+    stream_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    logger.addHandler(file_handler)
+
+openmail = OpenMail()
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -35,12 +37,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-"""
-Temporary solution to get the email and password from the accounts.json file.
-"""
-accounts = json.load(open("./accounts.json"))
-EMAIL = accounts[0]["email"]
-PASSWORD = accounts[0]["password"]
+def create_dirs_if_not_exists():
+    for directory in [APP_DIR, SECRETS_DIR, DB_DIR, LOG_DIR]:
+        if not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
+
+def create_keys_if_not_exits():
+    if not os.path.exists(PRAGMA_KEY_FILE_PATH):
+        with open(PRAGMA_KEY_FILE_PATH, "wb") as key_file:
+            key_file.write(Fernet.generate_key())
+
+    if not os.path.exists(CIPHER_KEY_FILE_PATH):
+        with open(CIPHER_KEY_FILE_PATH, "wb") as key_file:
+            key_file.write(Fernet.generate_key())
+
+def get_pragma_key() -> bytes:
+    with open(PRAGMA_KEY_FILE_PATH, "rb") as key_file:
+        return key_file.read()
+
+def get_cipher_key() -> bytes:
+    with open(CIPHER_KEY_FILE_PATH, "rb") as key_file:
+        return key_file.read()
+
+def get_db_conn():
+    conn = sqlcipher3.connect(UVICORN_DB_FILE_PATH)
+    cursor = conn.cursor()
+    cursor.execute(f"PRAGMA key = '{get_pragma_key().decode()}'")
+    cursor.execute("VACUUM")
+    return conn, cursor
+
+def create_tables_if_not_exists():
+    conn, cursor = get_db_conn()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS credentials (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            password TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
 def summarize_data(response_data: any) -> any:
     if isinstance(response_data, dict):
@@ -95,20 +131,66 @@ class Response(BaseModel):
         message: str
         data: Optional[dict | list] = None
 
-def as_response(response: tuple) -> Response:
-    if response[0]:
-        return Response(success=response[0], message=response[1], data=response[2])
-    return Response(success=response[0], message=response[1])
+def as_response(response: tuple, success_callback: Optional[Callable] = None, failure_callback: Optional[Callable] = None) -> Response:
+    if response[0] and success_callback:
+        success_callback()
+    elif failure_callback:
+        failure_callback()
 
-@app.post("/login")
-def login(
+    if len(response) > 2:
+        return Response(success=response[0], message=response[1], data=response[2])
+    else:
+        return Response(success=response[0], message=response[1])
+
+"""
+Temporary solution to get the email and password from the accounts.json file.
+"""
+accounts = json.load(open("./accounts.json"))
+EMAIL = accounts[0]["email"]
+PASSWORD = accounts[0]["password"]
+
+def register_email(email: str, password: str):
+    cipher_key = get_cipher_key()
+    conn, cursor = get_db_conn()
+    cursor.execute(
+        "INSERT INTO credentials (email, password) VALUES (?, ?)",
+        (email, Fernet(cipher_key).encrypt(password.encode()).decode())
+    )
+    conn.commit()
+    conn.close()
+
+@app.get("/get-accounts")
+def get_accounts():
+    try:
+        chiper_key = get_cipher_key()
+        chiper_suite = Fernet(chiper_key)
+        conn, cursor = get_db_conn()
+        cursor.execute("SELECT email, password FROM credentials")
+        accounts = cursor.fetchall()
+        conn.close()
+        if accounts:
+            accounts = [
+                {
+                    "email": account[0],
+                    "password": chiper_suite.decrypt(account[1]).decode()
+                }
+                for account in accounts
+            ]
+        return Response(success=True, message="No accounts found")
+    except Exception as e:
+        return Response(success=False, message=str(e))
+
+@app.post("/register")
+def register(
+    fullname = Form(...),
     email = Form(...),
     password = Form(...)
 ) -> Response:
-     # TODO: This is temporary until the login system is implemented
-    print(email, password)
-    #success, message, data = OpenMail(email, password).get_emails()
-    return as_response(OpenMail(EMAIL, PASSWORD).get_emails())
+    return as_response(openmail.connect(EMAIL, PASSWORD), register_email(EMAIL, PASSWORD))
+
+@app.post("/login")
+def login():
+    pass
 
 @app.get("/get-emails")
 def get_emails(
@@ -116,7 +198,7 @@ def get_emails(
     search: str = 'ALL',
     offset: str = '0'
 ) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).get_emails(
+    return as_response(openmail.get_emails(
         unquote(folder),
         unquote(search),
         int(offset)
@@ -127,7 +209,7 @@ def get_email_content(
     folder: str,
     uid: str
 ) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).get_email_content(uid, unquote(folder)))
+    return as_response(openmail.get_email_content(uid, unquote(folder)))
 
 @app.post("/send-email")
 async def send_email(
@@ -244,16 +326,23 @@ def is_port_available(port):
         return s.connect_ex(('localhost', port)) != 0
 
 def find_free_port(start_port, end_port):
-    for port in range(start_port, end_port + 1):
+    if is_port_available(start_port):
+        return port
+
+    for port in range(start_port + 1, end_port + 1):
         if is_port_available(port):
             return port
     raise RuntimeError("No free ports available in the specified range")
 
 if __name__ == "__main__":
+    create_dirs_if_not_exists()
+    setup_logger()
+    create_keys_if_not_exits()
+    create_tables_if_not_exists()
     host = "127.0.0.1"
     port = find_free_port(8000, 9000)
     pid = str(os.getpid())
-    with open(os.path.expanduser("~/.openmail/server.pid"), "w") as pid_file:
+    with open(UVICORN_PID_FILE_PATH, "w") as pid_file:
         pid_file.write(pid)
     logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
     uvicorn.run(

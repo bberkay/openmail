@@ -18,9 +18,16 @@ SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
 CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
 
 class OpenMail:
-    def __init__(self, email_address: str, password: str, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):
-        self.__imap = IMAP(email_address, password, imap_port, try_limit, timeout)
-        self.__smtp = SMTP(email_address, password, smtp_port, try_limit, timeout)
+    def __init__(self, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):
+        self.__imap_port = imap_port
+        self.__smtp_port = smtp_port
+        self.__try_limit = try_limit
+        self.__timeout = timeout
+
+    def connect(self, email_address: str, password: str):
+        self.__imap = IMAP(email_address, password, self.__imap_port, self.__try_limit, self.__timeout)
+        self.__smtp = SMTP(email_address, password, self.__smtp_port, self.__try_limit, self.__timeout)
+        return True, "Connected successfully"
 
     def __handle_smtp_conn(func):
         def wrapper(self, *args, **kwargs):
@@ -52,7 +59,7 @@ class OpenMail:
     def __decode_folder(self, folder: bytes) -> str:
         return folder.decode().split(' "/" ')[1].replace('"', '')
 
-    @__handle_smtp_conn
+    #@__handle_smtp_conn
     def __send_email(self, sender: str | Tuple[str, str], receiver_emails: str | List[str], subject: str, body: str, attachments: list | None = None, msg_meta: dict | None = None) -> tuple[bool, str]:
         if isinstance(receiver_emails, list):
             receiver_emails = ", ".join(receiver_emails)
@@ -136,7 +143,7 @@ class OpenMail:
             }
         )
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def get_folders(self) -> tuple[bool, str, list] | tuple[bool, str]:
         return True, "Folders fetched successfully", [self.__decode_folder(i) for i in self.__imap.list()[1]]
 
@@ -209,7 +216,7 @@ class OpenMail:
         _, uids = self.__imap.uid('search', None, criteria.encode("utf-8"))
         return uids[0].split()[::-1] if uids else []
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def get_emails(self, folder: str = "inbox", search: str | SearchCriteria = "ALL", offset: int = 0) -> tuple[bool, str, dict] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder(folder), readonly=True)
 
@@ -269,7 +276,7 @@ class OpenMail:
 
         return True, "Emails fetched successfully", {"folder": folder, "emails": emails, "total": len(uids)}
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def get_email_content(self, uid: str, folder: str = "inbox") -> tuple[bool, str, dict] | tuple[bool, str]:
         self.__imap.select(self.__encode_folder(folder), readonly=True)
 
@@ -314,7 +321,7 @@ class OpenMail:
             "attachments": attachments
         }
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def mark_email(self, uid: str, mark: str, folder: str = "inbox") -> tuple[bool, str]:
         self.__imap.select(self.__encode_folder(folder))
 
@@ -340,7 +347,7 @@ class OpenMail:
         self.__imap.expunge()
         return True, "Email marked successfully"
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def move_email(self, uid: str, source_folder: str, destination_folder: str) -> tuple[bool, str]:
         self.__imap.select(self.__encode_folder(source_folder))
         self.__imap.uid('COPY', uid, self.__encode_folder(destination_folder))
@@ -348,7 +355,7 @@ class OpenMail:
         self.__imap.expunge()
         return True, "Email moved successfully"
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def delete_email(self, uid: str, folder: str) -> tuple[bool, str]:
         # If current folder isn't the trash bin, move it to the trash bin.
         self.__imap.select(self.__encode_folder(folder))
@@ -357,26 +364,26 @@ class OpenMail:
         # TODO: Select the trash bin and delete it from there.
         return True, "Email deleted successfully"
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def create_folder(self, folder_name: str, parent_folder: str | None = None) -> tuple[bool, str]:
         if parent_folder:
             folder_name = f"{parent_folder}/{folder_name}"
         self.__imap.create(self.__encode_folder(folder_name))
         return True, "Folder created successfully"
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def delete_folder(self, folder_name: str) -> tuple[bool, str]:
         self.__imap.delete(self.__encode_folder(folder_name))
         return True, "Folder deleted successfully"
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def move_folder(self, folder_name: str, destination_folder: str) -> tuple[bool, str]:
         if "/" in folder_name:
             destination_folder = f"{destination_folder}/{folder_name.split("/")[-1]}"
         self.__imap.rename(self.__encode_folder(folder_name), self.__encode_folder(destination_folder))
         return True, "Folder moved successfully"
 
-    @__handle_imap_conn
+    #@__handle_imap_conn
     def rename_folder(self, folder_name: str, new_folder_name: str) -> tuple[bool, str]:
         if "/" in folder_name:
             new_folder_name = folder_name.replace(folder_name.split("/")[-1], new_folder_name)
