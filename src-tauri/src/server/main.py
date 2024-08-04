@@ -370,6 +370,11 @@ def find_free_port(start_port, end_port):
             return port
     raise RuntimeError("No free ports available in the specified range")
 
+def write_uvicorn_info_file(host: str, port: str, pid: str):
+    with open(UVICORN_INFO_FILE_PATH, "w") as info_file:
+        info_file.write(f"URL=http://{host}:{port}")
+        info_file.write(f"PID={pid}")
+
 if __name__ == "__main__":
     create_dirs_if_not_exists()
     setup_logger()
@@ -378,10 +383,7 @@ if __name__ == "__main__":
     host = "127.0.0.1"
     port = find_free_port(8000, 9000)
     pid = str(os.getpid())
-    with open(UVICORN_PID_FILE_PATH, "w") as pid_file:
-        pid_file.write(pid)
-    with open(UVICORN_URL_FILE_PATH, "w") as server_file:
-        server_file.write(f"http://{host}:{str(port)}")
+    write_uvicorn_info_file(host, str(port), pid)
     logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
     uvicorn.run(
         app,

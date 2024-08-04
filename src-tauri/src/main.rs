@@ -12,6 +12,11 @@ use chrono::Local;
 use std::fs::OpenOptions;
 use std::io::Write;
 
+struct ServerInfo {
+    url: String,
+    pid: u32,
+}
+
 fn start_uvicorn() -> Result<(), String> {
     if consts::IS_WINDOWS {
         Command::new("cmd")
@@ -74,25 +79,25 @@ fn add_close_log(pid: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn read_pid_file() -> Result<u32, String> {
-    let pid_content = fs::read_to_string(
-        utils::build_home_path(consts::UVICORN_PID_FILE_PATH)
+fn read_uvicorn_info_file() -> Result<ServerInfo, String> {
+    let uvicorn_info = fs::read_to_string(
+        utils::build_home_path(consts::UVICORN_INFO_FILE_PATH)
     ).map_err(|err| format!("Failed to read PID file: {}", err))?;
-    pid_content.trim().parse().map_err(|err| format!("Failed to parse PID: {}", err))
+    let uvicorn_info: Vec<&str> = uvicorn_info.split('\n').collect();
+    let url = uvicorn_info[0].split('=').collect::<Vec<&str>>()[1].to_string();
+    let pid = uvicorn_info[1].split('=').collect::<Vec<&str>>()[1].parse::<u32>().map_err(|err| format!("Invalid PID: {}", err))?;
+    Ok(ServerInfo { url, pid })
 }
 
-fn remove_pid_file() -> Result<(), String> {
+fn remove_uvicorn_info_file() -> Result<(), String> {
     fs::remove_file(
-        utils::build_home_path(consts::UVICORN_PID_FILE_PATH)
-    ).map_err(|err| format!("Failed to remove PID file: {}", err))
+        utils::build_home_path(consts::UVICORN_INFO_FILE_PATH)
+    ).map_err(|err| format!("Failed to remove INFO file: {}", err))
 }
 
 #[tauri::command]
 fn get_server_url() -> String {
-    let url = fs::read_to_string(
-        utils::build_home_path(consts::UVICORN_URL_FILE_PATH)
-    ).unwrap_or_else(|_| "http://127.0.0.1:8000".to_string());
-    url.trim().to_string()
+    read_uvicorn_info_file().unwrap().url
 }
 
 fn main() {
@@ -106,9 +111,9 @@ fn main() {
             }
             RunEvent::ExitRequested { api, .. } => {
                 api.prevent_exit();
-                if let Ok(pid) = read_pid_file() {
-                    if let Ok(_) = kill_uvicorn(pid) {
-                        remove_pid_file().ok();
+                if let Ok(info) = read_uvicorn_info_file() {
+                    if let Ok(_) = kill_uvicorn(info.pid) {
+                        remove_uvicorn_info_file().ok();
                     }
                 }
                 std::process::exit(0);
