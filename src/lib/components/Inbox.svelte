@@ -1,6 +1,6 @@
 <script lang="ts">
     import InboxItem from './Inbox/InboxItem.svelte';
-    import { emails, currentFolder, totalEmailCount, currentOffset } from '$lib/stores';
+    import { emails, currentFolder, totalEmailCount, currentOffset, serverUrl } from '$lib/stores';
     import { get } from 'svelte/store';
     import { onMount } from 'svelte';
     import type { OpenMailData } from '$lib/types';
@@ -18,13 +18,13 @@
             /**
              * If user moves email to another folder, the offset will not be a multiple of 10.
              * In this case, we need to fetch the emails from the previous page to complete the page.
-             * For example, if the offset is 13, we need to fetch the emails from 10 to 20. 
+             * For example, if the offset is 13, we need to fetch the emails from 10 to 20.
              * This is not a good solution but it is enough for now.
              */
             const complete_to_ten = $currentOffset - $currentOffset % 10;
             if(complete_to_ten != $currentOffset){
                 let response: OpenMailData = await fetch(
-                    `http://127.0.0.1:8000/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${complete_to_ten.toString()}&search=${getSearchMenuValue()}`
+                    `${get(serverUrl)}/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${complete_to_ten.toString()}&search=${getSearchMenuValue()}`
                 ).then(response => response.json());
                 if(response.success){
                     emails.set(response.data["emails"]);
@@ -45,7 +45,7 @@
 
         prevButton.disabled = true;
         let response: OpenMailData = await fetch(
-            `http://127.0.0.1:8000/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${(get(currentOffset) - 20)}&search=${getSearchMenuValue()}`
+            `${get(serverUrl)}/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${(get(currentOffset) - 20)}&search=${getSearchMenuValue()}`
         ).then(response => response.json());
         if(response.success){
             currentOffset.update(value => value - 10);
@@ -60,7 +60,7 @@
 
         nextButton.disabled = true;
         let response: OpenMailData = await fetch(
-            `http://127.0.0.1:8000/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${get(currentOffset)}&search=${getSearchMenuValue()}`
+            `${get(serverUrl)}/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${get(currentOffset)}&search=${getSearchMenuValue()}`
         ).then(response => response.json());
         if(response.success){
             currentOffset.update(value => value + 10);

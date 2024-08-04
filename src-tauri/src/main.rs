@@ -17,14 +17,14 @@ fn start_uvicorn() -> Result<(), String> {
         Command::new("cmd")
             .current_dir("src/shell")
             .arg("/C")
-            .arg(consts::UVICORN_START_SCRIPT)
+            .arg(consts::UVICORN_START_SCRIPT_PATH)
             .spawn()
             .map_err(|err| format!("Failed to start Python server: {}", err))?;
     } else {
         Command::new("sh")
             .current_dir("src/shell")
             .arg("-c")
-            .arg(consts::UVICORN_START_SCRIPT)
+            .arg(consts::UVICORN_START_SCRIPT_PATH)
             .spawn()
             .map_err(|err| format!("Failed to start Python server: {}", err))?;
     }
@@ -65,7 +65,7 @@ fn add_close_log(pid: &str) -> Result<(), String> {
     let mut file = OpenOptions::new()
         .append(true)
         .create(true)
-        .open(utils::build_home_path(consts::UVICORN_LOG_FILE))
+        .open(utils::build_home_path(consts::UVICORN_LOG_FILE_PATH))
         .map_err(|err| format!("Failed to open log file: {}", err))?;
 
     file.write_all(log_entry.as_bytes())
@@ -76,19 +76,28 @@ fn add_close_log(pid: &str) -> Result<(), String> {
 
 fn read_pid_file() -> Result<u32, String> {
     let pid_content = fs::read_to_string(
-        utils::build_home_path(consts::UVICORN_PID_FILE)
+        utils::build_home_path(consts::UVICORN_PID_FILE_PATH)
     ).map_err(|err| format!("Failed to read PID file: {}", err))?;
     pid_content.trim().parse().map_err(|err| format!("Failed to parse PID: {}", err))
 }
 
 fn remove_pid_file() -> Result<(), String> {
     fs::remove_file(
-        utils::build_home_path(consts::UVICORN_PID_FILE)
+        utils::build_home_path(consts::UVICORN_PID_FILE_PATH)
     ).map_err(|err| format!("Failed to remove PID file: {}", err))
+}
+
+#[tauri::command]
+fn get_server_url() -> String {
+    let url = fs::read_to_string(
+        utils::build_home_path(consts::UVICORN_URL_FILE_PATH)
+    ).unwrap_or_else(|_| "http://127.0.0.1:8000".to_string());
+    url.trim().to_string()
 }
 
 fn main() {
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![get_server_url])
         .build(tauri::generate_context!())
         .expect("Error building app")
         .run(move |_app_handle, event| match event {

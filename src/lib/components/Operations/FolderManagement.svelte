@@ -2,6 +2,8 @@
     import { folders } from '$lib/stores';
     import type { OpenMailData } from '$lib/types';
     import { onMount } from 'svelte';
+    import { get } from 'svelte/store';
+    import { serverUrl } from '$lib/stores';
 
     let folderSelectOptions: NodeListOf<HTMLFormElement>;
     onMount(() => {
@@ -41,7 +43,7 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'Processing...';
         const operation = (e.target as HTMLFormElement).id;
-        await fetch(`http://127.0.0.1:8000/${operation}`, {
+        await fetch(`${get(serverUrl)}/${operation}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -52,11 +54,11 @@
         submitBtn.innerText = currentText;
 
         // Update folders
-        getFolders();   
+        getFolders();
     }
 
     async function getFolders(){
-		const response: OpenMailData = await fetch('http://127.0.0.1:8000/get-folders').then(res => res.json());
+		const response: OpenMailData = await fetch(`${get(serverUrl)}/get-folders`).then(res => res.json());
 		folders.set(response.data);
 	}
 </script>

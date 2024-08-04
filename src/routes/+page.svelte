@@ -4,13 +4,27 @@
 	import Inbox from "$lib/components/Inbox.svelte";
 	import Content from "$lib/components/Content.svelte";
 	import Login from "$lib/components/Login.svelte";
-	import { emails, totalEmailCount, currentFolder, folders, currentOffset, user } from "$lib/stores";
+	import { serverUrl, emails, totalEmailCount, currentFolder, folders, currentOffset, user } from "$lib/stores";
     import type { OpenMailData, Email } from "$lib/types";
+    import { invoke } from '@tauri-apps/api/core';
+    import { onMount } from "svelte";
+    import { get } from "svelte/store";
 
 	let is_logged_in: boolean = false;
 
+	onMount(() => {
+	    setServerUrl();
+        //getAccounts();
+    });
+
+	async function setServerUrl(){
+	    await invoke('get_server_url').then(url => {
+			serverUrl.set(url && typeof url === "string" ? url : "http://127.0.0.1:8000");
+        });
+	}
+
 	async function getAccounts(){
-        const response: OpenMailData = await fetch('http://127.0.0.1:8000/get-accounts').then(res => res.json());
+        const response: OpenMailData = await fetch(`${get(serverUrl)}/get-accounts`).then(res => res.json());
         if(Object.hasOwn(response, "data")){
             is_logged_in = true;
             /*user.set(response.data["user"]);
@@ -31,7 +45,7 @@
 	}
 
 	async function getEmails(){
-		const response: OpenMailData = await fetch('http://127.0.0.1:8000/get-emails').then(res => res.json());
+		const response: OpenMailData = await fetch(`${get(serverUrl)}/get-emails`).then(res => res.json());
         if(response.success){
             emails.set(response.data["emails"] as Email[]);
             currentFolder.set(response.data["folder"]);
@@ -41,7 +55,7 @@
 	}
 
 	async function getFolders(){
-		const response: OpenMailData = await fetch('http://127.0.0.1:8000/get-folders').then(res => res.json());
+		const response: OpenMailData = await fetch(`${get(serverUrl)}/get-folders`).then(res => res.json());
 		if(response.success)
 		    folders.set(response.data);
 	}

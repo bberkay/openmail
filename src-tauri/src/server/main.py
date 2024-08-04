@@ -344,6 +344,8 @@ if __name__ == "__main__":
     pid = str(os.getpid())
     with open(UVICORN_PID_FILE_PATH, "w") as pid_file:
         pid_file.write(pid)
+    with open(UVICORN_URL_FILE_PATH, "w") as server_file:
+        server_file.write(f"http://{host}:{str(port)}")
     logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
     uvicorn.run(
         app,

@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Email, OpenMailData } from "$lib/types";
     import { onMount } from "svelte";
-    import { currentEmail, currentFolder, currentOffset, emails, folders } from "$lib/stores";
+    import { currentEmail, currentFolder, currentOffset, emails, folders, serverUrl } from "$lib/stores";
     import { get } from "svelte/store";
 
     const markStatus: {[key: string]: string} = {
@@ -10,11 +10,11 @@
         unflagged: "Remove Star",
         unseen: "Mark as Unread"
     };
-    
+
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
     let markButtons: NodeListOf<HTMLButtonElement>;
-    let defaultMarkButtons: NodeListOf<HTMLButtonElement>;    
+    let defaultMarkButtons: NodeListOf<HTMLButtonElement>;
     onMount(() => {
         contentBody = document.getElementById('body')!;
         attachments = document.getElementById('attachments')!;
@@ -78,7 +78,7 @@
                 }
             });
         }
-        
+
         // Attachment
         if(Object.hasOwn(email, "attachments")){
             email["attachments"]!.forEach(attachment => {
@@ -96,7 +96,7 @@
 
     async function markEmail(event: Event): Promise<void>{
         const mark = (event.target as HTMLButtonElement).getAttribute('data-mark-as')!;
-        const response: OpenMailData = await fetch('http://127.0.0.1:8000/mark-email', {
+        const response: OpenMailData = await fetch(`${get(serverUrl)}/mark-email`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -120,7 +120,7 @@
 
     async function moveEmail(event: Event): Promise<void>{
         const folder = (event.target as HTMLSelectElement).value;
-        const response: OpenMailData = await fetch('http://127.0.0.1:8000/move-email', {
+        const response: OpenMailData = await fetch(`${get(serverUrl)}/move-email`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -198,7 +198,7 @@
         width: 100%;
         border-top:2px solid #3a3a3a;
         margin-top: 0.5rem;
-        
+
         & iframe{
             border: none;
             width: 100%;

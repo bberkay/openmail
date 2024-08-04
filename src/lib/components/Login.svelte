@@ -2,6 +2,8 @@
     import { onMount } from "svelte";
     import type { OpenMailData } from "$lib/types";
     import { createEventDispatcher } from "svelte";
+    import { get } from "svelte/store";
+    import { serverUrl } from "$lib/stores";
 
     const dispatch = createEventDispatcher();
     let loginButton: HTMLButtonElement;
@@ -18,7 +20,7 @@
         loginButton.disabled = true;
         loginButton.textContent = 'Logging in...';
         // TODO: Change this after the login system is done.
-        const response: OpenMailData = await fetch('http://127.0.0.1:8006/register', {
+        const response: OpenMailData = await fetch(`${get(serverUrl)}/register`, {
             method: 'POST',
             body: new FormData(form)
         }).then(res => res.json());

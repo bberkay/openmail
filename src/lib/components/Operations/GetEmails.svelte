@@ -1,8 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { emails, currentFolder, totalEmailCount, folders, currentOffset, user } from '$lib/stores';
+    import { emails, currentFolder, totalEmailCount, folders, currentOffset, user, serverUrl } from '$lib/stores';
     import type { Email, OpenMailData, SearchCriteria } from '$lib/types';
     import SearchMenu from './SearchMenu.svelte';
+    import { get } from 'svelte/store';
 
     let getSearchMenuValues: () => SearchCriteria | "";
     let isSearchMenuOpen = false;
@@ -25,7 +26,7 @@
         return `folder=${folder}&offset=0&search=${search}`;
     }
 
-    async function handleGetEmails(event: Event){ 
+    async function handleGetEmails(event: Event){
         event.preventDefault();
         const form = event.target;
         if (!(form instanceof HTMLFormElement))
@@ -40,7 +41,7 @@
 
         if(isSearchMenuOpen && searchMenuValues != ""){
             response = await fetch(
-                `http://127.0.0.1:8000/search-emails`
+                `${get(serverUrl)}/search-emails`
                 , {
                     method: 'POST',
                     headers: {
@@ -52,11 +53,11 @@
                         offset: 0
                     })
                 }
-            ).then(res => res.json());    
+            ).then(res => res.json());
         }
         else{
             response = await fetch(
-                `http://127.0.0.1:8000/get-emails/?${getFormKeyValuesAsString()}`
+                `${get(serverUrl)}/get-emails/?${getFormKeyValuesAsString()}`
             ).then(res => res.json());
         }
 
@@ -102,4 +103,3 @@
         </form>
     </div>
 </section>
-

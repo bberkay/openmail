@@ -1,8 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { user } from '$lib/stores';
+    import { user, serverUrl } from '$lib/stores';
     import type { OpenMailData } from '$lib/types';
-    
+    import { get } from "svelte/store";
+
     // @ts-ignore
     let body: WYSIWYGEditor;
     let fullname: string = $user.fullname;
@@ -12,7 +13,7 @@
         // @ts-ignore
         body = new WYSIWYGEditor('body');
         body.init();
-        
+
         receivers = document.querySelector('.tags')!;
         sendEmailButton = document.querySelector('#send-email-form button[type="submit"]')!;
     });
@@ -43,7 +44,7 @@
         formData.set('receivers', Array.from(document.getElementById('receivers')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent).join(','));
         formData.set('body', body.getHTMLContent());
 
-        const response: OpenMailData = await fetch('http://127.0.0.1:8000/send-email', {
+        const response: OpenMailData = await fetch(`${get(serverUrl)}/send-email`, {
             method: 'POST',
             body: formData
         }).then(res => res.json());
