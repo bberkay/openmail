@@ -32,14 +32,13 @@
 
 	async function getEmails(){
 	    continueToInbox = true;
-		console.log("Getting emails...");
-		/*const response: OpenMailData = await fetch(`${get(serverUrl)}/get-emails`).then(res => res.json());
+		const response: OpenMailData = await fetch(`${get(serverUrl)}/get-emails`).then(res => res.json());
         if(response.success){
             emails.set(response.data["emails"] as Email[]);
             currentFolder.set(response.data["folder"]);
             currentOffset.set(response.data["total"] < 10 ? response.data["total"] : 10);
             totalEmailCount.set(response.data["total"]);
-        }*/
+        }
 	}
 
 	async function getFolders(){

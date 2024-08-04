@@ -29,10 +29,6 @@
             form.reset();
         }
     }
-
-    function continueToInbox(){
-        dispatch('continueToInbox');
-    }
 </script>
 
 <section class="add-email">
@@ -56,7 +52,7 @@
         </form>
     </div>
     {#if $accounts && $accounts.length > 0}
-        <button on:click={continueToInbox}>Continue to Inbox</button>
+        <button on:click={() => dispatch('continueToInbox') }>Continue to Inbox</button>
         <h3>Current Accounts</h3>
         <ul>
             {#each $accounts as account}

@@ -1,4 +1,5 @@
-import json, logging, sys, socket, os, re
+import json, logging, sys, socket, os, re, asyncio
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import unquote
 from typing import Optional, List, Callable
 from logging.handlers import RotatingFileHandler
@@ -145,7 +146,7 @@ accounts = json.load(open("./accounts.json"))
 EMAIL = accounts[0]["email"]
 PASSWORD = accounts[0]["password"]
 
-def add_email_account_to_db(email: str, password: str, fullname: str = None) -> Response:
+def add_email_account_to_db(email: str, password: str, fullname: str = None) -> tuple[bool, str]:
     cipher_key = get_cipher_key()
     conn, cursor = get_db_conn()
     if not cursor.execute("SELECT email FROM accounts WHERE email = ?", (email,)).fetchone():
@@ -155,10 +156,10 @@ def add_email_account_to_db(email: str, password: str, fullname: str = None) -> 
         )
         conn.commit()
         conn.close()
-        return Response(success=True, message="Email registered successfully", data={"email": email, "fullname": fullname})
+        return True, "Email account added successfully"
     else:
         conn.close()
-        return Response(success=False, message="Email already registered")
+        return False, "Email account already exists"
 
 def is_email_valid(email: str) -> bool:
     return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
@@ -173,35 +174,71 @@ def add_email_account(
         return Response(success=False, message="Invalid email address")
     if not openmail.connect(EMAIL, PASSWORD):
         return Response(success=False, message="Invalid email or password")
-    return add_email_account_to_db(EMAIL, PASSWORD, fullname)
+    success, message = add_email_account_to_db(EMAIL, PASSWORD, fullname)
+    if success:
+        return Response(success=success, message=message, data={"email": email, "fullname": fullname})
+    return Response(success=success, message=message)
+
+def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "password"]) -> tuple[bool, str, list]:
+    chiper_key = get_cipher_key()
+    chiper_suite = Fernet(chiper_key)
+    conn, cursor = get_db_conn()
+    cursor.execute(f"SELECT {', '.join(columns)} FROM accounts")
+    accounts = cursor.fetchall()
+    conn.close()
+    if accounts:
+        return True, "Email accounts fetched successfully", [
+            {columns[i]: account[i] if columns[i] != "password" else chiper_suite.decrypt(account[i].encode()).decode() for i in range(len(columns))}
+            for account in accounts
+        ]
+    else:
+        return False, "No accounts found", []
 
 @app.get("/get-email-accounts")
 def get_email_accounts() -> Response:
-    try:
-        chiper_key = get_cipher_key()
-        chiper_suite = Fernet(chiper_key)
-        conn, cursor = get_db_conn()
-        cursor.execute("SELECT fullname, email FROM accounts")
-        accounts = cursor.fetchall()
-        conn.close()
-        if accounts:
-            accounts = [{"fullname": account[0], "email": account[1]} for account in accounts]
-            return Response(success=True, message="Email accounts found", data=accounts)
-        return Response(success=False, message="No accounts found")
-    except Exception as e:
-        return Response(success=False, message=str(e))
+    return as_response(get_email_accounts_from_db(["fullname", "email"]))
+
+def fetch_emails_of_account(account, folder, search, offset):
+    openmail.connect(account["email"], account["password"])
+    emails = openmail.get_emails(unquote(folder), unquote(search), int(offset))
+    return emails[2] if emails[0] else []
+
+async def fetch_emails_concurrently(accounts: list, folder: str, search: str, offset: str) -> dict:
+    emails = {"folder": folder, "total": 0, "emails": []}
+    loop = asyncio.get_running_loop()
+
+    with ThreadPoolExecutor() as pool:
+        tasks = [
+            loop.run_in_executor(pool, fetch_emails_of_account, account, folder, search, offset)
+            for account in accounts
+        ]
+
+        results = await asyncio.gather(*tasks)
+        emails["total"] = sum([int(result["total"]) for result in results])
+        emails["emails"] = [email for result in results for email in result["emails"]]
+
+    return emails
 
 @app.get("/get-emails")
-def get_emails(
+async def get_emails(
+    accounts: str = 'ALL',
     folder: str = 'INBOX',
     search: str = 'ALL',
     offset: str = '0'
 ) -> Response:
-    return as_response(openmail.get_emails(
-        unquote(folder),
-        unquote(search),
-        int(offset)
-    ))
+    success, message, data = get_email_accounts_from_db(["email", "password"])
+    if not success:
+        return Response(success=success, message=message, data=data)
+
+    email_accounts = data
+    if accounts == 'ALL':
+        accounts = email_accounts
+    else:
+        accounts = accounts.split(',')
+        accounts = [account for account in email_accounts if account["email"] in accounts]
+
+    emails_of_accounts = await fetch_emails_concurrently(accounts, folder, search, offset)
+    return Response(success=True, message="Emails found", data=emails_of_accounts)
 
 @app.get("/get-email-content/{folder}/{uid}")
 def get_email_content(

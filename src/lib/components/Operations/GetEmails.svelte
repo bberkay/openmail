@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { emails, currentFolder, totalEmailCount, folders, currentOffset, serverUrl, currentAccount } from '$lib/stores';
+    import { emails, currentFolder, totalEmailCount, folders, currentOffset, serverUrl, accounts } from '$lib/stores';
     import type { Email, OpenMailData, SearchCriteria } from '$lib/types';
     import SearchMenu from './SearchMenu.svelte';
     import { get } from 'svelte/store';
@@ -77,7 +77,11 @@
         <form id="get-emails-form" on:submit={handleGetEmails}>
             <div class="form-group">
                 <label for="email_address">Email Address</label>
-                <input type="email" name="email_address" id="email_address" autocomplete="off" value="{$currentAccount.email}" required>
+                <select name="email_address" id="email_address" required>
+                    {#each $accounts as currentAccount}
+                        <option value={currentAccount.email} selected>{currentAccount.email}</option>
+                    {/each}
+                </select>
             </div>
             <div class="form-group">
                 <label for="folder">Folder</label>

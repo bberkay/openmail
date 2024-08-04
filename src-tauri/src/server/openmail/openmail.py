@@ -19,6 +19,8 @@ CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
 
 class OpenMail:
     def __init__(self, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):
+        self.__imap = None
+        self.__smtp = None
         self.__imap_port = imap_port
         self.__smtp_port = smtp_port
         self.__try_limit = try_limit
