@@ -327,7 +327,7 @@ def is_port_available(port):
 
 def find_free_port(start_port, end_port):
     if is_port_available(start_port):
-        return port
+        return start_port
 
     for port in range(start_port + 1, end_port + 1):
         if is_port_available(port):
