@@ -32,7 +32,18 @@
 
 	async function getEmails(){
 	    continueToInbox = true;
-		const response: OpenMailData = await fetch(`${get(serverUrl)}/get-emails`).then(res => res.json());
+		const response: OpenMailData = await fetch(
+            `${get(serverUrl)}/fetch-emails`
+            , {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    accounts: get(accounts).map(account => account["email"])
+                })
+            }
+        ).then(res => res.json());
         if(response.success){
             emails.set(response.data["emails"] as Email[]);
             currentFolder.set(response.data["folder"]);

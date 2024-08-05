@@ -179,11 +179,12 @@ def add_email_account(
         return Response(success=success, message=message, data={"email": email, "fullname": fullname})
     return Response(success=success, message=message)
 
-def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "password"]) -> tuple[bool, str, list]:
+def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "password"], emails: List[str] = None) -> tuple[bool, str, list | None]:
     chiper_key = get_cipher_key()
     chiper_suite = Fernet(chiper_key)
     conn, cursor = get_db_conn()
-    cursor.execute(f"SELECT {', '.join(columns)} FROM accounts")
+    where_clause = f" WHERE email IN ({', '.join(['?' for _ in emails])})" if emails else ""
+    cursor.execute(f"SELECT {', '.join(columns)} FROM accounts" + where_clause, emails or [])
     accounts = cursor.fetchall()
     conn.close()
     if accounts:
@@ -192,7 +193,10 @@ def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "passw
             for account in accounts
         ]
     else:
-        return False, "No accounts found", []
+        return False, "No accounts found", None
+
+def get_email_account_from_db(columns: List[str] = ["fullname", "email", "password"]) -> tuple[bool, str, dict | None]:
+    return get_email_accounts_from_db(columns)[0]
 
 @app.get("/get-email-accounts")
 def get_email_accounts() -> Response:
@@ -219,26 +223,38 @@ async def fetch_emails_concurrently(accounts: list, folder: str, search: str, of
 
     return emails
 
-@app.get("/get-emails")
-async def get_emails(
-    accounts: str = 'ALL',
-    folder: str = 'INBOX',
-    search: str = 'ALL',
-    offset: str = '0'
-) -> Response:
-    success, message, data = get_email_accounts_from_db(["email", "password"])
-    if not success:
-        return Response(success=success, message=message, data=data)
+class FetchEmailsRequest(BaseModel):
+    accounts: List[str]
+    folder: Optional[str] = 'INBOX'
+    search: Optional[str] = 'ALL'
+    offset: Optional[int] = 0
 
-    email_accounts = data
-    if accounts == 'ALL':
-        accounts = email_accounts
+@app.post("/fetch-emails")
+async def fetch_emails(fetch_emails_request: FetchEmailsRequest) -> Response:
+    if len(fetch_emails_request.accounts) <= 1:
+        success, message, account = get_email_account_from_db(["email", "password"])
+        if not success:
+            return Response(success=success, message=message, data=[])
+
+        return as_response(openmail.get_emails(
+            account["email"],
+            account["password"],
+            fetch_emails_request.folder,
+            fetch_emails_request.search,
+            fetch_emails_request.offset
+        ))
     else:
-        accounts = accounts.split(',')
-        accounts = [account for account in email_accounts if account["email"] in accounts]
+        success, message, accounts = get_email_accounts_from_db(["email", "password"], fetch_emails_request.accounts)
+        if not success:
+            return Response(success=success, message=message, data=[])
 
-    emails_of_accounts = await fetch_emails_concurrently(accounts, folder, search, offset)
-    return Response(success=True, message="Emails found", data=emails_of_accounts)
+        emails_of_accounts = await fetch_emails_concurrently(
+            accounts,
+            fetch_emails_request.folder,
+            fetch_emails_request.search,
+            fetch_emails_request.offset
+        )
+        return Response(success=True, message="Emails found", data=emails_of_accounts)
 
 @app.get("/get-email-content/{folder}/{uid}")
 def get_email_content(

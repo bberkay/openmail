@@ -19,6 +19,7 @@ CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
 
 class OpenMail:
     def __init__(self, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):
+        self.__current_email_address = None
         self.__imap = None
         self.__smtp = None
         self.__imap_port = imap_port
@@ -26,10 +27,17 @@ class OpenMail:
         self.__try_limit = try_limit
         self.__timeout = timeout
 
+    def is_email_connected(self, email_address: str) -> bool:
+        return self.__current_email_address == email_address
+
     def connect(self, email_address: str, password: str):
+        if self.is_email_connected(email_address):
+            return True, "Already connected"
+
         try:
             self.__imap = IMAP(email_address, password, self.__imap_port, self.__try_limit, self.__timeout)
             self.__smtp = SMTP(email_address, password, self.__smtp_port, self.__try_limit, self.__timeout)
+            self.__current_email_address = email_address
             return True, "Connected successfully"
         except Exception as e:
             return False, str(e)
