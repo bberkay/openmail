@@ -40,3 +40,12 @@ export interface SearchCriteria {
     exclude: string | null,
     has_attachments: boolean
 }
+
+export interface Cache{
+    accounts: Account[],
+    emails: Email[]
+    totalEmailCount: number
+    currentFolder: string
+    folders: string[]
+    currentOffset: number
+}

@@ -139,12 +139,8 @@ def as_response(response: tuple) -> Response:
     else:
         return Response(success=response[0], message=response[1])
 
-"""
-Temporary solution to get the email and password from the accounts.json file.
-"""
-accounts = json.load(open("./accounts.json"))
-EMAIL = accounts[0]["email"]
-PASSWORD = accounts[0]["password"]
+def is_email_valid(email: str) -> bool:
+    return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
 
 def add_email_account_to_db(email: str, password: str, fullname: str = None) -> tuple[bool, str]:
     cipher_key = get_cipher_key()
@@ -161,20 +157,18 @@ def add_email_account_to_db(email: str, password: str, fullname: str = None) -> 
         conn.close()
         return False, "Email account already exists"
 
-def is_email_valid(email: str) -> bool:
-    return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
-
 @app.post("/add-email-account")
 def add_email_account(
     email = Form(...),
     password = Form(...),
     fullname = Form(None)
 ) -> Response:
-    if not is_email_valid(EMAIL):
+    if not is_email_valid(email):
         return Response(success=False, message="Invalid email address")
-    if not openmail.connect(EMAIL, PASSWORD):
+    if not openmail.connect(email, password):
         return Response(success=False, message="Invalid email or password")
-    success, message = add_email_account_to_db(EMAIL, PASSWORD, fullname)
+    print(email, password)
+    success, message = add_email_account_to_db(email, password, fullname)
     if success:
         return Response(success=success, message=message, data={"email": email, "fullname": fullname})
     return Response(success=success, message=message)
@@ -196,13 +190,16 @@ def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "passw
         return False, "No accounts found", None
 
 def get_email_account_from_db(columns: List[str] = ["fullname", "email", "password"]) -> tuple[bool, str, dict | None]:
-    return get_email_accounts_from_db(columns)[0]
+    response = get_email_accounts_from_db(columns)
+    return response[0], response[1], response[2][0] if response[2] else None
 
 @app.get("/get-email-accounts")
 def get_email_accounts() -> Response:
     return as_response(get_email_accounts_from_db(["fullname", "email"]))
 
 def fetch_emails_of_account(account, folder, search, offset):
+    print("Fetching emails of", account["email"])
+    openmail = OpenMail()
     openmail.connect(account["email"], account["password"])
     emails = openmail.get_emails(unquote(folder), unquote(search), int(offset))
     return emails[2] if emails[0] else []
@@ -236,9 +233,9 @@ async def fetch_emails(fetch_emails_request: FetchEmailsRequest) -> Response:
         if not success:
             return Response(success=success, message=message, data=[])
 
+        openmail = OpenMail()
+        openmail.connect(account["email"], account["password"])
         return as_response(openmail.get_emails(
-            account["email"],
-            account["password"],
             fetch_emails_request.folder,
             fetch_emails_request.search,
             fetch_emails_request.offset
@@ -388,7 +385,7 @@ def find_free_port(start_port, end_port):
 
 def write_uvicorn_info_file(host: str, port: str, pid: str):
     with open(UVICORN_INFO_FILE_PATH, "w") as info_file:
-        info_file.write(f"URL=http://{host}:{port}")
+        info_file.write(f"URL=http://{host}:{port}\n")
         info_file.write(f"PID={pid}")
 
 if __name__ == "__main__":

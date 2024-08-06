@@ -102,6 +102,7 @@ fn get_server_url() -> String {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .invoke_handler(tauri::generate_handler![get_server_url])
         .build(tauri::generate_context!())
         .expect("Error building app")
