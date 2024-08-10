@@ -1,5 +1,22 @@
-import smtplib
+import smtplib, re, base64
+from typing import List, Tuple, Sequence
+
+import email
+from email.mime.image import MIMEImage
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+
 from .utils import extract_domain, choose_positive
+
+SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
+SMTP_SERVERS = {
+    "gmail": "smtp.gmail.com",
+    "yahoo": "smtp.mail.yahoo.com",
+    "outlook": "smtp-mail.outlook.com",
+    "hotmail": "smtp-mail.outlook.com",
+    'yandex': 'smtp.yandex.com',
+}
 
 class SMTP(smtplib.SMTP):
     def __init__(self, email_address: str, password: str, port: int = 587, try_limit: int = 3, timeout: int = 30):
@@ -14,21 +31,9 @@ class SMTP(smtplib.SMTP):
 
     def __find_smtp_server(self, email_address: str) -> str:
         try:
-            return {
-                "gmail": "smtp.gmail.com",
-                "yahoo": "smtp.mail.yahoo.com",
-                "outlook": "smtp-mail.outlook.com",
-                "hotmail": "smtp-mail.outlook.com"
-            }[extract_domain(email_address)]
+            return SMTP_SERVERS[extract_domain(email_address)]
         except KeyError:
             raise Exception("Unsupported email domain")
-
-    def is_logged_in(self) -> bool:
-        """
-        I couldn't find a way to check if the user is logged in like in the IMAP class.
-        If you have better ideas, let me know please.
-        """
-        return self.__is_logged_in
 
     def login(self, email_address: str, password: str) -> None:
         try_count = self.__try_limit
@@ -53,3 +58,81 @@ class SMTP(smtplib.SMTP):
                 super().quit()
         except Exception as e:
             raise Exception("Could not disconnect from the target smtp server: {}".format(str(e)))
+
+    def is_logged_in(self) -> bool:
+        """
+        I couldn't find a way to check if the user is logged in like in the IMAP class.
+        If you have better ideas, let me know please.
+        """
+        return self.__is_logged_in
+
+    def __handle_conn(func):
+        def wrapper(self, *args, **kwargs):
+            try:
+                if not self.is_logged_in():
+                    raise Exception("You are not logged in(or connection is lost). Please login first.")
+                response = func(self, *args, **kwargs)
+                return response
+            except Exception as e:
+                #self.__smtp.quit()
+                return False, str(e)
+        return wrapper
+
+    @__handle_conn
+    def sendmail(
+        self,
+        sender: str | Tuple[str, str],
+        receiver_emails: str | List[str],
+        subject: str,
+        body: str,
+        attachments: list | None = None,
+        msg_meta: dict | None = None,
+        mail_options: Sequence[str] = (),
+        rcpt_options: Sequence[str] = ()
+    ) -> bool:
+        """
+        Send an email with the given parameters.
+        """
+        if isinstance(receiver_emails, list):
+            receiver_emails = ", ".join(receiver_emails)
+
+        # sender can be a string(just email) or a tuple (name, email)
+        msg = MIMEMultipart()
+        msg['From'] = sender if isinstance(sender, str) else f"{sender[0]} <{sender[1]}>"
+        msg['To'] = receiver_emails
+        msg['Subject'] = subject
+        if msg_meta:
+            for key, value in msg_meta.items():
+                msg[key] = value
+
+        # Attach inline images
+        if re.search(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"', body):
+            for match in re.finditer(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"', body):
+                img_ext, img_data = match.group(1), match.group(2)
+                cid = f'image{match.start()}'
+                body = body.replace(f'data:image/{img_ext};base64,{img_data}', f'cid:{cid}')
+                image = base64.b64decode(img_data)
+                image = MIMEImage(image, name=f"{cid}.{img_ext}")
+                image.add_header('Content-ID', f'<{cid}>')
+                msg.attach(image)
+
+        msg.attach(MIMEText(body, 'html'))
+        if attachments:
+            for attachment in attachments:
+                print("Attachment:", attachment.filename)
+                if attachment.size > 25 * 1024 * 1024:
+                    raise Exception("Attachment size is too large. Max size is 25MB")
+
+                part = MIMEApplication(attachment.file.read())
+                part.add_header('content-disposition', 'attachment', filename=attachment.filename)
+                msg.attach(part)
+
+        super().sendmail(
+            sender if isinstance(sender, str) else sender[1],
+            [email.strip() for email in receiver_emails.split(",")],
+            msg.as_string(),
+            mail_options,
+            rcpt_options
+        )
+
+        return True

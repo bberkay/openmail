@@ -1,7 +1,6 @@
-import json, logging, sys, socket, os, re, asyncio
-from concurrent.futures import ThreadPoolExecutor
+import json, logging, sys, socket, os, re, asyncio, concurrent.futures
 from urllib.parse import unquote
-from typing import Optional, List, Callable
+from typing import Optional, List
 from logging.handlers import RotatingFileHandler
 
 import uvicorn, sqlcipher3
@@ -28,7 +27,8 @@ def setup_logger():
     logger.addHandler(stream_handler)
     logger.addHandler(file_handler)
 
-openmail = OpenMail()
+ACCOUNTS = json.loads(open("./accounts.json").read())
+openmail_clients = {}
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -129,15 +129,9 @@ async def log_requests(request: Request, call_next):
     )
 
 class Response(BaseModel):
-        success: bool
-        message: str
-        data: Optional[dict | list] = None
-
-def as_response(response: tuple) -> Response:
-    if len(response) > 2:
-        return Response(success=response[0], message=response[1], data=response[2])
-    else:
-        return Response(success=response[0], message=response[1])
+    success: bool
+    message: str
+    data: Optional[dict | list] = None
 
 def is_email_valid(email: str) -> bool:
     return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
@@ -164,16 +158,19 @@ def add_email_account(
     fullname = Form(None)
 ) -> Response:
     if not is_email_valid(email):
-        return Response(success=False, message="Invalid email address")
-    if not openmail.connect(email, password):
-        return Response(success=False, message="Invalid email or password")
-    print(email, password)
+        return Response(success=False, message="Invalid email address format")
+
+    openmail_client = OpenMail()
+    if not openmail_client.connect(email, password):
+        return Response(success=False, message="Invalid email credentials")
+
     success, message = add_email_account_to_db(email, password, fullname)
     if success:
+        openmail_clients[email] = openmail_client
         return Response(success=success, message=message, data={"email": email, "fullname": fullname})
     return Response(success=success, message=message)
 
-def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "password"], emails: List[str] = None) -> tuple[bool, str, list | None]:
+def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "password"], emails: List[str] | None = None) -> list[dict] | None:
     chiper_key = get_cipher_key()
     chiper_suite = Fernet(chiper_key)
     conn, cursor = get_db_conn()
@@ -182,41 +179,54 @@ def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "passw
     accounts = cursor.fetchall()
     conn.close()
     if accounts:
-        return True, "Email accounts fetched successfully", [
+        return [
             {columns[i]: account[i] if columns[i] != "password" else chiper_suite.decrypt(account[i].encode()).decode() for i in range(len(columns))}
             for account in accounts
         ]
     else:
-        return False, "No accounts found", None
+        return None
 
-def get_email_account_from_db(columns: List[str] = ["fullname", "email", "password"]) -> tuple[bool, str, dict | None]:
-    response = get_email_accounts_from_db(columns)
-    return response[0], response[1], response[2][0] if response[2] else None
+def get_email_account_from_db(columns: List[str] = ["fullname", "email", "password"]) -> dict | None:
+    account = get_email_accounts_from_db(columns)
+    return account[0] if account else None
+
+@app.on_event("startup")
+def startup_event():
+    accounts = get_email_accounts_from_db(["email", "password"])
+    if not accounts:
+        return
+
+    for account in accounts:
+        openmail_clients[account["email"]] = OpenMail()
+        openmail_clients[account["email"]].connect(account["email"], account["password"])
 
 @app.get("/get-email-accounts")
 def get_email_accounts() -> Response:
-    return as_response(get_email_accounts_from_db(["fullname", "email"]))
+    try:
+        return Response(
+            success=True,
+            message="Email accounts fetched successfully",
+            data=get_email_accounts_from_db(["fullname", "email"])
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 def fetch_emails_of_account(account, folder, search, offset):
-    print("Fetching emails of", account["email"])
-    openmail = OpenMail()
-    openmail.connect(account["email"], account["password"])
-    emails = openmail.get_emails(unquote(folder), unquote(search), int(offset))
-    return emails[2] if emails[0] else []
+    return openmail_clients[account["email"]].get_emails(unquote(folder), unquote(search), int(offset))
 
-async def fetch_emails_concurrently(accounts: list, folder: str, search: str, offset: str) -> dict:
+def fetch_emails_concurrently(accounts: list, folder: str, search: str, offset: str) -> dict:
     emails = {"folder": folder, "total": 0, "emails": []}
-    loop = asyncio.get_running_loop()
 
-    with ThreadPoolExecutor() as pool:
-        tasks = [
-            loop.run_in_executor(pool, fetch_emails_of_account, account, folder, search, offset)
-            for account in accounts
-        ]
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_emails = {
+            executor.submit(fetch_emails_of_account, account, folder, search, offset): account for account in accounts
+        }
 
-        results = await asyncio.gather(*tasks)
-        emails["total"] = sum([int(result["total"]) for result in results])
-        emails["emails"] = [email for result in results for email in result["emails"]]
+        # FIXME: Fix this
+        for future in concurrent.futures.as_completed(future_to_emails):
+            result = future.result()
+            emails["total"] += int(result["total"])
+            emails["emails"].extend(result["emails"])
 
     return emails
 
@@ -229,146 +239,250 @@ class FetchEmailsRequest(BaseModel):
 @app.post("/fetch-emails")
 async def fetch_emails(fetch_emails_request: FetchEmailsRequest) -> Response:
     if len(fetch_emails_request.accounts) <= 1:
-        success, message, account = get_email_account_from_db(["email", "password"])
-        if not success:
-            return Response(success=success, message=message, data=[])
+        account = get_email_account_from_db(["email", "password"])
+        if not account:
+            return Response(
+                success=True,
+                message="No email account found",
+                data=[]
+            )
 
-        openmail = OpenMail()
-        openmail.connect(account["email"], account["password"])
-        return as_response(openmail.get_emails(
-            fetch_emails_request.folder,
-            fetch_emails_request.search,
-            fetch_emails_request.offset
-        ))
+        try:
+            return Response(
+                success=True,
+                message="Emails found",
+                data=openmail_clients[account["email"]].get_emails(
+                    fetch_emails_request.folder,
+                    fetch_emails_request.search,
+                    fetch_emails_request.offset
+                )
+            )
+        except Exception as e:
+            return Response(success=False, message=str(e))
     else:
-        success, message, accounts = get_email_accounts_from_db(["email", "password"], fetch_emails_request.accounts)
-        if not success:
-            return Response(success=success, message=message, data=[])
+        accounts = get_email_accounts_from_db(["email", "password"], fetch_emails_request.accounts)
+        if not accounts:
+            return Response(success=True, message="No email accounts found", data=[])
 
-        emails_of_accounts = await fetch_emails_concurrently(
-            accounts,
-            fetch_emails_request.folder,
-            fetch_emails_request.search,
-            fetch_emails_request.offset
-        )
-        return Response(success=True, message="Emails found", data=emails_of_accounts)
+        try:
+            return Response(
+                success=True,
+                message="Emails found",
+                data=fetch_emails_concurrently(
+                    accounts,
+                    fetch_emails_request.folder,
+                    fetch_emails_request.search,
+                    fetch_emails_request.offset
+                )
+            )
+        except Exception as e:
+            return Response(success=False, message=str(e))
 
-@app.get("/get-email-content/{folder}/{uid}")
+@app.get("/get-email-content/{email}/{folder}/{uid}")
 def get_email_content(
+    email: str,
     folder: str,
     uid: str
 ) -> Response:
-    return as_response(openmail.get_email_content(uid, unquote(folder)))
+    try:
+        return Response(
+            success=True,
+            message="Email content fetched",
+            data=openmail_clients[email].get_email_content(uid, unquote(folder))
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 @app.post("/send-email")
 async def send_email(
-    sender_name: str = Form(...), # TODO: This is going to change to sender: Tuple[str, str]
+    sender: str | tuple[str, str] = Form(...), # (sender_name, sender_email)
     receivers: str = Form(...), # mail addresses separated by comma
     subject: str = Form(...),
     body: str = Form(...),
     attachments: List[UploadFile] = File(None)
 ) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).send_email(
-        (sender_name, EMAIL) if sender_name else EMAIL,
-        receivers,
-        subject,
-        body,
-        attachments
-    ))
+    try:
+        return Response(
+            success=True,
+            message="Email sent",
+            data=openmail_clients[(sender if isinstance(sender, str) else sender[1])].send_email(
+                sender,
+                receivers,
+                subject,
+                body,
+                attachments
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
-@app.get("/get-folders")
-def get_folders() -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).get_folders())
+@app.get("/get-folders/{email}")
+def get_folders(
+    email: str
+) -> Response:
+    try:
+        return Response(
+            success=True,
+            message="Folders found",
+            data=openmail_clients[email].get_folders()
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 class SearchRequest(BaseModel):
+    email: str
     folder: str
     search: SearchCriteria
     offset: int
 
-@app.post("/search-emails")
+@app.get("/search-emails")
 def search_emails(search_request: SearchRequest) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).get_emails(
-        search_request.folder,
-        search_request.search,
-        search_request.offset
-    ))
+    try:
+        return Response(
+            success=True,
+            message="Emails found",
+            data=openmail_clients[search_request.email].search_emails(
+                search_request.folder,
+                search_request.search,
+                search_request.offset
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 class MarkEmailRequest(BaseModel):
+    email: str
     uid: str
     mark: str
     folder: str = 'INBOX'
 
 @app.post("/mark-email")
 async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).mark_email(
-        mark_email_request.uid,
-        mark_email_request.mark,
-        mark_email_request.folder
-    ))
+    try:
+        return Response(
+            success=True,
+            message="Email marked successfully",
+            data=openmail_clients[mark_email_request.email].mark_email(
+                mark_email_request.uid,
+                mark_email_request.mark,
+                mark_email_request.folder
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
-class MarkEmailRequest(BaseModel):
+class MoveEmailRequest(BaseModel):
+    email: str
     uid: str
     source: str
     destination: str
 
 @app.post("/move-email")
-async def move_email(move_email_request: MarkEmailRequest) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).move_email(
-        move_email_request.uid,
-        move_email_request.source,
-        move_email_request.destination
-    ))
+async def move_email(move_email_request: MoveEmailRequest) -> Response:
+    try:
+        return Response(
+            success=True,
+            message="Email moved successfully",
+            data=openmail_clients[move_email_request.email].move_email(
+                move_email_request.uid,
+                move_email_request.source,
+                move_email_request.destination
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 class DeleteEmailRequest(BaseModel):
+    email: str
     uid: str
     folder: str = 'INBOX'
 
 @app.post("/delete-email")
 async def delete_email(delete_email_request: DeleteEmailRequest) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).delete_email(
-        delete_email_request.uid,
-        delete_email_request.folder
-    ))
+    try:
+        return Response(
+            success=True,
+            messages="Email deleted successfully",
+            data=openmail_clients[delete_email_request.email].delete_email(
+                delete_email_request.uid,
+                delete_email_request.folder
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 class CreateFolderRequest(BaseModel):
+    email: str
     folder_name: str
     parent_folder: str | None = None
 
 @app.post("/create-folder")
 async def create_folder(create_folder_request: CreateFolderRequest) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).create_folder(
-        create_folder_request.folder_name,
-        create_folder_request.parent_folder
-    ))
+    try:
+        return Response(
+            success=True,
+            message="Folder created successfully",
+            data=openmail_clients[create_folder_request.email].create_folder(
+                create_folder_request.folder_name,
+                create_folder_request.parent_folder
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 class RenameFolderRequest(BaseModel):
+    email: str
     folder_name: str
     new_name: str
 
 @app.post("/rename-folder")
 async def rename_folder(rename_folder_request: RenameFolderRequest) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).rename_folder(
-        rename_folder_request.folder_name,
-        rename_folder_request.new_name
-    ))
+    try:
+        return Response(
+            success=True,
+            message="Folder renamed successfully",
+            data=openmail_clients[rename_folder_request.email].rename_folder(
+                rename_folder_request.folder_name,
+                rename_folder_request.new_name
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 class DeleteFolderRequest(BaseModel):
     folder_name: str
 
 @app.post("/delete-folder")
 async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).delete_folder(delete_folder_request.folder_name))
+    try:
+        return Response(
+            success=True,
+            message="Folder deleted successfully",
+            data=OpenMail(EMAIL, PASSWORD).delete_folder(
+                delete_folder_request.folder_name
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 class MoveFolderRequest(BaseModel):
+    email: str
     folder_name: str
     destination_folder: str
 
 @app.post("/move-folder")
 async def move_folder(move_folder_request: MoveFolderRequest) -> Response:
-    return as_response(OpenMail(EMAIL, PASSWORD).move_folder(
-        move_folder_request.folder_name,
-        move_folder_request.destination_folder
-    ))
+    try:
+        return Response(
+            success=True,
+            message="Folder moved successfully",
+            data=openmail_clients[move_folder_request.email].move_folder(
+                move_folder_request.folder_name,
+                move_folder_request.destination_folder
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 def is_port_available(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

@@ -1,16 +1,16 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod utils;
 mod consts;
+mod utils;
 
-use std::fs;
-use std::env;
-use std::process::Command;
-use tauri::RunEvent;
 use chrono::Local;
+use std::env;
+use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::process::Command;
+use tauri::RunEvent;
 
 struct ServerInfo {
     url: String,
@@ -65,7 +65,12 @@ fn add_close_log(pid: &str) -> Result<(), String> {
     let now = Local::now();
     let level = "INFO";
     let message = format!("Server stopped by closing the application | PID: {}", pid);
-    let log_entry = format!("{} - {} - {}\n", now.format("%Y-%m-%d %H:%M:%S,%3f"), level, message);
+    let log_entry = format!(
+        "{} - {} - {}\n",
+        now.format("%Y-%m-%d %H:%M:%S,%3f"),
+        level,
+        message
+    );
 
     let mut file = OpenOptions::new()
         .append(true)
@@ -80,19 +85,19 @@ fn add_close_log(pid: &str) -> Result<(), String> {
 }
 
 fn read_uvicorn_info_file() -> Result<ServerInfo, String> {
-    let uvicorn_info = fs::read_to_string(
-        utils::build_home_path(consts::UVICORN_INFO_FILE_PATH)
-    ).map_err(|err| format!("Failed to read PID file: {}", err))?;
+    let uvicorn_info = fs::read_to_string(utils::build_home_path(consts::UVICORN_INFO_FILE_PATH))
+        .map_err(|err| format!("Failed to read PID file: {}", err))?;
     let uvicorn_info: Vec<&str> = uvicorn_info.split('\n').collect();
     let url = uvicorn_info[0].split('=').collect::<Vec<&str>>()[1].to_string();
-    let pid = uvicorn_info[1].split('=').collect::<Vec<&str>>()[1].parse::<u32>().map_err(|err| format!("Invalid PID: {}", err))?;
+    let pid = uvicorn_info[1].split('=').collect::<Vec<&str>>()[1]
+        .parse::<u32>()
+        .map_err(|err| format!("Invalid PID: {}", err))?;
     Ok(ServerInfo { url, pid })
 }
 
 fn remove_uvicorn_info_file() -> Result<(), String> {
-    fs::remove_file(
-        utils::build_home_path(consts::UVICORN_INFO_FILE_PATH)
-    ).map_err(|err| format!("Failed to remove INFO file: {}", err))
+    fs::remove_file(utils::build_home_path(consts::UVICORN_INFO_FILE_PATH))
+        .map_err(|err| format!("Failed to remove INFO file: {}", err))
 }
 
 #[tauri::command]
