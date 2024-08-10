@@ -38,6 +38,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/hello")
+async def health():
+    return Response(success=True, message="Hello, Server is ready for you!")
+
 def create_dirs_if_not_exists():
     for directory in [APP_DIR, SECRETS_DIR, DB_DIR, LOG_DIR]:
         if not os.path.exists(directory):
@@ -222,7 +226,6 @@ def fetch_emails_concurrently(accounts: list, folder: str, search: str, offset: 
             executor.submit(fetch_emails_of_account, account, folder, search, offset): account for account in accounts
         }
 
-        # FIXME: Fix this
         for future in concurrent.futures.as_completed(future_to_emails):
             result = future.result()
             emails["total"] += int(result["total"])

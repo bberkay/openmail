@@ -44,6 +44,7 @@ class IMAP(imaplib.IMAP4_SSL):
                     else:
                         super().login(email_address, password)
                     self._simple_command('ENABLE', 'UTF8=ACCEPT')
+                    #self.idle()
                 break
             except Exception as e:
                 try_count -= 1
@@ -64,10 +65,9 @@ class IMAP(imaplib.IMAP4_SSL):
             try:
                 if not self.is_logged_in():
                     raise Exception("You are not logged in(or connection is lost). Please login first.")
-                if self.is_idle():
-                    self.done()
+                #self.done()
                 response = func(self, *args, **kwargs)
-                self.idle()
+                #self.idle()
                 return response
             except Exception as e:
                 #self.__imap.logout()
@@ -76,7 +76,6 @@ class IMAP(imaplib.IMAP4_SSL):
 
     def __idle(self) -> None:
         self.send(b'IDLE\r\n')
-        response = self.readline()
         while not self.__idle_event.is_set():
             response = self.readline()
             if response.startswith(b'* BYE'):
@@ -91,9 +90,9 @@ class IMAP(imaplib.IMAP4_SSL):
         self.__idle_thread.start()
 
     def done(self) -> None:
-        if self.__idle_thread and self.__idle_thread.is_alive():
-            self.__idle_event.set()
+        if self.is_idle():
             self.send(b'DONE\r\n')
+            self.__idle_event.set()
             self.__idle_thread.join()
             self.__idle_thread = None
 
@@ -127,6 +126,7 @@ class IMAP(imaplib.IMAP4_SSL):
         def recursive_or_query(criteria: str, search_keys: List[str]) -> str:
             """
             Example:
+                criteria = "FROM"
                 search_keys = ["johndoe@mail.com", "janedoe@mail.com", "person@mail.com"]
                 return: 'OR (FROM "johndoe@mail.com") (OR (FROM "janedoe@mail.com") (FROM "person@mail.com"))'
             """

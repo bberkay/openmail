@@ -1,10 +1,13 @@
 <script lang="ts">
-    import { Store } from "@tauri-apps/plugin-store";
+    import { onMount } from "svelte";
+    import { get } from "svelte/store";
     import Alert from "$lib/components/Alert.svelte";
     import Sidebar from "$lib/components/Sidebar.svelte";
     import Inbox from "$lib/components/Inbox.svelte";
     import Content from "$lib/components/Content.svelte";
     import Register from "$lib/components/Register.svelte";
+    import type { OpenMailData, Email } from "$lib/types";
+    import { Store } from "@tauri-apps/plugin-store";
     import {
         serverUrl,
         emails,
@@ -14,37 +17,13 @@
         currentOffset,
         accounts,
     } from "$lib/stores";
-    import type { OpenMailData, Email, Cache } from "$lib/types";
-    import { invoke } from "@tauri-apps/api/core";
-    import { onMount } from "svelte";
-    import { get } from "svelte/store";
 
     let isLoading: boolean = true;
-    let continueToInbox: boolean = false;
-    onMount(async () => {
-        await initServerUrl();
-        await loadData();
-    });
 
-    async function loadData() {
-        const store = new Store("openmail_cache.bin");
-        const cache: Cache | null = await store.get("cache");
-        if (cache) {
-            console.log("Cache found!: ", cache);
-            accounts.set(cache["accounts"]);
-            emails.set(cache["emails"]);
-            totalEmailCount.set(cache["totalEmailCount"]);
-            currentFolder.set(cache["currentFolder"]);
-            folders.set(cache["folders"]);
-            currentOffset.set(cache["currentOffset"]);
-            isLoading = false;
-            if (get(emails).length > 0) continueToInbox = true;
-            // TODO: Get \\NEW emails and update emails and save date again
-        } else {
-            console.log("No cache found!");
-            await getAccounts();
-        }
-    }
+    onMount(async () => {
+        if (get(accounts).length === 0) getAccounts();
+        else isLoading = false;
+    });
 
     async function saveData() {
         const store = new Store("openmail_cache.bin");
@@ -58,14 +37,7 @@
         });
     }
 
-    async function initServerUrl() {
-        await invoke("get_server_url").then((url) => {
-            serverUrl.set(url ? (url as string) : "http://127.0.0.1:8000");
-        });
-    }
-
     async function getAccounts() {
-        console.log("Getting accounts: ", get(serverUrl));
         const response: OpenMailData = await fetch(
             `${get(serverUrl)}/get-email-accounts`,
         ).then((res) => res.json());
@@ -77,7 +49,6 @@
     }
 
     async function getEmails() {
-        continueToInbox = true;
         const response: OpenMailData = await fetch(
             `${get(serverUrl)}/fetch-emails`,
             {
@@ -103,7 +74,7 @@
 
     async function getFolders() {
         const response: OpenMailData = await fetch(
-            `${get(serverUrl)}/get-folders`,
+            `${get(serverUrl)}/get-folders/${get(accounts)[0]["email"]}`, // FIXME: Temporary
         ).then((res) => res.json());
         if (response.success) {
             folders.set(response.data);
@@ -113,11 +84,7 @@
 </script>
 
 <!--<Alert message="This is a success message" type="success" />-->
-{#if isLoading}
-    <p>Loading</p>
-{:else if !continueToInbox}
-    <Register on:continueToInbox={getEmails} />
-{:else}
+{#if $emails.length > 0}
     <main class="container">
         <div class="sidebar-container">
             <Sidebar />
@@ -129,6 +96,15 @@
             <Content />
         </div>
     </main>
+{:else if isLoading}
+    <p>Loading</p>
+{:else}
+    <Register
+        on:continueToInbox={async () => {
+            await getEmails();
+            await getFolders();
+        }}
+    />
 {/if}
 
 <style>
