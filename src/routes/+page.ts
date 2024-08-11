@@ -1,10 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Store } from "@tauri-apps/plugin-store";
-import type { OpenMailData, Cache } from "$lib/types";
+import type { Response, Cache } from "$lib/types";
 import {
   serverUrl,
   emails,
-  totalEmailCount,
   currentFolder,
   folders,
   currentOffset,
@@ -20,7 +19,7 @@ async function initServer(url: string) {
 
   try {
     serverConnectionTryCount++;
-    const response: OpenMailData = await fetch(`${url}/hello`).then((res) =>
+    const response: Response = await fetch(`${url}/hello`).then((res) =>
       res.json(),
     );
     if (response.success) {
@@ -31,7 +30,7 @@ async function initServer(url: string) {
     if (!serverUrl) {
       setTimeout(async () => {
         await getServerURL();
-      }, 500);
+      }, 1000);
     }
   }
 }
@@ -48,7 +47,6 @@ async function loadData() {
   if (cache) {
     accounts.set(cache["accounts"]);
     emails.set(cache["emails"]);
-    totalEmailCount.set(cache["totalEmailCount"]);
     currentFolder.set(cache["currentFolder"]);
     folders.set(cache["folders"]);
     currentOffset.set(cache["currentOffset"]);

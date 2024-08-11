@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, createEventDispatcher } from "svelte";
-    import type { OpenMailData } from "$lib/types";
+    import type { Response } from "$lib/types";
     import { get } from "svelte/store";
     import { serverUrl, accounts } from "$lib/stores";
 
@@ -18,7 +18,7 @@
 
         addAccountBtn.disabled = true;
         addAccountBtn.textContent = 'Adding Account...';
-        const response: OpenMailData = await fetch(`${get(serverUrl)}/add-email-account`, {
+        const response: Response = await fetch(`${get(serverUrl)}/add-email-account`, {
             method: 'POST',
             body: new FormData(form)
         }).then(res => res.json());

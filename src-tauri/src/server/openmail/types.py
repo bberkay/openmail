@@ -1,5 +1,5 @@
-from pydantic import BaseModel
 from typing import List, Optional
+from pydantic import BaseModel
 
 class SearchCriteria(BaseModel):
     senders: Optional[List[str]] = ""
@@ -11,3 +11,6 @@ class SearchCriteria(BaseModel):
     include: Optional[str] = ""
     exclude: Optional[str] = ""
     has_attachments: Optional[bool] = False
+
+class LoginException(Exception):
+    pass

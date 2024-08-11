@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { accounts, serverUrl } from '$lib/stores';
-    import type { OpenMailData, Account } from '$lib/types';
+    import type { Response, Account } from '$lib/types';
     import { get } from "svelte/store";
 
     // @ts-ignore
@@ -44,7 +44,7 @@
         formData.set('receivers', Array.from(document.getElementById('receivers')!.parentElement!.querySelectorAll(".tags span")).map(span => span.textContent).join(','));
         formData.set('body', body.getHTMLContent());
 
-        const response: OpenMailData = await fetch(`${get(serverUrl)}/send-email`, {
+        const response: Response = await fetch(`${get(serverUrl)}/send-email`, {
             method: 'POST',
             body: formData
         }).then(res => res.json());

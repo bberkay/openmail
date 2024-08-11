@@ -1,12 +1,13 @@
 <script lang="ts">
     import InboxItem from './Inbox/InboxItem.svelte';
-    import { emails, currentFolder, totalEmailCount, currentOffset, serverUrl } from '$lib/stores';
+    import { emails, currentFolder, currentOffset, serverUrl } from '$lib/stores';
     import { get } from 'svelte/store';
     import { onMount } from 'svelte';
-    import type { OpenMailData } from '$lib/types';
+    import type { Response } from '$lib/types';
 
     let prevButton: HTMLButtonElement;
     let nextButton: HTMLButtonElement;
+    let totalEmailCount = 0; // TODO: Get total email count from the stores
     onMount(() => {
         prevButton = document.getElementById('prev-button') as HTMLButtonElement;
         nextButton = document.getElementById('next-button') as HTMLButtonElement;
@@ -23,7 +24,7 @@
              */
             const complete_to_ten = $currentOffset - $currentOffset % 10;
             if(complete_to_ten != $currentOffset){
-                let response: OpenMailData = await fetch(
+                let response: Response = await fetch(
                     `${get(serverUrl)}/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${complete_to_ten.toString()}&search=${getSearchMenuValue()}`
                 ).then(response => response.json());
                 if(response.success){
@@ -44,7 +45,7 @@
             return;
 
         prevButton.disabled = true;
-        let response: OpenMailData = await fetch(
+        let response: Response = await fetch(
             `${get(serverUrl)}/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${(get(currentOffset) - 20)}&search=${getSearchMenuValue()}`
         ).then(response => response.json());
         if(response.success){
@@ -55,11 +56,11 @@
     }
 
     async function getNextEmails(){
-        if(get(currentOffset) >= get(totalEmailCount))
+        if(get(currentOffset) >= totalEmailCount)
             return;
 
         nextButton.disabled = true;
-        let response: OpenMailData = await fetch(
+        let response: Response = await fetch(
             `${get(serverUrl)}/get-emails/?folder=${encodeURIComponent(get(currentFolder))}&offset=${get(currentOffset)}&search=${getSearchMenuValue()}`
         ).then(response => response.json());
         if(response.success){
@@ -76,8 +77,8 @@
         <hr>
         <div class="inbox-pagination">
             <button id="prev-button" on:click={getPreviousEmails} disabled={$currentOffset <= 10}>Previous</button>
-            <small>{Math.max(1, $currentOffset - 9)} - {$currentOffset} of {$totalEmailCount}</small>
-            <button id="next-button" on:click={getNextEmails} disabled={$currentOffset >= $totalEmailCount}>Next</button>
+            <small>{Math.max(1, $currentOffset - 9)} - {$currentOffset} of {totalEmailCount}</small>
+            <button id="next-button" on:click={getNextEmails} disabled={$currentOffset >= totalEmailCount}>Next</button>
         </div>
         <hr>
     </div>

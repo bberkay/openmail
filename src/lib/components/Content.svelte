@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Email, OpenMailData } from "$lib/types";
+    import type { Email, Response } from "$lib/types";
     import { onMount } from "svelte";
     import { currentEmail, currentFolder, currentOffset, emails, folders, serverUrl } from "$lib/stores";
     import { get } from "svelte/store";
@@ -96,7 +96,7 @@
 
     async function markEmail(event: Event): Promise<void>{
         const mark = (event.target as HTMLButtonElement).getAttribute('data-mark-as')!;
-        const response: OpenMailData = await fetch(`${get(serverUrl)}/mark-email`, {
+        const response: Response = await fetch(`${get(serverUrl)}/mark-email`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -120,7 +120,7 @@
 
     async function moveEmail(event: Event): Promise<void>{
         const folder = (event.target as HTMLSelectElement).value;
-        const response: OpenMailData = await fetch(`${get(serverUrl)}/move-email`, {
+        const response: Response = await fetch(`${get(serverUrl)}/move-email`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

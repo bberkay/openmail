@@ -1,6 +1,6 @@
 <script lang="ts">
     import { folders } from '$lib/stores';
-    import type { OpenMailData } from '$lib/types';
+    import type { Response } from '$lib/types';
     import { onMount } from 'svelte';
     import { get } from 'svelte/store';
     import { serverUrl } from '$lib/stores';
@@ -58,7 +58,7 @@
     }
 
     async function getFolders(){
-		const response: OpenMailData = await fetch(`${get(serverUrl)}/get-folders`).then(res => res.json());
+		const response: Response = await fetch(`${get(serverUrl)}/get-folders`).then(res => res.json());
 		folders.set(response.data);
 	}
 </script>

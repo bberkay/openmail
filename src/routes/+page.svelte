@@ -6,12 +6,11 @@
     import Inbox from "$lib/components/Inbox.svelte";
     import Content from "$lib/components/Content.svelte";
     import Register from "$lib/components/Register.svelte";
-    import type { OpenMailData, Email } from "$lib/types";
+    import type { Response } from "$lib/types";
     import { Store } from "@tauri-apps/plugin-store";
     import {
         serverUrl,
         emails,
-        totalEmailCount,
         currentFolder,
         folders,
         currentOffset,
@@ -30,7 +29,6 @@
         await store.set("cache", {
             accounts: get(accounts),
             emails: get(emails),
-            totalEmailCount: get(totalEmailCount),
             currentFolder: get(currentFolder),
             folders: get(folders),
             currentOffset: get(currentOffset),
@@ -38,7 +36,7 @@
     }
 
     async function getAccounts() {
-        const response: OpenMailData = await fetch(
+        const response: Response = await fetch(
             `${get(serverUrl)}/get-email-accounts`,
         ).then((res) => res.json());
         if (Object.hasOwn(response, "data") && response.data) {
@@ -48,36 +46,40 @@
         isLoading = false;
     }
 
-    async function getEmails() {
-        const response: OpenMailData = await fetch(
-            `${get(serverUrl)}/fetch-emails`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    accounts: get(accounts).map((account) => account["email"]),
-                }),
-            },
+    async function getEmailsOfAllAccounts() {
+        const response: Response = await fetch(
+            `${get(serverUrl)}/get-emails/${get(accounts)
+                .map((account) => account["email"])
+                .join(",")}`
         ).then((res) => res.json());
         if (response.success) {
-            emails.set(response.data["emails"] as Email[]);
-            currentFolder.set(response.data["folder"]);
+            emails.set(
+                response.data.map((item: { email: string; data: any }) => ({
+                    email: item.email,
+                    ...item.data,
+                })),
+            );
+            currentFolder.set("Inbox");
             currentOffset.set(
                 response.data["total"] < 10 ? response.data["total"] : 10,
             );
-            totalEmailCount.set(response.data["total"]);
             saveData();
         }
     }
 
-    async function getFolders() {
-        const response: OpenMailData = await fetch(
-            `${get(serverUrl)}/get-folders/${get(accounts)[0]["email"]}`, // FIXME: Temporary
+    async function getFoldersOfAllAccounts() {
+        const response: Response = await fetch(
+            `${get(serverUrl)}/get-folders/${get(accounts)
+                .map((account) => account["email"])
+                .join(",")}`
         ).then((res) => res.json());
         if (response.success) {
-            folders.set(response.data);
+            folders.set(
+              response.data.map((item: { email: string; data: any }) => ({
+                  email: item.email,
+                  folders: item.data,
+              })),
+            );
             saveData();
         }
     }
@@ -101,8 +103,8 @@
 {:else}
     <Register
         on:continueToInbox={async () => {
-            await getEmails();
-            await getFolders();
+            await getEmailsOfAllAccounts();
+            await getFoldersOfAllAccounts();
         }}
     />
 {/if}

@@ -5,7 +5,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 
 from .utils import extract_domain, choose_positive, contains_non_ascii, convert_to_imap_date, make_size_human_readable
-from .types import SearchCriteria
+from .types import SearchCriteria, LoginException
 
 CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
 IMAP_SERVERS = {
@@ -63,8 +63,9 @@ class IMAP(imaplib.IMAP4_SSL):
     def __handle_conn(func):
         def wrapper(self, *args, **kwargs):
             try:
+                # FIXME: IDLE state is not handled properly
                 if not self.is_logged_in():
-                    raise Exception("You are not logged in(or connection is lost). Please login first.")
+                    raise LoginException("You are not logged in(or connection is lost). Please login first.")
                 #self.done()
                 response = func(self, *args, **kwargs)
                 #self.idle()

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { emails, currentFolder, totalEmailCount, folders, currentOffset, serverUrl, accounts } from '$lib/stores';
-    import type { Email, OpenMailData, SearchCriteria } from '$lib/types';
+    import { emails, currentFolder, folders, currentOffset, serverUrl, accounts } from '$lib/stores';
+    import type { Email, Response, SearchCriteria } from '$lib/types';
     import SearchMenu from './SearchMenu.svelte';
     import { get } from 'svelte/store';
 
@@ -34,7 +34,7 @@
 
         getEmailButton.disabled = true;
         getEmailButton.textContent = 'Loading...';
-        let response: OpenMailData;
+        let response: Response;
         let searchMenuValues: SearchCriteria | "" = "";
         if(typeof getSearchMenuValues === 'function')
             searchMenuValues = getSearchMenuValues();
@@ -65,7 +65,6 @@
             emails.set(response.data["emails"] as Email[]);
             currentFolder.set(response.data["folder"]);
             currentOffset.set(response.data["total"] < 10 ? response.data["total"] : 10);
-            totalEmailCount.set(response.data["total"]);
         }
         getEmailButton.disabled = false;
         getEmailButton.textContent = isSearchMenuOpen ? "Search Emails" : "Get Emails";

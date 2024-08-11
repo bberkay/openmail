@@ -13,12 +13,11 @@ from cryptography.fernet import Fernet
 
 from consts import *
 
-logger = None
+logger = logging.getLogger(APP_NAME)
+logger.setLevel(logging.DEBUG)
 
 def setup_logger():
     global logger
-    logger = logging.getLogger(APP_NAME)
-    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     stream_handler = logging.StreamHandler(sys.stdout)
     file_handler = RotatingFileHandler(UVICORN_LOG_FILE_PATH, maxBytes=1*1024*1024, backupCount=5)
@@ -39,7 +38,7 @@ app.add_middleware(
 )
 
 @app.get("/hello")
-async def health():
+async def hello():
     return Response(success=True, message="Hello, Server is ready for you!")
 
 def create_dirs_if_not_exists():
@@ -174,7 +173,7 @@ def add_email_account(
         return Response(success=success, message=message, data={"email": email, "fullname": fullname})
     return Response(success=success, message=message)
 
-def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "password"], emails: List[str] | None = None) -> list[dict] | None:
+def get_email_accounts_from_db(emails: List[str] | None = None, columns: List[str] = ["fullname", "email", "password"]) -> list[dict] | None:
     chiper_key = get_cipher_key()
     chiper_suite = Fernet(chiper_key)
     conn, cursor = get_db_conn()
@@ -190,13 +189,9 @@ def get_email_accounts_from_db(columns: List[str] = ["fullname", "email", "passw
     else:
         return None
 
-def get_email_account_from_db(columns: List[str] = ["fullname", "email", "password"]) -> dict | None:
-    account = get_email_accounts_from_db(columns)
-    return account[0] if account else None
-
 @app.on_event("startup")
 def startup_event():
-    accounts = get_email_accounts_from_db(["email", "password"])
+    accounts = get_email_accounts_from_db(None, ["email", "password"])
     if not accounts:
         return
 
@@ -210,76 +205,61 @@ def get_email_accounts() -> Response:
         return Response(
             success=True,
             message="Email accounts fetched successfully",
-            data=get_email_accounts_from_db(["fullname", "email"])
+            data=get_email_accounts_from_db(None, ["fullname", "email"])
         )
     except Exception as e:
         return Response(success=False, message=str(e))
 
-def fetch_emails_of_account(account, folder, search, offset):
-    return openmail_clients[account["email"]].get_emails(unquote(folder), unquote(search), int(offset))
-
-def fetch_emails_concurrently(accounts: list, folder: str, search: str, offset: str) -> dict:
-    emails = {"folder": folder, "total": 0, "emails": []}
-
+def get_openmail_func_concurrently(accounts: list, func, **params) -> List[dict]:
+    result = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_emails = {
-            executor.submit(fetch_emails_of_account, account, folder, search, offset): account for account in accounts
+            executor.submit(func, client, **params): email for email, client in openmail_clients.items() if email in accounts
         }
 
         for future in concurrent.futures.as_completed(future_to_emails):
-            result = future.result()
-            emails["total"] += int(result["total"])
-            emails["emails"].extend(result["emails"])
+            future = future.result()
+            result.append({"email": future_to_emails[future], "data": future})
 
-    return emails
+    return result
 
-class FetchEmailsRequest(BaseModel):
-    accounts: List[str]
-    folder: Optional[str] = 'INBOX'
-    search: Optional[str] = 'ALL'
+@app.get("/get-emails/{accounts}")
+async def get_emails(
+    accounts: str,
+    folder: Optional[str] = "INBOX",
+    search: Optional[str] = "ALL",
     offset: Optional[int] = 0
-
-@app.post("/fetch-emails")
-async def fetch_emails(fetch_emails_request: FetchEmailsRequest) -> Response:
-    if len(fetch_emails_request.accounts) <= 1:
-        account = get_email_account_from_db(["email", "password"])
-        if not account:
-            return Response(
-                success=True,
-                message="No email account found",
-                data=[]
+) -> Response:
+    try:
+        return Response(
+            success=True,
+            message="Emails found",
+            data=get_openmail_func_concurrently(
+                accounts.split(","),
+                lambda client, **params: client.get_emails(**params),
+                folder=folder,
+                search=search,
+                offset=offset
             )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
-        try:
-            return Response(
-                success=True,
-                message="Emails found",
-                data=openmail_clients[account["email"]].get_emails(
-                    fetch_emails_request.folder,
-                    fetch_emails_request.search,
-                    fetch_emails_request.offset
-                )
+@app.get("/get-folders/{accounts}")
+async def get_folders(
+    accounts: str,
+) -> Response:
+    try:
+        return Response(
+            success=True,
+            message="Folders found",
+            data=get_openmail_func_concurrently(
+                accounts.split(","),
+                lambda client: client.get_folders(),
             )
-        except Exception as e:
-            return Response(success=False, message=str(e))
-    else:
-        accounts = get_email_accounts_from_db(["email", "password"], fetch_emails_request.accounts)
-        if not accounts:
-            return Response(success=True, message="No email accounts found", data=[])
-
-        try:
-            return Response(
-                success=True,
-                message="Emails found",
-                data=fetch_emails_concurrently(
-                    accounts,
-                    fetch_emails_request.folder,
-                    fetch_emails_request.search,
-                    fetch_emails_request.offset
-                )
-            )
-        except Exception as e:
-            return Response(success=False, message=str(e))
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
 
 @app.get("/get-email-content/{email}/{folder}/{uid}")
 def get_email_content(
@@ -288,6 +268,9 @@ def get_email_content(
     uid: str
 ) -> Response:
     try:
+        if email not in openmail_clients:
+            return Response(success=False, message="Email account not found")
+
         return Response(
             success=True,
             message="Email content fetched",
@@ -314,40 +297,6 @@ async def send_email(
                 subject,
                 body,
                 attachments
-            )
-        )
-    except Exception as e:
-        return Response(success=False, message=str(e))
-
-@app.get("/get-folders/{email}")
-def get_folders(
-    email: str
-) -> Response:
-    try:
-        return Response(
-            success=True,
-            message="Folders found",
-            data=openmail_clients[email].get_folders()
-        )
-    except Exception as e:
-        return Response(success=False, message=str(e))
-
-class SearchRequest(BaseModel):
-    email: str
-    folder: str
-    search: SearchCriteria
-    offset: int
-
-@app.get("/search-emails")
-def search_emails(search_request: SearchRequest) -> Response:
-    try:
-        return Response(
-            success=True,
-            message="Emails found",
-            data=openmail_clients[search_request.email].search_emails(
-                search_request.folder,
-                search_request.search,
-                search_request.offset
             )
         )
     except Exception as e:
@@ -461,7 +410,7 @@ async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
         return Response(
             success=True,
             message="Folder deleted successfully",
-            data=OpenMail(EMAIL, PASSWORD).delete_folder(
+            data=openmail_clients[delete_folder_request.email].delete_folder(
                 delete_folder_request.folder_name
             )
         )

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { currentEmail, currentFolder, serverUrl } from "$lib/stores";
-    import type { OpenMailData, Email } from "$lib/types";
+    import type { Response, Email } from "$lib/types";
     import { get } from "svelte/store";
 
     export let email: Email;
@@ -13,7 +13,7 @@
     });
 
     async function handleEmailClick(){
-        const response: OpenMailData = await fetch(`${get(serverUrl)}/get-email-content/${encodeURIComponent(get(currentFolder))}/${email.uid}`).then(res => res.json());
+        const response: Response = await fetch(`${get(serverUrl)}/get-email-content/${encodeURIComponent(get(currentFolder))}/${email.uid}`).then(res => res.json());
         if (response.success)
             currentEmail.set(response.data as Email);
         else
