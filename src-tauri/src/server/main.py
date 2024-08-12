@@ -189,8 +189,7 @@ def get_email_accounts_from_db(emails: List[str] | None = None, columns: List[st
     else:
         return None
 
-@app.on_event("startup")
-def startup_event():
+def create_openmail_clients_from_db():
     accounts = get_email_accounts_from_db(None, ["email", "password"])
     if not accounts:
         return
@@ -198,6 +197,15 @@ def startup_event():
     for account in accounts:
         openmail_clients[account["email"]] = OpenMail()
         openmail_clients[account["email"]].connect(account["email"], account["password"])
+
+def reconnect_logged_out_openmail_clients():
+    for email, openmail_client in openmail_clients.items():
+        if not openmail_client.is_logged_in():
+            openmail_client.connect(email, get_email_accounts_from_db([email], ["password"])[0]["password"])
+
+@app.on_event("startup")
+def startup_event():
+    create_openmail_clients_from_db()
 
 @app.get("/get-email-accounts")
 def get_email_accounts() -> Response:
@@ -210,7 +218,7 @@ def get_email_accounts() -> Response:
     except Exception as e:
         return Response(success=False, message=str(e))
 
-def get_openmail_func_concurrently(accounts: list, func, **params) -> List[dict]:
+def run_openmail_func_concurrently(accounts: list, func, **params) -> List[dict]:
     result = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_emails = {
@@ -234,7 +242,7 @@ async def get_emails(
         return Response(
             success=True,
             message="Emails found",
-            data=get_openmail_func_concurrently(
+            data=run_openmail_func_concurrently(
                 accounts.split(","),
                 lambda client, **params: client.get_emails(**params),
                 folder=folder,
@@ -253,7 +261,7 @@ async def get_folders(
         return Response(
             success=True,
             message="Folders found",
-            data=get_openmail_func_concurrently(
+            data=run_openmail_func_concurrently(
                 accounts.split(","),
                 lambda client: client.get_folders(),
             )

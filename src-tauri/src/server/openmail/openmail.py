@@ -1,8 +1,8 @@
 from typing import List, Tuple
 
+from .types import SearchCriteria
 from .imap import IMAP
 from .smtp import SMTP
-from .types import SearchCriteria
 
 class OpenMail:
     def __init__(self, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):

@@ -8,6 +8,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
 from .utils import extract_domain, choose_positive
+from .types import LoginException
 
 SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
 SMTP_SERVERS = {
@@ -21,7 +22,6 @@ SMTP_SERVERS = {
 class SMTP(smtplib.SMTP):
     def __init__(self, email_address: str, password: str, port: int = 587, try_limit: int = 3, timeout: int = 30):
         self.__try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up
-        self.__is_logged_in = False
         super().__init__(
             self.__find_smtp_server(email_address),
             port or 587,
@@ -44,10 +44,8 @@ class SMTP(smtplib.SMTP):
                     self.starttls()
                     self.ehlo()
                     super().login(email_address, password)
-                    self.__is_logged_in = True
                 break
             except Exception as e:
-                self.__is_logged_in = False
                 try_count -= 1
                 if try_count == 0:
                     raise Exception("Could not connect to the target smtp server: {}".format(str(e)))
@@ -60,17 +58,16 @@ class SMTP(smtplib.SMTP):
             raise Exception("Could not disconnect from the target smtp server: {}".format(str(e)))
 
     def is_logged_in(self) -> bool:
-        """
-        I couldn't find a way to check if the user is logged in like in the IMAP class.
-        If you have better ideas, let me know please.
-        """
-        return self.__is_logged_in
+        try:
+            return self.noop()[0] == 250
+        except Exception:
+            return False
 
     def __handle_conn(func):
         def wrapper(self, *args, **kwargs):
             try:
                 if not self.is_logged_in():
-                    raise Exception("You are not logged in(or connection is lost). Please login first.")
+                    raise LoginException("You are not logged in(or connection is lost). Please login first.")
                 response = func(self, *args, **kwargs)
                 return response
             except Exception as e:

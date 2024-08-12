@@ -1,4 +1,4 @@
-import imaplib, threading, re, base64, email
+import imaplib, threading, re, base64, email, time
 from typing import List
 from datetime import datetime
 
@@ -58,14 +58,20 @@ class IMAP(imaplib.IMAP4_SSL):
             super().logout()
 
     def is_logged_in(self) -> bool:
-        return self.state == "AUTH" or self.state == "SELECTED"
+        try:
+            return self.noop()[0] == 'OK'
+        except Exception:
+            return False
 
     def __handle_conn(func):
         def wrapper(self, *args, **kwargs):
             try:
+                start_time = time.time()
                 # FIXME: IDLE state is not handled properly
                 if not self.is_logged_in():
+                    print("NOOP Time NOT LOGGED IN: ", time.time() - start_time)
                     raise LoginException("You are not logged in(or connection is lost). Please login first.")
+                print("NOOP Time: ", time.time() - start_time)
                 #self.done()
                 response = func(self, *args, **kwargs)
                 #self.idle()

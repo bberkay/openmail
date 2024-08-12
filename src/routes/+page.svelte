@@ -20,8 +20,12 @@
     let isLoading: boolean = true;
 
     onMount(async () => {
-        if (get(accounts).length === 0) getAccounts();
-        else isLoading = false;
+        serverUrl.subscribe(url => {
+          if(url.length > 0){
+            if (get(accounts).length === 0) getAccounts();
+            else isLoading = false;
+          }
+        });
     });
 
     async function saveData() {

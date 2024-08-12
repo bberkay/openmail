@@ -26,18 +26,16 @@ async function initServer(url: string) {
       serverUrl.set(url);
       return;
     }
-  } finally {
-    if (!serverUrl) {
-      setTimeout(async () => {
-        await getServerURL();
-      }, 1000);
-    }
+  } catch {
+    setTimeout(async () => {
+      await getServerURL();
+    }, 1000);
   }
 }
 
 async function getServerURL() {
-  await invoke("get_server_url").then((url) => {
-    initServer(url as string);
+  await invoke("get_server_url").then(async (url) => {
+    await initServer(url as string);
   });
 }
 
