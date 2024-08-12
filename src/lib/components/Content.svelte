@@ -11,6 +11,7 @@
         unseen: "Mark as Unread"
     };
 
+    let owner: string = "";
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
     let markButtons: NodeListOf<HTMLButtonElement>;
@@ -22,10 +23,12 @@
         defaultMarkButtons = document.querySelectorAll('.flag-operations [data-default-mark]');
 
         currentEmail.subscribe(value => {
-            if(value && Object.keys(value).length > 0)
-                getEmailContent(value);
+            if(value && Object.keys(value).length > 0){
+              owner = (document.querySelector(`[data-email-uid="${get(currentEmail)!.uid}"]`) as HTMLElement).getAttribute('data-email-owner')!;
+              getEmailContent(value);
+            }
             else
-                clearEmailContent();
+              clearEmailContent();
         });
     });
 
@@ -95,43 +98,53 @@
     }
 
     async function markEmail(event: Event): Promise<void>{
-        const mark = (event.target as HTMLButtonElement).getAttribute('data-mark-as')!;
-        const response: Response = await fetch(`${get(serverUrl)}/mark-email`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ uid: get(currentEmail).uid, mark: mark, folder: get(currentFolder) })
-        }).then(res => res.json());
-        if(response.success){
-            currentEmail.update(value => {
-                if(value && Object.keys(value).length > 0){
-                    if(mark.startsWith("un"))
-                        value.flags = value.flags.filter(flag => flag.toLowerCase() != mark.slice(2));
-                    else
-                        value.flags.push(mark.slice(0, 1).toUpperCase() + mark.slice(1).toLowerCase());
+      if (!get(currentEmail))
+        return;
 
-                    return value;
-                }
-                return value;
-            })
-        }
+      const mark = (event.target as HTMLButtonElement).getAttribute('data-mark-as')!;
+      const response: Response = await fetch(`${get(serverUrl)}/mark-email`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email: owner, uid: get(currentEmail)!.uid, mark: mark, folder: get(currentFolder) })
+      }).then(res => res.json());
+      if(response.success){
+          currentEmail.update(value => {
+              if(value && Object.keys(value).length > 0){
+                  if(mark.startsWith("un"))
+                      value.flags = value.flags.filter(flag => flag.toLowerCase() != mark.slice(2));
+                  else
+                      value.flags.push(mark.slice(0, 1).toUpperCase() + mark.slice(1).toLowerCase());
+              }
+              return value;
+          })
+      }
     }
 
     async function moveEmail(event: Event): Promise<void>{
-        const folder = (event.target as HTMLSelectElement).value;
-        const response: Response = await fetch(`${get(serverUrl)}/move-email`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ uid: get(currentEmail).uid, source: get(currentFolder), destination: folder })
-        }).then(res => res.json());
-        if(response.success){
-            emails.update(value => value.filter(email => email.uid != get(currentEmail).uid));
-            currentEmail.set({} as Email);
-            currentOffset.update(value => value - 1);
-        }
+      if (!get(currentEmail))
+        return;
+
+      const folder = (event.target as HTMLSelectElement).value;
+      const response: Response = await fetch(`${get(serverUrl)}/move-email`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email: owner, uid: get(currentEmail)!.uid, source: get(currentFolder), destination: folder })
+      }).then(res => res.json());
+      if(response.success){
+          emails.update(value => (
+            value.filter(item => (
+              item.email == owner
+              ? item.emails = item.emails.filter((email: Email) => email.uid != get(currentEmail)!.uid)
+              : item
+            ))
+          ));
+          currentEmail.set({} as Email);
+          currentOffset.update(value => value - 1);
+      }
     }
 </script>
 
@@ -145,11 +158,13 @@
                 <button data-mark-as="flagged" data-default-mark="flagged" on:click={markEmail}>Star</button>
                 <select name="move_to_folder" on:change={moveEmail}>
                     <option value="">Move To Folder</option>
-                    {#if $folders && $folders.length > 0}
-                        {#each $folders as folder}
-                            <option value={folder}>{folder}</option>
-                        {/each}
-                    {/if}
+                    {#each $folders as folder}
+                        {#if owner == folder.email}
+                            {#if $folders && $folders.length > 0}
+                              <option value={folder}>{folder}</option>
+                            {/if}
+                        {/if}
+                    {/each}
                 </select>
                 <button>Delete</button>
             </div>

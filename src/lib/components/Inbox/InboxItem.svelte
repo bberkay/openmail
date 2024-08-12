@@ -3,17 +3,18 @@
     import type { Response, Email } from "$lib/types";
     import { get } from "svelte/store";
 
+    export let owner: string;
     export let email: Email;
 
     currentEmail.subscribe(value => {
-        if(value.uid === email.uid){
+        if(value && value.uid === email.uid){
             email.flags = value.flags;
             document.querySelector(`[data-email-uid*="${email.uid}"]`)?.setAttribute('data-email-flags', email.flags.join(','));
         }
     });
 
     async function handleEmailClick(){
-        const response: Response = await fetch(`${get(serverUrl)}/get-email-content/${encodeURIComponent(get(currentFolder))}/${email.uid}`).then(res => res.json());
+        const response: Response = await fetch(`${get(serverUrl)}/get-email-content/${email_owner}/${encodeURIComponent(get(currentFolder))}/${email.uid}`).then(res => res.json());
         if (response.success)
             currentEmail.set(response.data as Email);
         else
@@ -23,7 +24,7 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="inbox-item" data-email-uid={email.uid} data-email-flags={email.flags} on:click={handleEmailClick}>
+<div class="inbox-item" data-email-owner={owner} data-email-uid={email.uid} data-email-flags={email.flags} on:click={handleEmailClick}>
     <h3>{email.from}</h3>
     <small>
         <span>{email.date}</span> &lt;<span>{email.to}</span>&gt;

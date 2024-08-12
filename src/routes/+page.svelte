@@ -15,6 +15,7 @@
         folders,
         currentOffset,
         accounts,
+        currentAccounts,
     } from "$lib/stores";
 
     let isLoading: boolean = true;
@@ -45,6 +46,7 @@
         ).then((res) => res.json());
         if (Object.hasOwn(response, "data") && response.data) {
             accounts.set(response.data);
+            currentAccounts.set(response.data);
             saveData();
         }
         isLoading = false;

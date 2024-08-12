@@ -197,6 +197,7 @@ def create_openmail_clients_from_db():
     for account in accounts:
         openmail_clients[account["email"]] = OpenMail()
         openmail_clients[account["email"]].connect(account["email"], account["password"])
+        #openmail_clients[account["email"]].idle()
 
 def reconnect_logged_out_openmail_clients():
     for email, openmail_client in openmail_clients.items():
@@ -228,7 +229,6 @@ def run_openmail_func_concurrently(accounts: list, func, **params) -> List[dict]
         for future in concurrent.futures.as_completed(future_to_emails):
             email = future_to_emails[future]
             future = future.result()
-            print(f"Email: {email}, Future: {future}")
             result.append({"email": email, "data": future})
 
     return result

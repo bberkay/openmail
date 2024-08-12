@@ -34,6 +34,12 @@ class OpenMail:
         except Exception as e:
             return False, str(e)
 
+    def idle(self) -> None:
+        self.__imap.idle()
+
+    def done(self) -> None:
+        self.__imap.done()
+
     def send_email(self,
         sender: str | Tuple[str, str],
         receiver_emails: str | List[str],

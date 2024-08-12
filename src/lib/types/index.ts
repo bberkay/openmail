@@ -1,12 +1,12 @@
 export interface Response {
-    success: boolean;
-    message: string;
-    data?: any;
+  success: boolean;
+  message: string;
+  data?: any;
 }
 
 export interface Account {
-    fullname: string;
-    email: string;
+  fullname: string;
+  email: string;
 }
 
 export interface Email {
@@ -34,11 +34,11 @@ export interface SearchCriteria {
 }
 
 export interface Attachment {
-    cid: string;
-    name: string;
-    data: string;
-    size: string;
-    type: string;
+  cid: string;
+  name: string;
+  data: string;
+  size: string;
+  type: string;
 }
 
 export interface Cache{
@@ -52,4 +52,4 @@ export interface Cache{
 
 export type Accounts = Account[];
 export type Emails = { email: string, folder: string, emails:Email[], total: number }[];
-export type Folders = { email: string, folders:Email[] }[];
+export type Folders = { email: string, folders:string[] }[];

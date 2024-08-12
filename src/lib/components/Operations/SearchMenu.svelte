@@ -3,6 +3,8 @@
     import type { SearchCriteria } from '$lib/types';
     import { onMount } from 'svelte';
 
+    export let selectedAccount: string = "";
+    export let selectedAccounts: string[] = [];
     let searchMenu: HTMLDivElement;
     onMount(() => {
         searchMenu = document.querySelector('.search-menu')!;
@@ -41,19 +43,19 @@
     export function getSearchMenuValues(): SearchCriteria | ""
     {
         const searchMenuData: SearchCriteria = {
-            "senders": Array.from(searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
-            "receivers": Array.from(searchMenu.querySelector("#to-email-addresses")!.querySelectorAll("span")).map(span => span.textContent),
+            "senders": Array.from(searchMenu.querySelector("#from-email-addresses")!.querySelectorAll("span")).map((span) => { return span.textContent || ""; }),
+            "receivers": Array.from(searchMenu.querySelector("#to-email-addresses")!.querySelectorAll("span")).map((span) => { return span.textContent || ""; }),
             "subject": (searchMenu.querySelector("input[name*='subject']") as HTMLInputElement).value,
             "since": (searchMenu.querySelector("input[name*='since']") as HTMLInputElement).value,
             "before": (searchMenu.querySelector("input[name*='before']") as HTMLInputElement).value,
-            "flags": Array.from(searchMenu.querySelector("#flags")!.querySelectorAll("span")).map(span => span.textContent),
+            "flags": Array.from(searchMenu.querySelector("#flags")!.querySelectorAll("span")).map((span) => { return span.textContent || ""; }),
             "include": (searchMenu.querySelector("input[name*='include_words']") as HTMLInputElement).value,
             "exclude": (searchMenu.querySelector("input[name*='exclude_words']") as HTMLInputElement).value,
             "has_attachments": (searchMenu.querySelector("input[name*='has_attachments']") as HTMLInputElement).checked
         };
 
         // If every key is null or empty and has_attachments is false, return null
-        if(Object.values(searchMenuData).every(value => {
+        if(Object.values(searchMenuData).every((value) => {
             if(typeof value === 'string')
                 return value === '';
             if(Array.isArray(value))
@@ -127,12 +129,14 @@
     </div>
     <div class="form-group">
         <label for="in_folder">In Folder</label>
-        <select name="in_folder" id="in_folder">
-            {#if $folders && $folders.length > 0}
-                {#each $folders as folder}
-                    <option value={folder}>{folder}</option>
-                {/each}
-            {/if}
+        <select name="in_folder" id="in_folder" disabled={selectedAccounts && selectedAccounts.length > 1}>
+            {#each $folders as folder}
+              {#if selectedAccount == folder.email}
+                {#if $folders && $folders.length > 0}
+                  <option value={folder}>{folder}</option>
+                {/if}
+              {/if}
+            {/each}
         </select>
     </div>
     <div class="form-group">
@@ -181,7 +185,7 @@
             & select{
                 width: 100%;
             }
-            
+
             & select + button{
                 border: 1px solid #a7a7a7;
                 padding: 6px;

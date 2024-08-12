@@ -1,33 +1,42 @@
 <script lang="ts">
-    import { folders } from '$lib/stores';
     import type { Response } from '$lib/types';
     import { onMount } from 'svelte';
     import { get } from 'svelte/store';
-    import { serverUrl } from '$lib/stores';
+    import { serverUrl, folders, accounts } from '$lib/stores';
 
+    let selectedAccount: string = '';
     let folderSelectOptions: NodeListOf<HTMLFormElement>;
     onMount(() => {
         folderSelectOptions = document.querySelectorAll('.folder-management-form select[name*="folder"]');
-        folders.subscribe(value => {
-            if(value.length > 0){
-                folderSelectOptions.forEach(select => {
-                    select.innerHTML = '';
-                    if(select.name === 'parent_folder'){
-                        const option = document.createElement('option');
-                        option.value = '';
-                        option.innerText = 'Root';
-                        select.appendChild(option);
-                    }
-                    value.forEach(folder => {
-                        const option = document.createElement('option');
-                        option.value = folder;
-                        option.innerText = folder;
-                        select.appendChild(option);
-                    });
-                });
-            }
-        })
+        folders.subscribe((value: any) => {
+            value = value[0]["folders"];
+            if(value.length > 0)
+                createFolderOptions(value);
+        });
     });
+
+    function selectAccount(event: Event): void {
+       selectedAccount = (event.target as HTMLSelectElement).value;
+       createFolderOptions(get(folders).filter((folder: any) => folder["email"] === selectedAccount)[0].folders);
+    }
+
+    function createFolderOptions(folders: string[]) {
+      folderSelectOptions.forEach(select => {
+          select.innerHTML = '';
+          if(select.name === 'parent_folder'){
+              const option = document.createElement('option');
+              option.value = '';
+              option.innerText = 'Root';
+              select.appendChild(option);
+          }
+          folders.forEach((folder: string) => {
+              const option = document.createElement('option');
+              option.value = folder;
+              option.innerText = folder;
+              select.appendChild(option);
+          });
+      });
+    }
 
     function showFolderManagementForm(event: Event): void {
         const formId = (event.target as HTMLButtonElement).dataset.formTargetId;
@@ -74,6 +83,17 @@
         <button class="button-text" data-form-target-id="move-folder" on:click={showFolderManagementForm}>Move</button>
     </div>
     <div class="card">
+        <form class = "folder-management-form active" id="create-folder" on:submit|preventDefault={handleFormManagementOperation}>
+            <div class="form-group">
+                <label for="account">Account</label>
+                <select name="account" id="account" on:change={selectAccount} required>
+                    {#each $accounts as account}
+                      <option value={account.email} selected>{account.fullname} &lt;{account.email}&gt;</option>
+                    {/each}
+                </select>
+            </div>
+            <button type="submit">Create</button>
+        </form>
         <form class = "folder-management-form active" id="create-folder" on:submit|preventDefault={handleFormManagementOperation}>
             <div class="form-group">
                 <label for="folder_name">Folder Name</label>

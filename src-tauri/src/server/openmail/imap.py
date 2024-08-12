@@ -44,7 +44,6 @@ class IMAP(imaplib.IMAP4_SSL):
                     else:
                         super().login(email_address, password)
                     self._simple_command('ENABLE', 'UTF8=ACCEPT')
-                    #self.idle()
                 break
             except Exception as e:
                 try_count -= 1
@@ -66,9 +65,12 @@ class IMAP(imaplib.IMAP4_SSL):
                 # FIXME: IDLE state is not handled properly
                 #if not self.is_logged_in():
                 #    raise LoginException("You are not logged in(or connection is lost). Please login first.")
-                #self.done()
+                is_idle = self.is_idle()
+                if is_idle:
+                    self.done()
                 response = func(self, *args, **kwargs)
-                #self.idle()
+                if is_idle:
+                    self.idle()
                 return response
             except Exception as e:
                 #self.__imap.logout()
@@ -77,9 +79,12 @@ class IMAP(imaplib.IMAP4_SSL):
 
     def __idle(self) -> None:
         self.send(b'IDLE\r\n')
+        print("Entering IDLE mode...")
+
         while not self.__idle_event.is_set():
             response = self.readline()
             if response.startswith(b'* BYE'):
+                print("Server closed the connection.")
                 break
 
     def is_idle(self) -> bool:
@@ -91,11 +96,11 @@ class IMAP(imaplib.IMAP4_SSL):
         self.__idle_thread.start()
 
     def done(self) -> None:
-        if self.is_idle():
-            self.send(b'DONE\r\n')
-            self.__idle_event.set()
-            self.__idle_thread.join()
-            self.__idle_thread = None
+        self.send(b'DONE\r\n')
+        self.__idle_event.set()
+        self.__idle_thread.join()
+        self.__idle_thread = None
+        print("IDLE Stopped.")
 
     def __encode_folder(self, folder: str) -> bytes:
         return ('"' + folder + '"').encode("utf-8")
@@ -108,7 +113,6 @@ class IMAP(imaplib.IMAP4_SSL):
 
     @__handle_conn
     def get_folders(self) -> list:
-        print(self.list())
         return [self.__decode_folder(i) for i in self.list()[1]]
 
     @__handle_conn
