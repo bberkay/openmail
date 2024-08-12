@@ -58,10 +58,10 @@
         ).then((res) => res.json());
         if (response.success) {
             emails.set(
-                response.data.map((item: { email: string; data: any }) => ({
+                response.data.map((item: { email: string; data: object }) => ({
                     email: item.email,
-                    ...item.data,
-                })),
+                    ...item.data
+                }))
             );
             currentFolder.set("Inbox");
             currentOffset.set(

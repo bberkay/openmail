@@ -226,8 +226,10 @@ def run_openmail_func_concurrently(accounts: list, func, **params) -> List[dict]
         }
 
         for future in concurrent.futures.as_completed(future_to_emails):
+            email = future_to_emails[future]
             future = future.result()
-            result.append({"email": future_to_emails[future], "data": future})
+            print(f"Email: {email}, Future: {future}")
+            result.append({"email": email, "data": future})
 
     return result
 

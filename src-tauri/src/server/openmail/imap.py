@@ -58,20 +58,14 @@ class IMAP(imaplib.IMAP4_SSL):
             super().logout()
 
     def is_logged_in(self) -> bool:
-        try:
-            return self.noop()[0] == 'OK'
-        except Exception:
-            return False
+        return self.state == "AUTH" or self.state == "SELECTED"
 
     def __handle_conn(func):
         def wrapper(self, *args, **kwargs):
             try:
-                start_time = time.time()
                 # FIXME: IDLE state is not handled properly
-                if not self.is_logged_in():
-                    print("NOOP Time NOT LOGGED IN: ", time.time() - start_time)
-                    raise LoginException("You are not logged in(or connection is lost). Please login first.")
-                print("NOOP Time: ", time.time() - start_time)
+                #if not self.is_logged_in():
+                #    raise LoginException("You are not logged in(or connection is lost). Please login first.")
                 #self.done()
                 response = func(self, *args, **kwargs)
                 #self.idle()
@@ -107,10 +101,14 @@ class IMAP(imaplib.IMAP4_SSL):
         return ('"' + folder + '"').encode("utf-8")
 
     def __decode_folder(self, folder: bytes) -> str:
-        return folder.decode().split(' "/" ')[1].replace('"', '')
+        # Most of the servers return folder name as b'(\\HasNoChildren) "/" "INBOX"'
+        # But some servers like yandex return folder name as b'(\\HasNoChildren) "|" "INBOX"'
+        # So we're replacing "|" with "/" to make it consistent
+        return folder.decode().replace(' "|" ', ' "/" ').split(' "/" ')[1].replace('"', '')
 
     @__handle_conn
     def get_folders(self) -> list:
+        print(self.list())
         return [self.__decode_folder(i) for i in self.list()[1]]
 
     @__handle_conn
