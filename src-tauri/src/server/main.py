@@ -139,7 +139,7 @@ class Response(BaseModel):
 def is_email_valid(email: str) -> bool:
     return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
 
-def add_email_account_to_db(email: str, password: str, fullname: str = None) -> tuple[bool, str]:
+def add_email_account_to_db(email: str, password: str, fullname: str | None = None) -> tuple[bool, str]:
     cipher_key = get_cipher_key()
     conn, cursor = get_db_conn()
     if not cursor.execute("SELECT email FROM accounts WHERE email = ?", (email,)).fetchone():
@@ -196,7 +196,8 @@ def create_openmail_clients_from_db():
 
     for account in accounts:
         openmail_clients[account["email"]] = OpenMail()
-        openmail_clients[account["email"]].connect(account["email"], account["password"])
+        status = openmail_clients[account["email"]].connect(account["email"], account["password"])
+        print(f"OpenMail client for {account['email']} is {'connected' if status else 'not connected'}")
         #openmail_clients[account["email"]].idle()
 
 def reconnect_logged_out_openmail_clients():
@@ -229,6 +230,7 @@ def run_openmail_func_concurrently(accounts: list, func, **params) -> List[dict]
         for future in concurrent.futures.as_completed(future_to_emails):
             email = future_to_emails[future]
             future = future.result()
+            print("Email: ", email, "Future: ", future)
             result.append({"email": email, "data": future})
 
     return result

@@ -120,7 +120,7 @@
     </div>
     <div class="inbox-content">
       {#each $emails as account}
-        {#if get(currentAccounts).find((a) => a.email == account.email)}
+        {#if get(currentAccounts).length == 0 || get(currentAccounts).find((a) => a.email == account.email)}
           {#each account.emails as email}
             <InboxItem owner={account.email} email={email} />
           {/each}

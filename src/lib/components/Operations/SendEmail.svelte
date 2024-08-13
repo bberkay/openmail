@@ -95,7 +95,7 @@
             <div class="form-group">
                 <label for="attachments">Attachment(s)</label>
                 <input type="file" name="attachments" id="attachments" multiple>
-            </div>-
+            </div>
             <button type="submit">Send</button>
         </form>
     </div>

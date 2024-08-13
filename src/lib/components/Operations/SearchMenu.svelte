@@ -132,9 +132,9 @@
         <select name="in_folder" id="in_folder" disabled={selectedAccounts && selectedAccounts.length > 1}>
             {#each $folders as folder}
               {#if selectedAccount == folder.email}
-                {#if $folders && $folders.length > 0}
-                  <option value={folder}>{folder}</option>
-                {/if}
+                {#each folder.folders as item}
+                    <option value={item}>{item}</option>
+                {/each}
               {/if}
             {/each}
         </select>

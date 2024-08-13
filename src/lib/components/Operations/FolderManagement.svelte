@@ -83,16 +83,15 @@
         <button class="button-text" data-form-target-id="move-folder" on:click={showFolderManagementForm}>Move</button>
     </div>
     <div class="card">
-        <form class = "folder-management-form active" id="create-folder" on:submit|preventDefault={handleFormManagementOperation}>
+        <form class = "folder-management-form" style="display:flex;">
             <div class="form-group">
                 <label for="account">Account</label>
                 <select name="account" id="account" on:change={selectAccount} required>
                     {#each $accounts as account}
-                      <option value={account.email} selected>{account.fullname} &lt;{account.email}&gt;</option>
+                      <option value={account.email}>{account.fullname} &lt;{account.email}&gt;</option>
                     {/each}
                 </select>
             </div>
-            <button type="submit">Create</button>
         </form>
         <form class = "folder-management-form active" id="create-folder" on:submit|preventDefault={handleFormManagementOperation}>
             <div class="form-group">

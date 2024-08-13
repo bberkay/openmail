@@ -29,7 +29,7 @@ async function initServer(url: string) {
   } catch {
     setTimeout(async () => {
       await getServerURL();
-    }, 1000);
+    }, 2000);
   }
 }
 

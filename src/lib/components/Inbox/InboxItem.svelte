@@ -14,7 +14,7 @@
     });
 
     async function handleEmailClick(){
-        const response: Response = await fetch(`${get(serverUrl)}/get-email-content/${email_owner}/${encodeURIComponent(get(currentFolder))}/${email.uid}`).then(res => res.json());
+        const response: Response = await fetch(`${get(serverUrl)}/get-email-content/${owner}/${encodeURIComponent(get(currentFolder))}/${email.uid}`).then(res => res.json());
         if (response.success)
             currentEmail.set(response.data as Email);
         else
