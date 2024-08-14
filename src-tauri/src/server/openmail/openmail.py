@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Sequence
 
 from .types import SearchCriteria
 from .imap import IMAP
@@ -45,14 +45,24 @@ class OpenMail:
         receiver_emails: str | List[str],
         subject: str,
         body: str,
-        attachments: list | None = None
+        attachments: list | None = None,
+        cc: str | List[str] | None = None,
+        bcc: str | List[str] | None = None,
+        msg_metadata: dict | None = None,
+        mail_options: Sequence[str] = (),
+        rcpt_options: Sequence[str] = ()
     ) -> bool:
         return self.__smtp.sendmail(
             sender,
             receiver_emails,
             subject,
             body,
-            attachments
+            attachments,
+            cc,
+            bcc,
+            msg_metadata,
+            mail_options,
+            rcpt_options
         )
 
     def reply_email(self,
@@ -68,6 +78,8 @@ class OpenMail:
             "Re: " + self.__imap.get_email_content(uid)[2]["subject"],
             body,
             attachments,
+            None,
+            None,
             {
                 "In-Reply-To": uid,
                 "References": uid
@@ -91,6 +103,8 @@ class OpenMail:
             "Fwd: " + self.__imap.get_email_content(uid)[2]["subject"],
             body,
             attachments,
+            None,
+            None,
             {
                 "In-Reply-To": uid,
                 "References": uid

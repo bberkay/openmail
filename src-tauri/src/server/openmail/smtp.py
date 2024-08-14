@@ -81,9 +81,11 @@ class SMTP(smtplib.SMTP):
         sender: str | Tuple[str, str],
         receiver_emails: str | List[str],
         subject: str,
-        body: str,
+        body: str | None = None,
         attachments: list | None = None,
-        msg_meta: dict | None = None,
+        cc: str | List[str] | None = None,
+        bcc: str | List[str] | None = None,
+        msg_metadata: dict | None = None,
         mail_options: Sequence[str] = (),
         rcpt_options: Sequence[str] = ()
     ) -> bool:
@@ -92,14 +94,20 @@ class SMTP(smtplib.SMTP):
         """
         if isinstance(receiver_emails, list):
             receiver_emails = ", ".join(receiver_emails)
+        if cc and isinstance(cc, list):
+            cc = ", ".join(cc)
+        if bcc and isinstance(bcc, list):
+            bcc = ", ".join(bcc)
 
         # sender can be a string(just email) or a tuple (name, email)
         msg = MIMEMultipart()
         msg['From'] = sender if isinstance(sender, str) else f"{sender[0]} <{sender[1]}>"
         msg['To'] = receiver_emails
         msg['Subject'] = subject
-        if msg_meta:
-            for key, value in msg_meta.items():
+        if cc:
+            msg['Cc'] = cc
+        if msg_metadata:
+            for key, value in msg_metadata.items():
                 msg[key] = value
 
         # Attach inline images
@@ -124,9 +132,16 @@ class SMTP(smtplib.SMTP):
                 part.add_header('content-disposition', 'attachment', filename=attachment.filename)
                 msg.attach(part)
 
+        receiver_emails = [email.strip() for email in receiver_emails.split(",")]
+        if cc:
+            cc = [email.strip() for email in cc.split(",")]
+            receiver_emails.extend(cc)
+        if bcc:
+            bcc = [email.strip() for email in bcc.split(",")]
+            receiver_emails.extend(bcc)
         super().sendmail(
             sender if isinstance(sender, str) else sender[1],
-            [email.strip() for email in receiver_emails.split(",")],
+            receiver_emails,
             msg.as_string(),
             mail_options,
             rcpt_options

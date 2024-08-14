@@ -7,6 +7,8 @@
     // @ts-ignore
     let body: WYSIWYGEditor;
     let receivers: HTMLElement;
+    let cc: HTMLElement;
+    let bcc: HTMLElement;
     let sendEmailButton: HTMLButtonElement;
     let selectedAccount: Account = get(accounts)[0];
     onMount(() => {
@@ -14,17 +16,17 @@
         body = new WYSIWYGEditor('body');
         body.init();
 
-        receivers = document.querySelector('.tags')!;
         sendEmailButton = document.querySelector('#send-email-form button[type="submit"]')!;
     });
 
-    function handleReceivers(e: KeyboardEvent){
+    function handleTagEnter(e: KeyboardEvent){
         const target = e.target as HTMLInputElement;
+        const tags = target.parentElement!.querySelector('.tags')! as HTMLElement;
         const isEmailValid = target.value.match(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/);
         if((e.key === 'Spacebar' || e.key === ' ')){
             if(target.value !== '' && isEmailValid){
-                receivers.style.display = 'flex';
-                receivers.innerHTML += `<span>${target.value}<button onclick="this.parentElement.remove()"></button></span>`;
+                tags.style.display = 'flex';
+                tags.innerHTML += `<span>${target.value}<button onclick="this.parentElement.remove()"></button></span>`;
                 target.value = '';
             }
             else{
@@ -79,9 +81,23 @@
             </div>
             <div class="form-group">
                 <label for="receivers">Receiver(s)</label>
-                <input type="email" name="receivers" id="receivers" on:keyup={handleReceivers}>
+                <input type="email" name="receivers" id="receivers" on:keyup={handleTagEnter}>
                 <div class="tags" tabindex="-1">
                     <!-- Receivers -->
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="receivers">Cc</label>
+                <input type="email" name="cc" id="cc" on:keyup={handleTagEnter}>
+                <div class="tags" tabindex="-1">
+                    <!-- Cc -->
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="receivers">Bcc</label>
+                <input type="email" name="bcc" id="bcc" on:keyup={handleTagEnter}>
+                <div class="tags" tabindex="-1">
+                    <!-- Bcc -->
                 </div>
             </div>
             <div class="form-group">

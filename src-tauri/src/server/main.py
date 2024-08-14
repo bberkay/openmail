@@ -298,7 +298,9 @@ async def send_email(
     receivers: str = Form(...), # mail addresses separated by comma
     subject: str = Form(...),
     body: str = Form(...),
-    attachments: List[UploadFile] = File(None)
+    attachments: List[UploadFile] = File(None),
+    cc: Optional[str] = Form(None),
+    bcc: Optional[str] = Form(None)
 ) -> Response:
     try:
         return Response(
@@ -309,7 +311,9 @@ async def send_email(
                 receivers,
                 subject,
                 body,
-                attachments
+                attachments,
+                cc,
+                bcc
             )
         )
     except Exception as e:
