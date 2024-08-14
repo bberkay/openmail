@@ -13,7 +13,7 @@
     import SearchMenu from "./SearchMenu.svelte";
     import { get } from "svelte/store";
 
-    let selectedAccount: string = "";
+    let selectedAccount: string = get(accounts)[0].email;
     let selectedAccounts: string[] = [];
     let getSearchMenuValues: () => SearchCriteria | "";
     let isSearchMenuOpen = false;
@@ -133,7 +133,7 @@
                             required
                         >
                             {#each $accounts as account}
-                                <option value={account.email} selected>
+                                <option value={account.email}>
                                     {account.fullname} &lt;{account.email}&gt;
                                 </option>
                             {/each}

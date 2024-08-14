@@ -34,6 +34,7 @@ async function initServer(url: string) {
 }
 
 async function getServerURL() {
+  if (serverUrl) return;
   await invoke("get_server_url").then(async (url) => {
     await initServer(url as string);
   });

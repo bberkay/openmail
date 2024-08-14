@@ -100,6 +100,9 @@ class OpenMail:
     def get_folders(self) -> list:
         return self.__imap.get_folders()
 
+    def get_folder_status(self, folder: str, status: str = "MESSAGES") -> dict:
+        return self.__imap.status(folder, status)
+
     def get_email_flags(self, uid: str) -> list:
         return self.__imap.get_email_flags(uid)
 

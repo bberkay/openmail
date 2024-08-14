@@ -10,22 +10,37 @@
     import { Store } from "@tauri-apps/plugin-store";
     import {
         serverUrl,
-        emails,
-        currentFolder,
-        folders,
-        currentOffset,
         accounts,
+        emails,
+        folders,
         currentAccounts,
+        currentEmail,
+        currentFolder,
+        currentOffset,
     } from "$lib/stores";
 
     let isLoading: boolean = true;
 
     onMount(async () => {
-        serverUrl.subscribe(url => {
-          if(url.length > 0){
-            if (get(accounts).length === 0) getAccounts();
-            else isLoading = false;
-          }
+        serverUrl.subscribe((url) => {
+            if (url.length > 0) {
+                if (get(accounts).length === 0) getAccounts();
+                else isLoading = false;
+            }
+        });
+
+        [
+            accounts,
+            emails,
+            folders,
+            currentAccounts,
+            currentFolder,
+            currentEmail,
+            currentOffset,
+        ].forEach((store) => {
+            store.subscribe(() => {
+                saveData();
+            });
         });
     });
 
@@ -47,7 +62,6 @@
         if (Object.hasOwn(response, "data") && response.data) {
             accounts.set(response.data);
             currentAccounts.set(response.data);
-            saveData();
         }
         isLoading = false;
     }
@@ -56,20 +70,19 @@
         const response: Response = await fetch(
             `${get(serverUrl)}/get-emails/${get(accounts)
                 .map((account) => account["email"])
-                .join(",")}`
+                .join(",")}`,
         ).then((res) => res.json());
         if (response.success) {
             emails.set(
                 response.data.map((item: { email: string; data: object }) => ({
                     email: item.email,
-                    ...item.data
-                }))
+                    ...item.data,
+                })),
             );
             currentFolder.set("Inbox");
             currentOffset.set(
                 response.data["total"] < 10 ? response.data["total"] : 10,
             );
-            saveData();
         }
     }
 
@@ -77,16 +90,15 @@
         const response: Response = await fetch(
             `${get(serverUrl)}/get-folders/${get(accounts)
                 .map((account) => account["email"])
-                .join(",")}`
+                .join(",")}`,
         ).then((res) => res.json());
         if (response.success) {
             folders.set(
-              response.data.map((item: { email: string; data: any }) => ({
-                  email: item.email,
-                  folders: item.data,
-              })),
+                response.data.map((item: { email: string; data: any }) => ({
+                    email: item.email,
+                    folders: item.data,
+                })),
             );
-            saveData();
         }
     }
 </script>

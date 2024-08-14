@@ -13,7 +13,7 @@
 
     let prevButton: HTMLButtonElement;
     let nextButton: HTMLButtonElement;
-    let totalEmailCount = get(emails).reduce(
+    $: totalEmailCount = $emails.reduce(
         (acc, account) => get(currentAccounts).find((a) => a.email == account.email) ? acc + account.total : acc,
         0,
     );

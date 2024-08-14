@@ -1,5 +1,5 @@
 import imaplib, threading, re, base64, email, time
-from typing import List
+from typing import List, Literal
 from datetime import datetime
 
 from bs4 import BeautifulSoup
@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 from .utils import extract_domain, choose_positive, contains_non_ascii, convert_to_imap_date, make_size_human_readable
 from .types import SearchCriteria, LoginException
 
+IDLE_RECEIVE_TIMEOUT = 60
+FOLDER_FLAG_NAMES =  [b'\\All', b'\\Archive', b'\\Drafts', b'\\Flagged', b'\\Junk', b'\\Sent', b'\\Trash']
 CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
 IMAP_SERVERS = {
     "gmail": "imap.gmail.com",
@@ -18,8 +20,6 @@ IMAP_SERVERS = {
 
 class IMAP(imaplib.IMAP4_SSL):
     def __init__(self, email_address: str, password: str, port: int = 993, try_limit: int = 3, timeout: int = 30):
-        self.__idle_thread = None
-        self.__idle_event = threading.Event()
         self.__try_limit = choose_positive(try_limit, 3)
         super().__init__(
             self.__find_imap_server(email_address),
@@ -28,36 +28,43 @@ class IMAP(imaplib.IMAP4_SSL):
         )
         self.login(email_address, password)
 
+        self.__selected_folder = None
+        self.__idle_thread = None
+        self.__idle_event = threading.Event()
+        self.__is_idle = False
+
     def __find_imap_server(self, email_address: str) -> str:
         try:
             return IMAP_SERVERS[extract_domain(email_address)]
         except KeyError:
             raise Exception("Unsupported email domain")
 
-    def login(self, email_address: str, password: str) -> None:
+    def is_logged_in(self) -> bool:
+        return self.state == "AUTH" or self.state == "SELECTED"
+
+    def login(self, user: str, password: str) -> tuple[str, any]:
         try_count = self.__try_limit
         for _ in range(try_count):
             try:
                 if not self.is_logged_in():
-                    if contains_non_ascii(email_address) or contains_non_ascii(password):
-                        self.authenticate("PLAIN", lambda x: bytes("\x00" + email_address + "\x00" + password, "utf-8"))
+                    status, response = None, None
+                    if contains_non_ascii(user) or contains_non_ascii(password):
+                        status, response = self.authenticate("PLAIN", lambda x: bytes("\x00" + user + "\x00" + password, "utf-8"))
                     else:
-                        super().login(email_address, password)
+                        status, response = super().login(user, password)
                     self._simple_command('ENABLE', 'UTF8=ACCEPT')
-                break
+                    return status, response
+                return "OK", "Already logged in"
             except Exception as e:
                 try_count -= 1
                 if try_count == 0:
                     raise Exception("3 failed login attempts. Error: " + str(e))
 
-    def logout(self) -> None:
+    def logout(self) -> tuple[str, any]:
         if self.is_logged_in():
             if self.state == "SELECTED":
                 self.close()
-            super().logout()
-
-    def is_logged_in(self) -> bool:
-        return self.state == "AUTH" or self.state == "SELECTED"
+            return super().logout()
 
     def __handle_conn(func):
         def wrapper(self, *args, **kwargs):
@@ -65,11 +72,11 @@ class IMAP(imaplib.IMAP4_SSL):
                 # FIXME: IDLE state is not handled properly
                 #if not self.is_logged_in():
                 #    raise LoginException("You are not logged in(or connection is lost). Please login first.")
-                is_idle = self.is_idle()
-                if is_idle:
+                was_idle_before_func = self.__is_idle
+                if self.__is_idle:
                     self.done()
                 response = func(self, *args, **kwargs)
-                if is_idle:
+                if was_idle_before_func:
                     self.idle()
                 return response
             except Exception as e:
@@ -77,30 +84,22 @@ class IMAP(imaplib.IMAP4_SSL):
                 return False, str(e)
         return wrapper
 
-    def __idle(self) -> None:
-        self.send(b'IDLE\r\n')
-        print("Entering IDLE mode...")
+    def get_folder_name_by_flag_name(self, flag_name: bytes) -> str | None:
+        """
+        Returns folder name by its flag name.
+        This method is useful when the client's folder name is in a different language.
+        For example, if the client's inbox's name is "Gelen Kutusu" this method will return
+        "INBOX" if the flag name is b'\\Inbox' or "Çöp Kutusu" if the flag name is b'\\Trash'
+        """
+        if flag_name not in FOLDER_FLAG_NAMES:
+            return None
 
-        while not self.__idle_event.is_set():
-            response = self.readline()
-            if response.startswith(b'* BYE'):
-                print("Server closed the connection.")
-                break
-
-    def is_idle(self) -> bool:
-        return (self.__idle_thread and self.__idle_thread.is_alive()) or False
-
-    def idle(self) -> None:
-        self.__idle_event.clear()
-        self.__idle_thread = threading.Thread(target=self.__idle)
-        self.__idle_thread.start()
-
-    def done(self) -> None:
-        self.send(b'DONE\r\n')
-        self.__idle_event.set()
-        self.__idle_thread.join()
-        self.__idle_thread = None
-        print("IDLE Stopped.")
+        status, folders_as_bytes = self.list()
+        if status == "OK":
+            for folder_as_bytes in folders_as_bytes:
+                if flag_name == folder_as_bytes:
+                    return self.__decode_folder(folder_as_bytes)
+        return None
 
     def __encode_folder(self, folder: str) -> bytes:
         return ('"' + folder + '"').encode("utf-8")
@@ -111,9 +110,56 @@ class IMAP(imaplib.IMAP4_SSL):
         # So we're replacing "|" with "/" to make it consistent
         return folder.decode().replace(' "|" ', ' "/" ').split(' "/" ')[1].replace('"', '')
 
+    def select(self, mailbox: str = "INBOX", readonly: bool = False) -> tuple[str, list[bytes | None]]:
+        self.__selected_folder = mailbox
+        return super().select(self.__encode_folder(folder), readonly)
+
+    def idle(self) -> None:
+        self.select('INBOX')
+        self.idle_event.clear()
+        self.idle_thread = threading.Thread(target=self.__idle)
+        self.idle_thread.start()
+
+    def done(self) -> None:
+        self.__done()
+        self.idle_event.set()
+        self.unselect() # This might be unnecessary after selected_folder property is added
+
+    def __idle(self) -> None:
+        def handle_idle_response(response):
+            if b'* BYE' in response:
+                self.__idle()
+            if b'EXISTS' in response:
+                # Do something
+                self.__done()
+
+        while not self.idle_event.is_set():
+            self.send(b"%s IDLE\r\n" % self._new_tag())
+            response = self.readline()
+            if response == b'+ idling\r\n':
+                self.is_idle = True
+                if not self.idle_event.wait(IDLE_RECEIVE_TIMEOUT):
+                    while not self.idle_event.is_set():
+                        response = self.readline()
+                        handle_idle_response(response)
+                        time.sleep(1)
+                else:
+                    break
+                self.__done()
+                self.__idle()
+
+    def __done(self) -> None:
+        if not self.is_idle:
+            return
+
+        self.send(b"DONE\r\n")
+        response = self.readline()
+        if b"OK" in response:
+            self.is_idle = False
+
     @__handle_conn
     def get_folders(self) -> list:
-        return [self.__decode_folder(i) for i in self.list()[1]]
+        return [self.__decode_folder(i) for i in self.list()[1] if b'\\NoSelect' not in i]
 
     @__handle_conn
     def get_email_flags(self, uid: str) -> list:
@@ -179,13 +225,6 @@ class IMAP(imaplib.IMAP4_SSL):
         search_criteria_query += add_criterion('', search_criteria.flags)
         return search_criteria_query.strip()
 
-    def __search(self, criteria: str | None = 'ALL') -> list:
-        if self.state != "SELECTED":
-            raise Exception("Folder should be selected before searching")
-
-        _, uids = self.uid('search', None, criteria.encode("utf-8") if criteria else 'ALL')
-        return uids[0].split()[::-1] if uids else []
-
     @__handle_conn
     def get_emails(
         self,
@@ -203,7 +242,8 @@ class IMAP(imaplib.IMAP4_SSL):
         else:
             search_criteria_query = search or 'ALL'
 
-        uids = self.__search(search_criteria_query)
+        _, uids = self.uid('search', None, search_criteria_query.encode("utf-8") if search_criteria_query else 'ALL')
+        uids = uids[0].split()[::-1]
 
         if len(uids) == 0:
             return {"folder": folder, "emails": [], "total": 0}
@@ -333,6 +373,7 @@ class IMAP(imaplib.IMAP4_SSL):
 
     @__handle_conn
     def move_email(self, uid: str, source_folder: str, destination_folder: str) -> bool:
+        # TODO: Use the MOVE command if the server supports it.
         self.select(self.__encode_folder(source_folder))
         self.uid('COPY', uid, self.__encode_folder(destination_folder))
         self.uid('STORE', uid , '+FLAGS', '(\Deleted)')

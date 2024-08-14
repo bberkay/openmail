@@ -198,7 +198,8 @@ def create_openmail_clients_from_db():
         openmail_clients[account["email"]] = OpenMail()
         status = openmail_clients[account["email"]].connect(account["email"], account["password"])
         print(f"OpenMail client for {account['email']} is {'connected' if status else 'not connected'}")
-        #openmail_clients[account["email"]].idle()
+        openmail_clients[account["email"]].idle()
+        print(f"OpenMail client for {account['email']} is idling")
 
 def reconnect_logged_out_openmail_clients():
     for email, openmail_client in openmail_clients.items():
