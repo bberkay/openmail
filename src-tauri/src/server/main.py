@@ -361,10 +361,31 @@ async def move_email(move_email_request: MoveEmailRequest) -> Response:
     except Exception as e:
         return Response(success=False, message=str(e))
 
+class CopyEmailRequest(BaseModel):
+    email: str
+    uid: str
+    source: str
+    destination: str
+
+@app.post("/copy-email")
+async def copy_email(copy_email_request: CopyEmailRequest) -> Response:
+    try:
+        return Response(
+            success=True,
+            message="Email moved successfully",
+            data=openmail_clients[copy_email_request.email].copy_email(
+                copy_email_request.uid,
+                copy_email_request.source,
+                copy_email_request.destination
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
+
 class DeleteEmailRequest(BaseModel):
     email: str
     uid: str
-    folder: str = 'INBOX'
+    folder: str
 
 @app.post("/delete-email")
 async def delete_email(delete_email_request: DeleteEmailRequest) -> Response:

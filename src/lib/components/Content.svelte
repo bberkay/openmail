@@ -200,6 +200,37 @@
             currentOffset.update((value) => value - 1);
         }
     }
+
+    async function deleteEmail(event: Event): Promise<void> {
+        if (!get(currentEmail)) return;
+
+        const folder = (event.target as HTMLSelectElement).value;
+        const response: Response = await fetch(`${get(serverUrl)}/delete-email`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                email: owner,
+                uid: get(currentEmail)!.uid,
+                folder: get(currentFolder),
+            }),
+        }).then((res) => res.json());
+        if (response.success) {
+            emails.update((value) =>
+                value.filter((item) =>
+                    item.email == owner
+                        ? (item.emails = item.emails.filter(
+                              (email: Email) =>
+                                  email.uid != get(currentEmail)!.uid,
+                          ))
+                        : item,
+                ),
+            );
+            currentEmail.set({} as Email);
+            currentOffset.update((value) => value - 1);
+        }
+    }
 </script>
 
 <section class="card">
@@ -228,7 +259,7 @@
                         {/if}
                     {/each}
                 </select>
-                <button>Delete</button>
+                <button on:click={deleteEmail}>Delete</button>
             </div>
             <div class="answer-operations">
                 <button>Reply</button>

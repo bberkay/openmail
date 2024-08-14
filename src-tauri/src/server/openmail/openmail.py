@@ -136,6 +136,9 @@ class OpenMail:
     def move_email(self, uid: str, source_folder: str, destination_folder: str) -> bool:
         return self.__imap.move_email(uid, source_folder, destination_folder)
 
+    def copy_email(self, uid: str, source_folder: str, destination_folder: str) -> bool:
+        return self.__imap.copy_email(uid, source_folder, destination_folder)
+
     def delete_email(self, uid: str, folder: str) -> bool:
         return self.__imap.delete_email(uid, folder)
 

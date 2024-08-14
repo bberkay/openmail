@@ -121,6 +121,7 @@ class SMTP(smtplib.SMTP):
                 image.add_header('Content-ID', f'<{cid}>')
                 msg.attach(image)
 
+        # Create message
         msg.attach(MIMEText(body, 'html'))
         if attachments:
             for attachment in attachments:
@@ -132,6 +133,7 @@ class SMTP(smtplib.SMTP):
                 part.add_header('content-disposition', 'attachment', filename=attachment.filename)
                 msg.attach(part)
 
+        # Handle receipients
         receiver_emails = [email.strip() for email in receiver_emails.split(",")]
         if cc:
             cc = [email.strip() for email in cc.split(",")]
@@ -139,6 +141,7 @@ class SMTP(smtplib.SMTP):
         if bcc:
             bcc = [email.strip() for email in bcc.split(",")]
             receiver_emails.extend(bcc)
+
         super().sendmail(
             sender if isinstance(sender, str) else sender[1],
             receiver_emails,

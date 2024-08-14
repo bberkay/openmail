@@ -29,6 +29,7 @@ class IMAP(imaplib.IMAP4_SSL):
         self.login(email_address, password)
 
         self.__selected_folder = None
+        self.__is_selected_folder_readonly = False
         self.__idle_thread = None
         self.__idle_event = threading.Event()
         self.__is_idle = False
@@ -84,7 +85,7 @@ class IMAP(imaplib.IMAP4_SSL):
                 return False, str(e)
         return wrapper
 
-    def get_folder_name_by_flag_name(self, flag_name: bytes) -> str | None:
+    def get_folder_name_by_flag_name(self, flag_name: bytes) -> bytes | None:
         """
         Returns folder name by its flag name.
         This method is useful when the client's folder name is in a different language.
@@ -98,7 +99,7 @@ class IMAP(imaplib.IMAP4_SSL):
         if status == "OK":
             for folder_as_bytes in folders_as_bytes:
                 if flag_name == folder_as_bytes:
-                    return self.__decode_folder(folder_as_bytes)
+                    return folder_as_bytes
         return None
 
     def __encode_folder(self, folder: str) -> bytes:
@@ -111,8 +112,11 @@ class IMAP(imaplib.IMAP4_SSL):
         return folder.decode().replace(' "|" ', ' "/" ').split(' "/" ')[1].replace('"', '')
 
     def select(self, mailbox: str = "INBOX", readonly: bool = False) -> tuple[str, list[bytes | None]]:
-        self.__selected_folder = mailbox
-        return super().select(self.__encode_folder(folder), readonly)
+        if self.__selected_folder != mailbox or self.__is_selected_folder_readonly != readonly:
+            self.__selected_folder = mailbox
+            self.__is_selected_folder_readonly = readonly
+            return super().select(self.__encode_folder(folder), readonly)
+        return "OK", [None]
 
     def idle(self) -> None:
         self.select('INBOX')
@@ -232,7 +236,7 @@ class IMAP(imaplib.IMAP4_SSL):
         search: str | SearchCriteria = "ALL",
         offset: int = 0
     ) -> dict:
-        self.select(self.__encode_folder(folder), readonly=True)
+        self.select(folder, readonly=True)
 
         search_criteria_query = ''
         must_have_attachment = False
@@ -297,7 +301,7 @@ class IMAP(imaplib.IMAP4_SSL):
         uid: str,
         folder: str = "inbox"
     ) -> dict:
-        self.select(self.__encode_folder(folder), readonly=True)
+        self.select(folder, readonly=True)
 
         _, message = self.uid('fetch', uid, '(RFC822)')
         message = email.message_from_bytes(message[0][1], policy=email.policy.default)
@@ -347,7 +351,7 @@ class IMAP(imaplib.IMAP4_SSL):
         mark: str,
         folder: str = "inbox"
     ) -> bool:
-        self.select(self.__encode_folder(folder))
+        self.select(folder)
 
         mark = mark.lower()
         mark_type = "-" if mark[0] + mark[1] == "un" else "+"
@@ -373,20 +377,28 @@ class IMAP(imaplib.IMAP4_SSL):
 
     @__handle_conn
     def move_email(self, uid: str, source_folder: str, destination_folder: str) -> bool:
-        # TODO: Use the MOVE command if the server supports it.
-        self.select(self.__encode_folder(source_folder))
+        self.select(source_folder)
+        self.uid('MOVE', uid, self.__encode_folder(destination_folder))
+        self.expunge()
+        return True
+
+    @__handle_conn
+    def copy_email(self, uid: str, source_folder: str, destination_folder: str) -> bool:
+        self.select(source_folder)
         self.uid('COPY', uid, self.__encode_folder(destination_folder))
-        self.uid('STORE', uid , '+FLAGS', '(\Deleted)')
         self.expunge()
         return True
 
     @__handle_conn
     def delete_email(self, uid: str, folder: str) -> bool:
-        # If current folder isn't the trash bin, move it to the trash bin.
-        self.select(self.__encode_folder(folder))
-        self.uid('STORE', uid , '+FLAGS', '(\Deleted)')
+        trash_mailbox_name = self.__decode_folder(self.get_folder_name_by_flag_name(b"\\Trash"))
+        if folder != trash_mailbox_name:
+            # If the email is not in the trash folder, move it to the trash folder
+            self.move_email(uid, folder, trash_mailbox_name)
+
+        self.select(trash_mailbox_name)
+        self.uid('STORE', uid, '+FLAGS', '\\Deleted')
         self.expunge()
-        # TODO: Select the trash bin and delete it from there.
         return True
 
     @__handle_conn
