@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Store } from "@tauri-apps/plugin-store";
 import type { Response, Cache } from "$lib/types";
+import { get } from "svelte/store";
 import {
   serverUrl,
   emails,
@@ -34,7 +35,9 @@ async function initServer(url: string) {
 }
 
 async function getServerURL() {
-  if (serverUrl) return;
+  if (get(serverUrl).length > 0)
+    return;
+
   await invoke("get_server_url").then(async (url) => {
     await initServer(url as string);
   });

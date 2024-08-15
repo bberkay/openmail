@@ -2,7 +2,7 @@ import logging, sys, json
 
 from logging.handlers import RotatingFileHandler
 from filesystem import FileSystem
-from .utils import make_size_human_readable
+from utils import make_size_human_readable
 
 class LogHandler(logging.Logger):
     def __init__(self, logger_name: str):

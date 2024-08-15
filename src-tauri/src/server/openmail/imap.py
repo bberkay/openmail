@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from .utils import extract_domain, choose_positive, contains_non_ascii, convert_to_imap_date, make_size_human_readable
 from .types import SearchCriteria, LoginException
 
-IDLE_RECEIVE_TIMEOUT = 60
+IDLE_RECEIVE_TIMEOUT = 900
 FOLDER_FLAG_NAMES =  [b'\\All', b'\\Archive', b'\\Drafts', b'\\Flagged', b'\\Junk', b'\\Sent', b'\\Trash']
 CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
 IMAP_SERVERS = {
@@ -115,18 +115,18 @@ class IMAP(imaplib.IMAP4_SSL):
         if self.__selected_folder != mailbox or self.__is_selected_folder_readonly != readonly:
             self.__selected_folder = mailbox
             self.__is_selected_folder_readonly = readonly
-            return super().select(self.__encode_folder(folder), readonly)
+            return super().select(self.__encode_folder(mailbox), readonly)
         return "OK", [None]
 
     def idle(self) -> None:
         self.select('INBOX')
-        self.idle_event.clear()
-        self.idle_thread = threading.Thread(target=self.__idle)
-        self.idle_thread.start()
+        self.__idle_event.clear()
+        self.__idle_thread = threading.Thread(target=self.__idle)
+        self.__idle_thread.start()
 
     def done(self) -> None:
         self.__done()
-        self.idle_event.set()
+        self.__idle_event.set()
         self.unselect() # This might be unnecessary after selected_folder property is added
 
     def __idle(self) -> None:
@@ -137,29 +137,29 @@ class IMAP(imaplib.IMAP4_SSL):
                 # Do something
                 self.__done()
 
-        while not self.idle_event.is_set():
+        while not self.__idle_event.is_set():
             self.send(b"%s IDLE\r\n" % self._new_tag())
             response = self.readline()
             if response == b'+ idling\r\n':
-                self.is_idle = True
-                if not self.idle_event.wait(IDLE_RECEIVE_TIMEOUT):
-                    while not self.idle_event.is_set():
+                self.__is_idle = True
+                if not self.__idle_event.wait(IDLE_RECEIVE_TIMEOUT):
+                    while not self.__idle_event.is_set():
                         response = self.readline()
                         handle_idle_response(response)
-                        time.sleep(1)
+                        time.sleep(10)
                 else:
                     break
                 self.__done()
                 self.__idle()
 
     def __done(self) -> None:
-        if not self.is_idle:
+        if not self.__is_idle:
             return
 
         self.send(b"DONE\r\n")
         response = self.readline()
         if b"OK" in response:
-            self.is_idle = False
+            self.__is_idle = False
 
     @__handle_conn
     def get_folders(self) -> list:

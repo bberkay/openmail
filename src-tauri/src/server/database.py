@@ -30,7 +30,6 @@ class Database:
         return conn, cursor
 
     def insert_account(self, email: str, password: str, fullname: str | None = None) -> bool:
-        cipher_key =
         conn, cursor = self.get_db_conn()
         try:
             if not cursor.execute("SELECT email FROM accounts WHERE email = ?", (email,)).fetchone():

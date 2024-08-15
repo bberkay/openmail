@@ -35,9 +35,6 @@ class FileSystem:
             return key_file.read()
 
     def create_uvicorn_info_file(self, host: str, port: str, pid: str) -> None:
-        if os.path.exists(self.UVICORN_INFO_FILE_PATH):
-            raise FileExistsError("uvicorn.info file already exists")
-
         with open(self.UVICORN_INFO_FILE_PATH, "w") as uvicorn_info_file:
             uvicorn_info_file.write(f"URL=http://{host}:{port}\n")
             uvicorn_info_file.write(f"PID={pid}")
