@@ -11,6 +11,12 @@ body{
     user-select: none;
 }
 
+iframe{
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
 /* General elements */
 hr{
     border: 1px solid #3a3a3a;

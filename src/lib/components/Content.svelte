@@ -286,9 +286,9 @@
                 <p>To: {$currentEmail.to || ""}</p>
                 <p>Date: {$currentEmail.date || ""}</p>
             </div>
-            <div id="body"></div>
-            <div id="attachments"></div>
         {/if}
+        <div id="body"></div>
+        <div id="attachments"></div>
     </div>
 </section>
 

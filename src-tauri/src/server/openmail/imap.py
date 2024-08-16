@@ -2,7 +2,7 @@ import imaplib, threading, re, base64, email, time, select
 from typing import List, Literal
 from datetime import datetime
 
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup # beautifulsoup4>=4.12.3
 
 from .utils import extract_domain, choose_positive, contains_non_ascii, convert_to_imap_date, make_size_human_readable
 from .types import SearchCriteria, LoginException
@@ -217,7 +217,7 @@ class IMAP(imaplib.IMAP4_SSL):
 
             return query + f'OR ({left_part}) ({right_part})'
 
-        def add_criterion(criteria: str, value: str | list, seperate_with_or: bool = False) -> str:
+        def add_criterion(criteria: str, value: str | list | None, seperate_with_or: bool = False) -> str:
             if not value:
                 return ''
 
@@ -296,9 +296,9 @@ class IMAP(imaplib.IMAP4_SSL):
                     body = part.get_payload(decode=True)
                     body = body.decode(part.get_content_charset() or "utf-8") if body else ""
 
-            body = BeautifulSoup(body, "html.parser").get_text() if is_body_html else body
-            body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
-            body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
+            #body = BeautifulSoup(body, "html.parser").get_text() if is_body_html else body
+            #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
+            #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
 
             emails.append({
                 "uid": uid.decode(),
