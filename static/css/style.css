@@ -27,6 +27,10 @@ form{
     display: flex;
     flex-direction: column;
 
+    & select{
+        width: 100%;
+    }
+
     & input, & textarea, & select{
         padding: 5px;
         border-radius: 3px;

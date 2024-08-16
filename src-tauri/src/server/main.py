@@ -53,15 +53,19 @@ def create_and_idle_openmail_clients():
     for account in accounts:
         openmail_clients[account["email"]] = OpenMail()
         status = openmail_clients[account["email"]].connect(account["email"], account["password"])
-        openmail_clients[account["email"]].idle()
+        print(f"Connected to {account['email']}")
+        if status:
+            openmail_clients[account["email"]].idle()
 
 def reconnect_and_idle_logged_out_openmail_clients():
     for email, openmail_client in openmail_clients.items():
         if not openmail_client.is_logged_in():
             account = Database().get_accounts([email], ["password"])
             if account:
-                openmail_client.connect(email, account[0]["password"])
-                openmail_client.idle()
+                status = openmail_client.connect(email, account[0]["password"])
+                print(f"Reconnected to {email}")
+                if status:
+                    openmail_client.idle()
 
 @app.on_event("startup")
 def startup_event():
@@ -134,6 +138,7 @@ def run_openmail_func_concurrently(accounts: list, func, **params) -> List[dict]
             email = future_to_emails[future]
             future = future.result()
             result.append({"email": email, "data": future})
+            print(f"Result for {email}: {future}")
 
     return result
 

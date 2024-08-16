@@ -1,4 +1,4 @@
-import imaplib, threading, re, base64, email, time
+import imaplib, threading, re, base64, email, time, select
 from typing import List, Literal
 from datetime import datetime
 
@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from .utils import extract_domain, choose_positive, contains_non_ascii, convert_to_imap_date, make_size_human_readable
 from .types import SearchCriteria, LoginException
 
-IDLE_RECEIVE_TIMEOUT = 900
+IDLE_TIMEOUT = 29 * 60
 FOLDER_FLAG_NAMES =  [b'\\All', b'\\Archive', b'\\Drafts', b'\\Flagged', b'\\Junk', b'\\Sent', b'\\Trash']
 CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
 IMAP_SERVERS = {
@@ -19,14 +19,13 @@ IMAP_SERVERS = {
 }
 
 class IMAP(imaplib.IMAP4_SSL):
-    def __init__(self, email_address: str, password: str, port: int = 993, try_limit: int = 3, timeout: int = 30):
-        self.__try_limit = choose_positive(try_limit, 3)
+    def __init__(self, email_address: str, password: str, host: str = "", port: int = 993, try_limit: int = 3, timeout: int = 30):
         super().__init__(
-            self.__find_imap_server(email_address),
+            host or self.__find_imap_server(email_address),
             port or 993,
             timeout=choose_positive(timeout, 30)
         )
-        self.login(email_address, password)
+        self.login(email_address, password, choose_positive(try_limit, 3))
 
         self.__selected_folder = None
         self.__is_selected_folder_readonly = False
@@ -43,9 +42,8 @@ class IMAP(imaplib.IMAP4_SSL):
     def is_logged_in(self) -> bool:
         return self.state == "AUTH" or self.state == "SELECTED"
 
-    def login(self, user: str, password: str) -> tuple[str, any]:
-        try_count = self.__try_limit
-        for _ in range(try_count):
+    def login(self, user: str, password: str, try_limit: int = 3) -> tuple[str, any]:
+        for _ in range(try_limit):
             try:
                 if not self.is_logged_in():
                     status, response = None, None
@@ -57,8 +55,8 @@ class IMAP(imaplib.IMAP4_SSL):
                     return status, response
                 return "OK", "Already logged in"
             except Exception as e:
-                try_count -= 1
-                if try_count == 0:
+                try_limit -= 1
+                if try_limit == 0:
                     raise Exception("3 failed login attempts. Error: " + str(e))
 
     def logout(self) -> tuple[str, any]:
@@ -77,7 +75,7 @@ class IMAP(imaplib.IMAP4_SSL):
                 if self.__is_idle:
                     self.done()
                 response = func(self, *args, **kwargs)
-                if was_idle_before_func:
+                if was_idle_before_func and self.__is_idle:
                     self.idle()
                 return response
             except Exception as e:
@@ -129,7 +127,19 @@ class IMAP(imaplib.IMAP4_SSL):
         self.__idle_event.set()
         self.unselect() # This might be unnecessary after selected_folder property is added
 
+    def __readline_timeout(self, timeout:int = 3):
+        self.sock.settimeout(0)
+        self.sock.setblocking(False)
+        if select.select([self.sock], [], [], timeout)[0]:
+            return self.sock.recv(4096)
+        else:
+            return None
+
     def __idle(self) -> None:
+        def reset_socket_to_default():
+            self.socket().settimeout(None)
+            self.socket().setblocking(True)
+
         def handle_idle_response(response):
             if b'* BYE' in response:
                 self.__idle()
@@ -137,20 +147,27 @@ class IMAP(imaplib.IMAP4_SSL):
                 # Do something
                 self.__done()
 
-        while not self.__idle_event.is_set():
+        try:
             self.send(b"%s IDLE\r\n" % self._new_tag())
             response = self.readline()
             if response == b'+ idling\r\n':
                 self.__is_idle = True
-                if not self.__idle_event.wait(IDLE_RECEIVE_TIMEOUT):
-                    while not self.__idle_event.is_set():
-                        response = self.readline()
-                        handle_idle_response(response)
-                        time.sleep(10)
-                else:
+            else:
+                raise Exception("IDLE command failed")
+
+            start_time = time.time()
+            while not self.__idle_event.is_set():
+                response = self.__readline_timeout(timeout=5)
+                if response:
+                    reset_socket_to_default()
+                    handle_idle_response(response)
                     break
-                self.__done()
-                self.__idle()
+                if time.time() - start_time > IDLE_TIMEOUT:
+                    break
+        finally:
+            reset_socket_to_default()
+            self.__done()
+            self.__idle()
 
     def __done(self) -> None:
         if not self.__is_idle:

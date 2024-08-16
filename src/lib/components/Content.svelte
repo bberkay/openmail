@@ -33,6 +33,7 @@
 
         currentEmail.subscribe((value) => {
             if (value && Object.keys(value).length > 0) {
+                console.log(value);
                 owner = (
                     document.querySelector(
                         `[data-email-uid="${get(currentEmail)!.uid}"]`,
@@ -205,17 +206,20 @@
         if (!get(currentEmail)) return;
 
         const folder = (event.target as HTMLSelectElement).value;
-        const response: Response = await fetch(`${get(serverUrl)}/delete-email`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
+        const response: Response = await fetch(
+            `${get(serverUrl)}/delete-email`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email: owner,
+                    uid: get(currentEmail)!.uid,
+                    folder: get(currentFolder),
+                }),
             },
-            body: JSON.stringify({
-                email: owner,
-                uid: get(currentEmail)!.uid,
-                folder: get(currentFolder),
-            }),
-        }).then((res) => res.json());
+        ).then((res) => res.json());
         if (response.success) {
             emails.update((value) =>
                 value.filter((item) =>
@@ -271,9 +275,9 @@
         {#if $currentEmail}
             <div class="tags">
                 {#if $currentEmail.flags && $currentEmail.flags.length > 0}
-                  {#each $currentEmail.flags as flag}
-                      <span class="flag">{flag}</span>
-                  {/each}
+                    {#each $currentEmail.flags as flag}
+                        <span class="flag">{flag}</span>
+                    {/each}
                 {/if}
             </div>
             <div id="subject">

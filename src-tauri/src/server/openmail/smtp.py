@@ -20,14 +20,13 @@ SMTP_SERVERS = {
 }
 
 class SMTP(smtplib.SMTP):
-    def __init__(self, email_address: str, password: str, port: int = 587, try_limit: int = 3, timeout: int = 30):
-        self.__try_limit = choose_positive(try_limit, 3) # Number of times to try to connect to the server before giving up
+    def __init__(self, email_address: str, password: str, host: str = "", port: int = 587, try_limit: int = 3, timeout: int = 30):
         super().__init__(
-            self.__find_smtp_server(email_address),
+            host or self.__find_smtp_server(email_address),
             port or 587,
             timeout=choose_positive(timeout, 30)
         )
-        self.login(email_address, password)
+        self.login(email_address, password, choose_positive(try_limit, 3))
 
     def __find_smtp_server(self, email_address: str) -> str:
         try:
@@ -35,9 +34,8 @@ class SMTP(smtplib.SMTP):
         except KeyError:
             raise Exception("Unsupported email domain")
 
-    def login(self, email_address: str, password: str) -> None:
-        try_count = self.__try_limit
-        for _ in range(try_count):
+    def login(self, email_address: str, password: str, try_limit: int = 3) -> None:
+        for _ in range(try_limit):
             try:
                 if not self.is_logged_in():
                     self.ehlo()
@@ -46,8 +44,8 @@ class SMTP(smtplib.SMTP):
                     super().login(email_address, password)
                 break
             except Exception as e:
-                try_count -= 1
-                if try_count == 0:
+                try_limit -= 1
+                if try_limit == 0:
                     raise Exception("Could not connect to the target smtp server: {}".format(str(e)))
 
     def quit(self) -> None:

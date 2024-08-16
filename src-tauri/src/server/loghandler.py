@@ -23,7 +23,7 @@ class LogHandler(logging.Logger):
         elif isinstance(response_data, list):
             return self.summarize_data(str(response_data))
         elif isinstance(response_data, str) and len(response_data) >= 100:
-            return response_data[:100] + '...' + (']' if response_data.startswith('[') else '')
+            return response_data[:256] + '...' + (']' if response_data.startswith('[') else '')
         return response_data
 
     def load_data(self, response_body: bytes) -> any:

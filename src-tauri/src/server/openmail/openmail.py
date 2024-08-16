@@ -5,30 +5,27 @@ from .imap import IMAP
 from .smtp import SMTP
 
 class OpenMail:
-    def __init__(self, imap_port: int = 993, smtp_port: int = 587, try_limit: int = 3, timeout: int = 30):
-        self.__imap_port = imap_port
-        self.__smtp_port = smtp_port
-        self.__try_limit = try_limit
-        self.__timeout = timeout
-
+    def __init__(self):
         self.__imap = None
         self.__smtp = None
 
-    def connect(self, email_address: str, password: str) -> tuple[bool, str]:
+    def connect(self, email_address: str, password: str, imap_host: str = "", imap_port: int = 993, smtp_host: str = "", smtp_port: int = 587, try_limit: int = 3, timeout: int = 30) -> tuple[bool, str]:
         try:
             self.__imap = IMAP(
                 email_address,
                 password,
-                self.__imap_port,
-                self.__try_limit,
-                self.__timeout
+                imap_host,
+                imap_port,
+                try_limit,
+                timeout
             )
             self.__smtp = SMTP(
                 email_address,
                 password,
-                self.__smtp_port,
-                self.__try_limit,
-                self.__timeout
+                smtp_host,
+                smtp_port,
+                try_limit,
+                timeout
             )
             return True, "Connected successfully"
         except Exception as e:
