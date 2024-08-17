@@ -1,44 +1,45 @@
-import os
-
-from cryptography.fernet import Fernet
+import os, json
+from consts import APP_NAME
 
 class FileSystem:
     def __init__(self):
-        self.HOME_DIR = os.path.expanduser("~")
-        self.APP_DIR = os.path.join(self.HOME_DIR, ".openmail")
-        self.SECRETS_DIR = os.path.join(self.APP_DIR, "secrets")
-        self.DB_DIR = os.path.join(self.APP_DIR, "database")
+        self.APP_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME)
         self.LOG_DIR = os.path.join(self.APP_DIR, "logs")
+        self.CONFIG_DIR = os.path.join(self.APP_DIR, "config")
         self.UVICORN_INFO_FILE_PATH = os.path.join(self.APP_DIR, "uvicorn.info")
         self.UVICORN_LOG_FILE_PATH = os.path.join(self.LOG_DIR, "uvicorn.log")
-        self.UVICORN_DB_FILE_PATH = os.path.join(self.DB_DIR, "uvicorn.db")
-        self.PRAGMA_KEY_FILE_PATH = os.path.join(self.SECRETS_DIR, "pragma.key")
-        self.CIPHER_KEY_FILE_PATH = os.path.join(self.SECRETS_DIR, "cipher.key")
+        self.PREFERENCES_FILE_PATH = os.path.join(self.CONFIG_DIR, "preferences.json")
+
+    def init(self) -> None:
+        self.__create_dirs()
+        self.__create_log_file()
+        self.__create_preferences_file()
 
     def __create_dirs(self) -> None:
-        for directory in [self.APP_DIR, self.SECRETS_DIR, self.DB_DIR, self.LOG_DIR]:
+        if not os.path.exists(self.APP_DIR):
+            os.makedirs(self.APP_DIR, exist_ok=True)
+
+        for directory in [self.CONFIG_DIR, self.LOG_DIR]:
             if not os.path.exists(directory):
                 os.makedirs(directory, exist_ok=True)
 
-    def __create_key_files(self) -> None:
-        for key_file in [self.PRAGMA_KEY_FILE_PATH, self.CIPHER_KEY_FILE_PATH]:
-            if not os.path.exists(key_file):
-                with open(key_file, "wb") as key_file:
-                    key_file.write(Fernet.generate_key())
+    def __create_preferences_file(self) -> None:
+        with open(self.PREFERENCES_FILE_PATH, "w") as preferences_file:
+            json.dump({}, preferences_file)
 
-    def get_pragma_key(self) -> bytes:
-        with open(self.PRAGMA_KEY_FILE_PATH, "rb") as key_file:
-            return key_file.read()
-
-    def get_cipher_key(self) -> bytes:
-        with open(self.CIPHER_KEY_FILE_PATH, "rb") as key_file:
-            return key_file.read()
+    def __create_log_file(self) -> None:
+        if not os.path.exists(self.UVICORN_LOG_FILE_PATH):
+            with open(self.UVICORN_LOG_FILE_PATH, "w") as uvicorn_log_file:
+                uvicorn_log_file.write("")
 
     def create_uvicorn_info_file(self, host: str, port: str, pid: str) -> None:
         with open(self.UVICORN_INFO_FILE_PATH, "w") as uvicorn_info_file:
             uvicorn_info_file.write(f"URL=http://{host}:{port}\n")
             uvicorn_info_file.write(f"PID={pid}")
 
-    def init(self) -> None:
-        self.__create_dirs()
-        self.__create_key_files()
+    def get_preferences(self) -> dict:
+        if os.path.exists(self.PREFERENCES_FILE_PATH):
+            with open(self.PREFERENCES_FILE_PATH, "r") as preferences_file:
+                return json.load(preferences_file)
+        else:
+            raise Exception("Preferences file not found")

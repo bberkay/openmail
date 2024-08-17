@@ -31,6 +31,10 @@ class OpenMail:
         except Exception as e:
             return False, str(e)
 
+    def disconnect(self) -> None:
+        self.__imap.logout()
+        self.__smtp.quit()
+
     def idle(self) -> None:
         self.__imap.idle()
 

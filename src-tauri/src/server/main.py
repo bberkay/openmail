@@ -1,8 +1,9 @@
 import sys, os, re, concurrent.futures
 from urllib.parse import unquote
 from typing import Optional, List
+from contextlib import asynccontextmanager
 
-import uvicorn, sqlcipher3
+import uvicorn
 from pydantic import BaseModel
 from fastapi import FastAPI, File, Form, UploadFile, Request, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,43 +11,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from openmail import OpenMail, SearchCriteria
 from filesystem import FileSystem
 from loghandler import LogHandler
-from database import Database
+from securestorage import SecureStorage
 from utils import is_email_valid, find_free_port, make_size_human_readable
+from consts import APP_NAME
 
-APP_NAME = "OpenMail"
 openmail_clients = {}
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-logger = LogHandler(APP_NAME)
 file_system = FileSystem()
-file_system.init()
-
-@app.middleware("http")
-async def catch_request_for_logging(request: Request, call_next):
-    async def get_response_body(response: FastAPIResponse) -> bytes:
-        response_body = b""
-        async for chunk in response.body_iterator:
-            response_body += chunk
-            return response_body
-
-    response = await call_next(request)
-    response._body = await get_response_body(response)
-    logger.request(request, response)
-    return FastAPIResponse(
-        content=response._body,
-        status_code=response.status_code,
-        headers=dict(response.headers),
-        media_type=response.media_type
-    )
+secure_storage = SecureStorage()
+logger = LogHandler()
 
 def create_and_idle_openmail_clients():
-    accounts = Database().get_accounts(None, ["email", "password"])
+    accounts = secure_storage.get_accounts(None, ["email", "password"])
     if not accounts:
         return
 
@@ -60,16 +35,51 @@ def create_and_idle_openmail_clients():
 def reconnect_and_idle_logged_out_openmail_clients():
     for email, openmail_client in openmail_clients.items():
         if not openmail_client.is_logged_in():
-            account = Database().get_accounts([email], ["password"])
+            account = secure_storage.get_accounts([email], ["password"])
             if account:
                 status = openmail_client.connect(email, account[0]["password"])
                 print(f"Reconnected to {email}")
                 #if status:
                 #    openmail_client.idle()
 
-@app.on_event("startup")
-def startup_event():
+def shutdown_openmail_clients():
+    for openmail_client in openmail_clients.values():
+        openmail_client.disconnect()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     create_and_idle_openmail_clients()
+    yield
+    shutdown_openmail_clients()
+
+app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.middleware("http")
+async def catch_request_for_logging(request: Request, call_next):
+    async def get_response_body(response: FastAPIResponse) -> bytes:
+        response_body = b""
+        async for chunk in response.body_iterator:
+            response_body += chunk
+            return response_body
+
+    response = await call_next(request)
+    print("Response: ", response)
+    response._body = await get_response_body(response)
+    print("Response Body: ", response._body)
+    logger.request(request, response)
+    return FastAPIResponse(
+        content=response._body,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.media_type
+    )
 
 class Response(BaseModel):
     success: bool
@@ -80,41 +90,41 @@ class Response(BaseModel):
 async def hello() -> Response:
     return Response(success=True, message="Hello, Server is ready for you!")
 
-class AddEmailAccountRequest(BaseModel):
-    email: str = Form(...)
-    password: str = Form(...)
-    fullname: Optional[str] = Form(None)
-
 @app.post("/add-email-account")
-def add_email_account(add_email_account_request: AddEmailAccountRequest) -> Response:
-    if not is_email_valid(add_email_account_request.email):
+def add_email_account(
+    email = Form(...),
+    password = Form(...),
+    fullname = Form(None)
+) -> Response:
+    if not is_email_valid(email):
         return Response(success=False, message="Invalid email address format")
 
     openmail_client = OpenMail()
     if not openmail_client.connect(
-        add_email_account_request.email,
-        add_email_account_request.password
+        email,
+        password
     ):
         return Response(success=False, message="Invalid email credentials")
 
-    success = Database().insert_account(
-        add_email_account_request.email,
-        add_email_account_request.password,
-        add_email_account_request.fullname
-    )
-    if success:
-        openmail_clients[add_email_account_request.email] = openmail_client
+    try:
+        secure_storage.insert_account(
+            email,
+            password,
+            fullname
+        )
+        openmail_clients[email] = openmail_client
         return Response(
-            success=success,
+            success=True,
             message="Email added",
             data={
-                "email": add_email_account_request.email,
-                "fullname": add_email_account_request.fullname
+                "email": email,
+                "fullname": fullname
             })
-    return Response(
-        success=success,
-        message="Failed to add email"
-    )
+    except Exception as e:
+        return Response(
+            success=False,
+            message="Failed to add email: " + str(e)
+        )
 
 @app.get("/get-email-accounts")
 def get_email_accounts() -> Response:
@@ -122,7 +132,7 @@ def get_email_accounts() -> Response:
         return Response(
             success=True,
             message="Email accounts fetched successfully",
-            data=Database().get_accounts(None, ["fullname", "email"])
+            data=secure_storage.get_accounts(None, ["fullname", "email"])
         )
     except Exception as e:
         return Response(success=False, message=str(e))
@@ -380,14 +390,22 @@ async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
     except Exception as e:
         return Response(success=False, message=str(e))
 
-if __name__ == "__main__":
+def main():
+    file_system.init()
+    secure_storage.init()
+    logger.init()
+
     host = "127.0.0.1"
     port = find_free_port(8000, 9000)
     pid = str(os.getpid())
     file_system.create_uvicorn_info_file(host, str(port), pid)
+
     logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
     uvicorn.run(
         app,
         host=host,
         port=port
     )
+
+if __name__ == "__main__":
+    main()

@@ -3,11 +3,14 @@ import logging, sys, json
 from logging.handlers import RotatingFileHandler
 from filesystem import FileSystem
 from utils import make_size_human_readable
+from consts import APP_NAME
 
 class LogHandler(logging.Logger):
-    def __init__(self, logger_name: str):
-        super().__init__(logger_name)
-        self.name = logger_name
+    def __init__(self):
+        super().__init__(APP_NAME)
+        self.name = APP_NAME
+
+    def init(self):
         self.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         stream_handler = logging.StreamHandler(sys.stdout)
@@ -17,16 +20,16 @@ class LogHandler(logging.Logger):
         self.addHandler(stream_handler)
         self.addHandler(file_handler)
 
-    def summarize_data(self, response_data: any) -> any:
+    def __summarize_data(self, response_data: any) -> any:
         if isinstance(response_data, dict):
-            return {key: self.summarize_data(value) for key, value in response_data.items()}
+            return {key: self.__summarize_data(value) for key, value in response_data.items()}
         elif isinstance(response_data, list):
-            return self.summarize_data(str(response_data))
+            return self.__summarize_data(str(response_data))
         elif isinstance(response_data, str) and len(response_data) >= 100:
             return response_data[:256] + '...' + (']' if response_data.startswith('[') else '')
         return response_data
 
-    def load_data(self, response_body: bytes) -> any:
+    def __load_data(self, response_body: bytes) -> any:
         try:
             return json.loads(response_body)
         except Exception as e:
@@ -34,10 +37,10 @@ class LogHandler(logging.Logger):
 
     def request(self, request, response):
         try:
-            response_data = self.load_data(response._body)
+            response_data = self.__load_data(response._body)
             log_message = (
                 f"{request.method} {request.url} - {response.status_code} - "
-                f"{self.summarize_data(response_data)} - "
+                f"{self.__summarize_data(response_data)} - "
                 f"{make_size_human_readable(int(response.headers.get('content-length')))}"
             )
             if response.status_code >= 400:
