@@ -20,6 +20,32 @@ class SearchCriteria():
     exclude: Optional[str] = ""
     has_attachments: Optional[bool] = False
 
+@dataclass
+class Attachment():
+    cid: str
+    name: str
+    data: str
+    size: str
+    type: str
+
+@dataclass
+class Email():
+    uid: str
+    sender: str
+    receiver: str
+    subject: str
+    date: str
+    body_short: Optional[str] = ""
+    body: Optional[str] = ""
+    flags: List[str] = field(default_factory=list)
+    attachments: Optional[List[Attachment]] = field(default_factory=list)
+    
+@dataclass
+class Inbox():
+    folder: str
+    emails: List[Email]
+    total: int
+    
 class LoginException(Exception):
     """
     An exception raised when there is an issue with the login process.

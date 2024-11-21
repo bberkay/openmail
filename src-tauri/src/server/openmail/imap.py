@@ -3,7 +3,7 @@ from typing import List, MappingProxyType
 from datetime import datetime
 
 from .utils import extract_domain, choose_positive, truncate_text, contains_non_ascii, convert_date_to_iso, make_size_human_readable
-from .types import SearchCriteria, LoginException
+from .types import SearchCriteria, LoginException, Email, Attachment, Inbox
 
 # General consts
 IMAP_SERVERS = MappingProxyType({
@@ -359,7 +359,7 @@ class IMAPManager():
         folder: str = INBOX,
         search: str | SearchCriteria = "ALL",
         offset: int = 0
-    ) -> dict:
+    ) -> Inbox:
         """
         Retrieve emails from a specified folder based on search criteria.
 
@@ -419,24 +419,24 @@ class IMAPManager():
             #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
             #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
 
-            emails.append({
-                "uid": uid.decode(),
-                "from": message["From"],
-                "to": message["To"] if "To" in message else "",
-                "subject": message["Subject"],
-                "body_short": truncate_text(body, BODY_SHORT_THRESHOLD),
-                "date": convert_date_to_iso(message["Date"]),
-                "flags": self.get_email_flags(uid) or []
-            })
+            emails.append(Email(
+                uid=uid.decode(),
+                sender=message["From"],
+                receiver=message["To"] if "To" in message else "",
+                subject=message["Subject"],
+                body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
+                date=convert_date_to_iso(message["Date"]),
+                flags=self.get_email_flags(uid) or []
+            ))
 
-        return {"folder": folder, "emails": emails, "total": len(uids)}
+        return Inbox(folder=folder, emails=emails, total=len(uids))
 
     @__handle_conn
     def get_email_content(
         self,
         uid: str,
         folder: str = INBOX
-    ) -> dict: # TODO: Make a custom type
+    ) -> Email:
         """
         Retrieve full content of a specific email.
 
@@ -457,15 +457,15 @@ class IMAPManager():
             content_type = part.get_content_type()
             file_name = part.get_filename()
             if file_name:
-                attachments.append({
-                    "cid": part.get("X-Attachment-Id"),
-                    "name": file_name,
-                    "data": base64.b64encode(
+                attachments.append(Attachment(
+                    cid=part.get("X-Attachment-Id"),
+                    name=file_name,
+                    data=base64.b64encode(
                         part.get_payload(decode=True)
                     ).decode("utf-8", errors="ignore"),
-                    "size": make_size_human_readable(len(part.get_payload(decode=True))),
-                    "type": content_type
-                })
+                    size=make_size_human_readable(len(part.get_payload(decode=True))),
+                    type=content_type
+                ))
             elif content_type == "text/html" or (content_type == "text/plain" and not body):
                 body = part.get_payload(decode=True)
                 if body:
@@ -475,26 +475,26 @@ class IMAPManager():
             for match in CID_RE_COMPILE.finditer(body):
                 cid = match.group(1)
                 for attachment in attachments:
-                    if cid in attachment["name"] or cid in attachment["cid"]:
+                    if cid in attachment.name or cid in attachment.cid:
                         body = body.replace(
                             f'cid:{cid}',
-                            f'data:{attachment["type"]};base64,{attachment["data"]}'
+                            f'data:{attachment.type};base64,{attachment.data}'
                         )
 
         # TODO: Look into this
         if "Seen" not in self.get_email_flags(uid):
             self.mark_email(uid, "seen", folder)
 
-        return {
-            "uid": uid,
-            "from": message["From"],
-            "to": message["To"] if "To" in message else "",
-            "subject": message["Subject"],
-            "body": body,
-            "date": convert_date_to_iso(message["Date"]),
-            "flags": self.get_email_flags(uid) or [],
-            "attachments": attachments
-        }
+        return Email(
+            uid=uid,
+            sender=message["From"],
+            receiver=message["To"] if "To" in message else "",
+            subject=message["Subject"],
+            body=body,
+            date=convert_date_to_iso(message["Date"]),
+            flags=self.get_email_flags(uid) or [],
+            attachments=attachments
+        )
 
     @__handle_conn
     def mark_email(
