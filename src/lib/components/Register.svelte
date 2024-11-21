@@ -1,10 +1,8 @@
 <script lang="ts">
-    import { onMount, createEventDispatcher } from "svelte";
+    import { onMount } from "svelte";
     import type { Response } from "$lib/types";
-    import { get } from "svelte/store";
-    import { serverUrl, accounts } from "$lib/stores";
+    import { sharedStore } from "$lib/stores/shared.svelte";
 
-    const dispatch = createEventDispatcher();
     let addAccountBtn: HTMLButtonElement;
     onMount(() => {
         addAccountBtn = document.getElementById('add-account-btn')! as HTMLButtonElement;
@@ -18,22 +16,57 @@
 
         addAccountBtn.disabled = true;
         addAccountBtn.textContent = 'Adding Account...';
-        const response: Response = await fetch(`${get(serverUrl)}/add-email-account`, {
+        const response: Response = await fetch(`${sharedStore.server}/add-email-account`, {
             method: 'POST',
             body: new FormData(form)
         }).then(res => res.json());
         if(response.success){
-            accounts.update(accounts => [...accounts, response.data]);
+            sharedStore.accounts.push(response.data);
             addAccountBtn.disabled = false;
             addAccountBtn.textContent = 'Add Account';
             form.reset();
         }
     }
+
+    async function getEmailsOfAllAccounts() {
+        const response: Response = await fetch(
+            `${sharedStore.server}/get-emails/${sharedStore.accounts
+                .map((account) => account["email"])
+                .join(",")}`,
+        ).then((res) => res.json());
+        if (response.success) {
+            sharedStore.inboxes = response.data.map((item: { email: string; data: object }) => ({
+                email: item.email,
+                ...item.data,
+            }));
+            sharedStore.selectedFolder = "Inbox";
+            sharedStore.currentOffset = response.data["total"] < 10 ? response.data["total"] : 10;
+        }
+    }
+
+    async function getFoldersOfAllAccounts() {
+        const response: Response = await fetch(
+            `${sharedStore.server}/get-folders/${sharedStore.accounts
+                .map((account) => account["email"])
+                .join(",")}`,
+        ).then((res) => res.json());
+        if (response.success) {
+            sharedStore.folders = response.data.map((item: { email: string; data: any }) => ({
+                email: item.email,
+                folders: item.data,
+            }));
+        }
+    }
+
+    async function continueToInbox() {
+        await getFoldersOfAllAccounts();
+        await getEmailsOfAllAccounts();
+    }
 </script>
 
 <section class="add-email">
     <div class="card">
-        <form on:submit={handleAddAccount}>
+        <form onsubmit={handleAddAccount}>
             <div class="form-group">
                 <label for="fullname">Fullname (Optional)</label>
                 <!-- svelte-ignore a11y-autofocus -->
@@ -51,11 +84,11 @@
             <button type="submit" id="add-account-btn">Add Account</button>
         </form>
     </div>
-    {#if $accounts && $accounts.length > 0}
-        <button on:click={() => dispatch('continueToInbox') }>Continue to Inbox</button>
+    {#if sharedStore.accounts && sharedStore.accounts.length > 0}
+        <button onclick={continueToInbox}>Continue to Inbox</button>
         <h3>Current Accounts</h3>
         <ul>
-            {#each $accounts as account}
+            {#each sharedStore.accounts as account}
                 <li>{account.fullname} - {account.email}</li>
             {/each}
         </ul>

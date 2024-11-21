@@ -1,62 +1,44 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Store } from "@tauri-apps/plugin-store";
-import type { Response, Cache } from "$lib/types";
-import { get } from "svelte/store";
-import {
-  serverUrl,
-  emails,
-  currentFolder,
-  folders,
-  currentOffset,
-  accounts,
-} from "$lib/stores";
+import type { Response } from "$lib/types";
+import { sharedStore } from "$lib/stores/shared.svelte";
+import { error } from "@sveltejs/kit";
+import type { PageLoad } from "./$types";
 
-let serverConnectionTryCount = 0;
-async function initServer(url: string) {
-  if (serverConnectionTryCount > 5) {
-    throw new Error("There was an error connecting to the server!");
-    return;
-  }
-
-  try {
-    serverConnectionTryCount++;
-    const response: Response = await fetch(`${url}/hello`).then((res) =>
-      res.json(),
-    );
-    if (response.success) {
-      serverUrl.set(url);
-      return;
+/**
+ * 
+ */
+async function initServer(): Promise<void> {
+    let serverConnectionTryCount = 0;
+    if (serverConnectionTryCount > 5) {
+        error(500, "There was an error while connecting to the server!");
     }
-  } catch {
-    setTimeout(async () => {
-      await getServerURL();
-    }, 2000);
-  }
+
+    const getHelloMessageAndSetUrl = async (url: string) => {
+        try {
+            serverConnectionTryCount++;
+            const response: Response = await fetch(`${url}/hello`).then((res) =>
+                res.json()
+            );
+            if (response.success) {
+                sharedStore.server = url;
+            } else {
+                error(500, response.message);
+            }
+            return;
+        } catch {
+            setTimeout(async () => {
+                await getHelloMessageAndSetUrl(url);
+            }, 2000);
+        }
+    }
+
+    await invoke("get_server_url").then(async (url) => {
+        await getHelloMessageAndSetUrl(url as string);
+    }).catch(async () => {
+        error(500, "Error while getting server url!");
+    })
 }
 
-async function getServerURL() {
-  if (get(serverUrl).length > 0)
-    return;
-
-  await invoke("get_server_url").then(async (url) => {
-    await initServer(url as string);
-  });
-}
-
-async function loadData() {
-  const store = new Store("openmail_cache.bin");
-  const cache: Cache | null = await store.get("cache");
-  if (cache) {
-    accounts.set(cache["accounts"]);
-    emails.set(cache["emails"]);
-    currentFolder.set(cache["currentFolder"]);
-    folders.set(cache["folders"]);
-    currentOffset.set(cache["currentOffset"]);
-    // TODO: Get \\NEW emails and update emails and save date again
-  }
-}
-
-export const load = async () => {
-  await getServerURL();
-  await loadData();
+export const load: PageLoad = async ({}) => {
+    await initServer();
 };

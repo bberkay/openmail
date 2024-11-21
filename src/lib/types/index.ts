@@ -41,15 +41,16 @@ export interface Attachment {
   type: string;
 }
 
-export interface Cache{
-  accounts: Accounts;
-  emails: Emails;
-  folders: Folders;
-  currentAccount: Account | null;
-  currentFolder: string;
-  currentOffset: number;
-}
-
-export type Accounts = Account[];
-export type Emails = { email: string, folder: string, emails:Email[], total: number }[];
+export type Inboxes = { email: string, folder: string, emails:Email[], total: number }[];
 export type Folders = { email: string, folders:string[] }[];
+
+export interface SharedStore {
+    server: string;
+    accounts: Account[];
+    inboxes: Inboxes;
+    folders: Folders;
+    selectedAccounts: Account[];
+    selectedFolder: string;
+    selectedEmail: Email | null;
+    currentOffset: number;
+}

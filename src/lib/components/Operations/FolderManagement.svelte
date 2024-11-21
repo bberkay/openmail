@@ -2,7 +2,7 @@
     import type { Response } from '$lib/types';
     import { onMount } from 'svelte';
     import { get } from 'svelte/store';
-    import { serverUrl, folders, accounts } from '$lib/stores';
+    import { serverUrl, folders, accounts } from '$lib/stores/shared.svelte';
 
     let selectedAccount: string = '';
     let folderSelectOptions: NodeListOf<HTMLFormElement>;

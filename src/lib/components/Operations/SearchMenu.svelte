@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { folders } from '$lib/stores';
+    import { folders } from '$lib/stores/shared.svelte';
     import type { SearchCriteria } from '$lib/types';
     import { onMount } from 'svelte';
 

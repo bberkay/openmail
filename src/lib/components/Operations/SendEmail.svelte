@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { accounts, serverUrl } from '$lib/stores';
+    import { accounts, serverUrl } from '$lib/stores/shared.svelte';
     import type { Response, Account } from '$lib/types';
     import { get } from "svelte/store";
 

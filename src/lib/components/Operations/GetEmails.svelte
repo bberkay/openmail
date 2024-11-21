@@ -8,7 +8,7 @@
         serverUrl,
         accounts,
         currentAccounts,
-    } from "$lib/stores";
+    } from "$lib/stores/shared.svelte";
     import type { Email, Response, SearchCriteria } from "$lib/types";
     import SearchMenu from "./SearchMenu.svelte";
     import { get } from "svelte/store";

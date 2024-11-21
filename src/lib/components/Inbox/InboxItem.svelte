@@ -1,30 +1,40 @@
 <script lang="ts">
-    import { currentEmail, currentFolder, serverUrl } from "$lib/stores";
+    import { sharedStore } from "$lib/stores/shared.svelte";
     import type { Response, Email } from "$lib/types";
-    import { get } from "svelte/store";
 
-    export let owner: string;
-    export let email: Email;
+    let { owner, email } = $props();
 
-    currentEmail.subscribe(value => {
-        if(value && value.uid === email.uid){
-            email.flags = value.flags;
-            document.querySelector(`[data-email-uid*="${email.uid}"]`)?.setAttribute('data-email-flags', email.flags.join(','));
+    $effect(() => {
+        if(sharedStore.selectedEmail && sharedStore.selectedEmail.uid === email.uid){
+            email.flags = sharedStore.selectedEmail.flags;
+            document.querySelector(`[data-email-uid*="${email.uid}"]`)?.setAttribute(
+                'data-email-flags', 
+                email.flags.join(',')
+            );
         }
-    });
+    })
 
     async function handleEmailClick(){
-        const response: Response = await fetch(`${get(serverUrl)}/get-email-content/${owner}/${encodeURIComponent(get(currentFolder))}/${email.uid}`).then(res => res.json());
-        if (response.success)
-            currentEmail.set(response.data as Email);
-        else
+        const response: Response = await fetch(`${
+                sharedStore.server
+            }/get-email-content/${
+                owner
+            }/${
+                encodeURIComponent(sharedStore.selectedFolder)
+            }/${
+                email.uid
+            }`).then(res => res.json());
+        if (response.success) {
+            sharedStore.selectedEmail = response.data as Email;
+        } else {
             console.error(response);
+        }
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="inbox-item" data-email-owner={owner} data-email-uid={email.uid} data-email-flags={email.flags} on:click={handleEmailClick}>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="inbox-item" data-email-owner={owner} data-email-uid={email.uid} data-email-flags={email.flags} onclick={handleEmailClick}>
     <h3>{email.from}</h3>
     <small>
         <span>{email.date}</span> &lt;<span>{email.to}</span>&gt;

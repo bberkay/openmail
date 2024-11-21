@@ -8,7 +8,7 @@
         emails,
         folders,
         serverUrl,
-    } from "$lib/stores";
+    } from "$lib/stores/shared.svelte";
     import { get } from "svelte/store";
 
     const markStatus: { [key: string]: string } = {

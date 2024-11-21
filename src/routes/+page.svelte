@@ -1,133 +1,62 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { get } from "svelte/store";
-    import Alert from "$lib/components/Alert.svelte";
-    import Sidebar from "$lib/components/Sidebar.svelte";
-    import Inbox from "$lib/components/Inbox.svelte";
-    import Content from "$lib/components/Content.svelte";
     import Register from "$lib/components/Register.svelte";
     import type { Response } from "$lib/types";
-    import { Store } from "@tauri-apps/plugin-store";
-    import {
-        serverUrl,
-        accounts,
-        emails,
-        folders,
-        currentAccounts,
-        currentEmail,
-        currentFolder,
-        currentOffset,
-    } from "$lib/stores";
+    import { sharedStore } from "$lib/stores/shared.svelte";
+    import Inbox from "$lib/components/Inbox.svelte";
 
-    let isLoading: boolean = true;
-
-    onMount(async () => {
-        serverUrl.subscribe((url) => {
-            if (url.length > 0) {
-                if (get(accounts).length === 0) getAccounts();
-                else isLoading = false;
-            }
-        });
-
-        [
-            accounts,
-            emails,
-            folders,
-            currentAccounts,
-            currentFolder,
-            currentEmail,
-            currentOffset,
-        ].forEach((store) => {
-            store.subscribe(() => {
-                saveData();
-            });
-        });
+    let isLoading: boolean = $state(true);
+    
+    $effect(() => {
+        if (sharedStore.server && sharedStore.accounts.length === 0) 
+            fetchAccounts();
+        else 
+            isLoading = false;
     });
 
-    async function saveData() {
-        const store = new Store("openmail_cache.bin");
-        await store.set("cache", {
-            accounts: get(accounts),
-            emails: get(emails),
-            currentFolder: get(currentFolder),
-            folders: get(folders),
-            currentOffset: get(currentOffset),
-        });
-    }
-
-    async function getAccounts() {
+    async function fetchAccounts(): Promise<void> {
         const response: Response = await fetch(
-            `${get(serverUrl)}/get-email-accounts`,
+            `${sharedStore.server}/get-email-accounts`,
         ).then((res) => res.json());
         if (Object.hasOwn(response, "data") && response.data) {
-            accounts.set(response.data);
-            currentAccounts.set(response.data);
+            sharedStore.accounts = response.data;
         }
         isLoading = false;
-    }
-
-    async function getEmailsOfAllAccounts() {
-        const response: Response = await fetch(
-            `${get(serverUrl)}/get-emails/${get(accounts)
-                .map((account) => account["email"])
-                .join(",")}`,
-        ).then((res) => res.json());
-        if (response.success) {
-            emails.set(
-                response.data.map((item: { email: string; data: object }) => ({
-                    email: item.email,
-                    ...item.data,
-                })),
-            );
-            currentFolder.set("Inbox");
-            currentOffset.set(
-                response.data["total"] < 10 ? response.data["total"] : 10,
-            );
-        }
-    }
-
-    async function getFoldersOfAllAccounts() {
-        const response: Response = await fetch(
-            `${get(serverUrl)}/get-folders/${get(accounts)
-                .map((account) => account["email"])
-                .join(",")}`,
-        ).then((res) => res.json());
-        if (response.success) {
-            folders.set(
-                response.data.map((item: { email: string; data: any }) => ({
-                    email: item.email,
-                    folders: item.data,
-                })),
-            );
-        }
     }
 </script>
 
 <!--<Alert message="This is a success message" type="success" />-->
-{#if $emails.length > 0}
+{#if sharedStore.inboxes.length > 0}
     <main class="container">
         <div class="sidebar-container">
-            <Sidebar />
+            <!--<Sidebar />-->
         </div>
         <div class="inbox-container">
             <Inbox />
         </div>
         <div class="email-container">
-            <Content />
+            <!--<Content />-->
         </div>
     </main>
+    <pre>{JSON.stringify(sharedStore, null, 2)}</pre>
 {:else if isLoading}
     <p>Loading</p>
 {:else}
-    <Register
-        on:continueToInbox={async () => {
-            await getEmailsOfAllAccounts();
-            await getFoldersOfAllAccounts();
-        }}
-    />
+    <Register/>
 {/if}
 
 <style>
+    pre {
+        overflow: scroll;
+        height: 85vh;
+        background-color: #333;
+        border:1px solid #3a3a3a;
+        color: #f5f5f5;
+        padding: 10px;
+        margin: 0;
+        font-size: 12px;
+        font-family: monospace;
+    }
+
     .container {
         display: flex;
     }
