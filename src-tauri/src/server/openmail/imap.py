@@ -1,5 +1,5 @@
-import imaplib, threading, re, base64, email, time, socket, select
-from typing import List, Literal, MappingProxyType
+import imaplib, threading, re, base64, email, time
+from typing import List, MappingProxyType
 from datetime import datetime
 
 from .utils import extract_domain, choose_positive, truncate_text, contains_non_ascii, convert_date_to_iso, make_size_human_readable

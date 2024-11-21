@@ -1,14 +1,12 @@
 import smtplib, re, base64
 from typing import List, Tuple, Sequence
 
-import email
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
 from .utils import extract_domain, choose_positive
-from .types import LoginException
 
 SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
 SMTP_SERVERS = {
@@ -37,11 +35,10 @@ class SMTP(smtplib.SMTP):
     def login(self, email_address: str, password: str, try_limit: int = 3) -> None:
         for _ in range(try_limit):
             try:
-                if not self.is_logged_in():
-                    self.ehlo()
-                    self.starttls()
-                    self.ehlo()
-                    super().login(email_address, password)
+                self.ehlo()
+                self.starttls()
+                self.ehlo()
+                super().login(email_address, password)
                 break
             except Exception as e:
                 try_limit -= 1
@@ -50,22 +47,13 @@ class SMTP(smtplib.SMTP):
 
     def quit(self) -> None:
         try:
-            if self.is_logged_in():
-                super().quit()
+            super().quit()
         except Exception as e:
             raise Exception("Could not disconnect from the target smtp server: {}".format(str(e)))
-
-    def is_logged_in(self) -> bool:
-        try:
-            return self.noop()[0] == 250
-        except Exception:
-            return False
 
     def __handle_conn(func):
         def wrapper(self, *args, **kwargs):
             try:
-                if not self.is_logged_in():
-                    raise LoginException("You are not logged in(or connection is lost). Please login first.")
                 response = func(self, *args, **kwargs)
                 return response
             except Exception as e:
