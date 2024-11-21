@@ -29,8 +29,8 @@ def create_and_idle_openmail_clients():
         openmail_clients[account["email"]] = OpenMail()
         status = openmail_clients[account["email"]].connect(account["email"], account["password"])
         print(f"Connected to {account['email']}")
-        #if status:
-        #    openmail_clients[account["email"]].idle()
+        if status:
+            openmail_clients[account["email"]].idle()
 
 def reconnect_and_idle_logged_out_openmail_clients():
     for email, openmail_client in openmail_clients.items():
@@ -39,8 +39,8 @@ def reconnect_and_idle_logged_out_openmail_clients():
             if account:
                 status = openmail_client.connect(email, account[0]["password"])
                 print(f"Reconnected to {email}")
-                #if status:
-                #    openmail_client.idle()
+                if status:
+                    openmail_client.idle()
 
 def shutdown_openmail_clients():
     for openmail_client in openmail_clients.values():
