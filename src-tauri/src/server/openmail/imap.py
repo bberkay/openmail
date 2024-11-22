@@ -97,6 +97,27 @@ class ImapManager(imaplib.IMAP4_SSL):
         self.__idle_thread = None
 
     def __find_imap_server(self, email_address: str) -> str:
+        """
+        Determines the IMAP server address for a given email address.
+
+        Args:
+            email_address (str): The email address for which to find the IMAP server.
+
+        Returns:
+            str: The IMAP server address associated with the email's domain.
+
+        Raises:
+            ImapException: If the email domain is not supported or not found in the IMAP_SERVERS mapping.
+
+        Example:
+            >>> email_address = "user@gmail.com"
+            >>> self.__find_imap_server(email_address)
+            "imap.gmail.com"
+
+            >>> email_address = "user@unknown.com"
+            >>> self.__find_imap_server(email_address)
+            ImapException: Unsupported email domain
+        """
         try:
             return IMAP_SERVERS[extract_domain(email_address)]
         except KeyError:
@@ -104,6 +125,24 @@ class ImapManager(imaplib.IMAP4_SSL):
 
     @override
     def login(self, user: str, password: str) -> tuple[str, any]:
+        """
+        Authenticates the user with the IMAP server using the provided credentials.
+
+        Args:
+            user (str): The username or email address of the account.
+            password (str): The account's password.
+
+        Returns:
+            tuple[str, any]: A tuple containing the status string ("OK", "NO", etc.)
+                            and the server's response object.
+
+        Raises:
+            ImapException: If the login process fails after exceeding the allowed retry limit.
+
+        Notes:
+            - UTF-8 encoding is enabled after successful authentication.
+            - Supports both ASCII and non-ASCII credentials.
+        """
         try_limit = LOGIN_TRY_LIMIT
         for _ in range(try_limit):
             try:
@@ -121,6 +160,19 @@ class ImapManager(imaplib.IMAP4_SSL):
 
     @override
     def logout(self) -> tuple[str, any]:
+        """
+        Logs out from the IMAP server and closes any open mailboxes.
+
+        Returns:
+            tuple[str, any]: A tuple containing the status string ("OK", "NO", etc.)
+                            and the server's response object.
+
+        Raises:
+            ImapException: If an error occurs during the logout process.
+
+        Notes:
+            - If the state is "SELECTED," the mailbox is closed before disconnecting.
+        """
         try:
             if self.state == "SELECTED":
                 self.close()
@@ -129,13 +181,39 @@ class ImapManager(imaplib.IMAP4_SSL):
             raise ImapException("Could not disconnect from the target imap server: {}".format(str(e)))
     
     @override
-    def select(self, mailbox: str = INBOX, readonly: bool = False) -> None:
+    def select(self, mailbox: str = INBOX, readonly: bool = False):
+        """
+        Selects a mailbox for further operations.
+
+        Args:
+            mailbox (str): The name of the mailbox to select. Defaults to "INBOX".
+            readonly (bool): If True, opens the mailbox in read-only mode. Defaults to False.
+
+        Raises:
+            ImapException: If the mailbox cannot be selected or an invalid mailbox name is provided.
+
+        Notes:
+            - Prevents re-selecting the currently active mailbox with the same mode.
+            - Ensures the folder name is properly encoded and valid.
+        """
         if self.__current_folder[0] != mailbox or self.__current_folder[1] != readonly:
             self.__check_folder_names(mailbox)
             self.__ensure_command(super().select(self.__encode_folder(mailbox), readonly))
             self.__current_folder = (mailbox, readonly)
         
     def __handle_conn(func):
+        """
+        Decorator to manage the connection state before and after a method call.
+
+        Ensures the connection exits IDLE mode before executing the wrapped method 
+        and restores it to IDLE mode afterward if it was previously idling.
+
+        Args:
+            func (callable): The method to wrap with connection handling logic.
+
+        Returns:
+            callable: The wrapped method with connection management.
+        """
         def wrapper(self, *args, **kwargs):
             try:
                 was_idle_before_call = self.__is_idle
@@ -219,23 +297,23 @@ class ImapManager(imaplib.IMAP4_SSL):
         
     @override
     @__handle_conn
-    def list(self) -> list:
+    def list(self) -> list[str]:
         """
         Retrieve a list of all email folders.
 
         Returns:
-            list: List of folder names in the email account
+            list[str]: List of folder names in the email account
         """
         return [self.__decode_folder(i) for i in super().list()[1] if i.find(b'\\NoSelect') == -1]
     
     @override
     @__handle_conn
-    def capability(self) -> list:
+    def capability(self) -> list[str]:
         """
         Retrieve a list of capabilities supported by the email server.
 
         Returns:
-            list: List of email server capabilities
+            list[str]: List of email server capabilities
         """
         return super().capability()[1][0].decode("utf-8").split(" ")
     
