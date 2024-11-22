@@ -39,7 +39,8 @@ INBOX = 'INBOX'
 ALL = 'ALL'
 
 # Regular expressions
-CID_RE_COMPILE = re.compile(r'<img src="cid:([^"]+)"')
+CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
+FLAG_PATTERN = re.compile(r'\\([a-zA-Z]+)')
 
 # Custom consts
 LOGIN_TRY_LIMIT = 3
@@ -174,8 +175,13 @@ class ImapManager(imaplib.IMAP4_SSL):
             - If the state is "SELECTED," the mailbox is closed before disconnecting.
         """
         try:
-            if self.state == "SELECTED":
-                self.close()
+            try:
+                if self.state == "SELECTED":
+                    self.close()
+            except Exception as e:
+                print("Could not close mailbox: {}".format(str(e)))
+                pass
+
             return super().logout()
         except Exception as e:
             raise ImapException("Could not disconnect from the target imap server: {}".format(str(e)))
@@ -215,6 +221,7 @@ class ImapManager(imaplib.IMAP4_SSL):
             callable: The wrapped method with connection management.
         """
         def wrapper(self, *args, **kwargs):
+            # TODO: Improve error handling
             try:
                 was_idle_before_call = self.__is_idle
                 if was_idle_before_call:
@@ -304,18 +311,10 @@ class ImapManager(imaplib.IMAP4_SSL):
         Returns:
             list[str]: List of folder names in the email account
         """
-        return [self.__decode_folder(i) for i in super().list()[1] if i.find(b'\\NoSelect') == -1]
-    
-    @override
-    @__handle_conn
-    def capability(self) -> list[str]:
-        """
-        Retrieve a list of capabilities supported by the email server.
-
-        Returns:
-            list[str]: List of email server capabilities
-        """
-        return super().capability()[1][0].decode("utf-8").split(" ")
+        try:
+            return [self.__decode_folder(i) for i in super().list()[1] if i.find(b'\\NoSelect') == -1]
+        except Exception as e:
+            raise ImapException("There was an error while listing folders: {}".format(str(e)))
     
     def idle(self) -> None:
         if not self.__is_idle:
@@ -441,7 +440,7 @@ class ImapManager(imaplib.IMAP4_SSL):
             return None
 
         status, folders_as_bytes = super().list()
-        if status == "OK":
+        if status == "OK" and folders_as_bytes and isinstance(folders_as_bytes, list):
             for folder_as_bytes in folders_as_bytes:
                 if flag_name == folder_as_bytes:
                     return folder_as_bytes
@@ -525,26 +524,53 @@ class ImapManager(imaplib.IMAP4_SSL):
             list: List of email flags
         """
         if self.state != "SELECTED":
+            # Since uid's are unique within each mailbox, we can't just select INBOX
+            # or something like that if there is no mailbox selected.
             raise ImapException("Folder should be selected before fetching flags")
 
-        flags = self.uid('FETCH', uid, '(FLAGS)')[1][0]
-        if flags:
-            flags = flags.decode()
-            flags = re.findall(r'\\([a-zA-Z]+)', flags)
+        try:
+            flags = self.uid('FETCH', uid, '(FLAGS)')[1][0]
+            if flags:
+                flags = flags.decode()
+                flags = FLAG_PATTERN.findall(flags)
+        except Exception as e:
+            raise ImapException("Error while fetching email flags", e)
+        
         return flags or []
 
     def __build_search_criteria_query(self, search_criteria: SearchCriteria) -> str:
         """
-            Preparing to convert search_json to search_criteria string:
-            https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
-        """
+        Builds an IMAP-compatible search criteria query string based on given search parameters.
 
+        Args:
+            search_criteria (SearchCriteria): An object containing various search criteria, 
+            such as senders, receivers, subject, date ranges, included/excluded text, and flags.
+
+        Returns:
+            str: A search criteria query string ready to be used with IMAP's SEARCH command.
+
+        Notes:
+            This function recursively builds complex OR queries and handles multiple search criteria 
+            by converting them into the required format as per RFC 9051.
+
+        References:
+            - https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
+        """
+        
         def recursive_or_query(criteria: str, search_keys: List[str]) -> str:
             """
+            Recursively builds an OR query for a list of search keys.
+
+            Args:
+                criteria (str): The search criteria, e.g., "FROM".
+                search_keys (List[str]): A list of values for the criteria.
+
+            Returns:
+                str: A query string with nested OR conditions for the search keys.
+
             Example:
-            recursive_or_query("FROM", ["johndoe@mail.com", "janedoe@mail.com", "person@mail.com"])
-            Return:
-            'OR (FROM "johndoe@mail.com") (OR (FROM "janedoe@mail.com") (FROM "person@mail.com"))'
+                Input: criteria="FROM", search_keys=["a@mail.com", "b@mail.com", "c@mail.com"]
+                Output: 'OR (FROM "a@mail.com") (OR (FROM "b@mail.com") (FROM "c@mail.com"))'
             """
             query = ''
             len_search_keys = len(search_keys)
@@ -562,6 +588,21 @@ class ImapManager(imaplib.IMAP4_SSL):
             value: str | list | None,
             seperate_with_or: bool = False
         ) -> str:
+            """
+            Converts a single search criterion and its value(s) into a query string.
+
+            Args:
+                criteria (str): The search criterion, e.g., "FROM" or "SUBJECT".
+                value (str | list | None): The value(s) to match for the criterion.
+                seperate_with_or (bool): Whether to combine multiple values with OR conditions.
+
+            Returns:
+                str: A formatted query string for the given criterion.
+
+            Example:
+                Input: criteria="FROM", value=["a@mail.com", "b@mail.com"]
+                Output: ' (FROM "a@mail.com") (FROM "b@mail.com")'
+            """
             if not value:
                 return ''
 
@@ -620,62 +661,75 @@ class ImapManager(imaplib.IMAP4_SSL):
             raise ImapException("Invalid offset: {}".format(offset))
 
         self.select(folder, readonly=True)
-
+        
+        # Creating search query
         search_criteria_query = ''
-        must_have_attachment = False
-        if isinstance(search, SearchCriteria):
-            must_have_attachment = search.has_attachments
-            search_criteria_query = self.__build_search_criteria_query(search) or ALL
-        else:
-            search_criteria_query = search or ALL
+        try:
+            search_criteria_query = ''
+            must_have_attachment = False
+            if isinstance(search, SearchCriteria):
+                must_have_attachment = search.has_attachments
+                search_criteria_query = self.__build_search_criteria_query(search) or ALL
+            else:
+                search_criteria_query = search or ALL
+        except Exception as e:
+            raise ImapException("Error while building search query", e)
 
-        _, uids = self.uid('search', None, search_criteria_query.encode("utf-8") if search_criteria_query else ALL)
-        uids = uids[0].split()[::-1]
+        # Getting email uids
+        try:
+            _, uids = self.uid('search', None, search_criteria_query.encode("utf-8") if search_criteria_query else ALL)
+            uids = uids[0].split()[::-1]
+        except Exception as e:
+            raise ImapException("Error while getting email uids, search query was `{}`".format(search_criteria_query), e)
 
         if not uids:
             return Inbox(folder=folder, emails=[], total=0)
 
+        # Fetching emails
         emails = []
-        for uid in uids[offset: offset + 10]:
-            """
-            _, data = M.fetch(num, '(BODY.PEEK[HEADER.FIELDS (CONTENT-TYPE)])')
-            if b"multipart/mixed" in data[0][1]:
-                print("Found multipart/mixed: ", num
-            """
-            _, message = self.uid('fetch', uid, '(RFC822)')
-            message = email.message_from_bytes(message[0][1], policy=email.policy.default)
+        try:
+            for uid in uids[offset: offset + 10]:
+                """
+                _, data = M.fetch(num, '(BODY.PEEK[HEADER.FIELDS (CONTENT-TYPE)])')
+                if b"multipart/mixed" in data[0][1]:
+                    print("Found multipart/mixed: ", num
+                """
+                _, message = self.uid('fetch', uid, '(RFC822)')
+                message = email.message_from_bytes(message[0][1], policy=email.policy.default)
 
-            payload = [message]
-            if message.is_multipart():
-                if must_have_attachment and message.get_content_type() != "multipart/mixed":
-                    continue
-                payload = message.walk()
+                payload = [message]
+                if message.is_multipart():
+                    if must_have_attachment and message.get_content_type() != "multipart/mixed":
+                        continue
+                    payload = message.walk()
 
-            body = ""
-            is_body_html = False
-            for part in payload:
-                content_type = part.get_content_type()
-                file_name = part.get_filename()
+                body = ""
+                is_body_html = False
+                for part in payload:
+                    content_type = part.get_content_type()
+                    file_name = part.get_filename()
 
-                is_body_html = content_type == "text/html"
-                if (file_name is None and content_type == "text/plain") or (is_body_html and not body):
-                    body = part.get_payload(decode=True)
-                    body = body.decode(part.get_content_charset() or "utf-8") if body else ""
+                    is_body_html = content_type == "text/html"
+                    if (file_name is None and content_type == "text/plain") or (is_body_html and not body):
+                        body = part.get_payload(decode=True)
+                        body = body.decode(part.get_content_charset() or "utf-8") if body else ""
 
-            # TODO: Check if this is required
-            #body = BeautifulSoup(body, "html.parser").get_text() if is_body_html else body
-            #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
-            #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
+                # TODO: Check if this is required
+                #body = BeautifulSoup(body, "html.parser").get_text() if is_body_html else body
+                #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
+                #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
 
-            emails.append(Email(
-                uid=uid.decode(),
-                sender=message["From"],
-                receiver=message["To"] if "To" in message else "",
-                subject=message["Subject"],
-                body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
-                date=convert_date_to_iso(message["Date"]),
-                flags=self.get_email_flags(uid) or []
-            ))
+                emails.append(Email(
+                    uid=uid.decode(),
+                    sender=message["From"],
+                    receiver=message["To"] if "To" in message else "",
+                    subject=message["Subject"],
+                    body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
+                    date=convert_date_to_iso(message["Date"]),
+                    flags=self.get_email_flags(uid) or []
+                ))
+        except Exception as e:
+            raise ImapException("Error while fetching emails, fetched email length was `{}`".format(len(emails)), e)
 
         return Inbox(folder=folder, emails=emails, total=len(uids))
     
@@ -696,44 +750,56 @@ class ImapManager(imaplib.IMAP4_SSL):
             dict: Detailed email content
         """
         self.select(folder, readonly=True)
-
-        _, message = self.uid('fetch', uid, '(RFC822)')
-        message = email.message_from_bytes(message[0][1], policy=email.policy.default)
-
+        
         # Get body and attachments
         body, attachments = "", []
-        for part in (message.walk() if message.is_multipart() else [message]):
-            content_type = part.get_content_type()
-            file_name = part.get_filename()
-            if file_name:
-                attachments.append(Attachment(
-                    cid=part.get("X-Attachment-Id"),
-                    name=file_name,
-                    data=base64.b64encode(
-                        part.get_payload(decode=True)
-                    ).decode("utf-8", errors="ignore"),
-                    size=make_size_human_readable(len(part.get_payload(decode=True))),
-                    type=content_type
-                ))
-            elif content_type == "text/html" or (content_type == "text/plain" and not body):
-                body = part.get_payload(decode=True)
-                if body:
-                    body = body.decode(part.get_content_charset())
+        try:
+            _, message = self.uid('fetch', uid, '(RFC822)')
+            message = email.message_from_bytes(message[0][1], policy=email.policy.default)
 
-        # Get inline attachments
-        if attachments:
-            for match in CID_RE_COMPILE.finditer(body):
-                cid = match.group(1)
-                for attachment in attachments:
-                    if cid in attachment.name or cid in attachment.cid:
-                        body = body.replace(
-                            f'cid:{cid}',
-                            f'data:{attachment.type};base64,{attachment.data}'
-                        )
+            for part in (message.walk() if message.is_multipart() else [message]):
+                content_type = part.get_content_type()
+                file_name = part.get_filename()
+                if file_name:
+                    attachments.append(Attachment(
+                        cid=part.get("X-Attachment-Id"),
+                        name=file_name,
+                        data=base64.b64encode(
+                            part.get_payload(decode=True)
+                        ).decode("utf-8", errors="ignore"),
+                        size=make_size_human_readable(len(part.get_payload(decode=True))),
+                        type=content_type
+                    ))
+                elif content_type == "text/html" or (content_type == "text/plain" and not body):
+                    body = part.get_payload(decode=True)
+                    if body:
+                        body = body.decode(part.get_content_charset())
+        except Exception as e:
+            raise ImapException("There was a problem with getting email content: {}".format(e))
+
+        try:
+            # Get inline attachments
+            if attachments:
+                for match in CID_PATTERN.finditer(body):
+                    cid = match.group(1)
+                    for attachment in attachments:
+                        if cid in attachment.name or cid in attachment.cid:
+                            body = body.replace(
+                                f'cid:{cid}',
+                                f'data:{attachment.type};base64,{attachment.data}'
+                            )
+        except Exception as e:
+            # If there is a problem with inline attachments
+            # just ignore them.
+            print("There was a problem with inline attachments: {}".format(e))
+            pass
         
         try:
             self.mark_email(uid, "Seen", folder)
-        except Exception:
+        except Exception as e:
+            # If there is a problem with marking the email as seen
+            # just ignore it.
+            print("There was a problem with marking the email as seen: {}".format(e))
             pass
 
         return Email(
@@ -773,20 +839,27 @@ class ImapManager(imaplib.IMAP4_SSL):
 
         if mark in self.get_email_flags(uid):
             return CommandResult(success=True, message="Email already marked")
-
-        self.select(folder)
         
         mark = mark.lower()
         mark_type = "-" if mark[0] + mark[1] == "un" else "+"
         mark = mark[2:] if mark_type == "-" else mark
         command = mark_type + "FLAGS"
 
-        self.uid('STORE', uid, command, MARK_MAP[mark])
-        return self.__parse_command_result(
-            self.expunge(),
-            "Email marked successfully",
-            "There was an error while marking the email"
-        )
+        self.select(folder)
+
+        success_msg = "Email marked successfully"
+        err_msg = "There was an error while marking the email"
+
+        mark_result = self.uid('STORE', uid, command, MARK_MAP[mark])
+
+        if mark_result[0]:
+            return self.__parse_command_result(
+                self.expunge(),
+                success_msg,
+                err_msg
+            )
+        
+        return mark_result
 
     @__handle_conn
     def move_email(self, uid: str, source_folder: str, destination_folder: str) -> CommandResult:
@@ -807,12 +880,20 @@ class ImapManager(imaplib.IMAP4_SSL):
             return CommandResult(success=True, message="Email already in destination folder")
         
         self.select(source_folder)
-        self.uid('MOVE', uid, self.__encode_folder(destination_folder))
-        return self.__parse_command_result(
-            self.expunge(),
-            "Email moved successfully",
-            "There was an error while moving the email"
-        )
+
+        success_msg = "Email moved successfully"
+        err_msg = "There was an error while moving the email"
+
+        move_result = self.uid('MOVE', uid, self.__encode_folder(destination_folder))
+
+        if move_result[0]:
+            return self.__parse_command_result(
+                self.expunge(),
+                success_msg,
+                err_msg
+            )
+        
+        return move_result
         
     @__handle_conn
     def copy_email(self, uid: str, source_folder: str, destination_folder: str) -> CommandResult:
@@ -830,12 +911,20 @@ class ImapManager(imaplib.IMAP4_SSL):
         self.__check_folder_names([source_folder, destination_folder])
     
         self.select(source_folder)
-        self.uid('COPY', uid, self.__encode_folder(destination_folder))
-        return self.__parse_command_result(
-            self.expunge(),
-            "Email copied successfully",
-            "There was an error while copying the email"
-        )
+
+        success_msg = "Email copied successfully"
+        err_msg = "There was an error while copying the email"
+
+        copy_result = self.uid('COPY', uid, self.__encode_folder(destination_folder))
+
+        if copy_result[0]:
+            return self.__parse_command_result(
+                self.expunge(),
+                success_msg,
+                err_msg
+            )
+        
+        return copy_result
 
     @__handle_conn
     def delete_email(self, uid: str, folder: str) -> CommandResult:
@@ -858,14 +947,26 @@ class ImapManager(imaplib.IMAP4_SSL):
                 self.move_email(uid, folder, trash_mailbox_name)
         except Exception as e:
             raise ImapException("Error while moving email to trash folder for deletion", e)
-
+        
         self.select(trash_mailbox_name)
-        self.uid('STORE', uid, '+FLAGS', '\\Deleted')
-        return self.__parse_command_result(
-            self.expunge(),
-            "Email deleted successfully",
-            "There was an error while deleting the email"
+    
+        success_msg = "Email deleted successfully"
+        err_msg = "There was an error while deleting the email"
+
+        delete_result = self.__parse_command_result(
+            self.uid('STORE', uid, '+FLAGS', '\\Deleted'),
+            success_msg,
+            err_msg
         )
+
+        if delete_result[0]:
+            return self.__parse_command_result(
+                self.expunge(),
+                success_msg,
+                err_msg
+            )
+        
+        return delete_result
 
     @__handle_conn
     def create_folder(self, folder_name: str, parent_folder: str | None = None) -> CommandResult:

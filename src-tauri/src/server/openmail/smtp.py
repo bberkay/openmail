@@ -24,6 +24,7 @@ MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024 # 25MB
 
 # Regular expressions
 SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
+IMG_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"')
 
 # Timeouts (in seconds)
 CONN_TIMEOUT = 30 
@@ -187,8 +188,8 @@ class SmtpManager(smtplib.SMTP):
                 msg[key] = value
 
         # Attach inline images
-        if re.search(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"', body):
-            for match in re.finditer(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"', body):
+        if IMG_PATTERN.search(body):
+            for match in IMG_PATTERN.finditer(body):
                 img_ext, img_data = match.group(1), match.group(2)
                 cid = f'image{match.start()}'
                 body = body.replace(f'data:image/{img_ext};base64,{img_data}', f'cid:{cid}')
