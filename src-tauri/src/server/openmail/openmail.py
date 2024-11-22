@@ -15,8 +15,8 @@ License: MIT
 from typing import List, Tuple, Sequence
 
 from .types import SearchCriteria
-from .imap import IMAP
-from .smtp import SMTP
+from .imap import ImapManager
+from .smtp import SmtpManager
 
 class OpenMail:
     """
@@ -37,8 +37,8 @@ class OpenMail:
         
         Connections will be established when connect() method is called.
         """
-        self.__imap = None
-        self.__smtp = None
+        self.imap = None
+        self.smtp = None
 
     def connect(
         self,
@@ -46,9 +46,10 @@ class OpenMail:
         password: str,
         imap_host: str = "",
         imap_port: int = 993,
+        imap_ssl_context: any = None,
         smtp_host: str = "",
         smtp_port: int = 587,
-        try_limit: int = 3,
+        smtp_local_hostname: str = None,
         timeout: int = 30
     ) -> tuple[bool, str]:
         """
@@ -68,20 +69,20 @@ class OpenMail:
             tuple[bool, str]: A tuple containing connection status (True/False) 
                                and a status message
         """
-        self.__imap = IMAP(
+        self.imap = ImapManager(
             email_address,
             password,
             imap_host,
             imap_port,
-            try_limit,
+            imap_ssl_context,
             timeout
         )
-        self.__smtp = SMTP(
+        self.smtp = SmtpManager(
             email_address,
             password,
             smtp_host,
             smtp_port,
-            try_limit,
+            smtp_local_hostname,
             timeout
         )
         return True, "Connected successfully"
@@ -92,30 +93,14 @@ class OpenMail:
 
         Logs out from IMAP server and quits SMTP connection.
         """
-        self.__imap.logout()
-        self.__smtp.quit()
+        self.imap.logout()
+        self.__smtp.logout()
 
-    def idle(self) -> None:
-        """
-        Start IMAP idle mode to listen for new emails.
-
-        This method keeps the connection open and waits for server notifications.
-        """
-        self.__imap.idle()
-
-    def done(self) -> None:
-        """
-        Exit IMAP idle mode.
-
-        Terminates the idle state started by idle() method.
-        """
-        self.__imap.done()
-
-    def send_email(self,
+    def sendmail(self,
         sender: str | Tuple[str, str],
         receiver_emails: str | List[str],
         subject: str,
-        body: str,
+        body: str | None = None,
         attachments: list | None = None,
         cc: str | List[str] | None = None,
         bcc: str | List[str] | None = None,
@@ -141,7 +126,7 @@ class OpenMail:
         Returns:
             bool: True if email sent successfully, False otherwise
         """
-        return self.__smtp.sendmail(
+        return self.smtp.sendmail(
             sender,
             receiver_emails,
             subject,
@@ -175,20 +160,15 @@ class OpenMail:
             bool: True if reply sent successfully and original email marked as answered, 
                   False otherwise
         """
-        if self.__smtp.sendmail(
+        if self.smtp.reply_email(
             sender,
             receiver_emails,
-            "Re: " + self.__imap.get_email_content(uid)[2]["subject"],
+            uid,
+            self.imap.get_email_content(uid)[2]["subject"],
             body,
-            attachments,
-            None,
-            None,
-            {
-                "In-Reply-To": uid,
-                "References": uid
-            }
+            attachments
         ):
-            self.__imap.mark_email(uid, "answered")
+            self.imap.mark_email(uid, "answered")
             return True
 
         return False
@@ -213,18 +193,13 @@ class OpenMail:
         Returns:
             bool: True if email forwarded successfully, False otherwise
         """
-        return self.__smtp.sendmail(
+        return self.smtp.forward_email(
             sender,
             receiver_emails,
-            "Fwd: " + self.__imap.get_email_content(uid)[2]["subject"],
+            uid,
+            self.imap.get_email_content(uid)[2]["subject"],
             body,
-            attachments,
-            None,
-            None,
-            {
-                "In-Reply-To": uid,
-                "References": uid
-            }
+            attachments
         )
     
     def get_capabilities(self) -> list:
@@ -234,7 +209,7 @@ class OpenMail:
         Returns:
             list: List of folder names in the email account
         """
-        return self.__imap.get_capabilities()
+        return self.imap.get_capabilities()
 
     def get_folders(self) -> list:
         """
@@ -243,7 +218,7 @@ class OpenMail:
         Returns:
             list: List of folder names in the email account
         """
-        return self.__imap.get_folders()
+        return self.imap.get_folders()
 
     def get_folder_status(self, folder: str, status: str = "MESSAGES") -> dict:
         """
@@ -256,7 +231,7 @@ class OpenMail:
         Returns:
             dict: Folder status information
         """
-        return self.__imap.status(folder, status)
+        return self.imap.status(folder, status)
 
     def get_email_flags(self, uid: str) -> list:
         """
@@ -268,7 +243,7 @@ class OpenMail:
         Returns:
             list: List of email flags
         """
-        return self.__imap.get_email_flags(uid)
+        return self.imap.get_email_flags(uid)
 
     def get_emails(self,
         folder: str = "inbox",
@@ -286,7 +261,7 @@ class OpenMail:
         Returns:
             dict: Dictionary of emails matching the search criteria
         """
-        return self.__imap.get_emails(folder, search, offset)
+        return self.imap.get_emails(folder, search, offset)
 
     def get_email_content(self, uid: str, folder: str = "inbox") -> dict:
         """
@@ -299,7 +274,7 @@ class OpenMail:
         Returns:
             dict: Detailed email content
         """
-        return self.__imap.get_email_content(uid, folder)
+        return self.imap.get_email_content(uid, folder)
 
     def mark_email(self, uid: str, mark: str, folder: str = "inbox") -> bool:
         """
@@ -313,7 +288,7 @@ class OpenMail:
         Returns:
             bool: True if email marked successfully, False otherwise
         """
-        return self.__imap.mark_email(uid, mark, folder)
+        return self.imap.mark_email(uid, mark, folder)
 
     def move_email(self, uid: str, source_folder: str, destination_folder: str) -> bool:
         """
@@ -327,7 +302,7 @@ class OpenMail:
         Returns:
             bool: True if email moved successfully, False otherwise
         """
-        return self.__imap.move_email(uid, source_folder, destination_folder)
+        return self.imap.move_email(uid, source_folder, destination_folder)
 
     def copy_email(self, uid: str, source_folder: str, destination_folder: str) -> bool:
         """
@@ -341,7 +316,7 @@ class OpenMail:
         Returns:
             bool: True if email copied successfully, False otherwise
         """
-        return self.__imap.copy_email(uid, source_folder, destination_folder)
+        return self.imap.copy_email(uid, source_folder, destination_folder)
 
     def delete_email(self, uid: str, folder: str) -> bool:
         """
@@ -354,7 +329,7 @@ class OpenMail:
         Returns:
             bool: True if email deleted successfully, False otherwise
         """
-        return self.__imap.delete_email(uid, folder)
+        return self.imap.delete_email(uid, folder)
 
     def create_folder(self, folder_name: str, parent_folder: str | None = None) -> bool:
         """
@@ -368,7 +343,7 @@ class OpenMail:
         Returns:
             bool: True if folder created successfully, False otherwise
         """
-        return self.__imap.create_folder(folder_name, parent_folder)
+        return self.imap.create_folder(folder_name, parent_folder)
 
     def delete_folder(self, folder_name: str) -> bool:
         """
@@ -380,7 +355,7 @@ class OpenMail:
         Returns:
             bool: True if folder deleted successfully, False otherwise
         """
-        return self.__imap.delete_folder(folder_name)
+        return self.imap.delete_folder(folder_name)
 
     def move_folder(self, folder_name: str, destination_folder: str) -> bool:
         """
@@ -393,7 +368,7 @@ class OpenMail:
         Returns:
             bool: True if folder moved successfully, False otherwise
         """
-        return self.__imap.move_folder(folder_name, destination_folder)
+        return self.imap.move_folder(folder_name, destination_folder)
 
     def rename_folder(self, folder_name: str, new_folder_name: str) -> bool:
         """
@@ -406,4 +381,4 @@ class OpenMail:
         Returns:
             bool: True if folder renamed successfully, False otherwise
         """
-        return self.__imap.rename_folder(folder_name, new_folder_name)
+        return self.imap.rename_folder(folder_name, new_folder_name)

@@ -22,6 +22,9 @@ class SearchCriteria():
 
 @dataclass
 class Attachment():
+    """
+    A class that represents an email attachment as a dataclass.
+    """
     cid: str
     name: str
     data: str
@@ -30,6 +33,9 @@ class Attachment():
 
 @dataclass
 class Email():
+    """
+    A class that represents an email as a dataclass.
+    """
     uid: str
     sender: str
     receiver: str
@@ -42,6 +48,9 @@ class Email():
     
 @dataclass
 class Inbox():
+    """
+    A class that represents the inbox's content as a dataclass.
+    """
     folder: str
     emails: List[Email]
     total: int
