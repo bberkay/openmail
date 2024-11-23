@@ -57,15 +57,22 @@ type CommandResult = tuple[bool, str]
 
 # Enums
 class WaitResponse(Enum):
+    """Enum for waiting for a response from the server."""
     IDLE = "IDLE"
     EXISTS = "EXISTS"
     DONE = "DONE"
     BYE = "BYE"
 
 class ImapException(Exception):
+    """Custom exception for ImapManager class."""
     pass
 
 class ImapManager(imaplib.IMAP4_SSL):
+    """
+    ImapManager extends the `imaplib.IMAP4` class to facilitate email management 
+    operations with additional features for folder handling, search functionality, 
+    and real-time email notifications.
+    """
     def __init__(
         self, 
         email_address: str, 
@@ -221,7 +228,8 @@ class ImapManager(imaplib.IMAP4_SSL):
             callable: The wrapped method with connection management.
         """
         def wrapper(self, *args, **kwargs):
-            # TODO: Improve error handling
+            # TODO: Improve error handling after refactoring idle thread
+            # handling and other functions.
             try:
                 was_idle_before_call = self.__is_idle
                 if was_idle_before_call:
@@ -232,7 +240,7 @@ class ImapManager(imaplib.IMAP4_SSL):
                 return response
             except Exception as e:
                 #self.logout()
-                return False, str(e)
+                raise ImapException(str(e))
         return wrapper
     
     def __parse_command_result(self, 
@@ -569,8 +577,8 @@ class ImapManager(imaplib.IMAP4_SSL):
                 str: A query string with nested OR conditions for the search keys.
 
             Example:
-                Input: criteria="FROM", search_keys=["a@mail.com", "b@mail.com", "c@mail.com"]
-                Output: 'OR (FROM "a@mail.com") (OR (FROM "b@mail.com") (FROM "c@mail.com"))'
+                >>> recursive_or_query("FROM", ["a@mail.com", "b@mail.com", "c@mail.com"])
+                'OR (FROM "a@mail.com") (OR (FROM "b@mail.com") (FROM "c@mail.com"))'
             """
             query = ''
             len_search_keys = len(search_keys)
@@ -600,8 +608,8 @@ class ImapManager(imaplib.IMAP4_SSL):
                 str: A formatted query string for the given criterion.
 
             Example:
-                Input: criteria="FROM", value=["a@mail.com", "b@mail.com"]
-                Output: ' (FROM "a@mail.com") (FROM "b@mail.com")'
+                >>> add_criterion("FROM", value=["a@mail.com", "b@mail.com"])
+                ' (FROM "a@mail.com") (FROM "b@mail.com")'
             """
             if not value:
                 return ''

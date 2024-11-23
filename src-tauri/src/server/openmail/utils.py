@@ -16,8 +16,8 @@ def extract_domain(email: str) -> str:
     Returns:
         str: The domain name without the TLD (top-level domain)
 
-    Examples:
-        extract_domain('hGjwF@example.com')
+    Example:
+        >>> extract_domain('hGjwF@example.com')
         'example'
     """
     return email.split('@')[1].split(".")[0]
@@ -37,8 +37,8 @@ def convert_to_imap_date(date: str) -> str:
     References:
         https://datatracker.ietf.org/doc/html/rfc5322#section-3.3
 
-    Examples:
-        convert_to_imap_date('2022-01-01')
+    Example:
+        >>> convert_to_imap_date('2022-01-01')
         '01-Jan-2022'
     """
     return datetime.strptime(date, '%Y-%m-%d').strftime('%d-%b-%Y')
@@ -56,8 +56,8 @@ def convert_date_to_iso(date: str) -> str:
     Returns:
         str: Formatted date string in 'YYYY-MM-DD HH:MM:SS' format
 
-    Examples:
-        convert_date_to_iso('Wed, 15 Nov 2023 14:30:00 +0000')
+    Example:
+        >>> convert_date_to_iso('Wed, 15 Nov 2023 14:30:00 +0000')
         '2023-11-15 14:30:00'
     """
     return datetime.strptime(date, "%a, %d %b %Y %H:%M:%S %z").strftime("%Y-%m-%d %H:%M:%S")
@@ -73,10 +73,11 @@ def truncate_text(content: str, max_length: int) -> str:
     Returns:
         str: Truncated text or original content
 
-    Examples:
-        truncate_text("Hello world", 5)
+    Example:
+        >>> truncate_text("Hello world", 5)
         'Hello...'
-        truncate_text("Short", 10)
+
+        >>> truncate_text("Short", 10)
         'Short'
     """
     if not content:
@@ -98,10 +99,11 @@ def choose_positive(var1: int, var2: int) -> int:
     Returns:
         int: The first positive number. If both are non-positive, returns var2.
 
-    Examples:
-        choose_positive(-1, 2)
+    Example:
+        >>> choose_positive(-1, 2)
         2
-        choose_positive(1, 2)
+
+        >>> choose_positive(1, 2)
         1
     """
     return var1 if var1 > 0 else var2
@@ -128,8 +130,8 @@ def make_size_human_readable(size: int | None) -> str:
     Returns:
         str: Formatted file size with appropriate unit (B, KB, MB, or GB)
 
-    Examples:
-        make_size_human_readable(1536)
+    Example:
+        >>> make_size_human_readable(1536)
         '1.50 KB'
     """
     if size is None:

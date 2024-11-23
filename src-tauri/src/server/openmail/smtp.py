@@ -32,14 +32,8 @@ CONN_TIMEOUT = 30
 class SmtpManager(smtplib.SMTP):
     """
     SmtpManager extends the `smtplib.SMTP` class to handle email-sending operations
-    with added features such as automatic SMTP server detection, retry logic, and
-    email composition with attachments.
-
-    Features:
-    - Automatic SMTP server detection based on email domain (`__find_smtp_server`).
-    - Retry mechanism for login attempts (`login` method).
-    - Email sending, replying, and forwarding with metadata support.
-    - Attachment validation and inline image support.
+    with added features such as automatic SMTP server detection, retry logic, reply,
+    and forwarding.
     """
     def __init__(
         self, 
@@ -137,7 +131,7 @@ class SmtpManager(smtplib.SMTP):
                 return False, str(e)
         return wrapper
 
-    #@__handle_conn TODO: Check this
+    @__handle_conn
     def sendmail(
         self,
         sender: str | Tuple[str, str],
