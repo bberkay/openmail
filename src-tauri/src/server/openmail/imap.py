@@ -15,6 +15,7 @@ IMAP_SERVERS = MappingProxyType({
     "hotmail": "outlook.office365.com",
     'yandex': 'imap.yandex.com',
 })
+IMAP_STATES = ('NONAUTH', 'AUTH', 'SELECTED', 'LOGOUT')
 IMAP_PORT = 993
 FOLDER_FLAG_NAMES = (
     b'\\All', 
@@ -70,8 +71,13 @@ class Mark(Enum):
     UNSEEN = "unseen"
     UNANSWERED = "unanswered"
 
-class IMAPException(Exception):
+class IMAPManagerException(Exception):
     """Custom exception for IMAPManager class."""
+    pass
+
+class IMAPManagerLoggedOutException(IMAPManagerException):
+    """Custom exception for when the IMAPManager is logged out
+    while trying to perform an action that requires authentication."""
     pass
 
 class IMAPManager(imaplib.IMAP4_SSL):
@@ -122,7 +128,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             str: The IMAP server address associated with the email's domain.
 
         Raises:
-            IMAPException: If the email domain is not supported or not found in the IMAP_SERVERS mapping.
+            IMAPManagerException: If the email domain is not supported or not found in the IMAP_SERVERS mapping.
 
         Example:
             >>> email_address = "user@gmail.com"
@@ -131,12 +137,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             >>> email_address = "user@unknown.com"
             >>> self.__find_imap_server(email_address)
-            IMAPException: Unsupported email domain
+            IMAPManagerException: Unsupported email domain
         """
         try:
             return IMAP_SERVERS[extract_domain(email_address)]
         except KeyError:
-            raise IMAPException("Unsupported email domain")
+            raise IMAPManagerException("Unsupported email domain")
 
     @override
     def login(self, user: str, password: str) -> IMAPCommandResult:
@@ -153,16 +159,19 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message.
 
         Raises:
-            imaplib.IMAP4.error: If the login process fails.
+            IMAPManagerException: If the login process fails.
 
         Notes:
             - UTF-8 encoding is enabled after successful authentication.
             - Supports both ASCII and non-ASCII credentials.
         """
-        if contains_non_ascii(user) or contains_non_ascii(password):
-            self.authenticate("PLAIN", lambda x: bytes("\x00" + user + "\x00" + password, "utf-8"))
-        else:
-            super().login(user, password)
+        try:
+            if contains_non_ascii(user) or contains_non_ascii(password):
+                self.authenticate("PLAIN", lambda x: bytes("\x00" + user + "\x00" + password, "utf-8"))
+            else:
+                super().login(user, password)
+        except imaplib.IMAP4.error as e:
+            raise IMAPManagerException("There was an error while logging in: {}".format(str(e))) from None
 
         try:
             result = self._simple_command('ENABLE', 'UTF8=ACCEPT')
@@ -199,64 +208,73 @@ class IMAPManager(imaplib.IMAP4_SSL):
             pass
         
         try:
-            return self.__parse_command_result(
-                super().logout(), 
-                success_message="Logout successful",
-                failure_message="Could not logout from the target imap server"
-            )
+            result = super().logout()
         except Exception as e:
-            raise IMAPException("Could not logout from the target imap server: {}".format(str(e)))
+            raise IMAPManagerException("Could not logout from the target imap server: {}".format(str(e)))
+        
+        return self.__parse_command_result(
+            result, 
+            success_message="Logout successful",
+            failure_message="Could not logout from the target imap server"
+        )
     
     @override
-    def select(self, mailbox: str = INBOX, readonly: bool = False):
+    def _simple_command(self, name, *args):
         """
-        Selects a mailbox for further operations.
-
-        Args:
-            mailbox (str): The name of the mailbox to select. Defaults to "INBOX".
-            readonly (bool): If True, opens the mailbox in read-only mode. Defaults to False.
-
-        Raises:
-            IMAPException: If the mailbox cannot be selected or an invalid mailbox name is provided.
-
-        Notes:
-            - Prevents re-selecting the currently active mailbox with the same mode.
-            - Ensures the folder name is properly encoded and valid.
+        Overrides the _simple_command method to handle continuous IDLE mode and
+        raise IMAPManagerLoggedOutException if the IMAPManager is logged out because
+        of timeout.
         """
-        if self.__current_folder[0] != mailbox or self.__current_folder[1] != readonly:
-            self.__check_folder_names(mailbox)
-            self.__ensure_command(super().select(self.__encode_folder(mailbox), readonly))
-            self.__current_folder = (mailbox, readonly)
-        
-    def __handle_conn(func):
-        """
-        Decorator to manage the connection state before and after a method call.
 
-        Ensures the connection exits IDLE mode before executing the wrapped method 
-        and restores it to IDLE mode afterward if it was previously idling.
+        def is_logged_out(err_msg: str) -> bool:
+            """
+            Checks if the error message contains the keywords "AUTH" or "SELECTED" to determine if 
+            the IMAPManager is logged out.    
 
-        Args:
-            func (callable): The method to wrap with connection handling logic.
+            Args:
+                err_msg (str): The error message to check.
 
-        Returns:
-            callable: The wrapped method with connection management.
-        """
-        def wrapper(self, *args, **kwargs):
-            # TODO: Improve error handling after refactoring idle thread
-            # handling and other functions.
-            try:
-                was_idle_before_call = self.__is_idle
-                if was_idle_before_call:
-                    self.done()
-                response = func(self, *args, **kwargs)
-                if was_idle_before_call:
-                    self.idle()
-                return response
-            except Exception as e:
-                #self.logout()
-                raise IMAPException(str(e))
-        return wrapper
-    
+            Returns:
+                bool: True if self.state is "LOGOUT" and the error message contains "AUTH" or 
+                "SELECTED", False otherwise.
+            """
+            return self.state == "LOGOUT" and any(item.lower() in err_msg for item in ("AUTH", "SELECTED"))
+            
+        # Leaving IDLE mode if needed
+        try:
+            was_idle_before_call = self.__is_idle
+            if was_idle_before_call:
+                self.done()
+        except Exception as e:
+            if is_logged_out(str(e).lower()):
+                raise IMAPManagerLoggedOutException("To perform this action, the IMAPManager must be logged in: {}".format(str(e))) from None
+            else:
+                print("Unexpected error while leaving IDLE mode: {}".format(str(e)))
+                # Even if leaving IDLE failed, set idle and readline threads and set
+                # __is_idle to False. 
+                self.__handle_done_response() 
+                print("Active IDLE status set to False and threads stopped forcefully.")
+            
+        # Run wanted command.
+        try:
+            result = super()._simple_command(name, args)
+        except Exception as e:
+            if is_logged_out(str(e).lower()):
+                raise IMAPManagerLoggedOutException("To perform this action, the IMAPManager must be logged in: {}".format(str(e))) from None
+            else:
+                raise IMAPManagerException(str(e)) from None
+
+        # Restoring IDLE mode
+        try:
+            if was_idle_before_call:
+                self.idle()
+            return result
+        except Exception as e:
+            print("Unexpected error while restoring IDLE mode: {}".format(str(e)))
+            was_idle_before_call = False
+            print("IDLE mode could not be restored. IDLE mode completely disabled. Run `idle()` to re-enable IDLE mode if needed.")
+            raise IMAPManagerException(str(e)) from None
+            
     def __parse_command_result(self, 
         result: tuple[str, list[bytes | None]], 
         success_message: str = None,
@@ -284,7 +302,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - The server's response message as a string.
 
         Raises:
-            IMAPException: If parsing the command result fails.
+            IMAPManagerException: If parsing the command result fails.
 
         Example:
             >>> result = ("OK", [b"Command completed successfully"])
@@ -314,12 +332,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
             result message like in the example. 
         """
         try:
-            if result[0] == "OK" or (result[0] == "BYE" and b"logout" in result[1].lower()):
+            if result[0] == "OK" or (result[0] == "BYE" and b"logout" in result[1][0].lower()):
                 return True, success_message or result[1][0].decode("utf-8")
             else:
                 return False, failure_message + ": " + result[1][0].decode("utf-8")
         except Exception as e:
-            raise IMAPException("There was an error while parsing command result: {}".format(str(e)))
+            raise IMAPManagerException("There was an error while parsing command result: {}".format(str(e)))
 
     def __ensure_command(self, response: tuple[str, list[bytes | None]]):
         """
@@ -331,54 +349,105 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 (e.g., "OK") and the second contains additional data.
 
         Raises:
-            IMAPException: If the response status is not "OK."
-        """
-        if response[0] != "OK":
-            raise IMAPException("IMAP command failed: {}".format(response[1][0].decode("utf-8")))
-        
-    @override
-    @__handle_conn
-    def list(self) -> list[str]:
-        """
-        Retrieve a list of all email folders.
-
-        Returns:
-            list[str]: List of folder names in the email account
+            IMAPManagerException: If the response status is not "OK."
         """
         try:
-            return [self.__decode_folder(i) for i in super().list()[1] if i.find(b'\\NoSelect') == -1]
-        except Exception as e:
-            raise IMAPException("There was an error while listing folders: {}".format(str(e)))
-    
+            if response[0] != "OK":
+                raise IMAPManagerException("IMAP command failed: {}".format(response[1][0].decode("utf-8")))
+        except imaplib.IMAP4.error as e:
+            raise IMAPManagerException("There was an error while ensuring command: {}".format(str(e))) from None
+
     def idle(self) -> None:
+        """
+        Initiates the IMAP IDLE command to start monitoring changes 
+        in the mailbox on its own thread. If already in IDLE mode, 
+        does nothing.
+        """
         if not self.__is_idle:
-            self.select(INBOX)
+            self.select_folder(INBOX)
             self.__current_idle_tag = self._new_tag()
             self.send(b"%s IDLE\r\n" % self.__current_idle_tag)
-            print("[{}] ---> __idle() IDLE command sent with tag: {}.".format(datetime.now(), self.__current_idle_tag))
+            print("IDLE command sent with tag: {} at {}.".format(self.__current_idle_tag, datetime.now()))
             self.__readline()
             self.__wait_response(WaitResponse.IDLE)
 
     def done(self) -> None:
+        """
+        Terminates the current IDLE session if active.
+        """
         if self.__is_idle:
             self.send(b"DONE\r\n")
-            print("[{}] ---> __done() DONE command sent for {}.".format(datetime.now(), self.__current_idle_tag))
+            print("DONE command sent for {} at {}.".format(self.__current_idle_tag, datetime.now()))
             self.__wait_response(WaitResponse.DONE)
-            print("[{}] ---> __done() wait_response() finished for DONE command, reidle:.".format(datetime.now()))
     
     def __wait_response(self, wait_response: WaitResponse) -> None:
+        """
+        Waits for a specific response type from the IMAP server.
+        
+        Args:
+            wait_response (WaitResponse): Expected response type to wait for
+            
+        Times out after WAIT_RESPONSE_TIMEOUT seconds and resets wait state.
+        """
         counter = 0
         while self.__wait_for_response != wait_response:
             time.sleep(1)
             counter += 1
             if counter > WAIT_RESPONSE_TIMEOUT:
-                print("[{}] ---> __wait_response() timeout reached for {}.".format(datetime.now(), wait_response))
+                print("WaitResponse: {} did not received in time at {}. WaitResponse set to None".format(wait_response, datetime.now()))
                 break
         
         self.__wait_for_response = None
 
+    def __idle(self) -> None:
+        """
+        Background thread handler for IDLE mode monitoring.
+
+        Continuously checks IDLE session duration and automatically 
+        refreshes the connection when IDLE_TIMEOUT is reached.
+        """
+        while not self.__idle_thread_event.is_set():
+            print("IDLING for {} started at {}.".format(self.__current_idle_tag, datetime.now()))
+            time.sleep(1)
+            if time.time() - self.__current_idle_start_time > IDLE_TIMEOUT:
+                print("IDLING timeout reached for {} at {}.".format(self.__current_idle_tag, datetime.now()))
+                self.done()
+                self.idle()
+            
+    def __readline(self) -> None:    
+        """
+        Initializes and manages the response reading thread.
+        
+        Creates a new thread for continuously reading server responses
+        if one doesn't exist or isn't active. Processes responses through
+        the handle_response method.
+        """
+        def readline_thread() -> None:
+            """
+            Continuously reads server responses and processes them.
+            """
+            while not self.__readline_thread_event.is_set():
+                response = self.readline()
+                if response:
+                    print("New response received: {} at {}. Handling response...".format(response, datetime.now()))
+                    self.__handle_response(response)
+                time.sleep(1)
+
+        if not self.__readline_thread_event:
+            self.__readline_thread_event = threading.Event()
+        self.__readline_thread_event.clear()
+
+        if not self.__readline_thread or not self.__readline_thread.is_alive():
+            self.__readline_thread = threading.Thread(target=readline_thread)
+            self.__readline_thread.start()
+
     def __handle_idle_response(self) -> None:
-        print("[{}] ---> __readline() IDLE response received for {}.".format(datetime.now(), self.__current_idle_tag))
+        """
+        Handles the server's response to the IDLE command.
+        Marks the client as being in the IDLE state, sets 
+        start time, and starts the IDLE monitoring thread.
+        """
+        print("IDLE response received for {} at.".format(self.__current_idle_tag, datetime.now()))
         self.__is_idle = True
         self.__current_idle_start_time = time.time()
 
@@ -391,10 +460,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
             self.__idle_thread.start()
 
         self.__wait_for_response = WaitResponse.IDLE
-        print("[{}] ---> __readline() IDLE response handled, IDLE thread started.".format(datetime.now()))
+        print("IDLE response for {} handled, IDLE thread started at {}.".format(self.__current_idle_tag, self.__current_idle_start_time))
 
     def __handle_done_response(self) -> None:
-        print("[{}] ---> __readline() DONE response received for {}.".format(datetime.now(), self.__current_idle_tag))
+        """
+        Handles the server's response to the DONE command.
+        Marks the client as no longer in the IDLE state 
+        and stops the IDLE monitoring thread.
+        """
+        print("DONE response received for {} at {}.".format(self.__current_idle_tag, datetime.now()))
         self.__is_idle = False
         self.__current_idle_tag = None
 
@@ -402,7 +476,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self.__readline_thread_event.set()
 
         self.__wait_for_response = WaitResponse.DONE
-        print("[{}] ---> __readline() DONE response handled.".format(datetime.now()))
+        print("DONE response for {} handled, IDLE thread stopped at {}.".format(self.__current_idle_tag, datetime.now()))
     
     def __handle_bye_response(self) -> None:
         # BYE response
@@ -426,33 +500,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             self.__handle_bye_response()
         elif b'EXISTS' in response:
             self.__handle_exists_response(response)
-        
-    def __idle(self) -> None:
-        while not self.__idle_thread_event.is_set():
-            print("[{}] ---> IDLING for {}.".format(datetime.now(), self.__current_idle_tag))
-            time.sleep(1)
-            if time.time() - self.__current_idle_start_time > IDLE_TIMEOUT:
-                print("[{}] ---> IDLING timeout reached for {}.".format(datetime.now(), self.__current_idle_tag))
-                self.done()
-                self.idle()
-            
-    def __readline(self) -> None:    
-        def readline_thread() -> None:
-            while not self.__readline_thread_event.is_set():
-                print("[{}] ---> __readline() waiting for response, wait response: {}.".format(datetime.now(), self.__wait_for_response))
-                response = self.readline()
-                print("[{}] ---> __readline() response: {}.".format(datetime.now(), response))
-                if response:
-                    self.__handle_response(response)
-                time.sleep(1)
-
-        if not self.__readline_thread_event:
-            self.__readline_thread_event = threading.Event()
-        self.__readline_thread_event.clear()
-
-        if not self.__readline_thread or not self.__readline_thread.is_alive():
-            self.__readline_thread = threading.Thread(target=readline_thread)
-            self.__readline_thread.start()
 
     def get_folder_name_by_flag_name(self, flag_name: bytes) -> bytes | None:
         """
@@ -473,7 +520,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if flag_name not in FOLDER_FLAG_NAMES:
             return None
 
-        status, folders_as_bytes = super().list()
+        status, folders_as_bytes = self.list()
         if status == "OK" and folders_as_bytes and isinstance(folders_as_bytes, list):
             for folder_as_bytes in folders_as_bytes:
                 if flag_name == folder_as_bytes:
@@ -491,12 +538,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
             bytes: The encoded folder name in UTF-8 format.
 
         Raises:
-            IMAPException: If encoding the folder name fails.
+            IMAPManagerException: If encoding the folder name fails.
         """
         try:
             return ('"' + folder + '"').encode("utf-8")
         except Exception as e:
-            raise IMAPException("Error while encoding folder name", e)
+            raise IMAPManagerException("Error while encoding folder name", e)
 
     def __decode_folder(self, folder: bytes) -> str:
         """
@@ -509,7 +556,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             str: The decoded and cleaned folder name.
 
         Raises:
-            IMAPException: If decoding the folder name fails.
+            IMAPManagerException: If decoding the folder name fails.
         """
         try:
             # Most of the servers return folder name as b'(\\HasNoChildren) "/" "INBOX"'
@@ -517,7 +564,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             # So we're replacing "|" with "/" to make it consistent
             return folder.decode().replace(' "|" ', ' "/" ').split(' "/" ')[1].replace('"', '')
         except Exception as e:
-            raise IMAPException("Error while decoding folder name", e)
+            raise IMAPManagerException("Error while decoding folder name", e)
 
     def __check_folder_names(self, folders: str | List[str], raise_error: bool = True) -> bool:
         """
@@ -532,7 +579,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             bool: True if folder name is valid, False otherwise
 
         Raises:
-            IMAPException: If the folder name is invalid and raise_error is True
+            IMAPManagerException: If the folder name is invalid and raise_error is True
         """
         if isinstance(folders, str):
             folders = [folders]
@@ -541,12 +588,43 @@ class IMAPManager(imaplib.IMAP4_SSL):
             folder_name_length = len(folder_name)
             if folder_name is None or folder_name == "" or folder_name_length > MAX_FOLDER_NAME_LENGTH or folder_name_length < 1:
                 if raise_error:
-                    raise IMAPException("Invalid folder name: {}".format(folder_name))
+                    raise IMAPManagerException("Invalid folder name: {}".format(folder_name))
                 return False
         
         return True
+    
+    def get_folders(self) -> list[str]:
+        """
+        Retrieve a list of all email folders.
 
-    @__handle_conn
+        Returns:
+            list[str]: List of folder names in the email account
+        """
+        try:
+            return [self.__decode_folder(i) for i in self.list()[1] if i.find(b'\\NoSelect') == -1]
+        except Exception as e:
+            raise IMAPManagerException("There was an error while listing folders: {}".format(str(e)))
+    
+    def select_folder(self, mailbox: str = INBOX, readonly: bool = False):
+        """
+        Selects a mailbox for further operations.
+
+        Args:
+            mailbox (str): The name of the mailbox to select. Defaults to "INBOX".
+            readonly (bool): If True, opens the mailbox in read-only mode. Defaults to False.
+
+        Raises:
+            IMAPManagerException: If the mailbox cannot be selected or an invalid mailbox name is provided.
+
+        Notes:
+            - Prevents re-selecting the currently active mailbox with the same mode.
+            - Ensures the folder name is properly encoded and valid.
+        """
+        if self.__current_folder[0] != mailbox or self.__current_folder[1] != readonly:
+            self.__check_folder_names(mailbox)
+            self.__ensure_command(super().select(self.__encode_folder(mailbox), readonly))
+            self.__current_folder = (mailbox, readonly)
+
     def get_email_flags(self, uid: str) -> list:
         """
         Retrieve flags associated with a specific email.
@@ -560,7 +638,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if self.state != "SELECTED":
             # Since uid's are unique within each mailbox, we can't just select INBOX
             # or something like that if there is no mailbox selected.
-            raise IMAPException("Folder should be selected before fetching flags")
+            raise IMAPManagerException("Folder should be selected before fetching flags")
 
         try:
             flags = self.uid('FETCH', uid, '(FLAGS)')[1][0]
@@ -568,7 +646,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 flags = flags.decode()
                 flags = FLAG_PATTERN.findall(flags)
         except Exception as e:
-            raise IMAPException("Error while fetching email flags", e)
+            raise IMAPManagerException("Error while fetching email flags", e)
         
         return flags or []
 
@@ -673,7 +751,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         search_criteria_query += add_criterion('', search_criteria.flags)
         return search_criteria_query.strip()
 
-    @__handle_conn
     def get_emails(
         self,
         folder: str = INBOX,
@@ -692,9 +769,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             dict: Dictionary of emails matching the search criteria
         """
         if offset < 0:
-            raise IMAPException("Invalid offset: {}".format(offset))
+            raise IMAPManagerException("Invalid offset: {}".format(offset))
 
-        self.select(folder, readonly=True)
+        self.select_folder(folder, readonly=True)
         
         # Creating search query
         search_criteria_query = ''
@@ -707,14 +784,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
             else:
                 search_criteria_query = search or ALL
         except Exception as e:
-            raise IMAPException("Error while building search query", e)
+            raise IMAPManagerException("Error while building search query", e)
 
         # Getting email uids
         try:
             _, uids = self.uid('search', None, search_criteria_query.encode("utf-8") if search_criteria_query else ALL)
             uids = uids[0].split()[::-1]
         except Exception as e:
-            raise IMAPException("Error while getting email uids, search query was `{}`".format(search_criteria_query), e)
+            raise IMAPManagerException("Error while getting email uids, search query was `{}`".format(search_criteria_query), e)
 
         if not uids:
             return Mailbox(folder=folder, emails=[], total=0)
@@ -763,11 +840,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     flags=self.get_email_flags(uid) or []
                 ))
         except Exception as e:
-            raise IMAPException("Error while fetching emails, fetched email length was `{}`".format(len(emails)), e)
+            raise IMAPManagerException("Error while fetching emails, fetched email length was `{}`".format(len(emails)), e)
 
         return Mailbox(folder=folder, emails=emails, total=len(uids))
     
-    @__handle_conn
     def get_email_content(
         self,
         uid: str,
@@ -783,7 +859,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Returns:
             dict: Detailed email content
         """
-        self.select(folder, readonly=True)
+        self.select_folder(folder, readonly=True)
         
         # Get body and attachments
         body, attachments = "", []
@@ -809,7 +885,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     if body:
                         body = body.decode(part.get_content_charset())
         except Exception as e:
-            raise IMAPException("There was a problem with getting email content: {}".format(e))
+            raise IMAPManagerException("There was a problem with getting email content: {}".format(e))
 
         try:
             # Get inline attachments
@@ -854,7 +930,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             attachments=attachments
         )
 
-    @__handle_conn
     def mark_email(
         self,
         uid: str,
@@ -881,7 +956,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         
         mark_list = [m.value for m in Mark]
         if not mark or mark not in mark_list:
-            raise IMAPException(f"Invalid mark: {mark}. Please use one of the following: {', '.join(mark_list)}")
+            raise IMAPManagerException(f"Invalid mark: {mark}. Please use one of the following: {', '.join(mark_list)}")
 
         if mark in self.get_email_flags(uid):
             return IMAPCommandResult(success=True, message="Email already marked")
@@ -890,7 +965,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         mark = mark[2:] if mark_type == "-" else mark
         command = mark_type + "FLAGS"
 
-        self.select(folder)
+        self.select_folder(folder)
 
         success_msg = "Email marked successfully"
         err_msg = "There was an error while marking the email"
@@ -906,7 +981,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         
         return mark_result
 
-    @__handle_conn
     def move_email(self, uid: str, source_folder: str, destination_folder: str) -> IMAPCommandResult:
         """
         Move an email from one folder to another.
@@ -926,7 +1000,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if source_folder == destination_folder:
             return IMAPCommandResult(success=True, message="Email already in destination folder")
         
-        self.select(source_folder)
+        self.select_folder(source_folder)
 
         success_msg = "Email moved successfully"
         err_msg = "There was an error while moving the email"
@@ -942,7 +1016,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         
         return move_result
         
-    @__handle_conn
     def copy_email(self, uid: str, source_folder: str, destination_folder: str) -> IMAPCommandResult:
         """
         Create a copy of an email in another folder.
@@ -959,7 +1032,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         self.__check_folder_names([source_folder, destination_folder])
     
-        self.select(source_folder)
+        self.select_folder(source_folder)
 
         success_msg = "Email copied successfully"
         err_msg = "There was an error while copying the email"
@@ -975,7 +1048,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         
         return copy_result
 
-    @__handle_conn
     def delete_email(self, uid: str, folder: str) -> IMAPCommandResult:
         """
         Delete an email from a specific folder.
@@ -997,9 +1069,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if folder != trash_mailbox_name:
                 self.move_email(uid, folder, trash_mailbox_name)
         except Exception as e:
-            raise IMAPException("Error while moving email to trash folder for deletion", e)
+            raise IMAPManagerException("Error while moving email to trash folder for deletion", e)
         
-        self.select(trash_mailbox_name)
+        self.select_folder(trash_mailbox_name)
     
         success_msg = "Email deleted successfully"
         err_msg = "There was an error while deleting the email"
@@ -1019,7 +1091,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         
         return delete_result
 
-    @__handle_conn
     def create_folder(self, folder_name: str, parent_folder: str | None = None) -> IMAPCommandResult:
         """
         Create a new email folder.
@@ -1045,7 +1116,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             "There was an error while creating the folder"
         )
 
-    @__handle_conn
     def delete_folder(self, folder_name: str) -> IMAPCommandResult:
         """
         Delete an existing email folder.
@@ -1066,7 +1136,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             "There was an error while deleting the folder"
         )
 
-    @__handle_conn
     def move_folder(self, folder_name: str, destination_folder: str) -> IMAPCommandResult:
         """
         Move a folder to a new location.
@@ -1094,7 +1163,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             "There was an error while moving the folder"
         )
 
-    @__handle_conn
     def rename_folder(self, folder_name: str, new_folder_name: str) -> IMAPCommandResult:
         """
         Rename an existing email folder.
@@ -1125,4 +1193,4 @@ class IMAPManager(imaplib.IMAP4_SSL):
             "There was an error while renaming the folder"
         )
     
-__all__ = ["IMAPManager", "IMAPCommandResult", "IMAPException"]
+__all__ = ["IMAPManager", "IMAPCommandResult", "IMAPManagerException", "IMAPManagerLoggedOutException"]

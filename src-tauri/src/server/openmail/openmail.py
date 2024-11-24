@@ -16,7 +16,7 @@ License: MIT
 import copy
 from .types import EmailToSend
 from .imap import IMAPManager
-from .smtp import SMTPManager, SMTPCommandResult, SMTPException
+from .smtp import SMTPManager, SMTPCommandResult, SMTPManagerException
 
 class OpenMail:
     """
@@ -103,7 +103,7 @@ class OpenMail:
                 - A string containing a success message or an error message.
         """
         if not email.uid:
-            raise SMTPException("Cannot reply to an email without a unique identifier(uid).")
+            raise SMTPManagerException("Cannot reply to an email without a unique identifier(uid).")
         
         result = self.smtp.reply_email(email)
         if result[0]:
@@ -125,7 +125,7 @@ class OpenMail:
                 - A string containing a success message or an error message.
         """
         if not email.uid:
-            raise SMTPException("Cannot forward an email without a unique identifier(uid).")
+            raise SMTPManagerException("Cannot forward an email without a unique identifier(uid).")
         
         email_fwd_copy = copy.copy(email)
         email_fwd_copy.subject = self.imap.get_email_content(email_fwd_copy.uid).subject
