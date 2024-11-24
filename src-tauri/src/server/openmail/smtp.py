@@ -1,5 +1,3 @@
-import smtplib, re, base64
-from typing import List, Tuple, Sequence, MappingProxyType
 
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
@@ -7,8 +5,9 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
 from .utils import extract_domain, choose_positive, make_size_human_readable
+from .types import EmailToSend
 
-# General consts
+# General consts, avoid changing
 SMTP_SERVERS = MappingProxyType({
     "gmail": "smtp.gmail.com",
     "yahoo": "smtp.mail.yahoo.com",
@@ -19,7 +18,6 @@ SMTP_SERVERS = MappingProxyType({
 SMTP_PORT = 587
 
 # Custom consts
-LOGIN_TRY_LIMIT = 3
 MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024 # 25MB
 
 # Regular expressions
@@ -29,9 +27,16 @@ IMG_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');
 # Timeouts (in seconds)
 CONN_TIMEOUT = 30 
 
-class SmtpManager(smtplib.SMTP):
+# Types
+type SMTPCommandResult = tuple[bool, str]
+
+class SMTPException(Exception):
+    """Custom exception for SMTPManager class."""
+    pass
+
+class SMTPManager(smtplib.SMTP):
     """
-    SmtpManager extends the `smtplib.SMTP` class to handle email-sending operations
+    SMTPManager extends the `smtplib.SMTP` class to handle email-sending operations
     with added features such as automatic SMTP server detection, retry logic, reply,
     and forwarding.
     """
@@ -46,7 +51,7 @@ class SmtpManager(smtplib.SMTP):
         source_address=None
     ):
         """
-        Initialize the SmtpManager class.
+        Initialize the SMTPManager class.
 
         Args:
             email_address (str): Email address of the sender.
@@ -83,9 +88,10 @@ class SmtpManager(smtplib.SMTP):
         try:
             return SMTP_SERVERS[extract_domain(email_address)]
         except KeyError:
-            raise Exception("Unsupported email domain")
+            raise SMTPException("Unsupported email domain")
 
-    def login(self, email_address: str, password: str) -> None:
+    @override
+    def login(self, email_address: str, password: str) -> SMTPCommandResult:
         """
         Perform login to the SMTP server, retrying if necessary.
 
@@ -94,32 +100,41 @@ class SmtpManager(smtplib.SMTP):
             password (str): Password for the email account.
 
         Raises:
-            Exception: If login attempts fail.
+            smtplib.SMTPAuthenticationError: If the login attempt fails.
         """
-        try_limit = LOGIN_TRY_LIMIT
-        for _ in range(try_limit):
-            try:
-                self.ehlo()
-                self.starttls()
-                self.ehlo()
-                super().login(email_address, password)
-                break
-            except Exception as e:
-                try_limit -= 1
-                if try_limit == 0:
-                    raise Exception("Could not connect to the target smtp server: {}".format(str(e)))
+        self.ehlo()
+        self.starttls()
+        self.ehlo()
+        result = super().login(email_address, password)
+        return (True, str(result))
 
-    def logout(self) -> None:
+    @override
+    def quit():
+        """
+        SMTPManager overrides the quit method to perform a safe logout.
+        Use `logout` instead.
+        """
+        pass
+
+    def logout(self) -> SMTPCommandResult:
         """
         Safely terminate the SMTP session.
 
+        Returns:
+            SMTPCommandResult: A tuple containing:
+                - True
+                - A string containing a success message.
+
         Raises:
-            Exception: If the session cannot be terminated.
+            SMTPException: If the logout fails.
         """
         try:
-            super().quit()
+            result = super().quit()
+            if result[0] != "221":
+                raise SMTPException("Could not disconnect from the target smtp server: {}".format(str(result)))
+            return (True, "Logout successful")
         except Exception as e:
-            raise Exception("Could not disconnect from the target smtp server: {}".format(str(e)))
+            raise SMTPException("Could not disconnect from the target smtp server: {}".format(str(e)))
 
     def __handle_conn(func):
         def wrapper(self, *args, **kwargs):
@@ -130,58 +145,56 @@ class SmtpManager(smtplib.SMTP):
                 #self.__smtp.quit()
                 return False, str(e)
         return wrapper
-
-    @__handle_conn
+        
+    @override
     def sendmail(
         self,
-        sender: str | Tuple[str, str],
-        receiver_emails: str | List[str],
-        subject: str,
-        body: str | None = None,
-        attachments: list | None = None,
-        cc: str | List[str] | None = None,
-        bcc: str | List[str] | None = None,
-        msg_metadata: dict | None = None,
-        mail_options: Sequence[str] = (),
-        rcpt_options: Sequence[str] = ()
-    ) -> bool:
+        from_addr: str,
+        to_addrs: Sequence[str],
+        msg: str,
+        mail_options=(),
+        rcpt_options=(),
+    ):
+        """
+        SMTPManager overrides the sendmail method to handle email sending 
+        with optional attachments and metadata. Use `send_email` instead.
+        """
+        pass
+
+    @__handle_conn
+    def send_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
         Send an email with optional attachments and metadata.
 
         Args:
-            sender (str | Tuple[str, str]): Sender's email address or (name, email) tuple
-            receiver_emails (str | List[str]): Recipient email address(es)
-            subject (str): Email subject line
-            body (str): Email body content
-            attachments (list, optional): List of file paths to attach. Defaults to None.
-            cc (str | List[str], optional): Carbon copy recipient(s). Defaults to None.
-            bcc (str | List[str], optional): Blind carbon copy recipient(s). Defaults to None.
-            msg_metadata (dict, optional): Additional email headers. Defaults to None.
-            mail_options (Sequence[str], optional): SMTP mail options. Defaults to ().
-            rcpt_options (Sequence[str], optional): SMTP recipient options. Defaults to ().
+            email (EmailToSend): The email to be sent.
 
         Returns:
-            bool: True if email sent successfully, False otherwise
+            SMTPCommandResult: A tuple containing:
+                - A bool indicating whether the email was sent successfully.
+                - A string containing a success message or an error message.
         """
-        if isinstance(receiver_emails, list):
-            receiver_emails = ", ".join(receiver_emails)
-        if cc and isinstance(cc, list):
-            cc = ", ".join(cc)
-        if bcc and isinstance(bcc, list):
-            bcc = ", ".join(bcc)
+        receiver, cc, bcc = email.receiver, email.cc, email.bcc
+        if isinstance(receiver, list):
+            receiver = ", ".join(receiver)
+        if cc and isinstance(email.cc, list):
+            cc = ", ".join(email.cc)
+        if bcc and isinstance(email.bcc, list):
+            bcc = ", ".join(email.bcc)
 
         # sender can be a string(just email) or a tuple (name, email)
         msg = MIMEMultipart()
-        msg['From'] = sender if isinstance(sender, str) else f"{sender[0]} <{sender[1]}>"
-        msg['To'] = receiver_emails
-        msg['Subject'] = subject
+        msg['From'] = email.sender if isinstance(email.sender, str) else f"{email.sender[0]} <{email.sender[1]}>"
+        msg['To'] = receiver
+        msg['Subject'] = email.subject
         if cc:
             msg['Cc'] = cc
-        if msg_metadata:
-            for key, value in msg_metadata.items():
+        if email.metadata:
+            for key, value in email.metadata.items():
                 msg[key] = value
 
         # Attach inline images
+        body = email.body
         if IMG_PATTERN.search(body):
             for match in IMG_PATTERN.finditer(body):
                 img_ext, img_data = match.group(1), match.group(2)
@@ -194,102 +207,89 @@ class SmtpManager(smtplib.SMTP):
 
         # Create message
         msg.attach(MIMEText(body, 'html'))
-        if attachments:
-            for attachment in attachments:
-                print("Attachment:", attachment.filename)
+        if email.attachments:
+            for attachment in email.attachments:
                 if attachment.size > MAX_ATTACHMENT_SIZE:
-                    raise Exception("Attachment size is too large. Max size is {}".format(make_size_human_readable(MAX_ATTACHMENT_SIZE)))
+                    raise SMTPException("Attachment size is too large. Max size is {}".format(make_size_human_readable(MAX_ATTACHMENT_SIZE)))
 
                 part = MIMEApplication(attachment.file.read())
                 part.add_header('content-disposition', 'attachment', filename=attachment.filename)
                 msg.attach(part)
 
         # Handle receipients
-        receiver_emails = [email.strip() for email in receiver_emails.split(",")]
+        receiver = [email.strip() for email in receiver.split(",")]
         if cc:
             cc = [email.strip() for email in cc.split(",")]
-            receiver_emails.extend(cc)
+            receiver.extend(cc)
         if bcc:
             bcc = [email.strip() for email in bcc.split(",")]
-            receiver_emails.extend(bcc)
-
-        super().sendmail(
-            sender if isinstance(sender, str) else sender[1],
-            receiver_emails,
+            receiver.extend(bcc)
+            
+        return super().sendmail(
+            email.sender if isinstance(email.sender, str) else email.sender[1],
+            receiver,
             msg.as_string(),
-            mail_options,
-            rcpt_options
-        )
+            email.mail_options,
+            email.rcpt_options
+        ) or (True, "Email sent successfully")
 
-        return True
-
-    def reply_email(self,
-        sender: str | Tuple[str, str],
-        receiver_emails: str | List[str],
-        uid: str,
-        subject: str,
-        body: str,
-        attachments: list | None = None
-    ) -> bool:
+    def reply_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
-        Reply to an existing email.
+        Reply to an existing email. Uses the `send_email` method internally.
 
         Args:
-            sender (str | Tuple[str, str]): Sender's email address or (name, email) tuple
-            receiver_emails (str | List[str]): Recipient email address(es)
-            uid (str): Unique identifier of the original email being replied to
-            body (str): Reply email body content
-            attachments (list, optional): List of file paths to attach. Defaults to None.
+            email (EmailToSend): The email to be replied to.
 
         Returns:
-            bool: True if reply sent successfully and original email marked as answered, 
-                  False otherwise
+            SMTPCommandResult: A tuple containing:
+                - A bool indicating whether the email was replied successfully.
+                - A string containing a success message or an error message.
         """
-        return self.sendmail(
-            sender,
-            receiver_emails,
-            "Re: " + subject,
-            body,
-            attachments,
-            None,
-            None,
-            {
-                "In-Reply-To": uid,
-                "References": uid
-            }
-        )
+        if not email.uid:
+            raise SMTPException("Cannot reply to an email without a unique identifier(uid).")
+        
+        email_to_reply = copy.copy(email)
+        email_to_reply.subject = "Re: " + email.subject
+        email_to_reply.metadata = email_to_reply.metadata | {
+            "In-Reply-To": email.uid,
+            "References": email.uid
+        }
 
-    def forward_email(self,
-        sender: str | Tuple[str, str],
-        receiver_emails: str | List[str],
-        uid: str,
-        subject: str,
-        body: str,
-        attachments: list | None = None
-    ) -> bool:
+        result = self.send_email(email_to_reply)
+
+        if result[0]:
+            return result[0], "Email replied successfully"
+        
+        return result
+
+    def forward_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
-        Forward an existing email to new recipients.
+        Forward an existing email to new recipients. Uses the `send_email` 
+        method internally.
 
         Args:
-            sender (str | Tuple[str, str]): Sender's email address or (name, email) tuple
-            receiver_emails (str | List[str]): Email address(es) to forward to
-            uid (str): Unique identifier of the original email being forwarded
-            body (str): Forwarding email body content
-            attachments (list, optional): List of file paths to attach. Defaults to None.
+            email (EmailToSend): The email to be forwarded.
 
         Returns:
-            bool: True if email forwarded successfully, False otherwise
+            SMTPCommandResult: A tuple containing:
+                - A bool indicating whether the email was forwarded successfully.
+                - A string containing a success message or an error message.
         """
-        return self.sendmail(
-            sender,
-            receiver_emails,
-            "Fwd: " + subject,
-            body,
-            attachments,
-            None,
-            None,
-            {
-                "In-Reply-To": uid,
-                "References": uid
-            }
-        )
+        if not email.uid:
+            raise SMTPException("Cannot forward an email without a unique identifier(uid).")
+        
+        email_to_forward = copy.copy(email)
+        email_to_forward.subject = "Fwd: " + email.subject
+        email_to_forward.metadata = email_to_forward.metadata | {
+            "In-Reply-To": email.uid,
+            "References": email.uid
+        }
+        
+        result = self.send_email(email_to_forward)
+
+        if result[0]:
+            return result[0], "Email forwarded successfully"
+        
+        return result
+    
+__all__ = ["SMTPManager", "SMTPCommandResult", "SMTPException"]

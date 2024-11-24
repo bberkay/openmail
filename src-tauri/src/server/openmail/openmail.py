@@ -7,17 +7,16 @@ The class supports actions such as connecting to mail servers, sending and
 replying to emails, managing folders, and retrieving email content.
 
 Dependencies:
-- Requires `ImapManager` and `SmtpManager` classes from the `imap` and 
+- Requires `IMAPManager` and `SMTPManager` classes from the `imap` and 
 `smtp` modules.
 
 Author: <berkaykayaforbusiness@outlook.com>
 License: MIT
 """
-from typing import List, Tuple, Sequence
-
-from .types import SearchCriteria
-from .imap import ImapManager
-from .smtp import SmtpManager
+import copy
+from .types import EmailToSend
+from .imap import IMAPManager
+from .smtp import SMTPManager, SMTPCommandResult, SMTPException
 
 class OpenMail:
     """
@@ -66,7 +65,7 @@ class OpenMail:
             tuple[bool, str]: A tuple containing connection status (True/False) 
                                and a status message
         """
-        self.imap = ImapManager(
+        self.imap = IMAPManager(
             email_address,
             password,
             imap_host,
@@ -74,7 +73,7 @@ class OpenMail:
             imap_ssl_context,
             timeout
         )
-        self.smtp = SmtpManager(
+        self.smtp = SMTPManager(
             email_address,
             password,
             smtp_host,
@@ -89,111 +88,47 @@ class OpenMail:
         Close both IMAP and SMTP connections.
         """
         self.imap.logout()
-        self.__smtp.logout()
+        self.smtp.logout()
 
-    def sendmail(self,
-        sender: str | Tuple[str, str],
-        receiver_emails: str | List[str],
-        subject: str,
-        body: str | None = None,
-        attachments: list | None = None,
-        cc: str | List[str] | None = None,
-        bcc: str | List[str] | None = None,
-        msg_metadata: dict | None = None,
-        mail_options: Sequence[str] = (),
-        rcpt_options: Sequence[str] = ()
-    ) -> bool:
+    def reply_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
-        Send an email with optional attachments and metadata.
+        Reply to an existing email. Uses the `send_email` method internally.
 
         Args:
-            sender (str | Tuple[str, str]): Sender's email address or (name, email) tuple
-            receiver_emails (str | List[str]): Recipient email address(es)
-            subject (str): Email subject line
-            body (str): Email body content
-            attachments (list, optional): List of file paths to attach. Defaults to None.
-            cc (str | List[str], optional): Carbon copy recipient(s). Defaults to None.
-            bcc (str | List[str], optional): Blind carbon copy recipient(s). Defaults to None.
-            msg_metadata (dict, optional): Additional email headers. Defaults to None.
-            mail_options (Sequence[str], optional): SMTP mail options. Defaults to ().
-            rcpt_options (Sequence[str], optional): SMTP recipient options. Defaults to ().
+            email (EmailToSend): The email to be replied to.
 
         Returns:
-            bool: True if email sent successfully, False otherwise
+            SMTPCommandResult: A tuple containing:
+                - A bool indicating whether the email was replied successfully.
+                - A string containing a success message or an error message.
         """
-        return self.smtp.sendmail(
-            sender,
-            receiver_emails,
-            subject,
-            body,
-            attachments,
-            cc,
-            bcc,
-            msg_metadata,
-            mail_options,
-            rcpt_options
-        )
+        if not email.uid:
+            raise SMTPException("Cannot reply to an email without a unique identifier(uid).")
+        
+        result = self.smtp.reply_email(email)
+        if result[0]:
+            self.imap.mark_email(email.uid, "answered")
 
-    def reply_email(self,
-        sender: str | Tuple[str, str],
-        receiver_emails: str | List[str],
-        uid: str,
-        body: str,
-        attachments: list | None = None
-    ) -> bool:
+        return result
+
+    def forward_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
-        Reply to an existing email.
+        Forward an existing email to new recipients. Uses the `send_email` 
+        method internally.
 
         Args:
-            sender (str | Tuple[str, str]): Sender's email address or (name, email) tuple
-            receiver_emails (str | List[str]): Recipient email address(es)
-            uid (str): Unique identifier of the original email being replied to
-            body (str): Reply email body content
-            attachments (list, optional): List of file paths to attach. Defaults to None.
+            email (EmailToSend): The email to be forwarded.
 
         Returns:
-            bool: True if reply sent successfully and original email marked as answered, 
-                  False otherwise
+            SMTPCommandResult: A tuple containing:
+                - A bool indicating whether the email was forwarded successfully.
+                - A string containing a success message or an error message.
         """
-        if self.smtp.reply_email(
-            sender,
-            receiver_emails,
-            uid,
-            self.imap.get_email_content(uid)[2]["subject"],
-            body,
-            attachments
-        ):
-            self.imap.mark_email(uid, "answered")
-            return True
-
-        return False
-
-    def forward_email(self,
-        sender: str | Tuple[str, str],
-        receiver_emails: str | List[str],
-        uid: str,
-        body: str,
-        attachments: list | None = None
-    ) -> bool:
-        """
-        Forward an existing email to new recipients.
-
-        Args:
-            sender (str | Tuple[str, str]): Sender's email address or (name, email) tuple
-            receiver_emails (str | List[str]): Email address(es) to forward to
-            uid (str): Unique identifier of the original email being forwarded
-            body (str): Forwarding email body content
-            attachments (list, optional): List of file paths to attach. Defaults to None.
-
-        Returns:
-            bool: True if email forwarded successfully, False otherwise
-        """
-        return self.smtp.forward_email(
-            sender,
-            receiver_emails,
-            uid,
-            self.imap.get_email_content(uid)[2]["subject"],
-            body,
-            attachments
-        )
+        if not email.uid:
+            raise SMTPException("Cannot forward an email without a unique identifier(uid).")
+        
+        email_fwd_copy = copy.copy(email)
+        email_fwd_copy.subject = self.imap.get_email_content(email_fwd_copy.uid).subject
+        return self.smtp.forward_email(email_fwd_copy)
     
+__all__ = ["OpenMail"]
