@@ -1,5 +1,12 @@
-import smtplib, re, base64, copy
-from typing import Sequence, override
+"""
+# TODO: module docstring
+"""
+import smtplib
+import re
+import base64
+import copy
+
+from typing import override
 from types import MappingProxyType
 
 from email.mime.image import MIMEImage
@@ -28,7 +35,7 @@ SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
 IMG_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"')
 
 # Timeouts (in seconds)
-CONN_TIMEOUT = 30 
+CONN_TIMEOUT = 30
 
 # Types
 type SMTPCommandResult = tuple[bool, str]
@@ -39,15 +46,14 @@ class SMTPManagerException(Exception):
 
 class SMTPManager(smtplib.SMTP):
     """
-    SMTPManager extends the `smtplib.SMTP` class to handle email-sending operations
-    with added features such as automatic SMTP server detection, retry logic, reply,
-    and forwarding.
+    SMTPManager extends the `smtplib.SMTP` class.
+    # TODO: class docstring
     """
     def __init__(
-        self, 
-        email_address: str, 
-        password: str, 
-        host: str = "", 
+        self,
+        email_address: str,
+        password: str,
+        host: str = "",
         port: int = SMTP_PORT,
         local_hostname=None,
         timeout: int = CONN_TIMEOUT,
@@ -94,7 +100,7 @@ class SMTPManager(smtplib.SMTP):
             raise SMTPManagerException("Unsupported email domain")
 
     @override
-    def login(self, email_address: str, password: str) -> SMTPCommandResult:
+    def login(self, user: str, password: str, *, initial_response_ok=True) -> SMTPCommandResult:
         """
         Perform login to the SMTP server, retrying if necessary.
 
@@ -109,13 +115,13 @@ class SMTPManager(smtplib.SMTP):
             self.ehlo()
             self.starttls()
             self.ehlo()
-            result = super().login(email_address, password)
+            result = super().login(user, password, initial_response_ok=initial_response_ok)
             return (True, str(result))
         except smtplib.SMTPAuthenticationError as e:
-            raise SMTPManagerException("There was an error while logging in: {}".format(str(e))) from None
+            raise SMTPManagerException(f"There was an error while logging in: {str(e)}") from None
 
     @override
-    def quit():
+    def quit(self):
         """
         SMTPManager overrides the quit method to perform a safe logout.
         Use `logout` instead.
@@ -137,10 +143,10 @@ class SMTPManager(smtplib.SMTP):
         try:
             result = super().quit()
             if str(result[0]) != "221":
-                raise SMTPManagerException("Could not disconnect from the target smtp server: {}".format(str(result)))
+                raise SMTPManagerException(f"Could not disconnect from the target smtp server: {str(result)}")
             return (True, "Logout successful")
         except Exception as e:
-            raise SMTPManagerException("Could not disconnect from the target smtp server: {}".format(str(e)))
+            raise SMTPManagerException(f"Could not disconnect from the target smtp server: {str(e)}")
 
     def send_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
@@ -190,7 +196,9 @@ class SMTPManager(smtplib.SMTP):
         if email.attachments:
             for attachment in email.attachments:
                 if attachment.size > MAX_ATTACHMENT_SIZE:
-                    raise SMTPManagerException("Attachment size is too large. Max size is {}".format(make_size_human_readable(MAX_ATTACHMENT_SIZE)))
+                    raise SMTPManagerException(f"Attachment size is too large. Max size is {
+                        make_size_human_readable(MAX_ATTACHMENT_SIZE)
+                    }")
 
                 part = MIMEApplication(attachment.file.read())
                 part.add_header('content-disposition', 'attachment', filename=attachment.filename)
@@ -204,7 +212,7 @@ class SMTPManager(smtplib.SMTP):
         if bcc:
             bcc = [email.strip() for email in bcc.split(",")]
             receiver.extend(bcc)
-            
+
         return super().sendmail(
             email.sender if isinstance(email.sender, str) else email.sender[1],
             receiver,
@@ -227,7 +235,7 @@ class SMTPManager(smtplib.SMTP):
         """
         if not email.uid:
             raise SMTPManagerException("Cannot reply to an email without a unique identifier(uid).")
-        
+
         email_to_reply = copy.copy(email)
         email_to_reply.subject = "Re: " + email.subject
         email_to_reply.metadata = email_to_reply.metadata | {
@@ -239,7 +247,7 @@ class SMTPManager(smtplib.SMTP):
 
         if result[0]:
             return result[0], "Email replied successfully"
-        
+
         return result
 
     def forward_email(self, email: EmailToSend) -> SMTPCommandResult:
@@ -257,19 +265,24 @@ class SMTPManager(smtplib.SMTP):
         """
         if not email.uid:
             raise SMTPManagerException("Cannot forward an email without a unique identifier(uid).")
-        
+
         email_to_forward = copy.copy(email)
         email_to_forward.subject = "Fwd: " + email.subject
         email_to_forward.metadata = email_to_forward.metadata | {
             "In-Reply-To": email.uid,
             "References": email.uid
         }
-        
+
         result = self.send_email(email_to_forward)
 
         if result[0]:
             return result[0], "Email forwarded successfully"
-        
+
         return result
-    
-__all__ = ["SMTPManager", "SMTPCommandResult", "SMTPManagerException"]
+
+
+__all__ = [
+    "SMTPManager", 
+    "SMTPCommandResult", 
+    "SMTPManagerException"
+]
