@@ -690,7 +690,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             list[Flags]: List of flags associated with its uid.
         """
         if limit < 1:
-            raise IMAPManagerException("Limit must be at least 1.")
+            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
 
         if self.state != "SELECTED":
             # Since uid's are unique within each mailbox, we can't just select INBOX
@@ -842,7 +842,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         if offset < 0:
             raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be greater than or equal to 0.")
-
+        if limit < 1:
+            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be greater than or equal to 1.")
+        if offset >= limit:
+            raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be less than limit: {limit}.")
+        
         self.select_folder(folder, readonly=True)
 
         # Creating search query
@@ -860,10 +864,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         # Getting email uids
         try:
-            _, uids = self.uid('search', None, search_criteria_query.encode("utf-8") if search_criteria_query else ALL)
+            _, uids = self.uid(
+                'search', 
+                None, 
+                search_criteria_query.encode("utf-8") if search_criteria_query else ALL
+            )
             uids = uids[0].split()[::-1]
         except Exception as e:
-            raise IMAPManagerException("Error while getting email uids, search query was `{}`".format(search_criteria_query), e)
+            raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}`: {str(e)}")
 
         if not uids:
             return Mailbox(folder=folder, emails=[], total=0)
@@ -1035,7 +1043,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message or an error message.
         """
         if limit < 1:
-            raise IMAPManagerException("Limit must be at least 1.")
+            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
 
         self.select_folder(folder)
 
@@ -1147,7 +1155,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message or an error message.
         """
         if limit < 1:
-            raise IMAPManagerException("Limit must be at least 1.")
+            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
 
         self.__check_folder_names([source_folder, destination_folder])
 
@@ -1193,7 +1201,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message or an error message.
         """
         if limit < 1:
-            raise IMAPManagerException("Limit must be at least 1.")
+            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
 
         self.__check_folder_names([source_folder, destination_folder])
 
@@ -1231,7 +1239,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message or an error message.
         """
         if limit < 1:
-            raise IMAPManagerException("Limit must be at least 1.")
+            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
 
         self.__check_folder_names(folder)
 
