@@ -17,6 +17,14 @@ from email.mime.multipart import MIMEMultipart
 from .utils import extract_domain, choose_positive, make_size_human_readable
 from .types import EmailToSend
 
+# Exceptions
+class SMTPManagerException(Exception):
+    """Custom exception for SMTPManager class."""
+    pass
+
+# Types
+type SMTPCommandResult = tuple[bool, str]
+
 # General consts, avoid changing
 SMTP_SERVERS = MappingProxyType({
     "gmail": "smtp.gmail.com",
@@ -25,24 +33,15 @@ SMTP_SERVERS = MappingProxyType({
     "hotmail": "smtp-mail.outlook.com",
     'yandex': 'smtp.yandex.com',
 })
-SMTP_PORT = 587
+DEF_SMTP_PORT = 587
 
 # Custom consts
 MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024 # 25MB
+DEF_CONN_TIMEOUT = 30 # 30 seconds
 
-# Regular expressions
+# Regular expressions, avoid changing
 SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
 IMG_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"')
-
-# Timeouts (in seconds)
-CONN_TIMEOUT = 30
-
-# Types
-type SMTPCommandResult = tuple[bool, str]
-
-class SMTPManagerException(Exception):
-    """Custom exception for SMTPManager class."""
-    pass
 
 class SMTPManager(smtplib.SMTP):
     """
@@ -54,9 +53,9 @@ class SMTPManager(smtplib.SMTP):
         email_address: str,
         password: str,
         host: str = "",
-        port: int = SMTP_PORT,
+        port: int = DEF_SMTP_PORT,
         local_hostname=None,
-        timeout: int = CONN_TIMEOUT,
+        timeout: int = DEF_CONN_TIMEOUT,
         source_address=None
     ):
         """
@@ -73,9 +72,9 @@ class SMTPManager(smtplib.SMTP):
         """
         super().__init__(
             host or self.__find_smtp_server(email_address),
-            port or SMTP_PORT,
+            port or DEF_SMTP_PORT,
             local_hostname=local_hostname,
-            timeout=choose_positive(timeout, CONN_TIMEOUT),
+            timeout=choose_positive(timeout, DEF_CONN_TIMEOUT),
             source_address=source_address
         )
 

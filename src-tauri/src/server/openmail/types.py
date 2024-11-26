@@ -12,10 +12,14 @@ class SearchCriteria():
     """
     senders: Optional[List[str]] = field(default_factory=list)
     receivers: Optional[List[str]] = field(default_factory=list)
+    cc: Optional[List[str]] = field(default_factory=list)
+    bcc: Optional[List[str]] = field(default_factory=list)
     subject: Optional[str] = ""
     since: Optional[str] = ""
     before: Optional[str] = ""
     flags: Optional[List[str]] = field(default_factory=list)
+    smaller_than: Optional[int] = 0
+    larger_than: Optional[int] = 0
     include: Optional[str] = ""
     exclude: Optional[str] = ""
     has_attachments: Optional[bool] = False

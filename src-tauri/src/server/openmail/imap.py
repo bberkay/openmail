@@ -50,8 +50,8 @@ IMAP_SERVERS = MappingProxyType({
     "hotmail": "outlook.office365.com",
     'yandex': 'imap.yandex.com',
 })
-IMAP_STATES = ('NONAUTH', 'AUTH', 'SELECTED', 'LOGOUT')
 IMAP_PORT = 993
+IMAP_STATES = ('NONAUTH', 'AUTH', 'SELECTED', 'LOGOUT')
 FOLDER_FLAG_NAMES = (
     b'\\All', 
     b'\\Archive', 
@@ -80,11 +80,9 @@ FLAG_PATTERN = re.compile(r"UID (\d+) FLAGS \((.*?)\)")
 # Custom consts
 BODY_SHORT_THRESHOLD = 50
 MAX_FOLDER_NAME_LENGTH = 100
-
-# Timeouts (in seconds)
-CONN_TIMEOUT = 30
-IDLE_TIMEOUT = 30 * 60
-WAIT_RESPONSE_TIMEOUT = 3 * 60
+DEF_CONN_TIMEOUT = 30 # 30 seconds
+DEF_IDLE_TIMEOUT = 30 * 60 # 30 minutes
+DEF_WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
 
 class IMAPManager(imaplib.IMAP4_SSL):
     """
@@ -98,13 +96,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         host: str = "",
         port: int = IMAP_PORT,
         ssl_context: any = None,
-        timeout: int = CONN_TIMEOUT
+        timeout: int = DEF_CONN_TIMEOUT
     ):
         super().__init__(
             host or self.__find_imap_server(email_address),
             port or IMAP_PORT,
             ssl_context=ssl_context,
-            timeout=choose_positive(timeout, CONN_TIMEOUT)
+            timeout=choose_positive(timeout, DEF_CONN_TIMEOUT)
         )
 
         self.login(email_address, password)
@@ -353,7 +351,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             else:
                 return False, failure_message + ": " + result[1][0].decode("utf-8")
         except Exception as e:
-            raise IMAPManagerException("There was an error while parsing command result: {}".format(str(e)))
+            raise IMAPManagerException("There was an error while parsing command result: {}".format(str(e))) from None
 
     def __ensure_command(self, response: tuple[str, list[bytes | None]]):
         """
@@ -403,13 +401,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Args:
             wait_response (WaitResponse): Expected response type to wait for
             
-        Times out after WAIT_RESPONSE_TIMEOUT seconds and resets wait state.
+        Times out after DEF_WAIT_RESPONSE_TIMEOUT seconds and resets wait state.
         """
         counter = 0
         while self.__wait_for_response != wait_response:
             time.sleep(1)
             counter += 1
-            if counter > WAIT_RESPONSE_TIMEOUT:
+            if counter > DEF_WAIT_RESPONSE_TIMEOUT:
                 print(f"WaitResponse: {wait_response} did not received in time at {datetime.now()}. WaitResponse set to None")
                 break
 
@@ -420,12 +418,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Background thread handler for IDLE mode monitoring.
 
         Continuously checks IDLE session duration and automatically 
-        refreshes the connection when IDLE_TIMEOUT is reached.
+        refreshes the connection when DEF_IDLE_TIMEOUT is reached.
         """
         while not self.__idle_thread_event.is_set():
             print(f"IDLING for {self.__current_idle_tag} started at {datetime.now()}.")
             time.sleep(1)
-            if time.time() - self.__current_idle_start_time > IDLE_TIMEOUT:
+            if time.time() - self.__current_idle_start_time > DEF_IDLE_TIMEOUT:
                 print(f"IDLING timeout reached for {self.__current_idle_tag} at {datetime.now()}.")
                 self.done()
                 self.idle()
@@ -513,9 +511,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self.__is_idle = False
         self.__current_idle_tag = None
         self.close()
-        raise IMAPManagerLoggedOutException(
-            f"'BYE' response received from server at {datetime.now()}. IMAPManager connection closed safely."
-        )
+        raise IMAPManagerLoggedOutException(f"'BYE' response received from server at {datetime.now()}. IMAPManager connection closed safely.") from None
 
     def __handle_exists_response(self, response: bytes):
         """
@@ -593,7 +589,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         try:
             return ('"' + folder + '"').encode("utf-8")
         except Exception as e:
-            raise IMAPManagerException("Error while encoding folder name", e)
+            raise IMAPManagerException(f"Error while encoding folder name: {str(e)}") from None
 
     def __decode_folder(self, folder: bytes) -> str:
         """
@@ -614,7 +610,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             # So we're replacing "|" with "/" to make it consistent
             return folder.decode().replace(' "|" ', ' "/" ').split(' "/" ')[1].replace('"', '')
         except Exception as e:
-            raise IMAPManagerException("Error while decoding folder name", e)
+            raise IMAPManagerException(f"Error while decoding folder name: {str(e)}.") from None
 
     def __check_folder_names(self, folders: str | List[str], raise_error: bool = True) -> bool:
         """
@@ -653,7 +649,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         try:
             return [self.__decode_folder(i) for i in self.list()[1] if i.find(b'\\NoSelect') == -1]
         except Exception as e:
-            raise IMAPManagerException(f"There was an error while listing folders: {str(e)}")
+            raise IMAPManagerException(f"There was an error while listing folders: {str(e)}") from None
 
     def select_folder(self, mailbox: str = INBOX, readonly: bool = False):
         """
@@ -704,7 +700,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 '(FLAGS)'
             )
         except Exception as e:
-            raise IMAPManagerException(f"Error while fetching email flags: {str(e)}")
+            raise IMAPManagerException(f"Error while fetching email flags: {str(e)}") from None
 
         try:
             flags_list = []
@@ -716,7 +712,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         flags = match.group(2).split() if match.group(2) else []
                         flags_list.append(Flags(uid=uid, flags=flags))
         except Exception as e:
-            raise IMAPManagerException(f"Error while parsing email flags: {str(e)}")
+            raise IMAPManagerException(f"Error while parsing email flags: {str(e)}") from None
 
         return flags_list or []
 
@@ -802,6 +798,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             return f' ({criteria} "{value}")'
 
+        mark_list = [m.value for m in Mark]
+        for flag in search_criteria.flags:
+            if flag not in mark_list:
+                raise IMAPManagerException(f"Unsupported flag: {flag}. The supported flags are: {', '.join(mark_list)}")
+
         search_criteria_query = ''
         search_criteria_query += add_criterion(
             'FROM', 
@@ -813,6 +814,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
             search_criteria.receivers,
             len(search_criteria.receivers) > 1
         )
+        search_criteria_query += add_criterion(
+            'CC',
+            search_criteria.cc,
+            len(search_criteria.cc) > 1
+        )
+        search_criteria_query += add_criterion(
+            'BCC',
+            search_criteria.bcc,
+            len(search_criteria.bcc) > 1
+        )
         search_criteria_query += add_criterion("SUBJECT", search_criteria.subject)
         search_criteria_query += add_criterion("SINCE", search_criteria.since)
         search_criteria_query += add_criterion("BEFORE", search_criteria.before)
@@ -821,34 +832,22 @@ class IMAPManager(imaplib.IMAP4_SSL):
         search_criteria_query += add_criterion('', search_criteria.flags)
         return search_criteria_query.strip()
 
-    def get_emails(
-        self,
+    def fetch_emails(self,
         folder: str = INBOX,
-        search: str | SearchCriteria = ALL,
-        offset: int = 0,
-        limit: int = 10
-    ) -> Mailbox:
+        search: str | SearchCriteria = ALL
+    ) -> list[str]:
         """
-        Retrieve emails from a specified folder based on search criteria.
+        Fetch emails from a specified folder based on search criteria.
 
         Args:
             folder (str, optional): Folder to search in. Defaults to "inbox".
             search (str | SearchCriteria, optional): Search criteria. Defaults to "ALL".
-            offset (int, optional): Starting index for email retrieval. Defaults to 0.
-            limit (int, optional): Number of emails to retrieve. Defaults to 10.
 
         Returns:
-            dict: Dictionary of emails matching the search criteria
+            list[str]: List of email uids
         """
-        if offset < 0:
-            raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be greater than or equal to 0.")
-        if limit < 1:
-            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be greater than or equal to 1.")
-        if offset >= limit:
-            raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be less than limit: {limit}.")
-        
         self.select_folder(folder, readonly=True)
-
+    
         # Creating search query
         search_criteria_query = ''
         try:
@@ -860,36 +859,71 @@ class IMAPManager(imaplib.IMAP4_SSL):
             else:
                 search_criteria_query = search or ALL
         except Exception as e:
-            raise IMAPManagerException(f"Error while building search query: {str(e)}")
-
-        # Getting email uids
+            raise IMAPManagerException(f"Error while building search query: {str(e)}") from None
+        
         try:
-            _, uids = self.uid(
+            search_status, uids = self.uid(
                 'search', 
                 None, 
                 search_criteria_query.encode("utf-8") if search_criteria_query else ALL
             )
+            
+            if search_status != 'OK':
+                raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}`: {search_status}")
+            
             uids = uids[0].split()[::-1]
         except Exception as e:
-            raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}`: {str(e)}")
+            raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}`: {str(e)}") from None
 
-        if not uids:
-            return Mailbox(folder=folder, emails=[], total=0)
+        return uids
 
+    def get_emails(
+        self,
+        uids: list[str],
+        offset: int = 0,
+        count: int = 10
+    ) -> Mailbox:
+        """
+
+        Args:
+
+
+        Returns:
+            
+        """
+        uids_len = len(uids)
+        if offset < 0:
+            raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be greater than or equal to 0.")
+        if count < 1:
+            raise IMAPManagerException(f"Invalid count: {count}. Count must be greater than or equal to 1.")
+        if offset >= uids_len:
+            raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be less than the number of emails: {uids_len}.")
+        
+        if uids_len == 0:
+            return Mailbox(folder=self.__current_folder, emails=[], total=0)
+        
         # Fetching emails
         emails = []
         try:
-            for uid in uids[offset: offset + 10]:
+            uid_range = uids[offset]
+            if count > 1:
+                uid_range = f"{uids[offset]:str(int(uids[offset]) + count)}"
+                
+            status, unparsed_emails = self.uid('FETCH', uid_range, '(RFC822)')
+            if status != 'OK':
+                raise IMAPManagerException(f"Error while fetching emails, fetched email length was `{len(unparsed_emails)}`: {status}")
+            
+            for i, message in enumerate(unparsed_emails):
                 """
                 _, data = M.fetch(num, '(BODY.PEEK[HEADER.FIELDS (CONTENT-TYPE)])')
                 if b"multipart/mixed" in data[0][1]:
                     print("Found multipart/mixed: ", num
                 """
-                _, message = self.uid('fetch', uid, '(RFC822)')
-                message = email.message_from_bytes(message[0][1], policy=email.policy.default)
+                message = email.message_from_bytes(message, policy=email.policy.default)
 
                 payload = [message]
                 if message.is_multipart():
+                    # FIXME: must_have_attachment is not defined
                     if must_have_attachment and message.get_content_type() != "multipart/mixed":
                         continue
                     payload = message.walk()
@@ -911,20 +945,18 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
 
                 emails.append(EmailSummary(
-                    uid=uid.decode(),
+                    uid=uids[i].decode(),
                     sender=message["From"],
                     receiver=message["To"],
                     subject=message.get("Subject", ""),
                     body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
                     date=message["Date"],
-                    flags=self.get_email_flags(uid) or []
+                    flags=self.get_email_flags(uids[i]) or []
                 ))
         except Exception as e:
-            raise IMAPManagerException(
-                f"Error while fetching emails, fetched email length was `{len(emails)}`: {str(e)}"
-            )
+            raise IMAPManagerException(f"Error while fetching emails, fetched email length was `{len(emails)}`: {str(e)}") from None
 
-        return Mailbox(folder=folder, emails=emails, total=len(uids))
+        return Mailbox(folder=self.__current_folder, emails=emails, total=len(uids))
 
     def get_email_content(
         self,
@@ -1051,7 +1083,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         mark_list = [m.value for m in Mark]
         if not mark or mark not in mark_list:
             raise IMAPManagerException(
-                f"Invalid mark: {mark}. Please use one of the following: {', '.join(mark_list)}"
+                f"Unsupported mark: {mark}. Please use one of the following: {', '.join(mark_list)}"
             )
 
         mark_result = self.uid(
@@ -1251,7 +1283,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(
                 f"Error while moving email to trash folder for deletion: {str(e)}."
-            )
+            ) from None
 
         self.select_folder(trash_mailbox_name)
 
