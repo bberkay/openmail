@@ -195,9 +195,7 @@ class SMTPManager(smtplib.SMTP):
         if email.attachments:
             for attachment in email.attachments:
                 if attachment.size > MAX_ATTACHMENT_SIZE:
-                    raise SMTPManagerException(f"Attachment size is too large. Max size is {
-                        make_size_human_readable(MAX_ATTACHMENT_SIZE)
-                    }")
+                    raise SMTPManagerException(f"Attachment size is too large. Max size is {make_size_human_readable(MAX_ATTACHMENT_SIZE)}")
 
                 part = MIMEApplication(attachment.file.read())
                 part.add_header('content-disposition', 'attachment', filename=attachment.filename)

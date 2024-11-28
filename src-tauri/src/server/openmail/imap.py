@@ -29,16 +29,36 @@ class IMAPManagerLoggedOutException(IMAPManagerException):
 # Enums
 class WaitResponse(Enum):
     """Enum for waiting for a response from the server."""
+    # These are not the all possible responses but the ones we are interested in
+    # IDLE, DONE: https://datatracker.ietf.org/doc/html/rfc9051#name-idle-command
+    # EXISTS: https://datatracker.ietf.org/doc/html/rfc9051#name-exists-response
+    # BYE: https://datatracker.ietf.org/doc/html/rfc9051#name-bye-response
     IDLE = "IDLE"
-    EXISTS = "EXISTS"
     DONE = "DONE"
+    EXISTS = "EXISTS"
     BYE = "BYE"
-
+    
+# https://datatracker.ietf.org/doc/html/rfc9051#name-flags-message-attribute
 class Mark(Enum):
     """Enum for email marks."""
-    FLAGGED = "flagged"
-    SEEN = "seen"
-    ANSWERED = "answered"
+    FLAGGED = "\\Flagged"
+    SEEN = "\\Seen"
+    ANSWERED = "\\Answered"
+    #deleted = "\\Deleted"
+    #draft = "\\Draft"
+    #spam = "\\Spam"
+
+# https://datatracker.ietf.org/doc/html/rfc6154#autoid-3
+class Folder(Enum):
+    """Enum for email folders."""
+    Inbox = b'\\Inbox'
+    All = b'\\All'
+    Archive = b'\\Archive'
+    Drafts = b'\\Drafts'
+    Flagged = b'\\Flagged'
+    Junk = b'\\Junk'
+    Sent = b'\\Sent'
+    Trash = b'\\Trash'
 
 # Types
 type IMAPCommandResult = tuple[bool, str]
@@ -52,42 +72,28 @@ IMAP_SERVERS = MappingProxyType({
     'yandex': 'imap.yandex.com',
 })
 IMAP_PORT = 993
+# https://datatracker.ietf.org/doc/html/rfc9051#name-state-and-flow-diagram
 IMAP_STATES = ('NONAUTH', 'AUTH', 'SELECTED', 'LOGOUT')
-FOLDER_FLAG_NAMES = (
-    b'\\All', 
-    b'\\Archive', 
-    b'\\Drafts', 
-    b'\\Flagged', 
-    b'\\Junk', 
-    b'\\Sent', 
-    b'\\Trash'
-)
-# https://datatracker.ietf.org/doc/html/rfc9051#name-flags-message-attribute
-MARK_MAP = MappingProxyType({
-    Mark.FLAGGED: "\\Flagged",
-    Mark.SEEN: "\\Seen",
-    Mark.ANSWERED: "\\Answered",
-    #"deleted": "\\Deleted",
-    #"draft": "\\Draft",
-    #"spam": "\\Spam"
-})
 INBOX = 'INBOX'
 ALL = 'ALL'
 
 # Regular expressions
-CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
+INLINE_ATTACHMENT_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
 
 # Custom consts
 BODY_SHORT_THRESHOLD = 50
 MAX_FOLDER_NAME_LENGTH = 100
-DEF_CONN_TIMEOUT = 30 # 30 seconds
-DEF_IDLE_TIMEOUT = 30 * 60 # 30 minutes
-DEF_WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
+DEFAULT_CONN_TIMEOUT = 30 # 30 seconds
+DEFAULT_IDLE_TIMEOUT = 30 * 60 # 30 minutes
+DEFAULT_WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
 
 class IMAPManager(imaplib.IMAP4_SSL):
     """
     IMAPManager extends the `imaplib.IMAP4` class.
-    # TODO: class docstring
+    Does not override any methods except `login`
+    and `logout`. Provides additional features especially
+    idling and listening exists responses on different threads.
+    
     """
     def __init__(
         self,
@@ -96,13 +102,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         host: str = "",
         port: int = IMAP_PORT,
         ssl_context: any = None,
-        timeout: int = DEF_CONN_TIMEOUT
+        timeout: int = DEFAULT_CONN_TIMEOUT
     ):
         super().__init__(
             host or self.__find_imap_server(email_address),
             port or IMAP_PORT,
             ssl_context=ssl_context,
-            timeout=choose_positive(timeout, DEF_CONN_TIMEOUT)
+            timeout=choose_positive(timeout, DEFAULT_CONN_TIMEOUT)
         )
 
         self.login(email_address, password)
@@ -403,13 +409,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Args:
             wait_response (WaitResponse): Expected response type to wait for
             
-        Times out after DEF_WAIT_RESPONSE_TIMEOUT seconds and resets wait state.
+        Times out after DEFAULT_WAIT_RESPONSE_TIMEOUT seconds and resets wait state.
         """
         counter = 0
         while self.__wait_for_response != wait_response:
             time.sleep(1)
             counter += 1
-            if counter > DEF_WAIT_RESPONSE_TIMEOUT:
+            if counter > DEFAULT_WAIT_RESPONSE_TIMEOUT:
                 print(f"WaitResponse: {wait_response} did not received in time at {datetime.now()}. WaitResponse set to None")
                 break
 
@@ -420,12 +426,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Background thread handler for IDLE mode monitoring.
 
         Continuously checks IDLE session duration and automatically 
-        refreshes the connection when DEF_IDLE_TIMEOUT is reached.
+        refreshes the connection when DEFAULT_IDLE_TIMEOUT is reached.
         """
         while not self.__idle_thread_event.is_set():
             print(f"IDLING for {self.__current_idle_tag} started at {datetime.now()}.")
             time.sleep(1)
-            if time.time() - self.__current_idle_start_time > DEF_IDLE_TIMEOUT:
+            if time.time() - self.__current_idle_start_time > DEFAULT_IDLE_TIMEOUT:
                 print(f"IDLING timeout reached for {self.__current_idle_tag} at {datetime.now()}.")
                 self.done()
                 self.idle()
@@ -546,32 +552,34 @@ class IMAPManager(imaplib.IMAP4_SSL):
         elif b'EXISTS' in response:
             self.__handle_exists_response(response)
 
-    def get_folder_name_by_flag_name(self, flag_name: bytes) -> bytes | None:
+    def find_matching_folder(self, requested_folder: Folder) -> bytes | None:
         """
-        Retrieve the folder name corresponding to a specific IMAP flag name.
+        Retrieve the IMAP folder name matching a specific byte string.
 
         This method is useful for handling cases where a client's folder names 
-        are localized in a different language. For example:
-
-        - If the client's inbox is named "Gelen Kutusu"(Inbox, turkish) this method 
-        will return "INBOX" if the flag name is `b'\\Inbox'`.
-
-        - Similarly, it will return "Çöp Kutusu"(Trash, turkish) for the flag 
-        name `b'\\Trash'`.
+        are localized in a different language.
 
         Args:
-            flag_name (bytes): The IMAP flag name (e.g., `b'\\Inbox'` or `b'\\Trash'`).
+            some_param_name (bytes): The IMAP folder name (e.g., `b'\\Inbox'` or `b'\\Trash'`).
 
         Returns:
             bytes | None: The folder name in bytes if a match is found; otherwise, None.
+
+        Example:
+            >>> find_matching_folder(b'\\Inbox')
+            b'INBOX'
+
+            >>> find_matching_folder(b'\\Trash')
+            b'Çöp Kutusu' # Means "Trash" in Turkish
         """
-        if flag_name not in FOLDER_FLAG_NAMES:
-            return None
+        folder_list = [m.value for m in Folder]
+        if requested_folder not in folder_list:
+            raise IMAPManagerException(f"Invalid folder name: {requested_folder}. Please use one of the following: {folder_list}")
 
         status, folders_as_bytes = self.list()
         if status == "OK" and folders_as_bytes and isinstance(folders_as_bytes, list):
             for folder_as_bytes in folders_as_bytes:
-                if flag_name == folder_as_bytes:
+                if requested_folder == folder_as_bytes:
                     return folder_as_bytes
         return None
 
@@ -690,6 +698,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
             This function recursively builds complex OR queries and handles multiple search criteria 
             by converting them into the required format as per RFC 9051.
 
+        Example:
+            >>> search_criteria = SearchCriteria(senders=["a@mail.com"],
+            ...                                  receivers=["b@mail.com", "c@mail.com"],
+            ...                                  subject="Hello",
+            ...                                  since="2023-01-01",
+            ...                                  before="2023-12-31",
+            ...                                  text="world",
+            ...                                  flags=["Flagged", "Seen"])
+            >>> build_search_criteria_query_string(search_criteria)
+            'OR (FROM "a@mail.com") (OR (TO "b@mail.com") (TO "c@mail.com")) (SUBJECT "Hello") (SINCE "2023-01-01") (BEFORE "2023-12-31") (TEXT "world") (FLAGGED) (SEEN)'
+
         References:
             - https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
         """
@@ -790,6 +809,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         search_criteria_query += add_criterion("NOT TEXT", search_criteria.exclude)
         search_criteria_query += add_criterion('', search_criteria.flags)
         search_criteria_query += add_criterion('BODY', search_criteria.has_attachments and 'ATTACHMENT' or '')
+        # TODO: Add smaller_than and larger_than.
         return search_criteria_query.strip()
 
     def search_emails(self,
@@ -797,7 +817,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         search: str | SearchCriteria = ALL
     ) -> list[str]:
         """
-        Fetch emails from a specified folder based on search criteria.
+        Get email uids from a specified folder based on search criteria.
 
         Args:
             folder (str, optional): Folder to search in. Defaults to "inbox".
@@ -805,6 +825,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Returns:
             list[str]: List of email uids
+
+        Example:
+            >>> search_emails("INBOX") # Means "ALL"
+            ['1', '2', '3', '4', '5'] 
+
+            >>> search_emails("INBOX", "FROM 'a@mail.com'")
+            ['1', '2', '3']
+
+            >>> search_emails("INBOX", SearchCriteria(senders=['a@mail.com']))
+            ['1', '2', '3']
         """
         self.select_folder(folder, readonly=True)
     
@@ -813,7 +843,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         try:
             search_criteria_query = ''
             if isinstance(search, SearchCriteria):
-                self.__must_have_attachments = search.has_attachments
                 search_criteria_query = self.build_search_criteria_query_string(search) or ALL
             else:
                 search_criteria_query = search or ALL
@@ -843,12 +872,19 @@ class IMAPManager(imaplib.IMAP4_SSL):
         count: int = 10
     ) -> Mailbox:
         """
+        Fetch emails from a list of uids.
 
         Args:
-
+            uids (list[str]): List of email uids.
+            offset (int, optional): Offset to start fetching emails from. Defaults to 0.
+            count (int, optional): Number of emails to fetch. Defaults to 10.
 
         Returns:
-            
+            Mailbox: Dataclass containing the fetched emails, folder, and total number of emails.
+
+        Example:
+            >>> fetch_emails(["1", "2"])
+            Mailbox(folder='INBOX', emails=[EmailSummary(uid="1", sender="a@gmail.com", ...), EmailSummary(uid="2", sender="b@gmail.com", ...)], total=2)
         """
         uids_len = len(uids)
         if offset < 0:
@@ -859,7 +895,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be less than the number of emails: {uids_len}.")
         
         if uids_len == 0:
-            return Mailbox(folder=self.__current_folder, emails=[], total=0)
+            return Mailbox(folder=self.__current_folder[0], emails=[], total=0)
         
         # Fetching emails
         emails = []
@@ -896,7 +932,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"Error while fetching emails, fetched email length was `{len(emails)}`: {str(e)}") from None
 
-        return Mailbox(folder=self.__current_folder, emails=emails, total=len(uids))
+        return Mailbox(folder=self.__current_folder[0], emails=emails, total=len(uids))
 
     def get_email_content(
         self,
@@ -904,14 +940,23 @@ class IMAPManager(imaplib.IMAP4_SSL):
         folder: str = INBOX
     ) -> EmailWithContent:
         """
-        Retrieve full content of a specific email.
+        Retrieve full content of a specific email. 
 
         Args:
             uid (str): Unique identifier of the email
             folder (str, optional): Folder containing the email. Defaults to "inbox".
 
         Returns:
-            dict: Detailed email content
+            EmailWithContent: Dataclass containing the email content
+
+        Notes:
+            - Replaces inline attachments with data URLs to display them inline
+            and if an error occurs while replacing the inline attachments, the
+            replacement operation will be skipped without raising an error but
+            it will be logged as a warning.
+            - Marks the email as "Seen" if it is not already and if an error 
+            occurs while marking the email, the mark operation will be skipped
+            without raising an error but it will be logged as a warning.
         """
         self.select_folder(folder, readonly=True)
 
@@ -947,10 +992,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
             )
 
         try:
-            # Get inline attachments
+            # Replacing inline attachments
             if attachments:
-                # TODO: add this to the MessageParser as a staticmethod
-                for match in CID_PATTERN.finditer(body):
+                # TODO: This should be moved to MessageParser class as
+                # a static method.
+                for match in INLINE_ATTACHMENT_PATTERN.finditer(body):
                     cid = match.group(1)
                     for attachment in attachments:
                         if cid in attachment.name or cid in attachment.cid:
@@ -1034,7 +1080,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             'STORE', 
             f"{uid:str(int(uid) + limit + 1)}" if limit > 1 else uid,
             command,
-            MARK_MAP[mark]
+            mark
         )
         if mark_result[0]:
             return self.__parse_command_result(
@@ -1219,7 +1265,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         self.__check_folder_names(folder)
 
-        trash_mailbox_name = self.get_folder_name_by_flag_name(b"\\Trash")
+        trash_mailbox_name = self.find_matching_folder(Folder.Trash)
 
         try:
             if folder != trash_mailbox_name:
