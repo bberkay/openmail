@@ -36,6 +36,7 @@ class EmailSummary():
     subject: str
     body_short: str
     flags: Optional[List[str]] = field(default_factory=list)
+    attachments: Optional[List[str]] = field(default_factory=list)
 
 @dataclass
 class Attachment():
@@ -95,14 +96,6 @@ class Mailbox():
     emails: List[EmailSummary]
     total: int
 
-@dataclass
-class Flags():
-    """
-    A class that represents the mailbox's flags as a dataclass.
-    """
-    uid: str
-    flags: List[str]
-    
 __all__ = [
     "SearchCriteria", 
     "Attachment", 

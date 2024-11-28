@@ -13,9 +13,10 @@ from types import MappingProxyType
 from datetime import datetime
 from enum import Enum
 
+from .parser import MessageParser
 from .utils import extract_domain, choose_positive
 from .utils import truncate_text, contains_non_ascii, make_size_human_readable
-from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent, Flags
+from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent
 
 # Exceptions
 class IMAPManagerException(Exception):
@@ -75,7 +76,6 @@ ALL = 'ALL'
 
 # Regular expressions
 CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
-FLAG_PATTERN = re.compile(r"UID (\d+) FLAGS \((.*?)\)")
 
 # Custom consts
 BODY_SHORT_THRESHOLD = 50
@@ -109,16 +109,18 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         self.__current_folder = (INBOX, False)
 
+        # IDLE - READLINE Handling
         self.__is_idle = False
         self.__current_idle_start_time = None
         self.__current_idle_tag = None
         self.__wait_for_response = None
 
+        self.__idle_thread_event = None
+        self.__idle_thread = None
+
         self.__readline_thread_event = None
         self.__readline_thread = None
 
-        self.__idle_thread_event = None
-        self.__idle_thread = None
 
     def __find_imap_server(self, email_address: str) -> str:
         """
@@ -673,50 +675,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             self.__ensure_command(super().select(self.__encode_folder(mailbox), readonly))
             self.__current_folder = (mailbox, readonly)
 
-    def get_email_flags(self, uid: str, limit: int = 1) -> list[Flags]:
-        """
-        Retrieve flags associated with a specific email.
-
-        Args:
-            uid (str): Unique identifier of the email
-            limit (int, optional): Maximum number of emails to fetch. 
-            Defaults to 1.
-
-        Returns:
-            list[Flags]: List of flags associated with its uid.
-        """
-        if limit < 1:
-            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
-
-        if self.state != "SELECTED":
-            # Since uid's are unique within each mailbox, we can't just select INBOX
-            # or something like that if there is no mailbox selected.
-            raise IMAPManagerException("Folder should be selected before fetching flags")
-
-        try:
-            result = self.uid(
-                'FETCH', 
-                f"{uid:str(int(uid) + limit)}" if limit > 1 else uid,
-                '(FLAGS)'
-            )
-        except Exception as e:
-            raise IMAPManagerException(f"Error while fetching email flags: {str(e)}") from None
-
-        try:
-            flags_list = []
-            if result[0] == 'OK':
-                for item in result[1]:
-                    match = FLAG_PATTERN.search(item.decode('utf-8'))
-                    if match:
-                        uid = match.group(1)
-                        flags = match.group(2).split() if match.group(2) else []
-                        flags_list.append(Flags(uid=uid, flags=flags))
-        except Exception as e:
-            raise IMAPManagerException(f"Error while parsing email flags: {str(e)}") from None
-
-        return flags_list or []
-
-    def __build_search_criteria_query(self, search_criteria: SearchCriteria) -> str:
+    def build_search_criteria_query_string(self, search_criteria: SearchCriteria) -> str:
         """
         Builds an IMAP-compatible search criteria query string based on given search parameters.
 
@@ -830,9 +789,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         search_criteria_query += add_criterion("TEXT", search_criteria.include)
         search_criteria_query += add_criterion("NOT TEXT", search_criteria.exclude)
         search_criteria_query += add_criterion('', search_criteria.flags)
+        search_criteria_query += add_criterion('BODY', search_criteria.has_attachments and 'ATTACHMENT' or '')
         return search_criteria_query.strip()
 
-    def fetch_emails(self,
+    def search_emails(self,
         folder: str = INBOX,
         search: str | SearchCriteria = ALL
     ) -> list[str]:
@@ -852,15 +812,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
         search_criteria_query = ''
         try:
             search_criteria_query = ''
-            must_have_attachment = False
             if isinstance(search, SearchCriteria):
-                must_have_attachment = search.has_attachments
-                search_criteria_query = self.__build_search_criteria_query(search) or ALL
+                self.__must_have_attachments = search.has_attachments
+                search_criteria_query = self.build_search_criteria_query_string(search) or ALL
             else:
                 search_criteria_query = search or ALL
         except Exception as e:
             raise IMAPManagerException(f"Error while building search query: {str(e)}") from None
         
+        # Searching emails
         try:
             search_status, uids = self.uid(
                 'search', 
@@ -872,12 +832,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}`: {search_status}")
             
             uids = uids[0].split()[::-1]
+            return uids
         except Exception as e:
             raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}`: {str(e)}") from None
-
-        return uids
-
-    def get_emails(
+    
+    def fetch_emails(
         self,
         uids: list[str],
         offset: int = 0,
@@ -908,50 +867,31 @@ class IMAPManager(imaplib.IMAP4_SSL):
             uid_range = uids[offset]
             if count > 1:
                 uid_range = f"{uids[offset]:str(int(uids[offset]) + count)}"
-                
-            status, unparsed_emails = self.uid('FETCH', uid_range, '(RFC822)')
-            if status != 'OK':
-                raise IMAPManagerException(f"Error while fetching emails, fetched email length was `{len(unparsed_emails)}`: {status}")
             
-            for i, message in enumerate(unparsed_emails):
-                """
-                _, data = M.fetch(num, '(BODY.PEEK[HEADER.FIELDS (CONTENT-TYPE)])')
-                if b"multipart/mixed" in data[0][1]:
-                    print("Found multipart/mixed: ", num
-                """
-                message = email.message_from_bytes(message, policy=email.policy.default)
-
-                payload = [message]
-                if message.is_multipart():
-                    # FIXME: must_have_attachment is not defined
-                    if must_have_attachment and message.get_content_type() != "multipart/mixed":
-                        continue
-                    payload = message.walk()
-
-                body = ""
-                is_body_html = False
-                for part in payload:
-                    content_type = part.get_content_type()
-                    file_name = part.get_filename()
-
-                    is_body_html = content_type == "text/html"
-                    if (file_name is None and content_type == "text/plain") or (is_body_html and not body):
-                        body = part.get_payload(decode=True)
-                        body = body.decode(part.get_content_charset() or "utf-8") if body else ""
-
-                # TODO: Check if this is required
-                #body = BeautifulSoup(body, "html.parser").get_text() if is_body_html else body
-                #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
-                #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
+            status, messages = self.uid(
+                'FETCH', 
+                uid_range, 
+                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.500> FLAGS BODYSTRUCTURE)'
+            )
+            if status != 'OK':
+                raise IMAPManagerException(f"Error while fetching emails, fetched email length was `{len(messages)}`: {status}")
+            
+            matches = MessageParser.messages(messages)
+            for i, match in enumerate(matches):
+                message_headers = MessageParser.headers_from_message(match)
+                if not message_headers:
+                    print(f"Header fields could not be parsed of message: {uids[i]} skipping...")
+                    continue
 
                 emails.append(EmailSummary(
                     uid=uids[i].decode(),
-                    sender=message["From"],
-                    receiver=message["To"],
-                    subject=message.get("Subject", ""),
-                    body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
-                    date=message["Date"],
-                    flags=self.get_email_flags(uids[i]) or []
+                    sender=message_headers["sender"],
+                    receiver=message_headers["receiver"],
+                    subject=message_headers["subject"],
+                    body_short=truncate_text(MessageParser.body_from_message(match), BODY_SHORT_THRESHOLD),
+                    date=message_headers["date"],
+                    flags=MessageParser.flags_from_message(match),
+                    attachments=MessageParser.attachments_from_message(match)
                 ))
         except Exception as e:
             raise IMAPManagerException(f"Error while fetching emails, fetched email length was `{len(emails)}`: {str(e)}") from None
@@ -978,7 +918,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # Get body and attachments
         body, attachments = "", []
         try:
-            _, message = self.uid('fetch', uid, '(RFC822)')
+            status, message = self.uid('fetch', uid, '(RFC822)')
+            if status != 'OK':
+                raise IMAPManagerException(f"Error while getting email content: {status}")
+            
             message = email.message_from_bytes(message[0][1], policy=email.policy.default)
 
             for part in (message.walk() if message.is_multipart() else [message]):
@@ -1006,6 +949,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         try:
             # Get inline attachments
             if attachments:
+                # TODO: add this to the MessageParser as a staticmethod
                 for match in CID_PATTERN.finditer(body):
                     cid = match.group(1)
                     for attachment in attachments:
@@ -1042,7 +986,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 "In-Reply-To": message.get("In-Reply-To", ""),
                 "References": message.get("References", "")
             },
-            flags=self.get_email_flags(uid) or [],
+            flags=self.fetch_flags_of_emails(uid) or [],
             attachments=attachments
         )
 
@@ -1088,7 +1032,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         mark_result = self.uid(
             'STORE', 
-            f"{uid:str(int(uid) + limit)}" if limit > 1 else uid,
+            f"{uid:str(int(uid) + limit + 1)}" if limit > 1 else uid,
             command,
             MARK_MAP[mark]
         )
@@ -1198,7 +1142,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         move_result = self.uid(
             'MOVE', 
-            f"{uid}:{str(int(uid) + limit)}" if limit > 1 else uid,
+            f"{uid}:{str(int(uid) + limit + 1)}" if limit > 1 else uid,
             self.__encode_folder(destination_folder)
         )
 
@@ -1241,7 +1185,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         copy_result = self.uid(
             'COPY',
-            f"{uid}:{str(int(uid) + limit)}" if limit > 1 else uid,
+            f"{uid}:{str(int(uid) + limit + 1)}" if limit > 1 else uid,
             self.__encode_folder(destination_folder)
         )
 
@@ -1293,7 +1237,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         delete_result = self.__parse_command_result(
             self.uid(
                 'STORE', 
-                f"{uid}:{str(int(uid) + limit)}" if limit > 1 else uid,
+                f"{uid}:{str(int(uid) + limit + 1)}" if limit > 1 else uid,
                 '+FLAGS', 
                 '\\Deleted'
             ),
