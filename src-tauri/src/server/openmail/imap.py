@@ -1129,7 +1129,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             mark,
             limit,
             "+FLAGS",
-            folder,
+            folder if isinstance(folder, str) else folder.decode("utf-8"),
             f"Email(s) marked with {mark} successfully.",
             f"There was an error while marking the email(s) with {mark}."
         )
