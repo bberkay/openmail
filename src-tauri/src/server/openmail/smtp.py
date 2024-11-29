@@ -1,5 +1,19 @@
 """
-# TODO: module docstring
+SMTPManager
+This module extends the functionality of the 
+`smtplib.SMTP` class to simplify its usage and 
+add new features.
+
+Key features include:
+- Automated server selection based on email domain.
+- Support for attachments, inline images, and metadata in email messages.
+- New methods for replying to and forwarding emails.
+- Custom error handling, logging.
+
+Primarily designed for use by the `OpenMail` class.
+
+Author: <berkaykayaforbusiness@outlook.com>
+License: MIT
 """
 import smtplib
 import re
@@ -33,11 +47,11 @@ SMTP_SERVERS = MappingProxyType({
     "hotmail": "smtp-mail.outlook.com",
     'yandex': 'smtp.yandex.com',
 })
-DEF_SMTP_PORT = 587
+SMTP_PORT = 587
 
 # Custom consts
 MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024 # 25MB
-DEF_CONN_TIMEOUT = 30 # 30 seconds
+DEFAULT_CONN_TIMEOUT = 30 # 30 seconds
 
 # Regular expressions, avoid changing
 SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
@@ -46,16 +60,19 @@ IMG_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');
 class SMTPManager(smtplib.SMTP):
     """
     SMTPManager extends the `smtplib.SMTP` class.
-    # TODO: class docstring
+    Does not override any methods except `login`
+    and `quit`. Converts `quit` to `logout` for
+    consistency with `IMAPManager`. Mainly used
+    in `OpenMail` class.
     """
     def __init__(
         self,
         email_address: str,
         password: str,
         host: str = "",
-        port: int = DEF_SMTP_PORT,
+        port: int = SMTP_PORT,
         local_hostname=None,
-        timeout: int = DEF_CONN_TIMEOUT,
+        timeout: int = DEFAULT_CONN_TIMEOUT,
         source_address=None
     ):
         """
@@ -72,9 +89,9 @@ class SMTPManager(smtplib.SMTP):
         """
         super().__init__(
             host or self.__find_smtp_server(email_address),
-            port or DEF_SMTP_PORT,
+            port or SMTP_PORT,
             local_hostname=local_hostname,
-            timeout=choose_positive(timeout, DEF_CONN_TIMEOUT),
+            timeout=choose_positive(timeout, DEFAULT_CONN_TIMEOUT),
             source_address=source_address
         )
 
@@ -96,7 +113,7 @@ class SMTPManager(smtplib.SMTP):
         try:
             return SMTP_SERVERS[extract_domain(email_address)]
         except KeyError:
-            raise SMTPManagerException("Unsupported email domain")
+            raise SMTPManagerException("Unsupported email domain") from None
 
     @override
     def login(self, user: str, password: str, *, initial_response_ok=True) -> SMTPCommandResult:
@@ -145,7 +162,7 @@ class SMTPManager(smtplib.SMTP):
                 raise SMTPManagerException(f"Could not disconnect from the target smtp server: {str(result)}")
             return (True, "Logout successful")
         except Exception as e:
-            raise SMTPManagerException(f"Could not disconnect from the target smtp server: {str(e)}")
+            raise SMTPManagerException(f"Could not disconnect from the target smtp server: {str(e)}") from None
 
     def send_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
@@ -159,64 +176,86 @@ class SMTPManager(smtplib.SMTP):
                 - A bool indicating whether the email was sent successfully.
                 - A string containing a success message or an error message.
         """
-        receiver, cc, bcc = email.receiver, email.cc, email.bcc
-        if isinstance(receiver, list):
-            receiver = ", ".join(receiver)
-        if cc and isinstance(email.cc, list):
-            cc = ", ".join(email.cc)
-        if bcc and isinstance(email.bcc, list):
-            bcc = ", ".join(email.bcc)
+        try:
+            receiver, cc, bcc = email.receiver, email.cc, email.bcc
+            if isinstance(receiver, list):
+                receiver = ", ".join(receiver)
+            if cc and isinstance(email.cc, list):
+                cc = ", ".join(email.cc)
+            if bcc and isinstance(email.bcc, list):
+                bcc = ", ".join(email.bcc)
+        except Exception as e:
+            raise SMTPManagerException(f"Error while getting email recipients: {str(e)}") from None
 
-        # sender can be a string(just email) or a tuple (name, email)
-        msg = MIMEMultipart()
-        msg['From'] = email.sender if isinstance(email.sender, str) else f"{email.sender[0]} <{email.sender[1]}>"
-        msg['To'] = receiver
-        msg['Subject'] = email.subject
-        if cc:
-            msg['Cc'] = cc
-        if email.metadata:
-            for key, value in email.metadata.items():
-                msg[key] = value
+        try:
+            # `sender` can be a string(just email) or a tuple (name, email).
+            msg = MIMEMultipart()
+            msg['From'] = email.sender if isinstance(email.sender, str) else f"{email.sender[0]} <{email.sender[1]}>"
+            msg['To'] = receiver
+            msg['Subject'] = email.subject
+            if cc:
+                msg['Cc'] = cc
+        except Exception as e:
+            raise SMTPManagerException(f"Error while creating email headers: {str(e)}") from None
 
-        # Attach inline images
-        body = email.body
-        if IMG_PATTERN.search(body):
-            for match in IMG_PATTERN.finditer(body):
-                img_ext, img_data = match.group(1), match.group(2)
-                cid = f'image{match.start()}'
-                body = body.replace(f'data:image/{img_ext};base64,{img_data}', f'cid:{cid}')
-                image = base64.b64decode(img_data)
-                image = MIMEImage(image, name=f"{cid}.{img_ext}")
-                image.add_header('Content-ID', f'<{cid}>')
-                msg.attach(image)
+        try:
+            if email.metadata:
+                for key, value in email.metadata.items():
+                    msg[key] = value
+        except Exception as e:
+            raise SMTPManagerException(f"Error while adding metadata to headers: {str(e)}") from None
 
-        # Create message
-        msg.attach(MIMEText(body, 'html'))
-        if email.attachments:
-            for attachment in email.attachments:
-                if attachment.size > MAX_ATTACHMENT_SIZE:
-                    raise SMTPManagerException(f"Attachment size is too large. Max size is {make_size_human_readable(MAX_ATTACHMENT_SIZE)}")
+        # Attach inline images.
+        try:
+            body = email.body
+            if IMG_PATTERN.search(body):
+                for match in IMG_PATTERN.finditer(body):
+                    img_ext, img_data = match.group(1), match.group(2)
+                    cid = f'image{match.start()}'
+                    body = body.replace(f'data:image/{img_ext};base64,{img_data}', f'cid:{cid}')
+                    image = base64.b64decode(img_data)
+                    image = MIMEImage(image, name=f"{cid}.{img_ext}")
+                    image.add_header('Content-ID', f'<{cid}>')
+                    msg.attach(image)
+        except Exception as e:
+            raise SMTPManagerException(f"Error while handling inline images: {str(e)}") from None
 
-                part = MIMEApplication(attachment.file.read())
-                part.add_header('content-disposition', 'attachment', filename=attachment.filename)
-                msg.attach(part)
+        # Create message and attach attachments.
+        try:
+            msg.attach(MIMEText(body, 'html'))
+            if email.attachments:
+                for attachment in email.attachments:
+                    if attachment.size > MAX_ATTACHMENT_SIZE:
+                        raise SMTPManagerException(f"Attachment size is too large. Max size is {make_size_human_readable(MAX_ATTACHMENT_SIZE)}")
 
-        # Handle receipients
-        receiver = [email.strip() for email in receiver.split(",")]
-        if cc:
-            cc = [email.strip() for email in cc.split(",")]
-            receiver.extend(cc)
-        if bcc:
-            bcc = [email.strip() for email in bcc.split(",")]
-            receiver.extend(bcc)
+                    part = MIMEApplication(attachment.file.read())
+                    part.add_header('content-disposition', 'attachment', filename=attachment.filename)
+                    msg.attach(part)
+        except Exception as e:
+            raise SMTPManagerException(f"Error while creating email message: {str(e)}") from None
 
-        return super().sendmail(
-            email.sender if isinstance(email.sender, str) else email.sender[1],
-            receiver,
-            msg.as_string(),
-            email.mail_options,
-            email.rcpt_options
-        ) or (True, "Email sent successfully")
+        # Handle receipients.
+        try:
+            receiver = [email.strip() for email in receiver.split(",")]
+            if cc:
+                cc = [email.strip() for email in cc.split(",")]
+                receiver.extend(cc)
+            if bcc:
+                bcc = [email.strip() for email in bcc.split(",")]
+                receiver.extend(bcc)
+        except Exception as e:
+            raise SMTPManagerException(f"Error while handling email recipients: {str(e)}") from None
+
+        try:
+            return super().sendmail(
+                email.sender if isinstance(email.sender, str) else email.sender[1],
+                receiver,
+                msg.as_string(),
+                email.mail_options,
+                email.rcpt_options
+            ) or (True, "Email sent successfully") # `sendmail` func returns empty dict on success.
+        except Exception as e:
+            raise SMTPManagerException(f"Error, email prepared but could not be sent: {str(e)}") from None
 
     def reply_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
@@ -233,19 +272,23 @@ class SMTPManager(smtplib.SMTP):
         if not email.uid:
             raise SMTPManagerException("Cannot reply to an email without a unique identifier(uid).")
 
-        email_to_reply = copy.copy(email)
-        email_to_reply.subject = "Re: " + email.subject
-        email_to_reply.metadata = email_to_reply.metadata | {
-            "In-Reply-To": email.uid,
-            "References": email.uid
-        }
+        try:
+            email_to_reply = copy.copy(email)
+            email_to_reply.subject = "Re: " + email.subject
+            email_to_reply.metadata = email_to_reply.metadata | {
+                "In-Reply-To": email.uid,
+                "References": email.uid
+            }
+        except Exception as e:
+            raise SMTPManagerException(f"Error while creating email to reply: {str(e)}") from None
 
-        result = self.send_email(email_to_reply)
+        status, message = self.send_email(email_to_reply)
 
-        if result[0]:
-            return result[0], "Email replied successfully"
+        # Overriding success message.
+        if status:
+            return True, "Email replied successfully"
 
-        return result
+        return status, message
 
     def forward_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
@@ -263,19 +306,23 @@ class SMTPManager(smtplib.SMTP):
         if not email.uid:
             raise SMTPManagerException("Cannot forward an email without a unique identifier(uid).")
 
-        email_to_forward = copy.copy(email)
-        email_to_forward.subject = "Fwd: " + email.subject
-        email_to_forward.metadata = email_to_forward.metadata | {
-            "In-Reply-To": email.uid,
-            "References": email.uid
-        }
+        try:
+            email_to_forward = copy.copy(email)
+            email_to_forward.subject = "Fwd: " + email.subject
+            email_to_forward.metadata = email_to_forward.metadata | {
+                "In-Reply-To": email.uid,
+                "References": email.uid
+            }
+        except Exception as e:
+            raise SMTPManagerException(f"Error while creating email to forward: {str(e)}") from None
 
-        result = self.send_email(email_to_forward)
+        status, message = self.send_email(email_to_forward)
 
-        if result[0]:
-            return result[0], "Email forwarded successfully"
+        # Overriding success message.
+        if status:
+            return True, "Email forwarded successfully"
 
-        return result
+        return status, message
 
 
 __all__ = [

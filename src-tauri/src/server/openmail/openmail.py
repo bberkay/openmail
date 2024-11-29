@@ -1,10 +1,7 @@
 """
-OpenMail Email Client Module
-
+OpenMail
 This module provides the OpenMail class, which offers a simplified interface 
 for managing email operations via IMAP and SMTP protocols. 
-The class supports actions such as connecting to mail servers, sending and 
-replying to emails, managing folders, and retrieving email content.
 
 Dependencies:
 - Requires `IMAPManager` and `SMTPManager` classes from the `imap` and 
@@ -15,7 +12,7 @@ License: MIT
 """
 import copy
 from .types import EmailToSend
-from .imap import IMAPManager
+from .imap import IMAPManager, Mark
 from .smtp import SMTPManager, SMTPCommandResult, SMTPManagerException
 
 class OpenMail:
@@ -29,12 +26,22 @@ class OpenMail:
 
     def __init__(self):
         """
-        Initialize OpenMail with unestablished IMAP and SMTP connections.
-        
+        Initialize the OpenMail class.
+
         Connections will be established when connect() method is called.
         """
-        self.imap = None
-        self.smtp = None
+        self.__imap = None
+        self.__smtp = None
+
+    @property
+    def imap(self) -> IMAPManager:
+        """Get the IMAPManager instance."""
+        return self.__imap
+
+    @property
+    def smtp(self) -> SMTPManager:
+        """Get the SMTPManager instance."""
+        return self.__smtp
 
     def connect(
         self,
@@ -65,7 +72,7 @@ class OpenMail:
             tuple[bool, str]: A tuple containing connection status (True/False) 
                                and a status message
         """
-        self.imap = IMAPManager(
+        self.__imap = IMAPManager(
             email_address,
             password,
             imap_host,
@@ -73,7 +80,7 @@ class OpenMail:
             imap_ssl_context,
             timeout
         )
-        self.smtp = SMTPManager(
+        self.__smtp = SMTPManager(
             email_address,
             password,
             smtp_host,
@@ -104,10 +111,10 @@ class OpenMail:
         """
         if not email.uid:
             raise SMTPManagerException("Cannot reply to an email without a unique identifier(uid).")
-        
+
         result = self.smtp.reply_email(email)
         if result[0]:
-            self.imap.mark_email(email.uid, "answered")
+            self.imap.mark_email(email.uid, Mark.ANSWERED)
 
         return result
 
@@ -126,9 +133,9 @@ class OpenMail:
         """
         if not email.uid:
             raise SMTPManagerException("Cannot forward an email without a unique identifier(uid).")
-        
+
         email_fwd_copy = copy.copy(email)
         email_fwd_copy.subject = self.imap.get_email_content(email_fwd_copy.uid).subject
         return self.smtp.forward_email(email_fwd_copy)
-    
+
 __all__ = ["OpenMail"]
