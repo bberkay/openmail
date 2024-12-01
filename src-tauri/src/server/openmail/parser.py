@@ -32,7 +32,9 @@ DATE_PATTERN = re.compile(r'Date:\s+(.+?)\\r\\n')
 BODY_PATTERN = re.compile(r"BODY\[TEXT\].*?b'(.*?)\), \(b' BODY\[HEADER")
 BODY_TEXT_PATTERN = re.compile(r'(?i)Content-Type: text/plain; charset="utf-8".*?\\r\\n\\r\\n(.*?)(?=\\r\\n\\r\\n--[^-]|$)')
 ATTACHMENT_PATTERN = re.compile(r'ATTACHMENT.*?\("FILENAME" "([^"]+)"\)') 
-INLINE_ATTACHMENT_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
+INLINE_ATTACHMENT_CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
+SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
+INLINE_ATTACHMENT_DATA_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"')
 FLAGS_PATTERN = re.compile(r'FLAGS \((.*?)\)')
 LINE_PATTERN = re.compile(r'\\.*?r\\.*?n')
 PLAIN_TEXT_PATTERN = re.compile(r'=[A-Za-z0-9]+|\(.*?\)|\*+|-+|\s+')
@@ -156,7 +158,34 @@ class MessageParser:
             ['image1', 'image2']
             
         """
-        return [match.group(1) for match in INLINE_ATTACHMENT_PATTERN.finditer(message)]
+        return [match.group(1) for match in INLINE_ATTACHMENT_CID_PATTERN.finditer(message)]
+    
+    @staticmethod
+    def inline_attachment_data_and_cid_from_message(message: str) -> list[tuple[str, str, int]]:
+        """
+        Get inline attachments' data and cid from raw message string.
+
+        Args:
+            message (str): Raw message string.
+
+        Returns:
+            list[tuple[str, str, int]]: List of inline attachments as extension, data and cid.
+
+        Example:
+            >>> message = '''
+            ... <html>
+            ...     <body>
+            ...         <p>Check out this image:</p>
+            ...         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA">
+            ...         <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAAAAA">
+            ...     </body>
+            ... </html>
+            ... '''
+            >>> inline_attachment_data_and_cid_from_message(message)
+            [('png', 'iVBORw0KGgoAAAANSUhEUgAAAAUA', 58), 
+            ('jpeg', '/9j/4AAQSkZJRgABAQEAAAAAA', 119)]
+        """
+        return [(match.group(1), match.group(2), match.start()) for match in INLINE_ATTACHMENT_CID_PATTERN.finditer(message)]
     
     @staticmethod
     def flags_from_message(message: str) -> list[str]:

@@ -16,7 +16,6 @@ Author: <berkaykayaforbusiness@outlook.com>
 License: MIT
 """
 import smtplib
-import re
 import base64
 import copy
 
@@ -28,6 +27,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
+from .parser import MessageParser
 from .utils import extract_domain, choose_positive, make_size_human_readable
 from .types import EmailToSend
 
@@ -52,10 +52,6 @@ SMTP_PORT = 587
 # Custom consts
 MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024 # 25MB
 DEFAULT_CONN_TIMEOUT = 30 # 30 seconds
-
-# Regular expressions, avoid changing
-SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
-IMG_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"')
 
 class SMTPManager(smtplib.SMTP):
     """
@@ -208,17 +204,18 @@ class SMTPManager(smtplib.SMTP):
         # Attach inline images.
         try:
             body = email.body
-            if IMG_PATTERN.search(body):
-                for match in IMG_PATTERN.finditer(body):
-                    img_ext, img_data = match.group(1), match.group(2)
-                    cid = f'image{match.start()}'
+            inline_data = MessageParser.inline_attachment_data_and_cid_from_message(body)
+            if inline_data:
+                for match in inline_data:
+                    img_ext, img_data = match[0], match[1]
+                    cid = f'image{match[2]}'
                     body = body.replace(f'data:image/{img_ext};base64,{img_data}', f'cid:{cid}')
                     image = base64.b64decode(img_data)
                     image = MIMEImage(image, name=f"{cid}.{img_ext}")
                     image.add_header('Content-ID', f'<{cid}>')
                     msg.attach(image)
         except Exception as e:
-            raise SMTPManagerException(f"Error while handling inline images: {str(e)}") from None
+            raise SMTPManagerException(f"Error while handling inline attachments: {str(e)}") from None
 
         # Create message and attach attachments.
         try:
@@ -226,7 +223,7 @@ class SMTPManager(smtplib.SMTP):
             if email.attachments:
                 for attachment in email.attachments:
                     if attachment.size > MAX_ATTACHMENT_SIZE:
-                        raise SMTPManagerException(f"Attachment size is too large. Max size is {make_size_human_readable(MAX_ATTACHMENT_SIZE)}")
+                        raise SMTPManagerException(f"Attachment size `{make_size_human_readable(attachment.size)}` is too large. Max size is {make_size_human_readable(MAX_ATTACHMENT_SIZE)}")
 
                     part = MIMEApplication(attachment.file.read())
                     part.add_header('content-disposition', 'attachment', filename=attachment.filename)
@@ -270,7 +267,7 @@ class SMTPManager(smtplib.SMTP):
                 - A string containing a success message or an error message.
         """
         if not email.uid:
-            raise SMTPManagerException("Cannot reply to an email without a unique identifier(uid).")
+            raise SMTPManagerException(f"Cannot reply to an email without a unique identifier(uid).")
 
         try:
             email_to_reply = copy.copy(email)
@@ -280,7 +277,7 @@ class SMTPManager(smtplib.SMTP):
                 "References": email.uid
             }
         except Exception as e:
-            raise SMTPManagerException(f"Error while creating email to reply: {str(e)}") from None
+            raise SMTPManagerException(f"Error while creating email reply: {str(e)}") from None
 
         status, message = self.send_email(email_to_reply)
 
@@ -304,7 +301,7 @@ class SMTPManager(smtplib.SMTP):
                 - A string containing a success message or an error message.
         """
         if not email.uid:
-            raise SMTPManagerException("Cannot forward an email without a unique identifier(uid).")
+            raise SMTPManagerException(f"Cannot forward an email without a unique identifier(uid).")
 
         try:
             email_to_forward = copy.copy(email)
@@ -314,7 +311,7 @@ class SMTPManager(smtplib.SMTP):
                 "References": email.uid
             }
         except Exception as e:
-            raise SMTPManagerException(f"Error while creating email to forward: {str(e)}") from None
+            raise SMTPManagerException(f"Error while creating email to forward: `{str(e)}`") from None
 
         status, message = self.send_email(email_to_forward)
 

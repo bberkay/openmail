@@ -17,7 +17,8 @@ class SearchCriteria():
     subject: Optional[str] = ""
     since: Optional[str] = ""
     before: Optional[str] = ""
-    flags: Optional[List[str]] = field(default_factory=list)
+    included_flags: Optional[List[str]] = field(default_factory=list)
+    excluded_flags: Optional[List[str]] = field(default_factory=list)
     smaller_than: Optional[int] = 0
     larger_than: Optional[int] = 0
     include: Optional[str] = ""
@@ -91,6 +92,10 @@ class EmailToSend():
     mail_options: Optional[Sequence[str]] = field(default_factory=list)
     rcpt_options: Optional[Sequence[str]] = field(default_factory=list)
 
+    def __str__(self):
+        """Returns a string representation of the EmailToSend object."""
+        return str(self.__dict__)
+    
 @dataclass
 class Mailbox():
     """

@@ -19,7 +19,6 @@ License: MIT
 import imaplib
 import email
 import threading
-import re
 import base64
 import time
 
@@ -48,9 +47,13 @@ class Mark(Enum):
     FLAGGED = "\\Flagged"
     SEEN = "\\Seen"
     ANSWERED = "\\Answered"
-    #deleted = "\\Deleted"
-    #draft = "\\Draft"
-    #spam = "\\Spam"
+    DRAFT = "\\Draft"
+    DELETED = "\\Deleted"
+    UNFLAGGED = "\\Unflagged"
+    UNSEEN = "\\Unseen"
+    UNANSWERED = "\\Unanswered"
+    UNDRAFT = "\\Undraft"
+    UNDELETED = "\\Undeleted"
 
 # https://datatracker.ietf.org/doc/html/rfc6154#autoid-3
 class Folder(Enum):
@@ -97,9 +100,6 @@ MAX_FOLDER_NAME_LENGTH = 100
 CONN_TIMEOUT = 30 # 30 seconds
 IDLE_TIMEOUT = 30 * 60 # 30 minutes
 WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
-
-# Regular expressions
-INLINE_ATTACHMENT_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
 
 class IMAPManager(imaplib.IMAP4_SSL):
     """
@@ -212,6 +212,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Notes:
             - UTF-8 encoding is enabled after successful authentication.
             - Supports both ASCII and non-ASCII credentials.
+            - 'password' will be quoted.
         """
         try:
             if contains_non_ascii(user) or contains_non_ascii(password):
@@ -794,9 +795,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             return f' ({criteria} "{value}")'
 
         mark_list = [m.value for m in Mark]
-        for flag in search_criteria.flags:
-            if flag not in mark_list:
-                raise IMAPManagerException(f"Unsupported flag: `{flag}`. The supported flags are: `{', '.join(mark_list)}`.")
+        included_flag_list = ["KEYWORD " + flag if flag not in mark_list else flag for flag in search_criteria.included_flags]
+        excluded_flag_list = ["NOT KEYWORD " + flag if flag not in mark_list else flag for flag in search_criteria.excluded_flags]
 
         search_criteria_query = ''
         search_criteria_query += add_criterion(
@@ -824,9 +824,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         search_criteria_query += add_criterion("BEFORE", search_criteria.before)
         search_criteria_query += add_criterion("TEXT", search_criteria.include)
         search_criteria_query += add_criterion("NOT TEXT", search_criteria.exclude)
-        search_criteria_query += add_criterion('', search_criteria.flags)
+        search_criteria_query += add_criterion('', included_flag_list + excluded_flag_list)
         search_criteria_query += add_criterion('BODY', search_criteria.has_attachments and 'ATTACHMENT' or '')
-        # TODO: Add smaller_than and larger_than.
+        search_criteria_query += add_criterion('LARGER', search_criteria.larger_than)
+        search_criteria_query += add_criterion('SMALLER', search_criteria.smaller_than)
         return search_criteria_query.strip()
 
     def search_emails(self,
@@ -1134,7 +1135,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         
     def __mark_email(
         self,
-        mark: Mark,
+        mark:  str | Mark,
         sequence_set: str,
         command: str,
         folder: str,
@@ -1188,9 +1189,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         mark = mark.lower()
         mark_list = [m.value for m in Mark]
-        if not mark or mark not in mark_list:
+        if not mark or (mark not in mark_list and not mark.startswith("\\") and not mark.isalnum()):
             raise IMAPManagerException(
-                f"Unsupported mark: `{mark}`. Please use one of the following: `{', '.join(mark_list)}`"
+                f"Unsupported mark: `{mark}`. Please use one of the following or provide a valid custom flag: `{', '.join(mark_list)}`"
             )
 
         mark_result = self.__parse_command_result(
@@ -1215,7 +1216,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def mark_email(
         self,
-        mark: Mark,
+        mark: str | Mark,
         sequence_set: str,
         folder: str = Folder.Inbox
     ) -> IMAPCommandResult:
@@ -1268,7 +1269,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def unmark_email(
         self,
-        mark: Mark,
+        mark: str | Mark,
         sequence_set: str,
         folder: str = Folder.Inbox,
     ) -> IMAPCommandResult:
