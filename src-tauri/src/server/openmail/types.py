@@ -24,6 +24,10 @@ class SearchCriteria():
     exclude: Optional[str] = ""
     has_attachments: Optional[bool] = False
 
+    def __str__(self):
+        """Returns a string representation of the SearchCriteria object."""
+        return str(self.__dict__)
+    
 @dataclass
 class EmailSummary():
     """
@@ -95,6 +99,14 @@ class Mailbox():
     folder: str
     emails: List[EmailSummary]
     total: int
+
+@dataclass
+class Flags():
+    """
+    A class that represents an email's flags as a dataclass.
+    """
+    uid: str
+    flags: List[str]
 
 __all__ = [
     "SearchCriteria", 

@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from openmail import OpenMail
-from openmail.imap import Folder, Mark
+from openmail.imap import Folder, Mark, IMAPManagerException
 from classes.filesystem import FileSystem
 from classes.loghandler import LogHandler
 from classes.securestorage import SecureStorage
@@ -105,17 +105,13 @@ def add_email_account(
     if not is_email_valid(email):
         return Response(success=False, message="Invalid email address format")
 
-    openmail_client = OpenMail()
-    status, msg = openmail_client.connect(email, password)
-    if not status:
-        return Response(success=status, message=msg)
-
     try:
-        secure_storage.insert_account(
-            email,
-            password,
-            fullname
-        )
+        openmail_client = OpenMail()
+        status, msg = openmail_client.connect(email, password)
+        if not status:
+            return Response(success=status, message=msg)
+    
+        secure_storage.insert_account(email, password, fullname)
         openmail_clients[email] = openmail_client
         return Response(
             success=True,
@@ -166,11 +162,44 @@ def check_email_accounts(accounts: str) -> Response | bool:
         
     return True
 
-@app.get("/search-emails/{accounts}")
-async def search_emails(
+@app.get("/get-emails/{accounts}")
+async def get_emails(
     accounts: str,
     folder: Optional[str] = Folder.Inbox,
-    search: Optional[str] = "ALL"
+    search: Optional[str] = "ALL",
+    offset_start: Optional[int] = 0,
+    offset_end: Optional[int] = 10
+) -> Response:
+    try:
+        response = check_email_accounts(accounts)
+        if not response:
+            return response
+        
+        run_openmail_func_concurrently(
+            accounts.split(","),
+            lambda client, **params: client.search_emails(**params),
+            folder=folder,
+            search=search
+        )
+
+        return Response(
+            success=True, 
+            message="Emails fetched successfully.",
+            data=run_openmail_func_concurrently(
+                accounts.split(","),
+                lambda client, **params: client.get_emails(**params),
+                offset_start=offset_start,
+                offset_end=offset_end
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=str(e))
+
+@app.get("/paginate-emails/{accounts}")
+async def paginate_emails(
+    accounts: str,
+    offset_start: Optional[int] = 0,
+    offset_end: Optional[int] = 10,
 ) -> Response:
     try:
         response = check_email_accounts(accounts)
@@ -178,14 +207,13 @@ async def search_emails(
             return response
         
         return Response(
-            success=True,
-            message="Emails found",
+            success=True, 
+            message="Emails paginated successfully.",
             data=run_openmail_func_concurrently(
                 accounts.split(","),
-                lambda client, **params: client.search_emails(**params),
-                folder=folder,
-                search=search,
-                offset=offset
+                lambda client, **params: client.get_emails(**params),
+                offset_start=offset_start,
+                offset_end=offset_end
             )
         )
     except Exception as e:
@@ -201,8 +229,8 @@ async def get_folders(
             return response
         
         return Response(
-            success=True,
-            message="Folders found",
+            success=True, 
+            message="Folders fetched successfully.",
             data=run_openmail_func_concurrently(
                 accounts.split(","),
                 lambda client: client.get_folders(),
@@ -222,11 +250,15 @@ def get_email_content(
         if not response:
             return response
         
-        status, msg = openmail_clients[account].get_email_content(uid, unquote(folder))
-        return Response(success=status, message=msg)
+        return Response(
+            success=True,
+            message="Email content fetched successfully.",
+            data=openmail_clients[account].get_email_content(uid, unquote(folder))
+        )
     except Exception as e:
         return Response(success=False, message=str(e))
 
+# FIXME: send-email
 @app.post("/send-email")
 async def send_email(
     sender: str | tuple[str, str] = Form(...), # (sender_name, sender_email)
@@ -258,12 +290,13 @@ async def send_email(
     except Exception as e:
         return Response(success=False, message=str(e))
 
+# TODO: Reply email, forward email.
+
 class MarkEmailRequest(BaseModel):
     account: str
-    uid: str
     mark: Mark
+    sequence_set: str
     folder: str = Folder.Inbox
-    limit: int = 1
     
 @app.post("/mark-email")
 async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
@@ -273,10 +306,9 @@ async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
             return response
         
         status, msg = openmail_clients[mark_email_request.account].mark_email(
-            mark_email_request.uid,
             mark_email_request.mark,
+            mark_email_request.sequence_set,
             mark_email_request.folder,
-            mark_email_request.limit
         )
         return Response(success=status, message=msg)
     except Exception as e:
@@ -284,10 +316,9 @@ async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
 
 class UnmarkEmailRequest(BaseModel):
     account: str
-    uid: str
     mark: Mark
+    sequence_set: str
     folder: str = Folder.Inbox
-    limit: int = 1
     
 @app.post("/unmark-email")
 async def unmark_email(unmark_email_request: UnmarkEmailRequest) -> Response:
@@ -297,10 +328,9 @@ async def unmark_email(unmark_email_request: UnmarkEmailRequest) -> Response:
             return response
         
         status, msg = openmail_clients[unmark_email_request.account].unmark_email(
-            unmark_email_request.uid, 
             unmark_email_request.mark, 
+            unmark_email_request.sequence_set,
             unmark_email_request.folder,
-            unmark_email_request.limit
         )
         return Response(success=status, message=msg)
     except Exception as e:
@@ -308,10 +338,9 @@ async def unmark_email(unmark_email_request: UnmarkEmailRequest) -> Response:
     
 class MoveEmailRequest(BaseModel):
     account: str
-    uid: str
     source_folder: str
     destination_folder: str
-    limit: int = 1
+    sequence_set: str
 
 @app.post("/move-email")
 async def move_email(move_email_request: MoveEmailRequest) -> Response:
@@ -321,10 +350,9 @@ async def move_email(move_email_request: MoveEmailRequest) -> Response:
             return response
         
         status, msg = openmail_clients[move_email_request.account].move_email(
-            move_email_request.uid,
             move_email_request.source_folder,
             move_email_request.destination_folder,
-            move_email_request.limit
+            move_email_request.sequence_set
         )
         return Response(success=status, message=msg)
     except Exception as e:
@@ -332,10 +360,9 @@ async def move_email(move_email_request: MoveEmailRequest) -> Response:
 
 class CopyEmailRequest(BaseModel):
     account: str
-    uid: str
     source_folder: str
     destination_folder: str
-    limit: int = 1
+    sequence_set: str
 
 @app.post("/copy-email")
 async def copy_email(copy_email_request: CopyEmailRequest) -> Response:
@@ -345,10 +372,9 @@ async def copy_email(copy_email_request: CopyEmailRequest) -> Response:
             return response
         
         status, msg = openmail_clients[copy_email_request.account].copy_email(
-            copy_email_request.uid,
             copy_email_request.source_folder,
             copy_email_request.destination_folder,
-            copy_email_request.limit
+            copy_email_request.sequence_set
         )
         return Response(success=status, message=msg)
     except Exception as e:
@@ -356,9 +382,8 @@ async def copy_email(copy_email_request: CopyEmailRequest) -> Response:
 
 class DeleteEmailRequest(BaseModel):
     account: str
-    uid: str
     folder: str
-    limit: int = 1
+    sequence_set: str
 
 @app.post("/delete-email")
 async def delete_email(delete_email_request: DeleteEmailRequest) -> Response:
@@ -368,9 +393,8 @@ async def delete_email(delete_email_request: DeleteEmailRequest) -> Response:
             return response
         
         status, msg = openmail_clients[delete_email_request.account].delete_email(
-            delete_email_request.uid, 
             delete_email_request.folder, 
-            delete_email_request.limit
+            delete_email_request.sequence_set
         )
         return Response(success=status, message=msg)
     except Exception as e:

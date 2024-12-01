@@ -23,7 +23,7 @@ import re
 import base64
 import time
 
-from typing import List, override
+from typing import List, override, TypedDict
 from types import MappingProxyType
 from datetime import datetime
 from enum import Enum
@@ -31,7 +31,7 @@ from enum import Enum
 from .parser import MessageParser
 from .utils import extract_domain, choose_positive
 from .utils import truncate_text, contains_non_ascii, make_size_human_readable
-from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent
+from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent, Flags
 
 # Exceptions
 class IMAPManagerException(Exception):
@@ -42,17 +42,6 @@ class IMAPManagerLoggedOutException(IMAPManagerException):
     while trying to perform an action that requires authentication."""
 
 # Enums
-class WaitResponse(Enum):
-    """Enum for waiting for a response from the server."""
-    # These are not the all possible responses but the ones we are interested in
-    # IDLE, DONE: https://datatracker.ietf.org/doc/html/rfc9051#name-idle-command
-    # EXISTS: https://datatracker.ietf.org/doc/html/rfc9051#name-exists-response
-    # BYE: https://datatracker.ietf.org/doc/html/rfc9051#name-bye-response
-    IDLE = "IDLE"
-    DONE = "DONE"
-    EXISTS = "EXISTS"
-    BYE = "BYE"
-
 # https://datatracker.ietf.org/doc/html/rfc9051#name-flags-message-attribute
 class Mark(Enum):
     """Enum for email marks."""
@@ -92,15 +81,25 @@ IMAP_STATES = ('NONAUTH', 'AUTH', 'SELECTED', 'LOGOUT')
 INBOX = 'INBOX'
 ALL = 'ALL'
 
-# Regular expressions
-INLINE_ATTACHMENT_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
-
 # Custom consts
+GET_EMAILS_OFFSET = MappingProxyType({
+    "start": 0,
+    "end": 10
+})
+UNKNOWN_PLACEHOLDERS = MappingProxyType({
+    "receiver": "Unknown Receiver",
+    "sender": "Unknown Sender",
+    "subject": "No Subject",
+    "date": "Unknown Date"
+})
 BODY_SHORT_THRESHOLD = 50
 MAX_FOLDER_NAME_LENGTH = 100
-DEFAULT_CONN_TIMEOUT = 30 # 30 seconds
-DEFAULT_IDLE_TIMEOUT = 30 * 60 # 30 minutes
-DEFAULT_WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
+CONN_TIMEOUT = 30 # 30 seconds
+IDLE_TIMEOUT = 30 * 60 # 30 minutes
+WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
+
+# Regular expressions
+INLINE_ATTACHMENT_PATTERN = re.compile(r'<img src="cid:([^"]+)"')
 
 class IMAPManager(imaplib.IMAP4_SSL):
     """
@@ -110,6 +109,24 @@ class IMAPManager(imaplib.IMAP4_SSL):
     especially idling and listening exists responses on 
     different threads. Mainly used in `OpenMail` class.
     """
+
+    class SearchedEmails(TypedDict):
+        """Type hinting for `__searched_emails` dict."""
+        uids: list[str]
+        folder: str
+        search_query: str
+
+    class WaitResponse(Enum):
+        """Enum for waiting for a response from the server."""
+        # These are not the all possible responses but the ones we are interested in
+        # IDLE, DONE: https://datatracker.ietf.org/doc/html/rfc9051#name-idle-command
+        # EXISTS: https://datatracker.ietf.org/doc/html/rfc9051#name-exists-response
+        # BYE: https://datatracker.ietf.org/doc/html/rfc9051#name-bye-response
+        IDLE = "IDLE"
+        DONE = "DONE"
+        EXISTS = "EXISTS"
+        BYE = "BYE"
+
     def __init__(
         self,
         email_address: str,
@@ -117,20 +134,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         host: str = "",
         port: int = IMAP_PORT,
         ssl_context: any = None,
-        timeout: int = DEFAULT_CONN_TIMEOUT
+        timeout: int = CONN_TIMEOUT
     ):
-        super().__init__(
-            host or self.__find_imap_server(email_address),
-            port or IMAP_PORT,
-            ssl_context=ssl_context,
-            timeout=choose_positive(timeout, DEFAULT_CONN_TIMEOUT)
-        )
+        self.__searched_emails = None
 
-        self.login(email_address, password)
-
-        self.__current_folder = (INBOX, False)
-
-        # IDLE - READLINE Handling
+        # IDLE and READLINE vars
         self.__is_idle = False
         self.__current_idle_start_time = None
         self.__current_idle_tag = None
@@ -141,6 +149,19 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         self.__readline_thread_event = None
         self.__readline_thread = None
+        
+        # These are must be called after IDLE and READLINE vars are 
+        # initialized because these methods are using `_simple_command`
+        # and `_simple_command` is overridden in this class to handle
+        # IDLE and READLINE operations and uses these vars.
+        super().__init__(
+            host or self.__find_imap_server(email_address),
+            port or IMAP_PORT,
+            ssl_context=ssl_context,
+            timeout=choose_positive(timeout, CONN_TIMEOUT)
+        )
+
+        self.login(email_address, password)
 
 
     def __find_imap_server(self, email_address: str) -> str:
@@ -154,18 +175,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Returns:
             str: The IMAP server address associated with the email's domain.
 
-        Raises:
-            IMAPManagerException: If the email domain is not supported or 
-            not found in the IMAP_SERVERS mapping.
-
         Example:
             >>> email_address = "user@gmail.com"
             >>> self.__find_imap_server(email_address)
             "imap.gmail.com"
-
             >>> email_address = "user@unknown.com"
             >>> self.__find_imap_server(email_address)
             IMAPManagerException: Unsupported email domain
+
+        Raises:
+            IMAPManagerException: If the email domain is not supported or 
+            not found in the IMAP_SERVERS mapping.
         """
         try:
             return IMAP_SERVERS[extract_domain(email_address)]
@@ -273,6 +293,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 item.lower() in err_msg for item in ("AUTH", "SELECTED")
             )
 
+        # If the command is "DONE", idle checking 
+        # and restoring must not be done since
+        # `DONE` command is used to leave IDLE mode.
+        # Also, in the timeout case, the `idle` method
+        # will be called after the `done` method, 
+        # which is already handled in the `__idle` method.
+        if name == "DONE":
+            return super()._simple_command(name, *args)
+        
         # Leaving IDLE mode if needed
         try:
             was_idle_before_call = self.__is_idle
@@ -280,9 +309,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 self.done()
         except Exception as e:
             if is_logged_out(str(e).lower()):
-                raise IMAPManagerLoggedOutException(
-                    f"To perform this action, the IMAPManager must be logged in: {str(e)}"
-                ) from None
+                raise IMAPManagerLoggedOutException(f"To perform this action, the IMAPManager must be logged in: {str(e)}") from None
             else:
                 print(f"Unexpected error while leaving IDLE mode: {str(e)}")
                 # Even if leaving IDLE failed, set idle and readline threads and set
@@ -292,12 +319,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         # Run wanted command.
         try:
-            result = super()._simple_command(name, args)
+            result = super()._simple_command(name, *args)
         except Exception as e:
             if is_logged_out(str(e).lower()):
-                raise IMAPManagerLoggedOutException(
-                    f"To perform this action, the IMAPManager must be logged in: {str(e)}"
-                ) from None
+                raise IMAPManagerLoggedOutException(f"To perform this action, the IMAPManager must be logged in: {str(e)}") from None
             else:
                 raise IMAPManagerException(str(e)) from None
 
@@ -348,14 +373,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     failure_message="Login failed"
                 )
             (True, "Operation successful")
-
             >>> result = ("NO", [b"Invalid credentials"])
             >>> self.__parse_command_result(result, 
                     success_message="Operation successful", 
                     failure_message="Login failed"
                 )
             (False, "Login failed: Invalid credentials")
-
             >>> result = ("BYE", [b"Logout successful"])
             >>> self.__parse_command_result(result, 
                     success_message="Operation successful", 
@@ -374,84 +397,66 @@ class IMAPManager(imaplib.IMAP4_SSL):
             else:
                 return False, failure_message + ": " + result[1][0].decode("utf-8")
         except Exception as e:
-            raise IMAPManagerException(f"There was an error while parsing command result: {str(e)}") from None
+            raise IMAPManagerException(f"There was an error while parsing command `{result}` result: {str(e)}") from None
 
-    def __ensure_command(self, response: tuple[str, list[bytes | None]]):
-        """
-        Ensures an IMAP command was successful.
-
-        Args:
-            response (tuple[str, list[bytes | None]]): 
-                The command response, where the first element is the status 
-                (e.g., "OK") and the second contains additional data.
-
-        Raises:
-            IMAPManagerException: If the response status is not "OK."
-        """
-        try:
-            if response[0] != "OK":
-                raise IMAPManagerException(f"IMAP command failed: {response[1][0].decode("utf-8")}")
-        except imaplib.IMAP4.error as e:
-            raise IMAPManagerException(f"There was an error while ensuring command: {str(e)}") from None
-
-    def idle(self) -> None:
+    def idle(self):
         """
         Initiates the IMAP IDLE command to start monitoring changes 
         in the mailbox on its own thread. If already in IDLE mode, 
         does nothing.
         """
         if not self.__is_idle:
-            self.select_folder(INBOX)
             self.__current_idle_tag = self._new_tag()
             self.send(b"%s IDLE\r\n" % self.__current_idle_tag)
             print(f"'IDLE' command sent with tag: {self.__current_idle_tag} at {datetime.now()}.")
             self.__readline()
-            self.__wait_response(WaitResponse.IDLE)
+            self.__wait_response(IMAPManager.WaitResponse.IDLE)
 
-    def done(self) -> None:
+    def done(self):
         """
         Terminates the current IDLE session if active.
         """
         if self.__is_idle:
             self.send(b"DONE\r\n")
             print(f"DONE command sent for {self.__current_idle_tag} at {datetime.now()}.")
-            self.__wait_response(WaitResponse.DONE)
+            self.__wait_response(IMAPManager.WaitResponse.DONE)
 
-    def __wait_response(self, wait_response: WaitResponse) -> None:
+    def __wait_response(self, wait_response: WaitResponse):
         """
         Waits for a specific response type from the IMAP server.
         
         Args:
-            wait_response (WaitResponse): Expected response type to wait for
+            wait_response (IMAPManager.WaitResponse): Expected response type to wait for
             
-        Times out after DEFAULT_WAIT_RESPONSE_TIMEOUT seconds and resets wait state.
+        Times out after WAIT_RESPONSE_TIMEOUT seconds and resets wait state.
         """
         counter = 0
         while self.__wait_for_response != wait_response:
             time.sleep(1)
             counter += 1
-            if counter > DEFAULT_WAIT_RESPONSE_TIMEOUT:
-                print(f"WaitResponse: {wait_response} did not received in time at {datetime.now()}. WaitResponse set to None")
+            if counter > WAIT_RESPONSE_TIMEOUT:
+                print(f"IMAPManager.WaitResponse: {wait_response} did not received in time at {datetime.now()}. IMAPManager.WaitResponse set to None")
                 break
 
         self.__wait_for_response = None
 
-    def __idle(self) -> None:
+    def __idle(self):
         """
         Background thread handler for IDLE mode monitoring.
 
         Continuously checks IDLE session duration and automatically 
-        refreshes the connection when DEFAULT_IDLE_TIMEOUT is reached.
+        refreshes the connection when IDLE_TIMEOUT is reached.
         """
         while not self.__idle_thread_event.is_set():
-            print(f"IDLING for {self.__current_idle_tag} started at {datetime.now()}.")
+            print(f"IDLING for {self.__current_idle_tag} at {datetime.now()}.")
             time.sleep(1)
-            if time.time() - self.__current_idle_start_time > DEFAULT_IDLE_TIMEOUT:
+            if time.time() - self.__current_idle_start_time > IDLE_TIMEOUT:
                 print(f"IDLING timeout reached for {self.__current_idle_tag} at {datetime.now()}.")
                 self.done()
-                self.idle()
+                if not self.__idle_thread_event.is_set():
+                    self.idle()
 
-    def __readline(self) -> None:
+    def __readline(self):
         """
         Initializes and manages the response reading thread.
         
@@ -459,7 +464,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if one doesn't exist or isn't active. Processes responses through
         the handle_response method.
         """
-        def readline_thread() -> None:
+        def readline_thread():
             """
             Continuously reads server responses and processes them.
             """
@@ -478,11 +483,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
             self.__readline_thread = threading.Thread(target=readline_thread)
             self.__readline_thread.start()
 
-    def __handle_idle_response(self) -> None:
+    def __handle_idle_response(self):
         """
         Handles the server's response to the IDLE command.
         Marks the client as being in the IDLE state, sets 
         start time, and starts the IDLE monitoring thread.
+        This method shouldn't be called directly, but rather 
+        through the `handle_response` method.
         """
         print(f"'IDLE' response received for {self.__current_idle_tag} at {datetime.now()}.")
         self.__is_idle = True
@@ -496,14 +503,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
             self.__idle_thread = threading.Thread(target=self.__idle)
             self.__idle_thread.start()
 
-        self.__wait_for_response = WaitResponse.IDLE
+        self.__wait_for_response = IMAPManager.WaitResponse.IDLE
         print(f"'IDLE' response for {self.__current_idle_tag} handled, IDLE thread started at {self.__current_idle_start_time}.")
 
-    def __handle_done_response(self) -> None:
+    def __handle_done_response(self):
         """
         Handles the server's response to the DONE command.
         Marks the client as no longer in the IDLE state 
-        and stops the IDLE monitoring thread.
+        and stops the IDLE monitoring thread. This method
+        shouldn't be called directly, but rather through
+        the `handle_response` method.
         """
         print(f"'DONE' response received for {self.__current_idle_tag} at {datetime.now()}.")
         self.__is_idle = False
@@ -512,7 +521,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self.__idle_thread_event.set()
         self.__readline_thread_event.set()
 
-        self.__wait_for_response = WaitResponse.DONE
+        self.__wait_for_response = IMAPManager.WaitResponse.DONE
         print(
             f"'DONE' response for {self.__current_idle_tag} handled, IDLE thread stopped at {datetime.now()}."
         )
@@ -521,35 +530,38 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         Handles the server's 'BYE' response, which indicates the server 
         is closing the connection. Safely terminates the connection, stops 
-        threads, and raises an exception to signal the logout event.
+        threads, and raises an exception to signal the logout event. This
+        method shouldn't be called directly, but rather through the 
+        `handle_response`method.
         """
         print(f"'BYE' response received from server at {datetime.now()}.")
-        self.__wait_for_response = WaitResponse.BYE
+        self.__wait_for_response = IMAPManager.WaitResponse.BYE
         self.__readline_thread_event.set()
         self.__idle_thread_event.set()
         self.__is_idle = False
         self.__current_idle_tag = None
-        self.close()
         raise IMAPManagerLoggedOutException(f"'BYE' response received from server at {datetime.now()}. IMAPManager connection closed safely.") from None
 
     def __handle_exists_response(self, response: bytes):
         """
         Handles the 'EXISTS' response from the server, which indicates the 
         number of messages in the mailbox. Updates internal state or performs 
-        necessary actions based on the response.
+        necessary actions based on the response. This method shouldn't be
+        called directly, but rather through the `handle_response` method.
     
         Args:
             response (bytes): The server's EXISTS response data.
         """
         print(f"'EXISTS' response received from server at {datetime.now()}.")
-        self.__wait_for_response = WaitResponse.EXISTS
+        self.__wait_for_response = IMAPManager.WaitResponse.EXISTS
         # TODO: Implement handling of EXISTS response
         pass
 
     def __handle_response(self, response: bytes):
         """
         Determines the type of server response and delegates handling to the 
-        appropriate method.
+        appropriate method. This method shouldn't be called directly, but rather 
+        through the `readline` method.
 
         Args:
             response (bytes): The raw server response to be processed.
@@ -571,7 +583,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         are localized in a different language.
 
         Args:
-            some_param_name (bytes): The IMAP folder name (e.g., `b'\\Inbox'` or `b'\\Trash'`).
+            requested_folder (bytes): The IMAP folder name (e.g., `b'\\Inbox'` or `b'\\Trash'`).
 
         Returns:
             bytes | None: The folder name in bytes if a match is found; otherwise, None.
@@ -579,9 +591,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Example:
             >>> find_matching_folder(b'\\Inbox')
             b'INBOX'
-
             >>> find_matching_folder(b'\\Trash')
-            b'Çöp Kutusu' # Means "Trash" in Turkish
+            b'Papelera' # In Spanish
         """
         folder_list = [m.value for m in Folder]
         if requested_folder not in folder_list:
@@ -604,8 +615,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Returns:
             bytes: The encoded folder name in UTF-8 format.
 
-        Raises:
-            IMAPManagerException: If encoding the folder name fails.
+        Example:
+            >>> __encode_folder("INBOX")
+            b'\\Inbox'
         """
         try:
             return ('"' + folder + '"').encode("utf-8")
@@ -622,8 +634,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Returns:
             str: The decoded and cleaned folder name.
 
-        Raises:
-            IMAPManagerException: If decoding the folder name fails.
+        Example:
+            >>> __decode_folder(b'\\Inbox')
+            'INBOX'
+            >>> __decode_folder(b'(\\HasNoChildren) "/" "INBOX"')
+            'INBOX'
+            >>> __decode_folder(b'(\\HasNoChildren) "|" "INBOX"')
+            'INBOX'
         """
         try:
             # Most of the servers return folder name as b'(\\HasNoChildren) "/" "INBOX"'
@@ -631,7 +648,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             # So we're replacing "|" with "/" to make it consistent
             return folder.decode().replace(' "|" ', ' "/" ').split(' "/" ')[1].replace('"', '')
         except Exception as e:
-            raise IMAPManagerException(f"Error while decoding folder name: {str(e)}.") from None
+            raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
 
     def __check_folder_names(self, folders: str | List[str], raise_error: bool = True) -> bool:
         """
@@ -645,6 +662,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Returns:
             bool: True if folder name is valid, False otherwise
 
+        Example:
+            >>> self.__check_folder_names("INBOX")
+            True
+            >>> self.__check_folder_names(["INBOX", "Trash"])
+            True
+            >>> self.__check_folder_names("")
+            raises IMAPManagerException
+            >>> self.__check_folder_names("INBOX", raise_error=False)
+            False
+
         Raises:
             IMAPManagerException: If the folder name is invalid and raise_error is True
         """
@@ -655,7 +682,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             folder_name_length = len(folder_name)
             if folder_name is None or folder_name == "" or folder_name_length > MAX_FOLDER_NAME_LENGTH or folder_name_length < 1:
                 if raise_error:
-                    raise IMAPManagerException(f"Invalid folder name: {folder_name}")
+                    raise IMAPManagerException(f"Invalid folder name: `{folder_name}`")
                 return False
 
         return True
@@ -670,29 +697,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         try:
             return [self.__decode_folder(i) for i in self.list()[1] if i.find(b'\\NoSelect') == -1]
         except Exception as e:
-            raise IMAPManagerException(f"There was an error while listing folders: {str(e)}") from None
-
-    def select_folder(self, mailbox: str = INBOX, readonly: bool = False):
-        """
-        Selects a mailbox for further operations.
-
-        Args:
-            mailbox (str): The name of the mailbox to select. Defaults to "INBOX".
-            readonly (bool): If True, opens the mailbox in read-only mode. 
-            Defaults to False.
-
-        Raises:
-            IMAPManagerException: If the mailbox cannot be selected or an invalid mailbox
-            name is provided.
-
-        Notes:
-            - Prevents re-selecting the currently active mailbox with the same mode.
-            - Ensures the folder name is properly encoded and valid.
-        """
-        if self.__current_folder[0] != mailbox or self.__current_folder[1] != readonly:
-            self.__check_folder_names(mailbox)
-            self.__ensure_command(super().select(self.__encode_folder(mailbox), readonly))
-            self.__current_folder = (mailbox, readonly)
+            raise IMAPManagerException(f"There was an error while listing folders: `{str(e)}`") from None
 
     def build_search_criteria_query_string(self, search_criteria: SearchCriteria) -> str:
         """
@@ -791,7 +796,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         mark_list = [m.value for m in Mark]
         for flag in search_criteria.flags:
             if flag not in mark_list:
-                raise IMAPManagerException(f"Unsupported flag: {flag}. The supported flags are: {', '.join(mark_list)}")
+                raise IMAPManagerException(f"Unsupported flag: `{flag}`. The supported flags are: `{', '.join(mark_list)}`.")
 
         search_criteria_query = ''
         search_criteria_query += add_criterion(
@@ -848,7 +853,25 @@ class IMAPManager(imaplib.IMAP4_SSL):
             >>> search_emails("INBOX", SearchCriteria(senders=['a@mail.com']))
             ['1', '2', '3']
         """
-        self.select_folder(folder, readonly=True)
+
+        def save_emails(uids: list[str], folder: str, search_query: str):
+            """
+            Save emails to a specified folder for later use.
+
+            Args:
+                uids (list[str]): A list of email uids to save.
+                folder (str): The folder to save the emails to.
+                search_query (str): The search query used to fetch the emails.
+            """
+            self.__searched_emails = IMAPManager.SearchedEmails(
+                folder=folder,
+                search_query=search_query,
+                uids=uids
+            )
+
+        status, _ = self.select(folder, readonly=True)
+        if status != 'OK':
+            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
         # Creating search query
         search_criteria_query = ''
@@ -859,7 +882,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             else:
                 search_criteria_query = search or ALL
         except Exception as e:
-            raise IMAPManagerException(f"Error while building search query: {str(e)}") from None
+            raise IMAPManagerException(f"Error while building search query from `{str(search)}`: `{str(e)}`") from None
 
         # Searching emails
         try:
@@ -870,96 +893,157 @@ class IMAPManager(imaplib.IMAP4_SSL):
             )
 
             if search_status != 'OK':
-                raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}`: {search_status}")
-
+                raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}` and error is `{search_status}.`")
+            
+            if not uids or not uids[0]:
+                return []
+            
             uids = uids[0].split()[::-1]
-            return uids
+            save_emails(uids, folder, search_criteria_query)
         except Exception as e:
-            raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}`: {str(e)}") from None
+            raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}` and error is `{str(e)}.`")
 
-    def fetch_emails(
+    def get_emails(
         self,
-        uids: list[str],
-        offset: int = 0,
-        count: int = 10
+        offset_start: int = GET_EMAILS_OFFSET["start"],
+        offset_end: int = GET_EMAILS_OFFSET["end"]
     ) -> Mailbox:
         """
         Fetch emails from a list of uids.
 
         Args:
-            uids (list[str]): List of email uids.
-            offset (int, optional): Offset to start fetching emails from. Defaults to 0.
-            count (int, optional): Number of emails to fetch. Defaults to 10.
+            offset_start (int, optional): Starting index of the emails to fetch. Defaults to 0.
+            offset_end (int, optional): Ending index of the emails to fetch. Defaults to 10.
 
         Returns:
             Mailbox: Dataclass containing the fetched emails, folder, and total number of emails.
 
         Example:
-            >>> fetch_emails(["1", "2"])
+            >>> get_emails(0, 2)
             Mailbox(folder='INBOX', emails=[EmailSummary(uid="1", sender="a@gmail.com", ...), EmailSummary(uid="2", sender="b@gmail.com", ...)], total=2)
         """
-        uids_len = len(uids)
-        if offset < 0:
-            raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be greater than or equal to 0.")
-        if count < 1:
-            raise IMAPManagerException(f"Invalid count: {count}. Count must be greater than or equal to 1.")
-        if offset >= uids_len:
-            raise IMAPManagerException(f"Invalid offset: {offset}. Offset must be less than the number of emails: {uids_len}.")
-
+        if not self.__searched_emails or not self.__searched_emails.uids or not self.__searched_emails.uids[0]:
+            raise IMAPManagerException("No emails have been searched yet. Call `search_emails` first.")
+        
+        uids_len = len(self.__searched_emails.uids)
+        if offset_start < 0:
+            raise IMAPManagerException(f"Invalid `offset_start`: {offset_start}. `offset_start` must be greater than or equal to 0.")
+        if offset_end < 0:
+            raise IMAPManagerException(f"Invalid `offset_end`: {offset_end}. `offset_end` must be greater than or equal to 0.")
+        if offset_end >= uids_len:
+            raise IMAPManagerException(f"Invalid `offset_end`: {offset_end}. `offset_end` must be less than the number of emails: `{uids_len}`.")
+        if offset_start >= uids_len:
+            raise IMAPManagerException(f"Invalid `offset_start`: {offset_start}. `offset_start` must be less than the number of emails: `{uids_len}`.")
+        
         if uids_len == 0:
-            return Mailbox(folder=self.__current_folder[0], emails=[], total=0)
+            return Mailbox(folder=self.__searched_emails.folder, emails=[], total=0)
 
         # Fetching emails
         emails = []
         try:
-            uid_range = uids[offset]
-            if count > 1:
-                uid_range = f"{uids[offset]:str(int(uids[offset]) + count)}"
-
+            sequence_set = f"{self.__searched_emails.uids[offset_start]:self.__searched_emails.uids[offset_end]}"
             status, messages = self.uid(
                 'FETCH', 
-                uid_range,
+                sequence_set,
                 '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.500> FLAGS BODYSTRUCTURE)'
             )
             if status != 'OK':
-                raise IMAPManagerException(f"Error while fetching emails, fetched email length was `{len(messages)}`: {status}")
+                raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self.__searched_emails.folder}`, fetched email length was `{len(emails)}`: `{str(e)}`") from None
+
 
             matches = MessageParser.messages(messages)
             for i, match in enumerate(matches):
                 message_headers = MessageParser.headers_from_message(match)
                 if not message_headers:
-                    print(f"Header fields could not be parsed of message: {uids[i]} skipping...")
+                    print(f"Header fields could not be parsed of email `{self.__searched_emails.uids[i]}` skipping...")
                     continue
 
                 emails.append(EmailSummary(
-                    uid=uids[i].decode(),
-                    sender=message_headers["sender"],
-                    receiver=message_headers["receiver"],
-                    subject=message_headers["subject"],
+                    uid=self.__searched_emails.uids[i].decode(),
+                    sender=message_headers.get("sender", UNKNOWN_PLACEHOLDERS["sender"]),
+                    receiver=message_headers.get("receiver", UNKNOWN_PLACEHOLDERS["receiver"]),
+                    subject=message_headers.get("subject", UNKNOWN_PLACEHOLDERS["subject"]),
                     body_short=truncate_text(MessageParser.body_from_message(match), BODY_SHORT_THRESHOLD),
-                    date=message_headers["date"],
+                    date=message_headers.get("date", UNKNOWN_PLACEHOLDERS["date"]),
                     flags=MessageParser.flags_from_message(match),
                     attachments=MessageParser.attachments_from_message(match)
                 ))
         except Exception as e:
-            raise IMAPManagerException(f"Error while fetching emails, fetched email length was `{len(emails)}`: {str(e)}") from None
+            raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self.__searched_emails.folder}`, fetched email length was `{len(emails)}`: `{str(e)}`") from None
 
-        return Mailbox(folder=self.__current_folder[0], emails=emails, total=len(uids))
+        return Mailbox(folder=self.__searched_emails.folder, emails=emails, total=uids_len)
 
+    def get_email_flags(self, sequence_set: str) -> list[Flags]:
+        """
+        Retrieve flags associated with a specific email.
+
+        Args:
+            sequence_set (str): The sequence set of the email to fetch flags for.
+
+        Returns:
+            list[Flags]: A list of Flags objects representing the flags associated with the email.
+
+        Example:
+            >>> get_email_flags("1")
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"])]
+            >>> get_email_flags("1:3")
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
+            >>> get_email_flags("1,3:4")
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="3", flags=["\\Flagged"]), Flags(uid="4", flags=["\\Flagged"])]
+            >>> get_email_flags("1:*") # In this case, mailbox has 3 emails
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
+            >>> get_email_flags("1,3:*") # In this case, mailbox has 4 emails
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="3", flags=["\\Flagged"]), Flags(uid="4", flags=["\\Flagged"])]
+
+        """
+        if self.state != "SELECTED":
+            # Since uid's are unique within each mailbox, we can't just select INBOX
+            # or something like that if there is no mailbox selected.
+            raise IMAPManagerException("Folder should be selected before fetching flags.")
+
+        try:
+            status, result = self.uid(
+                'FETCH', 
+                sequence_set,
+                '(FLAGS)'
+            )
+        except Exception as e:
+            raise IMAPManagerException(f"Error while fetching email flags: {str(e)}") from None
+
+        try:
+            flags_list = []
+            if status != 'OK':
+                raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`")
+            
+            matches = MessageParser.messages(result[1])
+            for match in matches:
+                flags_list.append(Flags(
+                    uid=MessageParser.uid_from_message(match),
+                    flags=MessageParser.flags_from_message(match)
+                ))
+        except Exception as e:
+            raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`") from None
+
+        return flags_list or []
+    
     def get_email_content(
         self,
         uid: str,
-        folder: str = INBOX
+        folder: str
     ) -> EmailWithContent:
         """
         Retrieve full content of a specific email. 
 
         Args:
-            uid (str): Unique identifier of the email
-            folder (str, optional): Folder containing the email. Defaults to "inbox".
+            uid (str): Unique identifier of the email.
+            folder (str): Folder containing the email.
 
         Returns:
-            EmailWithContent: Dataclass containing the email content
+            EmailWithContent: Dataclass containing the email content.
+
+        Example:
+            >>> get_email_content("1", "INBOX")
+            EmailWithContent(uid="1", sender="a@gmail.com", ...)
 
         Notes:
             - Replaces inline attachments with data URLs to display them inline
@@ -970,14 +1054,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
             occurs while marking the email, the mark operation will be skipped
             without raising an error but it will be logged as a warning.
         """
-        self.select_folder(folder, readonly=True)
+        status, _ = self.select(folder, readonly=True)
+        if status != 'OK':
+            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
         # Get body and attachments
         body, attachments = "", []
         try:
             status, message = self.uid('fetch', uid, '(RFC822)')
             if status != 'OK':
-                raise IMAPManagerException(f"Error while getting email content: {status}")
+                raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
             message = email.message_from_bytes(message[0][1], policy=email.policy.default)
 
@@ -999,42 +1085,42 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     if body:
                         body = body.decode(part.get_content_charset())
         except Exception as e:
-            raise IMAPManagerException(f"There was a problem with getting email content: {str(e)}") from None
+            raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from None
 
         try:
             # Replacing inline attachments
             if attachments:
-                # TODO: This should be moved to MessageParser class as
-                # a static method.
-                for match in INLINE_ATTACHMENT_PATTERN.finditer(body):
-                    cid = match.group(1)
+                inline_cids = MessageParser.inline_attachment_cids_from_message(body)
+                if inline_cids:
                     for attachment in attachments:
-                        if cid in attachment.name or cid in attachment.cid:
+                        if attachment.cid in inline_cids or attachment.name in inline_cids:
                             body = body.replace(
-                                f'cid:{cid}',
+                                f'cid:{attachment.cid}',
                                 f'data:{attachment.type};base64,{attachment.data}'
                             )
+                else:
+                    print(f"No inline attachments found for found attachments of email `{uid}`'s content in folder `{folder}`.")
         except Exception as e:
             # If there is a problem with inline attachments
             # just ignore them.
-            print(f"There was a problem with inline attachments: {str(e)}")
+            print(f"An error occurred while replacing inline attachments: `{str(e)}` of email `{uid}`'s content in folder `{folder}`.")
             pass
 
         try:
-            self.mark_email(uid, "Seen", folder)
+            self.mark_email(Mark.SEEN, uid, folder)
         except Exception as e:
             # If there is a problem with marking the email as seen
             # just ignore it.
-            print(f"There was a problem with marking the email as seen: {str(e)}")
+            print(f"An error occurred while marking email as seen: `{str(e)}` of email `{uid}`'s content in folder `{folder}`.")
             pass
 
         return EmailWithContent(
             uid=uid,
-            sender=message["From"],
-            receiver=message["To"],
-            subject=message["Subject"],
+            sender=message.get("From", UNKNOWN_PLACEHOLDERS["sender"]),
+            receiver=message.get("To", UNKNOWN_PLACEHOLDERS["receiver"]),
+            subject=message.get("Subject", UNKNOWN_PLACEHOLDERS["subject"]),
             body=body,
-            date=message["Date"],
+            date=message.get("Date", UNKNOWN_PLACEHOLDERS["date"]),
             cc=message.get("Cc", ""),
             bcc=message.get("Bcc", ""),
             message_id=message.get("Message-Id", ""),
@@ -1042,15 +1128,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 "In-Reply-To": message.get("In-Reply-To", ""),
                 "References": message.get("References", "")
             },
-            flags=self.fetch_flags_of_emails(uid) or [],
+            flags=self.get_emails_flags(uid)[0].flags or [],
             attachments=attachments
         )
-
+        
     def __mark_email(
         self,
-        uid: str,
         mark: Mark,
-        limit: int,
+        sequence_set: str,
         command: str,
         folder: str,
         success_msg: str,
@@ -1060,9 +1145,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Mark an email with a specific flag with given `command`.
 
         Args:
-            uid (str): Unique identifier of the email
             mark (str): Flag to apply to the email.
-            limit (int): Maximum number of emails to mark.
+            sequence_set (str): Sequence set of emails to mark.
             command (str): IMAP command to apply the flag like 
             `+FLAGS` or `-FLAGS`.
             folder (str): Folder containing the email.
@@ -1073,25 +1157,53 @@ class IMAPManager(imaplib.IMAP4_SSL):
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the email was marked successfully.
                 - A string containing a success message or an error message.
-        """
-        if limit < 1:
-            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
 
-        self.select_folder(folder)
+        Example:
+            >>> __mark_email(Mark.Seen, "1", "+FLAGS", "INBOX", "Email marked as seen", "Error while marking email as seen")
+            True, "Email(s) `1` marked with `seen` successfully."
+            >>> __mark_email(Mark.Flagged, "1:3", "+FLAGS", "INBOX", "Email marked as flagged", "Error while marking email as flagged")
+            True, "Email(s) `1:3` marked with `flagged` successfully."
+            >>> __mark_email(Mark.Seen, "1,3:5", "+FLAGS", "INBOX", "Email marked as seen", "Error while marking email as seen")
+            True, "Email(s) `1,3:5` marked with `seen` successfully."
+            >>> __mark_email(Mark.Answered, "1:*", "+FLAGS", "INBOX", "Email marked as seen", "Error while marking email as seen")
+            True, "Email(s) `1:*` marked with `answered` successfully."
+            >>> __mark_email(Mark.Flagged, "1,3:*", "+FLAGS", "INBOX", "Email marked as flagged", "Error while marking email as flagged")
+            True, "Email(s) `1,3:*` marked with `flagged` successfully."
+
+        References:
+            uid_range is a sequence set as defined in RFC 9051:
+            sequence-set = Example: a message sequence number set of
+                        2,4:7,9,12:* for a mailbox with 15 messages is
+                        equivalent to 2,4,5,6,7,9,12,13,14,15
+                        Example: a message sequence number set of
+                        *:4,5:7 for a mailbox with 10 messages is
+                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
+                        be reordered and overlap coalesced to be
+                        4,5,6,7,8,9,10.
+            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
+        """        
+        status, _ = self.select(folder)
+        if status != 'OK':
+            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
         mark = mark.lower()
         mark_list = [m.value for m in Mark]
         if not mark or mark not in mark_list:
             raise IMAPManagerException(
-                f"Unsupported mark: {mark}. Please use one of the following: {', '.join(mark_list)}"
+                f"Unsupported mark: `{mark}`. Please use one of the following: `{', '.join(mark_list)}`"
             )
 
-        mark_result = self.uid(
-            'STORE', 
-            f"{uid:str(int(uid) + limit + 1)}" if limit > 1 else uid,
-            command,
-            mark
+        mark_result = self.__parse_command_result(
+            self.uid(
+                'STORE', 
+                sequence_set,
+                command,
+                mark
+            ),
+            success_msg,
+            err_msg
         )
+
         if mark_result[0]:
             return self.__parse_command_result(
                 self.expunge(),
@@ -1103,197 +1215,317 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def mark_email(
         self,
-        uid: str,
         mark: Mark,
-        folder: str = Folder.Inbox,
-        limit: int = 1
+        sequence_set: str,
+        folder: str = Folder.Inbox
     ) -> IMAPCommandResult:
         """
         Mark an email with a specific flag.
 
         Args:
-            uid (str): Unique identifier of the email.
             mark (str): Flag to apply to the email.
+            sequence_set (str): Sequence set of emails to mark.
             folder (str, optional): Folder containing the email. 
             Defaults to "inbox".
-            limit (int, optional): Maximum number of emails to mark. 
-            Defaults to 1.
 
         Returns:
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the email was marked successfully.
                 - A string containing a success message or an error message.
+
+        Example:
+            >>> mark_email(Mark.Seen, "1") # Marks email with UID 1 from INBOX
+            True, "Email(s) `1` marked with `seen` successfully."
+            >>> mark_email(Mark.Seen, "1:3") # Marks email with UID 1,2,3 from INBOX
+            True, "Email(s) `1:3` marked with `seen` successfully."
+            >>> mark_email(Mark.Seen, "1,3:5") # Marks email with UID 1 and 3,4,5 from INBOX
+            True, "Email(s) `1,3:5` marked with `seen` successfully."
+            >>> mark_email(Mark.Seen, "1:*") # Marks all emails in the INBOX
+            True, "Email(s) `1:*` marked with `seen` successfully."
+            >>> mark_email(Mark.Seen, "1,3:*") # Marks all emails in the INBOX, except email with UID 2
+            True, "Email(s) `1,3:*` marked with `seen` successfully."
+
+        References:
+            uid_range is a sequence set as defined in RFC 9051:
+            sequence-set = Example: a message sequence number set of
+                        2,4:7,9,12:* for a mailbox with 15 messages is
+                        equivalent to 2,4,5,6,7,9,12,13,14,15
+                        Example: a message sequence number set of
+                        *:4,5:7 for a mailbox with 10 messages is
+                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
+                        be reordered and overlap coalesced to be
+                        4,5,6,7,8,9,10.
+            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
         """
         return self.__mark_email(
-            uid,
             mark,
-            limit,
+            sequence_set,
             "+FLAGS",
             folder if isinstance(folder, str) else folder.decode("utf-8"),
-            f"Email(s) marked with {mark} successfully.",
-            f"There was an error while marking the email(s) with {mark}."
+            f"Email(s) `{sequence_set}` in `{folder}` marked with `{mark}` successfully.",
+            f"There was an error while marking the email(s) `{sequence_set}` in `{folder}` with `{mark}`."
         )
 
     def unmark_email(
         self,
-        uid: str,
         mark: Mark,
+        sequence_set: str,
         folder: str = Folder.Inbox,
-        limit: int = 1
     ) -> IMAPCommandResult:
         """
         Unmark an email with a specific flag.
 
         Args:
-            uid (str): Unique identifier of the email.
             mark (str): Flag to remove from the email.
+            sequence_set (str): Sequence set of emails to unmark.
             folder (str, optional): Folder containing the email. Defaults to "inbox".
 
         Returns:
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the email was unmarked successfully.
                 - A string containing a success message or an error message.
+
+        Example:
+            >>> unmark_email(Mark.Seen, "1") # Unmarks email with UID 1 from INBOX
+            True, "Email(s) `1` unmarked with `seen` successfully."
+            >>> unmark_email(Mark.Seen, "1:3") # Unmarks email with UID 1,2,3 from INBOX
+            True, "Email(s) `1:3` unmarked with `seen` successfully."
+            >>> unmark_email(Mark.Seen, "1,3:5") # Unmarks email with UID 1 and 3,4,5 from INBOX
+            True, "Email(s) `1,3:5` unmarked with `seen` successfully."
+            >>> unmark_email(Mark.Seen, "1:*") # Unmarks all emails in the INBOX
+            True, "Email(s) `1:*` unmarked with `seen` successfully."
+            >>> unmark_email(Mark.Seen, "1,3:*") # Unmarks all emails in the INBOX, except email with UID 2
+            True, "Email(s) `1,3:*` unmarked with `seen` successfully."
+
+        References:
+            uid_range is a sequence set as defined in RFC 9051:
+            sequence-set = Example: a message sequence number set of
+                        2,4:7,9,12:* for a mailbox with 15 messages is
+                        equivalent to 2,4,5,6,7,9,12,13,14,15
+                        Example: a message sequence number set of
+                        *:4,5:7 for a mailbox with 10 messages is
+                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
+                        be reordered and overlap coalesced to be
+                        4,5,6,7,8,9,10.
+            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
         """
         return self.__mark_email(
-            uid,
             mark,
-            limit,
+            sequence_set,
             "-FLAGS",
             folder,
-            f"Email(s) unmarked with {mark} successfully.",
-            f"There was an error while unmarking the email(s) with {mark}."
+            f"Email(s) `{sequence_set}` in `{folder}` unmarked with `{mark}` successfully.",
+            f"There was an error while unmarking the email(s) `{sequence_set}` in `{folder}` with `{mark}`."
         )
 
     def move_email(self,
-        uid: str,
         source_folder: str,
         destination_folder: str,
-        limit: int = 1
+        sequence_set: str,
     ) -> IMAPCommandResult:
         """
         Move an email from one folder to another.
 
         Args:
-            uid (str): Unique identifier of the email. Also starts the
-            range of emails if `limit` is greater than 1.
             source_folder (str): Current folder of the email.
             destination_folder (str): Target folder to move the email to.
-            limit (int, optional): Maximum number of emails to move. 
-            Defaults to 1.
+            sequence_set (str): Sequence set of emails to move.
 
         Returns:
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the email was moved successfully.
                 - A string containing a success message or an error message.
-        """
-        if limit < 1:
-            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
 
+        Example:
+            >>> move_email("INBOX", "ARCHIVE", "1") # Moves email with UID 1 from INBOX to SENT
+            True, "Email(s) `1` moved successfully from `INBOX` to `ARCHIVE`."
+            >>> move_email("INBOX", "ARCHIVE", "1:3") # Moves email with UID 1,2,3 from INBOX to SENT
+            True, "Email(s) `1:3` moved successfully from `INBOX` to `ARCHIVE`."
+            >>> move_email("INBOX", "ARCHIVE", "1,3:5") # Moves email with UID 1 and 3,4,5 from INBOX to SENT
+            True, "Email(s) `1,3:5` moved successfully from `INBOX` to `ARCHIVE`."
+            >>> move_email("INBOX", "ARCHIVE", "1:*") # Moves all emails in the INBOX to ARCHIVE folder
+            True, "Email(s) `1:*` moved successfully from `INBOX` to `ARCHIVE`."
+            >>> move_email("INBOX", "ARCHIVE", "1,3:*") # Moves all emails in the INBOX to ARCHIVE folder, except email with UID 2
+            True, "Email(s) `1,3:*` moved successfully from `INBOX` to `ARCHIVE`."
+            
+        References:
+            uid_range is a sequence set as defined in RFC 9051:
+            sequence-set = Example: a message sequence number set of
+                        2,4:7,9,12:* for a mailbox with 15 messages is
+                        equivalent to 2,4,5,6,7,9,12,13,14,15
+                        Example: a message sequence number set of
+                        *:4,5:7 for a mailbox with 10 messages is
+                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
+                        be reordered and overlap coalesced to be
+                        4,5,6,7,8,9,10.
+            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
+        """
         self.__check_folder_names([source_folder, destination_folder])
 
         if source_folder == destination_folder:
-            return IMAPCommandResult(success=True, message="Destination folder is the same as the source folder.")
+            return IMAPCommandResult(success=True, message=f"Destination folder `{destination_folder}` is the same as the source folder `{source_folder}`.")
 
-        self.select_folder(source_folder)
+        status, _ = self.select(source_folder)
+        if status != "OK":
+            raise IMAPManagerException(f"Error while selecting folder `{source_folder}`: `{status}`")
 
-        move_result = self.uid(
-            'MOVE', 
-            f"{uid}:{str(int(uid) + limit + 1)}" if limit > 1 else uid,
-            self.__encode_folder(destination_folder)
+        succes_msg = f"Email(s) `{sequence_set}` moved successfully from `{source_folder}` to `{destination_folder}`."
+        err_msg = f"Failed to move email(s) `{sequence_set}` from `{source_folder}` to `{destination_folder}`."
+
+        move_result = self.__parse_command_result(
+            self.uid(
+                'MOVE', 
+                sequence_set,
+                self.__encode_folder(destination_folder)
+            ),
+            succes_msg,
+            err_msg
         )
 
         if move_result[0]:
             return self.__parse_command_result(
                 self.expunge(),
-                "Email(s) moved successfully.",
-                "There was an error while moving the email(s)."
+                succes_msg,
+                err_msg
             )
 
         return move_result
 
     def copy_email(self,
-        uid: str,
         source_folder: str,
         destination_folder: str,
-        limit: int = 1
+        sequence_set: str,
     ) -> IMAPCommandResult:
         """
         Create a copy of an email in another folder.
 
         Args:
-            uid (str): Unique identifier of the email. Also starts the 
-            range of emails if `limit` is greater than 1.
             source_folder (str): Current folder of the email.
             destination_folder (str): Target folder to copy the email to.
-            limit (int, optional): Number of emails to copy. Defaults to 1.
+            sequence_set (str): Sequence set of emails to copy.
 
         Returns:
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the email was copied successfully.
                 - A string containing a success message or an error message.
-        """
-        if limit < 1:
-            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
 
+        Example:
+            >>> copy_email("INBOX", "ARCHIVE", "1") # Copies emails with UID 1 to ARCHIVE from INBOX.
+            True, "Email(s) `1` copied successfully from `INBOX` to `ARCHIVE`."
+            >>> copy_email("INBOX", "ARCHIVE", "1:3") # Copies emails with UID 1,2,3 to ARCHIVE from INBOX.
+            True, "Email(s) `1:3` copied successfully from `INBOX` to `ARCHIVE`."
+            >>> copy_email("INBOX", "ARCHIVE", "1,3:5") # Copies email with UID 1 and 3,4,5 to ARCHIVE from INBOX.
+            True, "Email(s) `1,3:5` copied successfully from `INBOX` to `ARCHIVE`."
+            >>> copy_email("INBOX", "ARCHIVE", "1:*") # Copies all emails in the INBOX to ARCHIVE folder
+            True, "Email(s) `1:*` copied successfully from `INBOX` to `ARCHIVE`."
+            >>> copy_email("INBOX", "ARCHIVE", "1,3:*") # Copies all emails in the INBOX to ARCHIVE folder, except email with UID 2
+            True, "Email(s) `1,3:*` copied successfully from `INBOX` to `ARCHIVE`."
+            
+        References:
+            uid_range is a sequence set as defined in RFC 9051:
+            sequence-set = Example: a message sequence number set of
+                        2,4:7,9,12:* for a mailbox with 15 messages is
+                        equivalent to 2,4,5,6,7,9,12,13,14,15
+                        Example: a message sequence number set of
+                        *:4,5:7 for a mailbox with 10 messages is
+                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
+                        be reordered and overlap coalesced to be
+                        4,5,6,7,8,9,10.
+            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
+        """
         self.__check_folder_names([source_folder, destination_folder])
 
-        self.select_folder(source_folder)
+        status, _ = self.select(source_folder)
+        if status != "OK":
+            raise IMAPManagerException(f"Error while selecting folder `{source_folder}`: `{status}`")
 
-        copy_result = self.uid(
-            'COPY',
-            f"{uid}:{str(int(uid) + limit + 1)}" if limit > 1 else uid,
-            self.__encode_folder(destination_folder)
+        succes_message = f"Email(s) `{sequence_set}` copied successfully from `{source_folder}` to `{destination_folder}`."
+        err_msg = f"Failed to copy email(s) `{sequence_set}` from `{source_folder}` to `{destination_folder}`."
+
+        copy_result = self.__parse_command_result(
+            self.uid(
+                'COPY',
+                sequence_set,
+                self.__encode_folder(destination_folder)
+            ),
+            succes_message,
+            err_msg
         )
 
         if copy_result[0]:
             return self.__parse_command_result(
                 self.expunge(),
-                "Email(s) copied successfully.",
-                "There was an error while copying the email(s)."
+                succes_message,
+                err_msg
             )
 
         return copy_result
 
-    def delete_email(self, uid: str, folder: str, limit: int = 1) -> IMAPCommandResult:
+    def delete_email(self, folder: str, sequence_set: str) -> IMAPCommandResult:
         """
         Delete an email from a specific folder.
 
         Args:
-            uid (str): Unique identifier of the email. Also starts the 
-            range of emails if `limit` is greater than 1.
             folder (str): Folder containing the email.
-            limit (int, optional): Maximum number of emails to delete. 
-            Defaults to 1.
+            sequence_set (str): Sequence set of emails to delete.
 
         Returns:
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the email was deleted successfully.
                 - A string containing a success message or an error message.
+
+        Example:
+            >>> delete_email("INBOX", "1") # Deletes email with UID 1
+            True, "Email(s) `1` deleted from `INBOX` successfully."
+            >>> delete_email("INBOX", "1:3") # Deletes email with UID 1,2,3
+            True, "Email(s) `1:3` deleted from `INBOX` successfully."
+            >>> delete_email("INBOX", "1,3:5") # Deletes email with UID 1 and 3,4,5
+            True, "Email(s) `1,3:5` deleted from `INBOX` successfully."
+            >>> delete_email("INBOX", "1:*") # Deletes all emails in the folder
+            True, "Email(s) `1:*` deleted from `INBOX` successfully."
+            >>> delete_email("INBOX", "1,3:*") # Deletes all emails in the folder except email with UID 2
+            True, "Email(s) `1,3:*` deleted from `INBOX` successfully."
+
+        References:
+            uid_range is a sequence set as defined in RFC 9051:
+            sequence-set = Example: a message sequence number set of
+                        2,4:7,9,12:* for a mailbox with 15 messages is
+                        equivalent to 2,4,5,6,7,9,12,13,14,15
+                        Example: a message sequence number set of
+                        *:4,5:7 for a mailbox with 10 messages is
+                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
+                        be reordered and overlap coalesced to be
+                        4,5,6,7,8,9,10.
+            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
         """
-        if limit < 1:
-            raise IMAPManagerException(f"Invalid limit: {limit}. Limit must be at least 1.")
-
         self.__check_folder_names(folder)
-
-        trash_mailbox_name = self.find_matching_folder(Folder.Trash)
-
+        
         try:
+            trash_mailbox_name = self.find_matching_folder(Folder.Trash)
             if folder != trash_mailbox_name:
-                self.move_email(uid, folder, trash_mailbox_name)
+                status, _ = self.move_email(folder, sequence_set, trash_mailbox_name)
+                if not status:
+                    raise IMAPManagerException(
+                        f"Error while moving email(s) `{sequence_set}` to trash folder for deletion."
+                    )
         except Exception as e:
             raise IMAPManagerException(
-                f"Error while moving email to trash folder for deletion: {str(e)}."
+                f"Error while moving email(s) `{sequence_set}` to trash folder for deletion: `{str(e)}`."
             ) from None
 
-        self.select_folder(trash_mailbox_name)
+        status, _ = self.select(trash_mailbox_name)
+        if status != 'OK':
+            raise IMAPManagerException(
+                f"Error while selecting trash folder for deletion: `{status}`."
+            )
 
-        success_msg = "Email(s) deleted successfully."
-        err_msg = "There was an error while deleting the email(s)."
+        success_msg = f"Email(s) `{sequence_set}` deleted from `{folder}` successfully."
+        err_msg = f"There was an error while deleting the email(s) `{sequence_set}` from `{folder}`."
 
         delete_result = self.__parse_command_result(
             self.uid(
                 'STORE', 
-                f"{uid}:{str(int(uid) + limit + 1)}" if limit > 1 else uid,
+                sequence_set,
                 '+FLAGS', 
                 '\\Deleted'
             ),
@@ -1326,16 +1558,26 @@ class IMAPManager(imaplib.IMAP4_SSL):
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the folder was created successfully.
                 - A string containing a success message or an error message.
+
+        Example:
+            >>> create_folder("RED")
+            (True, "Folder `RED` created successfully.")
+            >>> create_folder("BLUE", "COLORS") # BLUE will be created under COLORS like `COLORS/BLUE`
+            (True, "Folder `BLUE` created successfully.")
+            >>> create_folder("DARKBLUE", "COLORS/DARK") # DARKBLUE will be created under DARK like `COLORS/DARK/DARKBLUE`
+            (True, "Folder `DARKBLUE` created successfully.")
         """
         self.__check_folder_names([folder_name, parent_folder])
 
         if parent_folder:
             folder_name = f"{parent_folder}/{folder_name}"
 
+        encoded_folder_name = self.__encode_folder(folder_name)
+
         return self.__parse_command_result(
-            self.create(self.__encode_folder(folder_name)),
-            "Folder created successfully.",
-            "There was an error while creating the folder."
+            self.create(encoded_folder_name),
+            f"Folder `{folder_name}` created successfully.",
+            f"There was an error while creating folder `{folder_name}`."
         )
 
     def delete_folder(self, folder_name: str) -> IMAPCommandResult:
@@ -1349,13 +1591,19 @@ class IMAPManager(imaplib.IMAP4_SSL):
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the folder was deleted successfully.
                 - A string containing a success message or an error message.
+
+        Example:
+            >>> delete_folder("RED")
+            (True, "Folder `RED` deleted successfully.")
         """
         self.__check_folder_names(folder_name)
 
+        encoded_folder_name = self.__encode_folder(folder_name)
+
         return self.__parse_command_result(
-            self.delete(self.__encode_folder(folder_name)),
-            "Folder deleted successfully.",
-            "There was an error while deleting the folder."
+            self.delete(encoded_folder_name),
+            f"Folder `{folder_name}` deleted successfully.",
+            f"There was an error while deleting folder `{folder_name}`."
         )
 
     def move_folder(self, folder_name: str, destination_folder: str) -> IMAPCommandResult:
@@ -1370,19 +1618,26 @@ class IMAPManager(imaplib.IMAP4_SSL):
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the folder was moved successfully.
                 - A string containing a success message or an error message.
+
+        Example:
+            >>> move_folder("RED", "COLORS") # RED will be moved under COLORS like `COLORS/RED`
+            (True, "Folder `RED` moved to `COLORS` successfully.")
         """
         self.__check_folder_names([folder_name, destination_folder])
 
         if "/" in folder_name:
             destination_folder = f"{destination_folder}/{folder_name.split("/")[-1]}"
 
+        encoded_folder_name = self.__encode_folder(folder_name)
+        encoded_destination_folder = self.__encode_folder(destination_folder)
+
         return self.__parse_command_result(
             self.rename(
-                self.__encode_folder(folder_name),
-                self.__encode_folder(destination_folder)
+                encoded_folder_name,
+                encoded_destination_folder
             ),
-            "Folder moved successfully.",
-            "There was an error while moving the folder."
+            f"Folder `{folder_name}` moved to `{destination_folder}` successfully.",
+            f"There was an error while moving folder `{folder_name}` to `{destination_folder}`."
         )
 
     def rename_folder(self, folder_name: str, new_folder_name: str) -> IMAPCommandResult:
@@ -1397,6 +1652,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the folder was renamed successfully.
                 - A string containing a success message or an error message.
+
+        Example:
+            >>> rename_folder("RED", "BLUE")
+            (True, "Folder `RED` renamed to `BLUE` successfully.")
         """
         self.__check_folder_names([folder_name, new_folder_name])
 
@@ -1405,14 +1664,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 folder_name.split("/")[-1],
                 new_folder_name
             )
+        
+        encoded_folder_name = self.__encode_folder(folder_name)
+        encoded_new_folder_name = self.__encode_folder(new_folder_name)
 
         return self.__parse_command_result(
             self.rename(
-                self.__encode_folder(folder_name),
-                self.__encode_folder(new_folder_name)
+                encoded_folder_name, 
+                encoded_new_folder_name
             ),
-            "Folder renamed successfully.",
-            "There was an error while renaming the folder."
+            f"Folder `{folder_name}` renamed to `{new_folder_name}` successfully.",
+            f"There was an error while renaming folder `{folder_name}` to `{new_folder_name}`."
         )
 
 __all__ = [

@@ -23,6 +23,7 @@ class MessageHeaders(TypedDict):
 
 # Regular expressions, avoid changing
 MESSAGE_PATTERN = re.compile(r"(b'\d+ \(UID \d+ .+?b'\))")
+UID_PATTERN = re.compile(r"b'\d+ \(UID (\d+) .+?b'\)") 
 HEADERS_PATTERN = re.compile(r"\(b' BODY\[HEADER\.FIELDS.*?\), b'\)")
 SENDER_PATTERN = re.compile(r'From:\s+(.+?)\\r\\n')
 RECEIVER_PATTERN = re.compile(r'To:\s+(.+?)\\r\\n')
@@ -65,6 +66,23 @@ class MessageParser:
         """
         return re.findall(MESSAGE_PATTERN, message)
 
+    @staticmethod
+    def uid_from_message(message: str) -> str:
+        """
+        Get UID from raw message string.
+
+        Args:
+            message (str): Raw message string.
+
+        Returns:
+            str: UID string.
+
+        Example:
+            >>> uid_from_message("b'2394 (UID 2651 FLAGS ... ), b'")
+            '2651'
+        """
+        return UID_PATTERN.search(message).group(1)
+    
     @staticmethod
     def body_from_message(message: str) -> str:
         """
@@ -113,6 +131,33 @@ class MessageParser:
         """
         return ATTACHMENT_PATTERN.findall(message)
 
+    @staticmethod
+    def inline_attachment_cids_from_message(message: str) -> list[str]:
+        """
+        Get inline attachments' cids from raw message string.
+
+        Args:
+            message (str): Raw message string.
+
+        Returns:
+            list[str]: List of inline attachments.
+
+        Example:
+            >>> message = '''
+            ... <html>
+            ...     <body>
+            ...         <p>Check out this image:</p>
+            ...         <img src="cid:image1">
+            ...         <img src="cid:image2">
+            ...     </body>
+            ... </html>
+            ... '''
+            >>> inline_attachment_cids_from_message(message)
+            ['image1', 'image2']
+            
+        """
+        return [match.group(1) for match in INLINE_ATTACHMENT_PATTERN.finditer(message)]
+    
     @staticmethod
     def flags_from_message(message: str) -> list[str]:
         """
