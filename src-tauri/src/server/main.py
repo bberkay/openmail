@@ -31,10 +31,10 @@ def create_and_idle_openmail_clients():
 
     for account in accounts:
         openmail_clients[account["email"]] = OpenMail()
-        status, msg = openmail_clients[account["email"]].connect(account["email"], account["password"])
+        status, _ = openmail_clients[account["email"]].connect(account["email"], account["password"])
         print(f"Connected to {account['email']}")
         if status:
-            openmail_clients[account["email"]].idle()
+            openmail_clients[account["email"]].imap.idle()
 
 def reconnect_and_idle_logged_out_openmail_clients():
     for email, openmail_client in openmail_clients.items():
@@ -44,7 +44,7 @@ def reconnect_and_idle_logged_out_openmail_clients():
                 status = openmail_client.connect(email, account[0]["password"])
                 print(f"Reconnected to {email}")
                 if status:
-                    openmail_client.idle()
+                    openmail_client.imap.dle()
 
 def shutdown_openmail_clients():
     for openmail_client in openmail_clients.values():
@@ -255,7 +255,7 @@ def get_email_content(
         return Response(
             success=True,
             message="Email content fetched successfully.",
-            data=openmail_clients[account].get_email_content(uid, unquote(folder))
+            data=openmail_clients[account].imap.get_email_content(uid, unquote(folder))
         )
     except Exception as e:
         return Response(success=False, message=str(e))

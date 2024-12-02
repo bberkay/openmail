@@ -1,4 +1,6 @@
-import os, json
+import os
+import json
+
 from consts import APP_NAME
 
 class FileSystem:
