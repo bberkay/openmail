@@ -48,12 +48,12 @@ class Attachment():
     """
     A class that represents an email attachment as a dataclass.
     """
-    cid: str
     name: str
     data: str
     size: str
     type: str
-
+    cid: str | None = None
+    
 @dataclass
 class EmailWithContent():
     """

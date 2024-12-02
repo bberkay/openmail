@@ -5,19 +5,21 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from pydantic import BaseModel
-from fastapi import FastAPI, File, Form, UploadFile, Request, Response as FastAPIResponse
+from fastapi import FastAPI, Form, UploadFile, Request, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from openmail import OpenMail
-from openmail.imap import Folder, Mark, IMAPManagerException
+from openmail.types import EmailToSend, Attachment
+from openmail.imap import Folder, Mark
+
 from classes.filesystem import FileSystem
 from classes.loghandler import LogHandler
 from classes.securestorage import SecureStorage
 from classes.portmanager import PortManager
 from utils import is_email_valid
 
-openmail_clients = {}
+openmail_clients: dict[str, OpenMail]  = {}
 file_system = FileSystem()
 secure_storage = SecureStorage()
 logger = LogHandler()
@@ -258,43 +260,142 @@ def get_email_content(
     except Exception as e:
         return Response(success=False, message=str(e))
 
-# FIXME: send-email
+class SendEmailRequestFormData(BaseModel):
+    sender: str | tuple[str, str] # (sender_name, sender_email)
+    receiver: str # mail addresses separated by comma
+    subject: str
+    body: str
+    uid: Optional[str] = None
+    cc: Optional[str] = None
+    bcc: Optional[str] = None
+    attachments: List[UploadFile] = []
+
+async def convert_attachments(attachments: List[UploadFile]) -> List[Attachment]:
+    converted_to_attachment_list = []
+    for attachment in attachments:
+        data = await attachment.read()
+        converted_to_attachment_list.append(Attachment(
+            name=attachment.filename,
+            data=data,
+            type=attachment.content_type,
+            size=len(data)
+        ))
+    return converted_to_attachment_list
+
 @app.post("/send-email")
 async def send_email(
-    sender: str | tuple[str, str] = Form(...), # (sender_name, sender_email)
-    receivers: str = Form(...), # mail addresses separated by comma
-    subject: str = Form(...),
-    body: str = Form(...),
-    attachments: List[UploadFile] = File(None),
-    cc: Optional[str] = Form(None),
-    bcc: Optional[str] = Form(None)
+    formData: SendEmailRequestFormData
 ) -> Response:
     try:
-        response = check_email_accounts(sender)
+        response = check_email_accounts(formData.sender)
         if not response:
             return response
         
-        return Response(
-            success=True,
-            message="Email sent",
-            data=openmail_clients[(sender if isinstance(sender, str) else sender[1])].send_email(
-                sender,
-                receivers,
-                subject,
-                body,
-                attachments,
-                cc,
-                bcc
+        sender_email = formData.sender if isinstance(formData.sender, str) else formData.sender[1]
+        status, msg = openmail_clients[sender_email].smtp.send_email(
+            EmailToSend(
+                sender=formData.sender,
+                receiver=formData.receiver,
+                subject=formData.subject,
+                body=formData.body,
+                cc=formData.cc,
+                bcc=formData.bcc,
+                attachments=await convert_attachments(formData.attachments)
             )
         )
+
+        try:
+            if status:
+                flags = openmail_clients[sender_email].imap.get_email_flags(formData.uid, Folder.Inbox).flags
+                if Mark.SEEN not in flags:
+                    status, com_msg = openmail_clients[sender_email].imap.mark_email(formData.uid, Mark.SEEN)
+                    msg += " " + f"And {com_msg}"
+        except Exception as e:
+            msg += " " + "And failed to mark email as seen: " + str(e)
+        
+        return Response(success=status, message=msg)
     except Exception as e:
         return Response(success=False, message=str(e))
 
-# TODO: Reply email, forward email.
+@app.post("/reply-email")
+async def reply_email(
+    formData: SendEmailRequestFormData
+) -> Response:
+    try:
+        response = check_email_accounts(formData.sender)
+        if not response:
+            return response
+        
+        sender_email = formData.sender if isinstance(formData.sender, str) else formData.sender[1]
+        status, msg = openmail_clients[sender_email].smtp.send_email(
+            EmailToSend(
+                sender=formData.sender,
+                receiver=formData.receiver,
+                subject=formData.subject,
+                body=formData.body,
+                cc=formData.cc,
+                bcc=formData.bcc,
+                attachments=await convert_attachments(formData.attachments)
+            )
+        )
 
+        try:
+            if status:
+                flags = openmail_clients[sender_email].imap.get_email_flags(formData.uid, Folder.Inbox).flags
+                if Mark.ANSWERED not in flags:
+                    status, com_msg = openmail_clients[sender_email].imap.mark_email(formData.uid, Mark.ANSWERED)
+                    msg += " " + f"And {com_msg}"
+                if Mark.SEEN not in flags:
+                    status, com_msg = openmail_clients[sender_email].imap.mark_email(formData.uid, Mark.SEEN)
+                    msg += " " + f"And {com_msg}"
+        except Exception as e:
+            msg += " " + "And failed to mark email as answered or seen: " + str(e)
+
+        return Response(success=status, message=msg)
+    except Exception as e:
+        return Response(success=False, message=str(e))
+    
+@app.post("/forward-email")
+async def forward_email(
+    formData: SendEmailRequestFormData
+) -> Response:
+    try:
+        response = check_email_accounts(formData.sender)
+        if not response:
+            return response
+        
+        sender_email = formData.sender if isinstance(formData.sender, str) else formData.sender[1]
+        status, msg = openmail_clients[sender_email].smtp.send_email(
+            EmailToSend(
+                sender=formData.sender,
+                receiver=formData.receiver,
+                subject=formData.subject,
+                body=formData.body,
+                cc=formData.cc,
+                bcc=formData.bcc,
+                attachments=await convert_attachments(formData.attachments)
+            )
+        )
+
+        try:
+            if status:
+                flags = openmail_clients[sender_email].imap.get_email_flags(formData.uid, Folder.Inbox).flags
+                if Mark.ANSWERED not in flags:
+                    status, com_msg = openmail_clients[sender_email].imap.mark_email(formData.uid, Mark.ANSWERED)
+                    msg += " " + f"And {com_msg}"
+                if Mark.SEEN not in flags:
+                    status, com_msg = openmail_clients[sender_email].imap.mark_email(formData.uid, Mark.SEEN)
+                    msg += " " + f"And {com_msg}"
+        except Exception as e:
+            msg += " " + "And failed to mark email as answered or seen: " + str(e)
+
+        return Response(success=status, message=msg)
+    except Exception as e:
+        return Response(success=False, message=str(e))
+    
 class MarkEmailRequest(BaseModel):
     account: str
-    mark: Mark
+    mark: str
     sequence_set: str
     folder: str = Folder.Inbox
     
@@ -305,7 +406,7 @@ async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[mark_email_request.account].mark_email(
+        status, msg = openmail_clients[mark_email_request.account].imap.mark_email(
             mark_email_request.mark,
             mark_email_request.sequence_set,
             mark_email_request.folder,
@@ -316,7 +417,7 @@ async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
 
 class UnmarkEmailRequest(BaseModel):
     account: str
-    mark: Mark
+    mark: str
     sequence_set: str
     folder: str = Folder.Inbox
     
@@ -327,7 +428,7 @@ async def unmark_email(unmark_email_request: UnmarkEmailRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[unmark_email_request.account].unmark_email(
+        status, msg = openmail_clients[unmark_email_request.account].imap.unmark_email(
             unmark_email_request.mark, 
             unmark_email_request.sequence_set,
             unmark_email_request.folder,
@@ -349,7 +450,7 @@ async def move_email(move_email_request: MoveEmailRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[move_email_request.account].move_email(
+        status, msg = openmail_clients[move_email_request.account].imap.move_email(
             move_email_request.source_folder,
             move_email_request.destination_folder,
             move_email_request.sequence_set
@@ -371,7 +472,7 @@ async def copy_email(copy_email_request: CopyEmailRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[copy_email_request.account].copy_email(
+        status, msg = openmail_clients[copy_email_request.account].imap.copy_email(
             copy_email_request.source_folder,
             copy_email_request.destination_folder,
             copy_email_request.sequence_set
@@ -392,7 +493,7 @@ async def delete_email(delete_email_request: DeleteEmailRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[delete_email_request.account].delete_email(
+        status, msg = openmail_clients[delete_email_request.account].imap.delete_email(
             delete_email_request.folder, 
             delete_email_request.sequence_set
         )
@@ -412,7 +513,7 @@ async def create_folder(create_folder_request: CreateFolderRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[create_folder_request.account].create_folder(
+        status, msg = openmail_clients[create_folder_request.account].imap.create_folder(
             create_folder_request.folder_name, 
             create_folder_request.parent_folder
         )
@@ -432,7 +533,7 @@ async def rename_folder(rename_folder_request: RenameFolderRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[rename_folder_request.account].rename_folder(
+        status, msg = openmail_clients[rename_folder_request.account].imap.rename_folder(
             rename_folder_request.folder_name, 
             rename_folder_request.new_folder_name
         )
@@ -452,7 +553,7 @@ async def move_folder(move_folder_request: MoveFolderRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[move_folder_request.account].move_folder(
+        status, msg = openmail_clients[move_folder_request.account].imap.move_folder(
             move_folder_request.folder_name,
             move_folder_request.destination_folder
         )
@@ -471,7 +572,7 @@ async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
         if not response:
             return response
         
-        status, msg = openmail_clients[delete_folder_request.account].delete_folder(
+        status, msg = openmail_clients[delete_folder_request.account].imap.delete_folder(
             delete_folder_request.folder_name
         )
         return Response(success=status, message=msg)

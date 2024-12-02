@@ -97,45 +97,4 @@ class OpenMail:
         self.imap.logout()
         self.smtp.logout()
 
-    def reply_email(self, email: EmailToSend) -> SMTPCommandResult:
-        """
-        Reply to an existing email. Uses the `send_email` method internally.
-
-        Args:
-            email (EmailToSend): The email to be replied to.
-
-        Returns:
-            SMTPCommandResult: A tuple containing:
-                - A bool indicating whether the email was replied successfully.
-                - A string containing a success message or an error message.
-        """
-        if not email.uid:
-            raise SMTPManagerException("Cannot reply to an email without a unique identifier(uid).")
-
-        result = self.smtp.reply_email(email)
-        if result[0]:
-            self.imap.mark_email(email.uid, Mark.ANSWERED)
-
-        return result
-
-    def forward_email(self, email: EmailToSend) -> SMTPCommandResult:
-        """
-        Forward an existing email to new recipients. Uses the `send_email` 
-        method internally.
-
-        Args:
-            email (EmailToSend): The email to be forwarded.
-
-        Returns:
-            SMTPCommandResult: A tuple containing:
-                - A bool indicating whether the email was forwarded successfully.
-                - A string containing a success message or an error message.
-        """
-        if not email.uid:
-            raise SMTPManagerException("Cannot forward an email without a unique identifier(uid).")
-
-        email_fwd_copy = copy.copy(email)
-        email_fwd_copy.subject = self.imap.get_email_content(email_fwd_copy.uid).subject
-        return self.smtp.forward_email(email_fwd_copy)
-
 __all__ = ["OpenMail"]
