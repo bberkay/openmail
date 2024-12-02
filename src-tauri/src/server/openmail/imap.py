@@ -82,6 +82,7 @@ IMAP_SERVERS = MappingProxyType({
 IMAP_PORT = 993
 # https://datatracker.ietf.org/doc/html/rfc9051#name-state-and-flow-diagram
 IMAP_STATES = ('NONAUTH', 'AUTH', 'SELECTED', 'LOGOUT')
+CRLF = b'\r\n'
 INBOX = 'INBOX'
 ALL = 'ALL'
 
@@ -101,12 +102,13 @@ MAX_FOLDER_NAME_LENGTH = 100
 CONN_TIMEOUT = 30 # 30 seconds
 IDLE_TIMEOUT = 30 * 60 # 30 minutes
 WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
+READLINE_SLEEP = 1 # 1 seconds
 
 class IMAPManager(imaplib.IMAP4_SSL):
     """
     IMAPManager extends the `imaplib.IMAP4` class.
-    Does not override any methods except `login`, `logout`
-    and `__simple_command`. Provides additional features 
+    Overrides `login`, `logout`, `shutodown`, and 
+    `__simple_command`. Provides additional features 
     especially idling and listening exists responses on 
     different threads. Mainly used in `OpenMail` class.
     """
@@ -253,16 +255,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raised.
         """
         try:
-            if self.state == "SELECTED":
-                result = self.__parse_command_result(self.close())
-                if not result[0]:
-                    print(f"Could not close mailbox: {result[1]}")
-        except Exception as e:
-            print(f"Unexpected Error: Could not close mailbox: {str(e)}")
-            pass
-
-        try:
-            self.__terminate_threads()
             result = super().logout()
         except Exception as e:
             raise IMAPManagerException(f"Could not logout from the target imap server: {str(e)}") from None
@@ -272,7 +264,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             success_message="Logout successful",
             failure_message="Could not logout from the target imap server"
         )
-
+    
     @override
     def _simple_command(self, name, *args):
         """
@@ -304,7 +296,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # will be called after the `done` method, 
         # which is already handled in the `__idle` method.
         if name == "DONE":
-            return super()._simple_command(name, *args)
+            return result
         
         # Leaving IDLE mode if needed
         try:
@@ -314,7 +306,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 self.done()
         except Exception as e:
             if is_logged_out(str(e).lower()):
-                raise IMAPManagerLoggedOutException(f"To perform this action, the IMAPManager must be logged in: {str(e)}") from None
+                raise IMAPManagerLoggedOutException(f"To perform this command `{name}`, the IMAPManager must be logged in: {str(e)}") from None
             else:
                 print(f"Unexpected error while leaving IDLE mode: {str(e)}")
                 # Even if leaving IDLE failed, set idle and readline threads and set
@@ -331,6 +323,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
             else:
                 raise IMAPManagerException(str(e)) from None
 
+        # Restoration does not need to be done
+        # if the command is "LOGOUT".
+        if name == "LOGOUT":
+            return result
+        
         # Restoring IDLE mode
         try:
             if was_idle_before_call:
@@ -424,13 +421,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             print(f"DONE command sent for {self.__current_idle_tag} at {datetime.now()}.")
             self.__wait_response(IMAPManager.WaitResponse.DONE)
 
-    def __terminate_threads(self):
-        """Terminates the idle and readline threads."""
-        self.__idle_thread_event.set()
-        self.__readline_thread_event.set()
-        self.__readline_thread.join()
-        self.__idle_thread.join()
-
     def __wait_response(self, wait_response: WaitResponse):
         """
         Waits for a specific response type from the IMAP server.
@@ -484,24 +474,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     if response:
                         print(f"New response received: {response} at {datetime.now()}. Handling response...")
                         self.__handle_response(response)
-                except TimeoutError as e:
-                    print(f"Readlie Thread got TimeoutError at {datetime.now()}.")
-                    self.__readline_thread_event.set()
-                    print(f"Readline thread stopped at {datetime.now()}. Readline will be reinitialized.")
-                    self.__readline()
-                except Exception as e:
-                    print(f"Readline Thread got Unexpected Exception: {str(e)} at {datetime.now()}.")
-                    self.__readline_thread_event.set()
-                    print(f"Readline thread stopped at {datetime.now()}. Readline will be reinitialized.")
-                    self.__readline()
-                time.sleep(1)
+                except TimeoutError:
+                    pass
+                time.sleep(READLINE_SLEEP)
 
         if not self.__readline_thread_event:
             self.__readline_thread_event = threading.Event()
         self.__readline_thread_event.clear()
 
         if not self.__readline_thread or not self.__readline_thread.is_alive():
-            self.__readline_thread = threading.Thread(target=readline_thread)
+            self.__readline_thread = threading.Thread(target=readline_thread, daemon=True)
             self.__readline_thread.start()
 
     def __handle_idle_response(self):
@@ -521,11 +503,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self.__idle_thread_event.clear()
 
         if not self.__idle_thread or not self.__idle_thread.is_alive():
-            self.__idle_thread = threading.Thread(target=self.__idle)
+            self.__idle_thread = threading.Thread(target=self.__idle, daemon=True)
             self.__idle_thread.start()
 
         self.__wait_for_response = IMAPManager.WaitResponse.IDLE
-        print(f"'IDLE' response for {self.__current_idle_tag} handled, IDLE thread started at {self.__current_idle_start_time}.")
+        print(f"'IDLE' response for {self.__current_idle_tag} handled, IDLE thread started at {datetime.fromtimestamp(self.__current_idle_start_time)}.")
 
     def __handle_done_response(self):
         """

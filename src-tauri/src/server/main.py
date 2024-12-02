@@ -13,6 +13,8 @@ from openmail import OpenMail
 from openmail.types import EmailToSend, Attachment
 from openmail.imap import Folder, Mark
 
+from .consts import TRUSTED_HOSTS
+
 from classes.filesystem import FileSystem
 from classes.loghandler import LogHandler
 from classes.securestorage import SecureStorage
@@ -66,7 +68,7 @@ app.add_middleware(
 )
 app.add_middleware(
     TrustedHostMiddleware, 
-    allowed_hosts=["*"]
+    allowed_hosts=TRUSTED_HOSTS
 )
 
 @app.middleware("http")
