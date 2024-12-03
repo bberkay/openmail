@@ -1,4 +1,9 @@
-import os, concurrent.futures
+"""
+This module contains the main FastAPI application and its routes.
+TODO: improve docstring
+"""
+import os
+import concurrent.futures
 from urllib.parse import unquote
 from typing import Optional, List
 from contextlib import asynccontextmanager
@@ -13,18 +18,18 @@ from openmail import OpenMail
 from openmail.types import EmailToSend, Attachment
 from openmail.imap import Folder, Mark
 
-from .consts import TRUSTED_HOSTS
+from classes.file_system import FileSystem
+from classes.http_request_logger import HTTPRequestLogger
+from classes.secure_storage import SecureStorage
+from classes.port_manager import PortManager
 
-from classes.filesystem import FileSystem
-from classes.loghandler import LogHandler
-from classes.securestorage import SecureStorage
-from classes.portmanager import PortManager
+from consts import TRUSTED_HOSTS
 from utils import is_email_valid
 
 openmail_clients: dict[str, OpenMail]  = {}
 file_system = FileSystem()
 secure_storage = SecureStorage()
-logger = LogHandler()
+http_request_logger = HTTPRequestLogger()
 
 def create_and_idle_openmail_clients():
     accounts = secure_storage.get_accounts(None, ["email", "password"])
@@ -46,7 +51,7 @@ def reconnect_and_idle_logged_out_openmail_clients():
                 status = openmail_client.connect(email, account[0]["password"])
                 print(f"Reconnected to {email}")
                 if status:
-                    openmail_client.imap.dle()
+                    openmail_client.imap.idle()
 
 def shutdown_openmail_clients():
     for openmail_client in openmail_clients.values():
@@ -67,7 +72,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(
-    TrustedHostMiddleware, 
+    TrustedHostMiddleware,
     allowed_hosts=TRUSTED_HOSTS
 )
 
@@ -83,7 +88,7 @@ async def catch_request_for_logging(request: Request, call_next):
     print("Response: ", response)
     response._body = await get_response_body(response)
     print("Response Body: ", response._body)
-    logger.request(request, response)
+    http_request_logger.request(request, response)
     return FastAPIResponse(
         content=response._body,
         status_code=response.status_code,
@@ -114,7 +119,7 @@ def add_email_account(
         status, msg = openmail_client.connect(email, password)
         if not status:
             return Response(success=status, message=msg)
-    
+
         secure_storage.insert_account(email, password, fullname)
         openmail_clients[email] = openmail_client
         return Response(
@@ -163,7 +168,7 @@ def check_email_accounts(accounts: str) -> Response | bool:
     for account in accounts:
         if account not in openmail_clients:
             return Response(success=False, message=f"Email account: {account} could not be found.")
-        
+
     return True
 
 @app.get("/get-emails/{accounts}")
@@ -178,7 +183,7 @@ async def get_emails(
         response = check_email_accounts(accounts)
         if not response:
             return response
-        
+
         run_openmail_func_concurrently(
             accounts.split(","),
             lambda client, **params: client.search_emails(**params),
@@ -187,7 +192,7 @@ async def get_emails(
         )
 
         return Response(
-            success=True, 
+            success=True,
             message="Emails fetched successfully.",
             data=run_openmail_func_concurrently(
                 accounts.split(","),
@@ -209,9 +214,9 @@ async def paginate_emails(
         response = check_email_accounts(accounts)
         if not response:
             return response
-        
+
         return Response(
-            success=True, 
+            success=True,
             message="Emails paginated successfully.",
             data=run_openmail_func_concurrently(
                 accounts.split(","),
@@ -231,9 +236,9 @@ async def get_folders(
         response = check_email_accounts(accounts)
         if not response:
             return response
-        
+
         return Response(
-            success=True, 
+            success=True,
             message="Folders fetched successfully.",
             data=run_openmail_func_concurrently(
                 accounts.split(","),
@@ -253,7 +258,7 @@ def get_email_content(
         response = check_email_accounts(account)
         if not response:
             return response
-        
+
         return Response(
             success=True,
             message="Email content fetched successfully.",
@@ -292,7 +297,7 @@ async def send_email(
         response = check_email_accounts(formData.sender)
         if not response:
             return response
-        
+
         sender_email = formData.sender if isinstance(formData.sender, str) else formData.sender[1]
         status, msg = openmail_clients[sender_email].smtp.send_email(
             EmailToSend(
@@ -314,7 +319,7 @@ async def send_email(
                     msg += " " + f"And {com_msg}"
         except Exception as e:
             msg += " " + "And failed to mark email as seen: " + str(e)
-        
+
         return Response(success=status, message=msg)
     except Exception as e:
         return Response(success=False, message=str(e))
@@ -327,7 +332,7 @@ async def reply_email(
         response = check_email_accounts(formData.sender)
         if not response:
             return response
-        
+
         sender_email = formData.sender if isinstance(formData.sender, str) else formData.sender[1]
         status, msg = openmail_clients[sender_email].smtp.send_email(
             EmailToSend(
@@ -356,7 +361,7 @@ async def reply_email(
         return Response(success=status, message=msg)
     except Exception as e:
         return Response(success=False, message=str(e))
-    
+
 @app.post("/forward-email")
 async def forward_email(
     formData: SendEmailRequestFormData
@@ -365,7 +370,7 @@ async def forward_email(
         response = check_email_accounts(formData.sender)
         if not response:
             return response
-        
+
         sender_email = formData.sender if isinstance(formData.sender, str) else formData.sender[1]
         status, msg = openmail_clients[sender_email].smtp.send_email(
             EmailToSend(
@@ -394,20 +399,20 @@ async def forward_email(
         return Response(success=status, message=msg)
     except Exception as e:
         return Response(success=False, message=str(e))
-    
+
 class MarkEmailRequest(BaseModel):
     account: str
     mark: str
     sequence_set: str
     folder: str = Folder.Inbox
-    
+
 @app.post("/mark-email")
 async def mark_email(mark_email_request: MarkEmailRequest) -> Response:
     try:
         response = check_email_accounts(mark_email_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[mark_email_request.account].imap.mark_email(
             mark_email_request.mark,
             mark_email_request.sequence_set,
@@ -422,23 +427,23 @@ class UnmarkEmailRequest(BaseModel):
     mark: str
     sequence_set: str
     folder: str = Folder.Inbox
-    
+
 @app.post("/unmark-email")
 async def unmark_email(unmark_email_request: UnmarkEmailRequest) -> Response:
     try:
         response = check_email_accounts(unmark_email_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[unmark_email_request.account].imap.unmark_email(
-            unmark_email_request.mark, 
+            unmark_email_request.mark,
             unmark_email_request.sequence_set,
             unmark_email_request.folder,
         )
         return Response(success=status, message=msg)
     except Exception as e:
         return Response(success=False, message=str(e))
-    
+
 class MoveEmailRequest(BaseModel):
     account: str
     source_folder: str
@@ -451,7 +456,7 @@ async def move_email(move_email_request: MoveEmailRequest) -> Response:
         response = check_email_accounts(move_email_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[move_email_request.account].imap.move_email(
             move_email_request.source_folder,
             move_email_request.destination_folder,
@@ -473,7 +478,7 @@ async def copy_email(copy_email_request: CopyEmailRequest) -> Response:
         response = check_email_accounts(copy_email_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[copy_email_request.account].imap.copy_email(
             copy_email_request.source_folder,
             copy_email_request.destination_folder,
@@ -494,9 +499,9 @@ async def delete_email(delete_email_request: DeleteEmailRequest) -> Response:
         response = check_email_accounts(delete_email_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[delete_email_request.account].imap.delete_email(
-            delete_email_request.folder, 
+            delete_email_request.folder,
             delete_email_request.sequence_set
         )
         return Response(success=status, message=msg)
@@ -514,9 +519,9 @@ async def create_folder(create_folder_request: CreateFolderRequest) -> Response:
         response = check_email_accounts(create_folder_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[create_folder_request.account].imap.create_folder(
-            create_folder_request.folder_name, 
+            create_folder_request.folder_name,
             create_folder_request.parent_folder
         )
         return Response(success=status, message=msg)
@@ -534,9 +539,9 @@ async def rename_folder(rename_folder_request: RenameFolderRequest) -> Response:
         response = check_email_accounts(rename_folder_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[rename_folder_request.account].imap.rename_folder(
-            rename_folder_request.folder_name, 
+            rename_folder_request.folder_name,
             rename_folder_request.new_folder_name
         )
         return Response(success=status, message=msg)
@@ -554,7 +559,7 @@ async def move_folder(move_folder_request: MoveFolderRequest) -> Response:
         response = check_email_accounts(move_folder_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[move_folder_request.account].imap.move_folder(
             move_folder_request.folder_name,
             move_folder_request.destination_folder
@@ -573,7 +578,7 @@ async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
         response = check_email_accounts(delete_folder_request.account)
         if not response:
             return response
-        
+
         status, msg = openmail_clients[delete_folder_request.account].imap.delete_folder(
             delete_folder_request.folder_name
         )
@@ -584,14 +589,14 @@ async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
 def main():
     file_system.init()
     secure_storage.init()
-    logger.init()
+    http_request_logger.init()
 
     host = "127.0.0.1"
     port = PortManager.find_free_port(8000, 9000)
     pid = str(os.getpid())
     file_system.create_uvicorn_info_file(host, str(port), pid)
 
-    logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
+    http_request_logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
     uvicorn.run(
         app,
         host=host,

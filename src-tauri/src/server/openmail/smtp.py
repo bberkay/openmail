@@ -8,7 +8,7 @@ Key features include:
 - Automated server selection based on email domain.
 - Support for attachments, inline images, and metadata in email messages.
 - New methods for replying to and forwarding emails.
-- Custom error handling, logging.
+- Custom error handling.
 
 Primarily designed for use by the `OpenMail` class.
 
@@ -84,7 +84,7 @@ class SMTPManager(smtplib.SMTP):
             source_address (tuple, optional): Source address for the connection. Defaults to None.
         """
         super().__init__(
-            host or self.__find_smtp_server(email_address),
+            host or self._find_smtp_server(email_address),
             port or SMTP_PORT,
             local_hostname=local_hostname,
             timeout=choose_positive(timeout, DEFAULT_CONN_TIMEOUT),
@@ -93,7 +93,7 @@ class SMTPManager(smtplib.SMTP):
 
         self.login(email_address, password)
 
-    def __find_smtp_server(self, email_address: str) -> str:
+    def _find_smtp_server(self, email_address: str) -> str:
         """
         Find the appropriate SMTP server for a given email address.
 

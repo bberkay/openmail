@@ -10,10 +10,8 @@ Dependencies:
 Author: <berkaykayaforbusiness@outlook.com>
 License: MIT
 """
-import copy
-from .types import EmailToSend
-from .imap import IMAPManager, Mark
-from .smtp import SMTPManager, SMTPCommandResult, SMTPManagerException
+from .imap import IMAPManager
+from .smtp import SMTPManager
 
 class OpenMail:
     """
@@ -30,18 +28,18 @@ class OpenMail:
 
         Connections will be established when connect() method is called.
         """
-        self.__imap = None
-        self.__smtp = None
+        self._imap = None
+        self._smtp = None
 
     @property
     def imap(self) -> IMAPManager:
         """Get the IMAPManager instance."""
-        return self.__imap
+        return self._imap
 
     @property
     def smtp(self) -> SMTPManager:
         """Get the SMTPManager instance."""
-        return self.__smtp
+        return self._smtp
 
     def connect(
         self,
@@ -72,7 +70,7 @@ class OpenMail:
             tuple[bool, str]: A tuple containing connection status (True/False) 
                                and a status message
         """
-        self.__imap = IMAPManager(
+        self._imap = IMAPManager(
             email_address,
             password,
             imap_host,
@@ -80,7 +78,7 @@ class OpenMail:
             imap_ssl_context,
             timeout
         )
-        self.__smtp = SMTPManager(
+        self._smtp = SMTPManager(
             email_address,
             password,
             smtp_host,

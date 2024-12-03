@@ -7,8 +7,10 @@ from dataclasses import dataclass, field
 @dataclass
 class SearchCriteria():
     """
-    A class that represents IMAP search criteria as a dataclass.
-    https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
+    Represents IMAP search criteria.
+
+    References:
+        https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
     """
     senders: Optional[List[str]] = field(default_factory=list)
     receivers: Optional[List[str]] = field(default_factory=list)
@@ -25,17 +27,15 @@ class SearchCriteria():
     exclude: Optional[str] = ""
     has_attachments: Optional[bool] = False
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns a string representation of the SearchCriteria object."""
         return str(self.__dict__)
-    
+
 @dataclass
 class EmailSummary():
-    """
-    A class that represents an email summary as a dataclass.
-    """
+    """Represents an email summary."""
     uid: str
-    sender: str | Tuple[str, str] 
+    sender: str | Tuple[str, str]
     receiver: str
     date: str
     subject: str
@@ -45,28 +45,24 @@ class EmailSummary():
 
 @dataclass
 class Attachment():
-    """
-    A class that represents an email attachment as a dataclass.
-    """
+    """Represents an email attachment."""
     name: str
     data: str
     size: str
     type: str
     cid: str | None = None
-    
+
 @dataclass
 class EmailWithContent():
-    """
-    A class that represents an email with its content as a dataclass.
-    """
+    """Represents an email with its content."""
     uid: str
-    sender: str | Tuple[str, str] 
+    sender: str | Tuple[str, str]
     receiver: str
     date: str
     subject: str
     body: str
     message_id: Optional[str] = ""
-    flags: Optional[List[str]] = field(default_factory=list)    
+    flags: Optional[List[str]] = field(default_factory=list)
     cc: Optional[str] = ""
     bcc: Optional[str] = ""
     metadata: Optional[dict] = field(default_factory=dict)
@@ -75,15 +71,15 @@ class EmailWithContent():
 @dataclass
 class EmailToSend():
     """
-    A class that represents an email to be sent/replied/forwarded as 
-    a dataclass. If the email is being replied or forwarded, the
+    Represents an email to be sent/replied/forwarded.
+    If the email is being replied or forwarded, the
     `uid` field must be provided.
     """
-    sender: str | Tuple[str, str] 
+    sender: str | Tuple[str, str]
     receiver: str
     #date: str
     subject: str
-    body: str    
+    body: str
     uid: Optional[str] = ""
     cc: Optional[str] = ""
     bcc: Optional[str] = ""
@@ -92,24 +88,20 @@ class EmailToSend():
     mail_options: Optional[Sequence[str]] = field(default_factory=list)
     rcpt_options: Optional[Sequence[str]] = field(default_factory=list)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns a string representation of the EmailToSend object."""
         return str(self.__dict__)
-    
+
 @dataclass
 class Mailbox():
-    """
-    A class that represents the mailbox's contents as a dataclass.
-    """
+    """Represents the mailbox's contents."""
     folder: str
     emails: List[EmailSummary]
     total: int
 
 @dataclass
 class Flags():
-    """
-    A class that represents an email's flags as a dataclass.
-    """
+    """Represents an email's flags."""
     uid: str
     flags: List[str]
 
