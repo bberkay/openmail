@@ -10,7 +10,7 @@ class SearchCriteria():
     Represents IMAP search criteria.
 
     References:
-        https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
+        - https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
     """
     senders: Optional[List[str]] = field(default_factory=list)
     receivers: Optional[List[str]] = field(default_factory=list)
@@ -106,10 +106,10 @@ class Flags():
     flags: List[str]
 
 __all__ = [
-    "SearchCriteria", 
-    "Attachment", 
-    "EmailSummary", 
-    "EmailWithContent", 
-    "EmailToSend", 
-    "Mailbox", 
+    "SearchCriteria",
+    "Attachment",
+    "EmailSummary",
+    "EmailWithContent",
+    "EmailToSend",
+    "Mailbox",
 ]

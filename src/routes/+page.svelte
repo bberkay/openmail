@@ -5,11 +5,11 @@
     import Inbox from "$lib/components/Inbox.svelte";
 
     let isLoading: boolean = $state(true);
-    
+
     $effect(() => {
-        if (sharedStore.server && sharedStore.accounts.length === 0) 
+        if (sharedStore.server && sharedStore.accounts.length === 0)
             fetchAccounts();
-        else 
+        else
             isLoading = false;
     });
 
@@ -23,7 +23,7 @@
         isLoading = false;
     }
 </script>
-
+<!-- TODO: Svelte Test -->
 <!--<Alert message="This is a success message" type="success" />-->
 {#if sharedStore.inboxes.length > 0}
     <main class="container">

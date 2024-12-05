@@ -1,7 +1,7 @@
 """
 SMTPManager
-This module extends the functionality of the 
-`smtplib.SMTP` class to simplify its usage and 
+This module extends the functionality of the
+`smtplib.SMTP` class to simplify its usage and
 add new features.
 
 Key features include:
@@ -31,15 +31,21 @@ from .parser import MessageParser
 from .utils import extract_domain, choose_positive, make_size_human_readable
 from .types import EmailToSend
 
-# Exceptions
+"""
+Exceptions
+"""
 class SMTPManagerException(Exception):
     """Custom exception for SMTPManager class."""
     pass
 
-# Types
+"""
+Types, that are only used in this module
+"""
 type SMTPCommandResult = tuple[bool, str]
 
-# General consts, avoid changing
+"""
+General consts, avoid changing
+"""
 SMTP_SERVERS = MappingProxyType({
     "gmail": "smtp.gmail.com",
     "yahoo": "smtp.mail.yahoo.com",
@@ -49,7 +55,9 @@ SMTP_SERVERS = MappingProxyType({
 })
 SMTP_PORT = 587
 
-# Custom consts
+"""
+Custom consts
+"""
 MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024 # 25MB
 DEFAULT_CONN_TIMEOUT = 30 # 30 seconds
 
@@ -208,6 +216,7 @@ class SMTPManager(smtplib.SMTP):
             if inline_data:
                 for match in inline_data:
                     img_ext, img_data = match[0], match[1]
+                    # FIXME: What is this? is this even working?
                     cid = f'image{match[2]}'
                     body = body.replace(f'data:image/{img_ext};base64,{img_data}', f'cid:{cid}')
                     image = base64.b64decode(img_data)
@@ -289,7 +298,7 @@ class SMTPManager(smtplib.SMTP):
 
     def forward_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
-        Forward an existing email to new recipients. Uses the `send_email` 
+        Forward an existing email to new recipients. Uses the `send_email`
         method internally.
 
         Args:
@@ -323,7 +332,7 @@ class SMTPManager(smtplib.SMTP):
 
 
 __all__ = [
-    "SMTPManager", 
-    "SMTPCommandResult", 
+    "SMTPManager",
+    "SMTPCommandResult",
     "SMTPManagerException"
 ]

@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 from utils import make_size_human_readable
 from consts import APP_NAME
 
-from file_system import FileSystem
+from .file_system import FileSystem
 
 MAX_RESPONSE_DATA_LENGTH = 256
 
