@@ -23,7 +23,7 @@
         isLoading = false;
     }
 </script>
-<!-- TODO: Svelte Test -->
+
 <!--<Alert message="This is a success message" type="success" />-->
 {#if sharedStore.inboxes.length > 0}
     <main class="container">

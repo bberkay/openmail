@@ -10,6 +10,8 @@ from consts import APP_NAME
 from .file_system import FileSystem
 
 MAX_RESPONSE_DATA_LENGTH = 256
+MAX_BYTES_TO_LOG = 1 * 1024 * 1024 # 1 MB
+MAX_BACKUP_COUNT = 5
 
 class HTTPRequestLogger(logging.Logger):
     def __init__(self):
@@ -20,7 +22,7 @@ class HTTPRequestLogger(logging.Logger):
         self.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         stream_handler = logging.StreamHandler(sys.stdout)
-        file_handler = RotatingFileHandler(FileSystem().uvicorn_info_file_path, maxBytes=1*1024*1024, backupCount=5)
+        file_handler = RotatingFileHandler(FileSystem().root["logs"]["uvicorn.log"], maxBytes=MAX_BYTES_TO_LOG, backupCount=MAX_BACKUP_COUNT)
         stream_handler.setFormatter(formatter)
         file_handler.setFormatter(formatter)
         self.addHandler(stream_handler)

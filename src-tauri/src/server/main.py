@@ -26,8 +26,7 @@ from classes.port_manager import PortManager
 from consts import TRUSTED_HOSTS
 from utils import is_email_valid
 
-openmail_clients: dict[str, OpenMail]  = {}
-file_system = FileSystem()
+openmail_clients: dict[str, OpenMail] = {}
 secure_storage = SecureStorage()
 http_request_logger = HTTPRequestLogger()
 
@@ -586,15 +585,16 @@ async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
     except Exception as e:
         return Response(success=False, message=str(e))
 
+def create_uvicorn_info_file(host, port, pid):
+    FileSystem().root["uvicorn.info"].setContent(f"URL=http://{host}:{port}\nPID={pid}\n")
+
 def main():
-    file_system.init()
-    secure_storage.init()
     http_request_logger.init()
 
     host = "127.0.0.1"
     port = PortManager.find_free_port(8000, 9000)
     pid = str(os.getpid())
-    file_system.create_uvicorn_info_file(host, str(port), pid)
+    create_uvicorn_info_file(host, str(port), pid)
 
     http_request_logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
     uvicorn.run(

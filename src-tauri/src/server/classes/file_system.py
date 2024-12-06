@@ -1,70 +1,122 @@
 import os
-import json
+from __future__ import annotations
 
 from consts import APP_NAME
 
-APP_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME)
-LOG_DIR = os.path.join(APP_DIR, "logs")
-CONFIG_DIR = os.path.join(APP_DIR, "config")
-UVICORN_INFO_FILE_PATH = os.path.join(APP_DIR, "uvicorn.info")
-UVICORN_LOG_FILE_PATH = os.path.join(LOG_DIR, "uvicorn.log")
-PREFERENCES_FILE_PATH = os.path.join(CONFIG_DIR, "preferences.json")
+ROOT_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME)
+
+class FileObject:
+    def __init__(self, name: str, initial_content: any = ""):
+        if "." not in name:
+            raise ValueError(f"Invalid file name: {name}. File names must have a file extension.")
+        if not isinstance(name, str):
+            raise TypeError(f"Invalid file name: {name}. File names must be a string.")
+        if not name:
+            raise ValueError(f"Invalid file name: {name}. File names must not be empty.")
+
+        self.name = name
+        self._initial_content = initial_content
+        self._fullpath = None
+
+    def __repr__(self):
+        return f"FileObject({self.name})"
+
+    def create(self, fullpath: str):
+        if not isinstance(fullpath, str):
+            raise TypeError(f"Invalid file path: {fullpath}. File paths must be a string.")
+        if not fullpath:
+            raise ValueError(f"Invalid file path: {fullpath}. File paths must not be empty.")
+
+        if os.path.exists(fullpath):
+            return
+
+        with open(fullpath, "w", encoding="utf-8") as file:
+            file.write(self._initial_content)
+
+        self._fullpath = fullpath
+
+    def getContent(self) -> str:
+        with open(self._fullpath, "r", encoding="utf-8") as file:
+            content = file.read()
+        return content
+
+    def setContent(self, content: any):
+        with open(self._fullpath, "w", encoding="utf-8") as file:
+            file.write(content)
+
+class DirObject:
+    def __init__(self, name: str, children: list[FileObject | DirObject] = None):
+        self.name = name
+        self.children = children or []
+        self._child_map = {child.name.split(".")[0]: child for child in self.children}
+        self._fullpath = None
+
+    def __repr__(self):
+        return f"DirObject({self.name})"
+
+    def __getitem__(self, name: str):
+        """Key-based access (for example: explorer['config'])"""
+        return self.get(name)
+
+    def __getattr__(self, name: str):
+        """Dot-based access (for example: explorer.config)"""
+        if name in self._child_map:
+            return self._child_map[name]
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+    def get(self, name: str):
+        """Get a child by its name (used for both dot and key access)"""
+        if name in self._child_map:
+            return self._child_map[name]
+        raise KeyError(f"'{name}' not found in {self.name}")
+
+    def create(self, fullpath: str):
+        if os.path.exists(fullpath):
+            return
+
+        os.makedirs(fullpath, exist_ok=True)
+        self._fullpath = fullpath
+
+    def display(self):
+        pass
 
 class FileSystem:
-    def init(self) -> None:
-        self._create_dirs()
-        self._create_log_file()
-        self._create_preferences_file()
+    _instance = None
+    _root: DirObject
+
+    def __new__(cls):
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+            cls._instance._root = DirObject(
+                ROOT_DIR,
+                [
+                    FileObject("uvicorn.info"),
+                    DirObject(
+                        "logs",
+                        [
+                            FileObject("uvicorn.log"),
+                        ],
+                    )
+                ],
+            )
+
+            cls._instance._create_structure(cls._instance._root)
+
+        return cls._instance
+
+    def _create_structure(self, obj: FileObject | DirObject, parent_path: str = ""):
+        """Recursive function to create the file system structure."""
+        fullpath = os.path.join(parent_path, obj.name)
+
+        if isinstance(obj, DirObject):
+            obj.create(fullpath)
+
+            for child in obj.children:
+                self._create_structure(child, fullpath)
+
+        elif isinstance(obj, FileObject):
+            obj.create(fullpath)
 
     @property
-    def app_dir(self) -> str:
-        return APP_DIR
-
-    @property
-    def log_dir(self) -> str:
-        return LOG_DIR
-
-    @property
-    def config_dir(self) -> str:
-        return CONFIG_DIR
-
-    @property
-    def uvicorn_info_file_path(self) -> str:
-        return UVICORN_INFO_FILE_PATH
-
-    @property
-    def uvicorn_log_file_path(self) -> str:
-        return UVICORN_LOG_FILE_PATH
-
-    @property
-    def preferences_file_path(self) -> str:
-        return PREFERENCES_FILE_PATH
-
-    def _create_dirs(self) -> None:
-        if not os.path.exists(APP_DIR):
-            os.makedirs(APP_DIR, exist_ok=True)
-
-        for directory in [CONFIG_DIR, LOG_DIR]:
-            if not os.path.exists(directory):
-                os.makedirs(directory, exist_ok=True)
-
-    def _create_preferences_file(self) -> None:
-        with open(PREFERENCES_FILE_PATH, "w", encoding="utf-8") as preferences_file:
-            json.dump({}, preferences_file)
-
-    def _create_log_file(self) -> None:
-        if not os.path.exists(UVICORN_LOG_FILE_PATH):
-            with open(UVICORN_LOG_FILE_PATH, "w", encoding="utf-8") as uvicorn_log_file:
-                uvicorn_log_file.write("")
-
-    def create_uvicorn_info_file(self, host: str, port: str, pid: str) -> None:
-        with open(UVICORN_INFO_FILE_PATH, "w", encoding="utf-8") as uvicorn_info_file:
-            uvicorn_info_file.write(f"URL=http://{host}:{port}\n")
-            uvicorn_info_file.write(f"PID={pid}")
-
-    def get_preferences(self) -> dict:
-        if os.path.exists(PREFERENCES_FILE_PATH):
-            with open(PREFERENCES_FILE_PATH, "r", encoding="utf-8") as preferences_file:
-                return json.load(preferences_file)
-        else:
-            raise FileNotFoundError
+    def root(self) -> DirObject:
+        return self._root
