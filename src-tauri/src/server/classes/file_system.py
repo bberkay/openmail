@@ -1,5 +1,5 @@
-import os
 from __future__ import annotations
+import os
 
 from consts import APP_NAME
 
@@ -16,7 +16,7 @@ class FileObject:
 
         self.name = name
         self._initial_content = initial_content
-        self._fullpath = None
+        self.fullpath = None
 
     def __repr__(self):
         return f"FileObject({self.name})"
@@ -27,29 +27,28 @@ class FileObject:
         if not fullpath:
             raise ValueError(f"Invalid file path: {fullpath}. File paths must not be empty.")
 
-        if os.path.exists(fullpath):
+        self.fullpath = fullpath
+
+        if os.path.exists(self.fullpath):
             return
 
-        with open(fullpath, "w", encoding="utf-8") as file:
+        with open(self.fullpath, "w", encoding="utf-8") as file:
             file.write(self._initial_content)
 
-        self._fullpath = fullpath
-
-    def getContent(self) -> str:
-        with open(self._fullpath, "r", encoding="utf-8") as file:
+    def read(self) -> str:
+        with open(self.fullpath, "r", encoding="utf-8") as file:
             content = file.read()
         return content
 
-    def setContent(self, content: any):
-        with open(self._fullpath, "w", encoding="utf-8") as file:
+    def write(self, content: any):
+        with open(self.fullpath, "w", encoding="utf-8") as file:
             file.write(content)
 
 class DirObject:
     def __init__(self, name: str, children: list[FileObject | DirObject] = None):
         self.name = name
         self.children = children or []
-        self._child_map = {child.name.split(".")[0]: child for child in self.children}
-        self._fullpath = None
+        self.fullpath = None
 
     def __repr__(self):
         return f"DirObject({self.name})"
@@ -60,25 +59,42 @@ class DirObject:
 
     def __getattr__(self, name: str):
         """Dot-based access (for example: explorer.config)"""
-        if name in self._child_map:
-            return self._child_map[name]
+        for child in self.children:
+            if child.name.split(".")[0] == name:
+                return child
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def get(self, name: str):
         """Get a child by its name (used for both dot and key access)"""
-        if name in self._child_map:
-            return self._child_map[name]
+        for child in self.children:
+            if child.name == name:
+                return child
         raise KeyError(f"'{name}' not found in {self.name}")
 
     def create(self, fullpath: str):
-        if os.path.exists(fullpath):
+        if not isinstance(fullpath, str):
+            raise TypeError(f"Invalid directory path: {fullpath}. Directory paths must be a string.")
+        if not fullpath:
+            raise ValueError(f"Invalid directory path: {fullpath}. Directory paths must not be empty.")
+
+        self.fullpath = fullpath
+
+        if os.path.exists(self.fullpath):
             return
 
-        os.makedirs(fullpath, exist_ok=True)
-        self._fullpath = fullpath
+        os.makedirs(self.fullpath, exist_ok=True)
 
-    def display(self):
-        pass
+    def display(self, indent: int = 0):
+        """Recursively display the directory structure as a tree."""
+        prefix = " " * (indent * 4) + ("└── " if indent > 0 else "")
+        print(f"{prefix}{self.name}/")
+
+        for child in self.children:
+            if isinstance(child, DirObject):
+                child.display(indent + 1)
+            elif isinstance(child, FileObject):
+                file_prefix = " " * ((indent + 1) * 4) + "└── "
+                print(f"{file_prefix}{child.name}")
 
 class FileSystem:
     _instance = None
