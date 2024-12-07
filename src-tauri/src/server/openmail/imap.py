@@ -196,6 +196,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         self.login(email_address, password)
 
+    def __del__(self):
+        """Closes the connection to the IMAP server and logs out."""
+        self.logout()
 
     def _find_imap_server(self, email_address: str) -> str:
         """
@@ -280,6 +283,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             If there is an error while closing the mailbox, it will be logged but not
             raised.
         """
+        self._terminate_threads()
         return self._parse_command_result(
             super().logout(),
             success_message="Logout successful",
@@ -488,13 +492,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
             """
             Continuously reads server responses and processes them.
             """
+            self.socket().settimeout(None)
+
             while not self._readline_thread_event.is_set():
                 try:
+                    print(f"Waiting for new response at {datetime.now()}.")
                     response = self.readline()
                     if response:
                         print(f"New response received: {response} at {datetime.now()}. Handling response...")
                         self._handle_response(response)
-                except TimeoutError:
+                except (TimeoutError, OSError):
+                    print(f"Readline timed out at {datetime.now()}.")
                     pass
                 time.sleep(READLINE_SLEEP)
 
@@ -503,7 +511,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._readline_thread_event.clear()
 
         if not self._readline_thread or not self._readline_thread.is_alive():
-            self._readline_thread = threading.Thread(target=readline_thread, daemon=True)
+            self._readline_thread = threading.Thread(target=readline_thread)
             self._readline_thread.start()
 
     def _handle_idle_response(self):
@@ -523,7 +531,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._idle_thread_event.clear()
 
         if not self._idle_thread or not self._idle_thread.is_alive():
-            self._idle_thread = threading.Thread(target=self._idle, daemon=True)
+            self._idle_thread = threading.Thread(target=self._idle)
             self._idle_thread.start()
 
         self._wait_for_response = IMAPManager.WaitResponse.IDLE
@@ -598,6 +606,20 @@ class IMAPManager(imaplib.IMAP4_SSL):
             self._handle_bye_response()
         elif b'EXISTS' in response:
             self._handle_exists_response(response)
+
+    def _terminate_threads(self):
+        """Terminates all threads used by the IMAPManager."""
+        if self._idle_thread_event:
+            self._idle_thread_event.set()
+
+        if self._readline_thread_event:
+            self._readline_thread_event.set()
+
+        if self._idle_thread and self._idle_thread.is_alive():
+            self._idle_thread.join()
+
+        if self._readline_thread and self._readline_thread.is_alive():
+            self._readline_thread.join()
 
     def find_matching_folder(self, requested_folder: Folder) -> bytes | None:
         """
