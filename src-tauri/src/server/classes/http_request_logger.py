@@ -22,7 +22,7 @@ class HTTPRequestLogger(logging.Logger):
         self.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         stream_handler = logging.StreamHandler(sys.stdout)
-        file_handler = RotatingFileHandler(FileSystem().root["logs"]["uvicorn.log"], maxBytes=MAX_BYTES_TO_LOG, backupCount=MAX_BACKUP_COUNT)
+        file_handler = RotatingFileHandler(FileSystem().root["logs"]["uvicorn.log"].fullpath, maxBytes=MAX_BYTES_TO_LOG, backupCount=MAX_BACKUP_COUNT)
         stream_handler.setFormatter(formatter)
         file_handler.setFormatter(formatter)
         self.addHandler(stream_handler)
