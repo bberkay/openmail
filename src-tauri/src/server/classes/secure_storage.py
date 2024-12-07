@@ -1,16 +1,57 @@
 import json
-from typing import List
+from typing import List, TypedDict
+from enum import Enum
 
 import keyring
 from cryptography.fernet import Fernet
 
 from consts import APP_NAME
 
-
-class CipherKeyNotFoundError(Exception):
-    """Cipher key is not found in the keyring."""
+"""
+Exceptions
+"""
+class CipherNotInitializedError(Exception):
+    """Cipher is not initialized."""
     pass
 
+class InvalidSecureStorageKeyError(Exception):
+    """Invalid secure storage key."""
+    pass
+
+class InvalidAccountColumnError(Exception):
+    """Invalid account column."""
+    pass
+
+"""
+Enums, Types
+"""
+class SecureStorageKey(Enum):
+    CIPHER_KEY = "cipher_key"
+    ACCOUNTS = "accounts"
+
+    @classmethod
+    def keys(cls) -> list[str]:
+        return [key.name for key in cls]
+
+class AccountColumn(Enum):
+    EMAIL = "email"
+    PASSWORD = "password"
+    FULLNAME = "fullname"
+
+    @classmethod
+    def keys(cls) -> list[str]:
+        return [key.name for key in cls]
+
+class Account(TypedDict):
+    email: str
+    password: str
+    fullname: str | None
+
+"""
+Constants
+"""
+SECURE_STORAGE_KEY_LIST = SecureStorageKey.list()
+ACCOUNT_COLUMN_LIST = AccountColumn.list()
 
 class SecureStorage:
     _instance = None
@@ -18,92 +59,110 @@ class SecureStorage:
     def __new__(cls):
         if not cls._instance:
             cls._instance = super().__new__(cls)
-            cls._instance._initialize()
+
+            # Initialize the cipher
+            cls._instance._cache = {}
+            cls._instance._cipher = None
+            cls._instance._create_cipher()
+            cls._instance._create_accounts()
+
         return cls._instance
 
-    def _initialize(self):
-        self._cipher = None
-        self._create_cipher_key()
-        self._create_accounts()
+    def __del__(self):
+        self._clear_cache()
 
-    def _get_cipher_key(self) -> str | None:
-        return keyring.get_password(APP_NAME, "cipher_key")
+    def _clear_cache(self):
+        self._cache = {}
 
-    def _create_cipher_key(self) -> None:
-        if self._get_cipher_key() is None:
-            keyring.set_password(
-                APP_NAME,
-                "cipher_key",
-                Fernet.generate_key().decode()
-            )
-        self._initialize_cipher()
+    def _create_cipher(self):
+        if self._cipher:
+            return
 
-    def _initialize_cipher(self) -> None:
-        """Initialize the Fernet instance with the stored cipher key."""
-        cipher_key = self._get_cipher_key()
-        if cipher_key is not None:
-            self._cipher = Fernet(cipher_key)
+        if self._get_key(SecureStorageKey.CIPHER_KEY):
+            cipher_key = self._get_key(SecureStorageKey.CIPHER_KEY)
         else:
-            raise CipherKeyNotFoundError("Cipher key is missing; cannot initialize encryption.")
+            cipher_key = Fernet.generate_key().decode()
+            keyring.set_password(APP_NAME, SecureStorageKey.CIPHER_KEY, cipher_key)
+
+        self._cipher = Fernet(cipher_key)
 
     def _create_accounts(self) -> None:
-        if self._get_key("accounts") is None:
-            self._add_key("accounts", "[]")
+        if self._get_key(SecureStorageKey.ACCOUNTS):
+            return
 
-    def _get_key(self, key: str) -> str | None:
+        self._add_key("accounts", [])
+
+    def _check_key(self, key: str) -> None:
+        if key not in SECURE_STORAGE_KEY_LIST:
+            raise InvalidSecureStorageKeyError
+
+    def _get_key(self, key: SecureStorageKey) -> str | None:
+        self._check_key(key)
+
         if not self._cipher:
-            self._initialize_cipher()
+            raise CipherNotInitializedError
 
-        key_value = keyring.get_password(APP_NAME, key)
-        if key_value:
-            return self._cipher.decrypt(key_value.encode()).decode()
-        return None
+        if key in self._cache:
+            return self._cache[key]
 
-    def _add_key(self, key_name: str, key_value: str) -> None:
+        key = keyring.get_password(APP_NAME, key)
+        if not key:
+            return None
+
+        decrypted_key = self._cipher.decrypt(key.encode()).decode()
+
+        self._cache[key] = decrypted_key
+        return decrypted_key
+
+    def _add_key(self, key_name: SecureStorageKey, key_value: any) -> None:
+        self._check_key(key_name)
+
         if not self._cipher:
-            self._initialize_cipher()
+            raise CipherNotInitializedError
 
-        encrypted_value = self._cipher.encrypt(key_value.encode()).decode()
-        keyring.set_password(APP_NAME, key_name, encrypted_value)
+        decrypted_key = self._cipher.decrypt(json.dumps(key_value).encode()).decode()
+        keyring.set_password(APP_NAME, key_name, decrypted_key)
+        self._cache[key_name] = decrypted_key
 
-    def insert_account(self, email: str, password: str, fullname: str | None = None) -> None:
-        """Insert a new account, securely encrypting the password."""
+    def _check_columns(self, columns: List[str]) -> None:
+        for column in columns:
+            if column not in ACCOUNT_COLUMN_LIST:
+                raise InvalidAccountColumnError
+
+    def get_accounts(self, emails: List[str] | None = None, columns: List[AccountColumn] | None = None) -> List[Account] | None:
+        if columns:
+            self._check_columns(columns)
+        else:
+            columns = ACCOUNT_COLUMN_LIST
+
+        accounts = self._get_key(SecureStorageKey.ACCOUNTS)
+        accounts: List[Account] = json.loads(accounts) if accounts else []
+
+        filtered_accounts = []
+        for account in accounts:
+            if emails and account["email"] not in emails:
+                continue
+            filtered_accounts.append({column: account[column] for column in columns})
+
+        return filtered_accounts
+
+    def insert_account(self, account: Account) -> None:
         accounts = self.get_accounts()
-        if accounts is None:
+        if not accounts:
             accounts = []
 
-        accounts.append({
-            "email": email,
-            "password": self._cipher.encrypt(password.encode()).decode(),
-            "fullname": fullname
-        })
-        self._add_key("accounts", json.dumps(accounts))
-
-    def get_accounts(self, emails: List[str] | None = None, columns: List[str] | None = None) -> list[dict] | None:
-        """Retrieve accounts and decrypt passwords."""
-        if not columns:
-            columns = ["fullname", "email", "password"]
-
-        accounts = self._get_key("accounts")
-        accounts = json.loads(accounts) if accounts else []
-
-        for account in accounts:
-            account["password"] = self._cipher.decrypt(account["password"].encode()).decode()
-
-        if emails:
-            accounts = [account for account in accounts if account["email"] in emails]
-        if columns:
-            accounts = [{column: account[column] for column in columns} for account in accounts]
-        return accounts
+        accounts.append(account)
+        self._add_key(SecureStorageKey.ACCOUNTS, accounts)
 
     def delete_account(self, email: str) -> None:
-        """Delete a specific account by email."""
         accounts = self.get_accounts()
-        if accounts is None:
+        if not accounts:
             return None
-        accounts = [account for account in accounts if account["email"] != email]
-        self._add_key("accounts", json.dumps(accounts))
+
+        self._add_key(
+            SecureStorageKey.ACCOUNTS,
+            filter(lambda account: account["email"] != email, accounts)
+        )
 
     def delete_accounts(self) -> None:
-        """Delete all accounts."""
-        self._add_key("accounts", "[]")
+        self._add_key(SecureStorageKey.ACCOUNTS, [])
