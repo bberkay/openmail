@@ -586,7 +586,7 @@ async def delete_folder(delete_folder_request: DeleteFolderRequest) -> Response:
         return Response(success=False, message=str(e))
 
 def create_uvicorn_info_file(host, port, pid):
-    FileSystem().root["uvicorn.info"].setContent(f"URL=http://{host}:{port}\nPID={pid}\n")
+    FileSystem().root["uvicorn.info"].write(f"URL=http://{host}:{port}\nPID={pid}\n")
 
 def main():
     http_request_logger.init()
