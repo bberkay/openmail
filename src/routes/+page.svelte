@@ -7,7 +7,7 @@
     let isLoading: boolean = $state(true);
 
     $effect(() => {
-        if (sharedStore.server && sharedStore.accounts.length === 0)
+        if (sharedStore.server && sharedStore.accounts.length === 0 && isLoading)
             fetchAccounts();
         else
             isLoading = false;
