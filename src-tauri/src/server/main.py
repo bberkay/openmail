@@ -5,7 +5,7 @@ TODO: improve docstring
 import os
 import concurrent.futures
 from urllib.parse import unquote
-from typing import Optional, List
+from typing import Optional
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -20,7 +20,7 @@ from openmail.imap import Folder, Mark
 
 from classes.file_system import FileSystem
 from classes.http_request_logger import HTTPRequestLogger
-from classes.secure_storage import SecureStorage
+from classes.secure_storage import SecureStorage, Account, AccountColumn
 from classes.port_manager import PortManager
 
 from consts import TRUSTED_HOSTS
@@ -31,7 +31,7 @@ secure_storage = SecureStorage()
 http_request_logger = HTTPRequestLogger()
 
 def create_and_idle_openmail_clients():
-    accounts = secure_storage.get_accounts(None, ["email", "password"])
+    accounts: list[Account] = secure_storage.get_accounts(None, [AccountColumn.EMAIL, AccountColumn.PASSWORD])
     if not accounts:
         return
 
@@ -45,7 +45,7 @@ def create_and_idle_openmail_clients():
 def reconnect_and_idle_logged_out_openmail_clients():
     for email, openmail_client in openmail_clients.items():
         if not openmail_client.is_logged_in():
-            account = secure_storage.get_accounts([email], ["password"])
+            account: Account = secure_storage.get_accounts([email], AccountColumn.PASSWORD)
             if account:
                 status = openmail_client.connect(email, account[0]["password"])
                 print(f"Reconnected to {email}")
@@ -84,9 +84,9 @@ async def catch_request_for_logging(request: Request, call_next):
             return response_body
 
     response = await call_next(request)
-    print("Response: ", response)
+    #print("Response: ", response)
     response._body = await get_response_body(response)
-    print("Response Body: ", response._body)
+    #print("Response Body: ", response._body)
     http_request_logger.request(request, response)
     return FastAPIResponse(
         content=response._body,
@@ -141,12 +141,12 @@ def get_email_accounts() -> Response:
         return Response(
             success=True,
             message="Email accounts fetched successfully",
-            data=secure_storage.get_accounts(None, ["fullname", "email"])
+            data=secure_storage.get_accounts(None, [AccountColumn.FULLNAME, AccountColumn.EMAIL])
         )
     except Exception as e:
         return Response(success=False, message=str(e))
 
-def run_openmail_func_concurrently(accounts: list, func, **params) -> List[dict]:
+def run_openmail_func_concurrently(accounts: list, func, **params) -> list[dict]:
     result = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_emails = {
@@ -274,9 +274,9 @@ class SendEmailRequestFormData(BaseModel):
     uid: Optional[str] = None
     cc: Optional[str] = None
     bcc: Optional[str] = None
-    attachments: List[UploadFile] = []
+    attachments: list[UploadFile] = []
 
-async def convert_attachments(attachments: List[UploadFile]) -> List[Attachment]:
+async def convert_attachments(attachments: list[UploadFile]) -> list[Attachment]:
     converted_to_attachment_list = []
     for attachment in attachments:
         data = await attachment.read()
