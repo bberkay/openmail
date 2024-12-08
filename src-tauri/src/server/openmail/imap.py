@@ -22,7 +22,7 @@ import threading
 import base64
 import time
 
-from typing import List, override
+from typing import override
 from dataclasses import dataclass
 from types import MappingProxyType
 from datetime import datetime
@@ -140,7 +140,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
     @dataclass
     class SearchedEmails:
         """Dataclass for storing searched emails."""
-        uids: List[str]
+        uids: list[str]
         folder: str
         search_query: str
 
@@ -696,7 +696,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
 
-    def _check_folder_names(self, folders: str | List[str], raise_error: bool = True) -> bool:
+    def _check_folder_names(self, folders: str | list[str], raise_error: bool = True) -> bool:
         """
         Check if a folder name(s) is valid.
 
@@ -773,7 +773,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             - https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
         """
 
-        def recursive_or_query(criteria: str, search_keys: List[str]) -> str:
+        def recursive_or_query(criteria: str, search_keys: list[str]) -> str:
             """
             Recursively builds an OR query for a list of search keys.
 
