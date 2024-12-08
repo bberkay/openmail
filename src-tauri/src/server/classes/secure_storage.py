@@ -1,10 +1,16 @@
+from __future__ import annotations
+import base64
+import os
 import json
-from typing import List, TypedDict
+import time
 from enum import Enum
+from typing import TypedDict
+from dataclasses import dataclass
 
 import keyring
-from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from utils import safe_json_loads
 from consts import APP_NAME
 
 """
@@ -26,21 +32,27 @@ class InvalidAccountColumnError(Exception):
 Enums, Types
 """
 class SecureStorageKey(Enum):
-    CIPHER_KEY = "cipher_key"
-    ACCOUNTS = "accounts"
+    CIPHER_KEY = "CIPHER_KEY"
+    ACCOUNTS = "ACCOUNTS"
 
     @classmethod
     def keys(cls) -> list[str]:
-        return [key.name for key in cls]
+        return [key.value for key in cls]
+
+    def __str__(self) -> str:
+        return self.value
 
 class AccountColumn(Enum):
-    EMAIL = "email"
-    PASSWORD = "password"
-    FULLNAME = "fullname"
+    EMAIL = "EMAIL"
+    PASSWORD = "PASSWORD"
+    FULLNAME = "FULLNAME"
 
     @classmethod
     def keys(cls) -> list[str]:
-        return [key.name for key in cls]
+        return [key.value for key in cls]
+
+    def __str__(self) -> str:
+        return self.value
 
 class Account(TypedDict):
     email: str
@@ -50,93 +62,99 @@ class Account(TypedDict):
 """
 Constants
 """
-SECURE_STORAGE_KEY_LIST = SecureStorageKey.list()
-ACCOUNT_COLUMN_LIST = AccountColumn.list()
+SECURE_STORAGE_KEY_LIST = SecureStorageKey.keys()
+ACCOUNT_COLUMN_LIST = AccountColumn.keys()
+CACHE_TTL = 1800
 
 class SecureStorage:
     _instance = None
+    _cache: SecureStorageCache = None
+    _encryptor: AESGCMCipher = None
 
     def __new__(cls):
         if not cls._instance:
             cls._instance = super().__new__(cls)
-
-            # Initialize the cipher
-            cls._instance._cache = {}
-            cls._instance._cipher = None
-            cls._instance._create_cipher()
+            cls._instance._cache = SecureStorageCache()
+            cls._instance._encryptor = AESGCMCipher(cls._instance._load_key())
             cls._instance._create_accounts()
 
         return cls._instance
 
     def __del__(self):
-        self._clear_cache()
+        self.clear()
 
-    def _clear_cache(self):
-        self._cache = {}
+    def _load_key(self):
+        key_name = self._check_and_format_key(SecureStorageKey.CIPHER_KEY)
+        key = keyring.get_password(APP_NAME, key_name)
+        if not key:
+            key = os.urandom(32).hex()
+            keyring.set_password(APP_NAME, key_name, key)
 
-    def _create_cipher(self):
-        if self._cipher:
-            return
-
-        if self._get_key(SecureStorageKey.CIPHER_KEY):
-            cipher_key = self._get_key(SecureStorageKey.CIPHER_KEY)
-        else:
-            cipher_key = Fernet.generate_key().decode()
-            keyring.set_password(APP_NAME, SecureStorageKey.CIPHER_KEY, cipher_key)
-
-        self._cipher = Fernet(cipher_key)
+        return bytes.fromhex(key)
 
     def _create_accounts(self) -> None:
-        if self._get_key(SecureStorageKey.ACCOUNTS):
+        if self.has_any_accounts():
             return
 
-        self._add_key("accounts", [])
+        self._add_key(SecureStorageKey.ACCOUNTS, [])
 
-    def _check_key(self, key: str) -> None:
-        if key not in SECURE_STORAGE_KEY_LIST:
+    def _check_and_format_key(self, key: str | SecureStorageKey) -> str:
+        key_name = str(key).upper()
+        if key_name not in SECURE_STORAGE_KEY_LIST:
             raise InvalidSecureStorageKeyError
+        return key_name
 
-    def _get_key(self, key: SecureStorageKey) -> str | None:
-        self._check_key(key)
+    def _get_key_value(self, key_name: SecureStorageKey, decrypt: bool = True) -> any:
+        key_name = self._check_and_format_key(key_name)
 
-        if not self._cipher:
+        key_value = self._cache.get(key_name)
+        if not key_value:
+            key_value = keyring.get_password(APP_NAME, key_name)
+            if not key_value:
+                return None
+            self._cache.set(key_name, key_value)
+
+        if decrypt:
+            if self._encryptor:
+                key_value = self._encryptor.decrypt(key_value)
+                key_value = safe_json_loads(key_value)
+            else:
+                raise CipherNotInitializedError
+
+        return key_value
+
+    def _add_key(self, key_name: SecureStorageKey, key_value: any, associated_data: bytes = None):
+        key_name = self._check_and_format_key(key_name)
+
+        key_value = safe_json_loads(key_value)
+        if not self._encryptor:
             raise CipherNotInitializedError
 
-        if key in self._cache:
-            return self._cache[key]
+        key_value = self._encryptor.encrypt(key_value, associated_data)
+        keyring.set_password(APP_NAME, key_name, key_value)
+        self._cache.set(key_name, key_value)
 
-        key = keyring.get_password(APP_NAME, key)
-        if not key:
-            return None
-
-        decrypted_key = self._cipher.decrypt(key.encode()).decode()
-
-        self._cache[key] = decrypted_key
-        return decrypted_key
-
-    def _add_key(self, key_name: SecureStorageKey, key_value: any) -> None:
-        self._check_key(key_name)
-
-        if not self._cipher:
-            raise CipherNotInitializedError
-
-        decrypted_key = self._cipher.decrypt(json.dumps(key_value).encode()).decode()
-        keyring.set_password(APP_NAME, key_name, decrypted_key)
-        self._cache[key_name] = decrypted_key
-
-    def _check_columns(self, columns: List[str]) -> None:
+    def _check_and_format_columns(self, columns: list[str | AccountColumn]) -> list[str]:
+        upper_columns = []
         for column in columns:
-            if column not in ACCOUNT_COLUMN_LIST:
+            column_name = str(column).upper()
+            if column_name not in ACCOUNT_COLUMN_LIST:
                 raise InvalidAccountColumnError
+            upper_columns.append(column_name)
 
-    def get_accounts(self, emails: List[str] | None = None, columns: List[AccountColumn] | None = None) -> List[Account] | None:
+        return upper_columns
+
+    def has_any_accounts(self) -> bool:
+        accounts = self._get_key_value(SecureStorageKey.ACCOUNTS, False)
+        return bool(accounts)
+
+    def get_accounts(self, emails: list[str] | None = None, columns: list[AccountColumn] | None = None) -> list[Account] | None:
         if columns:
-            self._check_columns(columns)
+            columns = self._check_and_format_columns(columns)
         else:
             columns = ACCOUNT_COLUMN_LIST
 
-        accounts = self._get_key(SecureStorageKey.ACCOUNTS)
-        accounts: List[Account] = json.loads(accounts) if accounts else []
+        accounts: list[Account] = self._get_key_value(SecureStorageKey.ACCOUNTS, True)
 
         filtered_accounts = []
         for account in accounts:
@@ -146,7 +164,7 @@ class SecureStorage:
 
         return filtered_accounts
 
-    def insert_account(self, account: Account) -> None:
+    def insert_account(self, account: Account):
         accounts = self.get_accounts()
         if not accounts:
             accounts = []
@@ -154,15 +172,102 @@ class SecureStorage:
         accounts.append(account)
         self._add_key(SecureStorageKey.ACCOUNTS, accounts)
 
-    def delete_account(self, email: str) -> None:
+    def delete_account(self, email: str):
         accounts = self.get_accounts()
         if not accounts:
-            return None
+            return
 
         self._add_key(
             SecureStorageKey.ACCOUNTS,
             filter(lambda account: account["email"] != email, accounts)
         )
 
-    def delete_accounts(self) -> None:
-        self._add_key(SecureStorageKey.ACCOUNTS, [])
+    def delete_accounts(self):
+        keyring.delete_password(APP_NAME, SecureStorageKey.ACCOUNTS)
+        self._cache.delete(SecureStorageKey.ACCOUNTS)
+        self._create_accounts() # Create empty list
+
+    def clear(self):
+        self._cache.destroy()
+
+    def destroy(self):
+        if self._cache:
+            self._cache.destroy()
+
+        try:
+            for key in SECURE_STORAGE_KEY_LIST:
+                keyring.delete_password(APP_NAME, key)
+        except keyring.errors.PasswordDeleteError:
+            print("Failed to delete keyring password.")
+            pass
+
+class SecureStorageCache:
+    @dataclass
+    class StoreData:
+        value: any
+        timestamp: float
+
+        def is_expired(self) -> bool:
+            return time.time() - self.timestamp > CACHE_TTL
+
+    _instance = None
+    _store: dict[str, StoreData]
+
+    def __new__(cls):
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+            cls._instance._store = {}
+
+        return cls._instance
+
+    def __del__(self):
+        self.clear()
+
+    def get(self, key: str) -> any:
+        if key not in self._store:
+            return None
+
+        store_data: SecureStorageCache.StoreData = self._store[key]
+        if store_data.is_expired():
+            self.delete(key)
+
+        return store_data.value
+
+    def set(self, key: str, value: any):
+        self._store[key] = SecureStorageCache.StoreData(value, time.time())
+
+    def delete(self, key: str):
+        if key in self._store:
+            random_bytes = os.urandom(len(str(self._store[key])))
+            self._store[key] = random_bytes.hex()
+            del self._store[key]
+
+    def destroy(self):
+        for key in list(self._store.keys()):
+            self.delete(key)
+
+        self._store = {}
+
+class AESGCMCipher:
+    def __init__(self, key: bytes):
+        if len(key) not in [16, 24, 32]:
+            raise ValueError("Key length must be 16, 24, or 32 bytes.")
+
+        try:
+            self._cipher = AESGCM(key)
+        finally:
+            random_bytes = os.urandom(len(str(key)))
+            key = random_bytes.hex()
+
+    def encrypt(self, plain_text: str, associated_data: bytes = None) -> str:
+        nonce = os.urandom(12)
+        cipher_text = self._cipher.encrypt(nonce, plain_text.encode(), associated_data)
+        return base64.b64encode(nonce + cipher_text).decode('utf-8')
+
+    def decrypt(self, encrypted_text: str) -> str:
+        encrypted_text = base64.b64decode(encrypted_text)
+        nonce = encrypted_text[:12]
+        cipher_text = encrypted_text[12:]
+        return self._cipher.decrypt(nonce, cipher_text).decode('utf-8')
+
+__all__ = ["SecureStorage", "Account", "AccountColumn"]
