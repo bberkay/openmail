@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Response } from "$lib/types";
 import { sharedStore } from "$lib/stores/shared.svelte";
 import { error } from "@sveltejs/kit";
-import type { PageLoad } from "./$types";
+import type { LayoutLoad } from './$types';
 
 const SERVER_CONNECTION_TIMEOUT = 1000 * 2; // 2 seconds
 const SERVER_CONNECTION_TRY_COUNT = 5;
@@ -50,7 +50,7 @@ async function initServerUrl(): Promise<void> {
     })
 }
 
-export const load: PageLoad = async ({}) => {
+export const load: LayoutLoad = async ({}) => {
     await initServerUrl();
 };
 
