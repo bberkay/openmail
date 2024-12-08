@@ -104,7 +104,7 @@ class SecureStorage:
             raise InvalidSecureStorageKeyError
         return key_name
 
-    def _get_key_value(self, key_name: SecureStorageKey, decrypt: bool = True) -> any:
+    def _get_key_value(self, key_name: SecureStorageKey, associated_data: bytes = None, decrypt: bool = True) -> any:
         key_name = self._check_and_format_key(key_name)
 
         key_value = self._cache.get(key_name)
@@ -116,7 +116,7 @@ class SecureStorage:
 
         if decrypt:
             if self._encryptor:
-                key_value = self._encryptor.decrypt(key_value)
+                key_value = self._encryptor.decrypt(key_value, associated_data)
                 key_value = safe_json_loads(key_value)
             else:
                 raise CipherNotInitializedError
@@ -126,7 +126,7 @@ class SecureStorage:
     def _add_key(self, key_name: SecureStorageKey, key_value: any, associated_data: bytes = None):
         key_name = self._check_and_format_key(key_name)
 
-        key_value = safe_json_loads(key_value)
+        key_value = json.dumps(key_value)
         if not self._encryptor:
             raise CipherNotInitializedError
 
@@ -145,7 +145,7 @@ class SecureStorage:
         return upper_columns
 
     def has_any_accounts(self) -> bool:
-        accounts = self._get_key_value(SecureStorageKey.ACCOUNTS, False)
+        accounts = self._get_key_value(SecureStorageKey.ACCOUNTS, decrypt=False)
         return bool(accounts)
 
     def get_accounts(self, emails: list[str] | None = None, columns: list[AccountColumn] | None = None) -> list[Account] | None:
@@ -154,7 +154,7 @@ class SecureStorage:
         else:
             columns = ACCOUNT_COLUMN_LIST
 
-        accounts: list[Account] = self._get_key_value(SecureStorageKey.ACCOUNTS, True)
+        accounts: list[Account] = self._get_key_value(SecureStorageKey.ACCOUNTS)
 
         filtered_accounts = []
         for account in accounts:
@@ -221,7 +221,7 @@ class SecureStorageCache:
         return cls._instance
 
     def __del__(self):
-        self.clear()
+        self.destroy()
 
     def get(self, key: str) -> any:
         if key not in self._store:
@@ -264,10 +264,10 @@ class AESGCMCipher:
         cipher_text = self._cipher.encrypt(nonce, plain_text.encode(), associated_data)
         return base64.b64encode(nonce + cipher_text).decode('utf-8')
 
-    def decrypt(self, encrypted_text: str) -> str:
+    def decrypt(self, encrypted_text: str, associated_data: bytes = None) -> str:
         encrypted_text = base64.b64decode(encrypted_text)
         nonce = encrypted_text[:12]
         cipher_text = encrypted_text[12:]
-        return self._cipher.decrypt(nonce, cipher_text).decode('utf-8')
+        return self._cipher.decrypt(nonce, cipher_text, associated_data).decode('utf-8')
 
 __all__ = ["SecureStorage", "Account", "AccountColumn"]
