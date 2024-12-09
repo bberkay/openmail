@@ -151,11 +151,6 @@ export class ApiService {
             : "";
 
         const response = await fetch(url + endpoint + queryString);
-
-        if(!response.ok){
-            throw new Error(response.statusText);
-        }
-
         return response.json();
     }
 
@@ -173,11 +168,6 @@ export class ApiService {
                 ? body
                 : JSON.stringify(body),
         });
-
-        if(!response.ok){
-            throw new Error(response.statusText);
-        }
-
         return response.json();
     }
 }
