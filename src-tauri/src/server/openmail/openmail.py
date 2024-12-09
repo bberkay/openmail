@@ -1,10 +1,10 @@
 """
 OpenMail
-This module provides the OpenMail class, which offers a simplified interface 
-for managing email operations via IMAP and SMTP protocols. 
+This module provides the OpenMail class, which offers a simplified interface
+for managing email operations via IMAP and SMTP protocols.
 
 Dependencies:
-- Requires `IMAPManager` and `SMTPManager` classes from the `imap` and 
+- Requires `IMAPManager` and `SMTPManager` classes from the `imap` and
 `smtp` modules.
 
 Author: <berkaykayaforbusiness@outlook.com>
@@ -15,10 +15,10 @@ from .smtp import SMTPManager
 
 class OpenMail:
     """
-    A high-level email management class that provides a unified interface 
+    A high-level email management class that provides a unified interface
     for IMAP and SMTP operations.
 
-    This class encapsulates email connection, sending, receiving, 
+    This class encapsulates email connection, sending, receiving,
     and folder management functionality using underlying IMAP and SMTP classes.
     """
 
@@ -67,7 +67,7 @@ class OpenMail:
             timeout (int, optional): Connection timeout in seconds. Defaults to 30.
 
         Returns:
-            tuple[bool, str]: A tuple containing connection status (True/False) 
+            tuple[bool, str]: A tuple containing connection status (True/False)
                                and a status message
         """
         self._imap = IMAPManager(
