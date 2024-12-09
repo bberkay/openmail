@@ -3,6 +3,7 @@ This module contains the main FastAPI application and its routes.
 TODO: improve docstring
 """
 
+import json
 import os
 import concurrent.futures
 from urllib.parse import unquote
@@ -47,8 +48,8 @@ def create_and_idle_openmail_clients():
             account["email_address"], account["password"]
         )
         print(f"Connected to {account['email_address']}")
-        if status:
-            openmail_clients[account["email_address"]].imap.idle()
+        """if status:
+            openmail_clients[account["email_address"]].imap.idle()"""
 
 
 def reconnect_and_idle_logged_out_openmail_clients():
@@ -65,8 +66,11 @@ def reconnect_and_idle_logged_out_openmail_clients():
 
 
 def shutdown_openmail_clients():
-    for openmail_client in openmail_clients.values():
-        openmail_client.disconnect()
+    try:
+        for email, openmail_client in openmail_clients.items():
+            openmail_client.disconnect()
+    except:
+        pass
 
 
 @asynccontextmanager
@@ -102,7 +106,6 @@ async def catch_request_for_logging(request: Request, call_next):
             return response_body
 
     response = await call_next(request)
-    print("Response: ", response)
     response._body = await get_response_body(response)
     print("Response Body: ", response._body)
     http_request_logger.request(request, response)
@@ -164,11 +167,12 @@ def add_email_account(
             form_data.email_address,
             form_data.password
         )
+
         if not status:
-            return Response(success=status, message=msg)
+            return Response(success=status, message=err_msg("Failed to add email.", msg))
 
         secure_storage.insert_account(Account(
-            email=form_data.email_address,
+            email_address=form_data.email_address,
             password=form_data.password,
             fullname=form_data.fullname
         ))
