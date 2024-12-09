@@ -21,3 +21,25 @@ def safe_json_loads(value: any) -> any:
         return json.loads(value)
     except (json.JSONDecodeError, TypeError):
         return value
+
+def err_msg(message: str, traceback: str) -> str:
+    return f"{message}\n{traceback}"
+
+def parse_err_msg(message: str | bytes) -> tuple[str, str] | tuple[bytes, bytes]:
+    return_bytes = False
+    if isinstance(message, bytes):
+        message = message.decode("utf-8")
+        return_bytes = True
+
+    message = message.split("\n", 1)
+
+    if "Traceback" in message[0]:
+        message[0] = message[0].split("Traceback (most recent call last):", 1)[0]
+
+    len_message = len(message)
+    if return_bytes:
+        message[0] = message[0].encode("utf-8")
+        if len_message > 1:
+            message[1] = message[1].encode("utf-8")
+
+    return (message[0], message[1] if len_message > 1 else b"" if return_bytes else "")
