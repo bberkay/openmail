@@ -26,7 +26,7 @@
 
         if(response.success){
             sharedStore.accounts.push({
-                email_address: formData.get('email') as string,
+                email_address: formData.get('email_address') as string,
                 fullname: formData.get('fullname') as string
             });
         }
@@ -109,9 +109,9 @@
 <section>
     <form onsubmit={addAccount}>
         <div>
-            <label for="email">Email Address</label><br>
+            <label for="email_address">Email Address</label><br>
             <!-- svelte-ignore a11y_autofocus -->
-            <input type="email" name="email" id="email" autocomplete="off" value="name@example.com" autofocus required>
+            <input type="email" name="email_address" id="email_address" autocomplete="off" value="name@example.com" autofocus required>
         </div>
         <div>
             <label for="password">Password</label><br>
@@ -129,10 +129,12 @@
         <h3>Current Accounts</h3>
         <ul>
             {#each sharedStore.accounts as account}
-                <li>{account.fullname} - &lt;{account.email_address}&gt; <button onclick={deleteAccount} data-email-address={account.email_address}>Delete</button></li>
+                <li>
+                    <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
+                    <button onclick={deleteAccount} data-email-address={account.email_address}>Remove</button>
+                </li>
             {/each}
         </ul>
-        <br>
-        <button onclick={continueToInbox}>Continue to Inbox</button>
+        <button class ="bg-primary" onclick={continueToInbox}>Continue to Inbox</button>
     {/if}
 </section>
