@@ -1,17 +1,14 @@
 <script lang="ts">
-    export let message: string = '';
-    export let type: "success" | "danger" = 'success';
-    let show: boolean = true;
+    import { fly } from 'svelte/transition';
 
-    function closeAlert(){
-        show = false;
-    }
+    let { message, type } = $props();
+    let show: boolean = $state(true);
 </script>
 
 {#if show}
-    <div class = "alert alert--{type}">
+    <div class = "alert alert--{type}" transition:fly={{y: 200, duration: 500}}>
         <span id="alert-message">{message}</span>
-        <button id="alert-close" on:click={closeAlert}>X</button>
+        <button id="alert-close" onclick={() => (show = false)}>X</button>
     </div>
 {/if}
 
