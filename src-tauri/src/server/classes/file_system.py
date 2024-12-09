@@ -44,6 +44,10 @@ class FileObject:
         with open(self.fullpath, "w", encoding="utf-8") as file:
             file.write(content)
 
+    def clear(self):
+        with open(self.fullpath, "w", encoding="utf-8") as file:
+            file.write("")
+
 class DirObject:
     def __init__(self, name: str, children: list[FileObject | DirObject] = None):
         self.name = name
@@ -98,24 +102,22 @@ class DirObject:
 
 class FileSystem:
     _instance = None
-    _root: DirObject
+    _root = DirObject(
+        ROOT_DIR,
+        [
+            FileObject("uvicorn.info"),
+            DirObject(
+                "logs",
+                [
+                    FileObject("uvicorn.log"),
+                ],
+            )
+        ],
+    )
 
     def __new__(cls):
         if not cls._instance:
             cls._instance = super().__new__(cls)
-            cls._instance._root = DirObject(
-                ROOT_DIR,
-                [
-                    FileObject("uvicorn.info"),
-                    DirObject(
-                        "logs",
-                        [
-                            FileObject("uvicorn.log"),
-                        ],
-                    )
-                ],
-            )
-
             cls._instance._create_structure(cls._instance._root)
 
         return cls._instance
@@ -136,3 +138,23 @@ class FileSystem:
     @property
     def root(self) -> DirObject:
         return self._root
+
+    def reset(self):
+        # In the `uvicorn.info` file we store the current URL and PID
+        # so that we can get the server's URL from tha tauri app
+        # and also can kill the server completely. So get the current
+        # URL and PID from the `uvicorn.info` file and write them back
+        # as initial content.
+        self._root = DirObject(
+            ROOT_DIR,
+            [
+                FileObject("uvicorn.info", self._root["uvicorn.info"].read()),
+                DirObject(
+                    "logs",
+                    [
+                        FileObject("uvicorn.log"),
+                    ],
+                )
+            ],
+        )
+        self._create_structure(self._root)
