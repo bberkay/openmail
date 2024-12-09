@@ -1,5 +1,6 @@
 import re
 import json
+from dataclasses import is_dataclass
 
 def is_email_valid(email: str) -> bool:
     return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
@@ -21,6 +22,18 @@ def safe_json_loads(value: any) -> any:
         return json.loads(value)
     except (json.JSONDecodeError, TypeError):
         return value
+
+def convert_dataclass_to_dict(value: any) -> any:
+    if is_dataclass(value):
+        return value.__dict__
+
+    if isinstance(value, list):
+        return [convert_dataclass_to_dict(item) for item in value]
+
+    if isinstance(value, dict):
+        return {key: convert_dataclass_to_dict(value) for key, value in value.items()}
+
+    return value
 
 def err_msg(message: str, traceback: str) -> str:
     return f"{message}\n{traceback}"
