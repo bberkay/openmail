@@ -5,12 +5,12 @@ import json
 import time
 from enum import Enum
 from typing import TypedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass
 
 import keyring
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from utils import safe_json_loads
+from utils import safe_json_loads, convert_dataclass_to_dict
 from consts import APP_NAME
 
 """
@@ -54,10 +54,14 @@ class AccountColumn(str, Enum):
     def __str__(self) -> str:
         return self.value
 
-class Account(TypedDict):
+@dataclass
+class Account():
     email_address: str
     password: str
     fullname: str | None
+
+    def __getitem__(self, column: AccountColumn) -> any:
+        return getattr(self, column)
 
 """
 Constants
@@ -127,7 +131,7 @@ class SecureStorage:
     def _add_key(self, key_name: SecureStorageKey, key_value: any, associated_data: bytes = None) -> None:
         self._check_key(key_name)
 
-        key_value = json.dumps(key_value)
+        key_value = json.dumps(convert_dataclass_to_dict(key_value))
         if not self._encryptor:
             raise CipherNotInitializedError
 
@@ -151,12 +155,14 @@ class SecureStorage:
             columns = ACCOUNT_COLUMN_LIST
 
         accounts: list[Account] = self._get_key_value(SecureStorageKey.ACCOUNTS)
+        columns = [column.value if isinstance(column, AccountColumn) else column for column in columns]
 
         filtered_accounts = []
         for account in accounts:
-            if emails and account["email_address"] not in emails:
+            if emails and account.email_address not in emails:
                 continue
-            filtered_accounts.append({column: account[column.lower()] for column in columns})
+
+            filtered_accounts.append({column: account[column] for column in columns})
 
         return filtered_accounts
 
@@ -175,7 +181,7 @@ class SecureStorage:
 
         self._add_key(
             SecureStorageKey.ACCOUNTS,
-            filter(lambda account: account["email_address"] != email, accounts)
+            filter(lambda account: account.email_address != email, accounts)
         )
 
     def delete_accounts(self) -> None:
