@@ -54,3 +54,15 @@ input[type="submit"], button[type="submit"]{
         opacity: 0.5;
     }
 }
+
+button{
+    background-color: #832e23;
+    color: #f5f5f5;
+    border: none;
+    border-radius: 5px;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+}

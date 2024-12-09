@@ -8,16 +8,6 @@
         addAccountBtn = document.getElementById('add-account-btn')! as HTMLButtonElement;
     });
 
-    /**
-    {
-        "email": "testforprojects42webio@gmail.com",
-        "password": "jqhfjbtvfwmiuawv"
-    },
-    {
-        "email": "bberkaykaya0@yandex.com",
-        "password": "seaosimxosdxgmov"
-    },
-    */
     async function addAccount(event: Event) {
         event.preventDefault();
         const form = event.target;
