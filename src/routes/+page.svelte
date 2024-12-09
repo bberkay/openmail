@@ -1,75 +1,77 @@
 <script lang="ts">
     import Register from "$lib/components/Register.svelte";
-    import type { Response } from "$lib/types";
     import { sharedStore } from "$lib/stores/shared.svelte";
-    import Inbox from "$lib/components/Inbox.svelte";
 
-    let isLoading: boolean = $state(true);
-
-    $effect(() => {
-        if (sharedStore.server && sharedStore.accounts.length === 0 && isLoading)
-            fetchAccounts();
-        else
-            isLoading = false;
-    });
-
-    async function fetchAccounts(): Promise<void> {
-        const response: Response = await fetch(
-            `${sharedStore.server}/get-email-accounts`,
-        ).then((res) => res.json());
-        if (Object.hasOwn(response, "data") && response.data) {
-            sharedStore.accounts = response.data;
-        }
-        isLoading = false;
-    }
+    let isLoading: boolean = $derived(sharedStore.server === "");
 </script>
 
 <!--<Alert message="This is a success message" type="success" />-->
 {#if sharedStore.inboxes.length > 0}
-    <main class="container">
-        <div class="sidebar-container">
-            <!--<Sidebar />-->
-        </div>
-        <div class="inbox-container">
+    <!--
+    <main>
+        <section>
+            <Sidebar />
+        </section>
+        <section>
             <Inbox />
-        </div>
-        <div class="email-container">
-            <!--<Content />-->
-        </div>
+        </section>
+        <section>
+            <Content />
+        </section>
     </main>
-    <pre>{JSON.stringify(sharedStore, null, 2)}</pre>
+    -->
 {:else if isLoading}
-    <p>Loading</p>
+    <span><small class="loader"></small> Loading</span>
 {:else}
     <Register/>
 {/if}
 
+<hr>
+
+<pre>{JSON.stringify(sharedStore, null, 2)}</pre>
+
 <style>
+    main {
+        width: 100%;
+        display:flex;
+
+        & section {
+            margin: 10px;
+        }
+    }
+
+    .loader {
+        border: 2px solid #2a2a2a;
+        border-radius: 50%;
+        border-top: 2px solid #fff;
+        width: 10px;
+        height: 10px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
     pre {
         overflow: scroll;
-        height: 85vh;
-        background-color: #333;
-        border:1px solid #3a3a3a;
-        color: #f5f5f5;
+        max-height: 50vh;
         padding: 10px;
         margin: 0;
         font-size: 12px;
         font-family: monospace;
-    }
-
-    .container {
-        display: flex;
-    }
-
-    .sidebar-container {
-        width: 25%;
-    }
-
-    .inbox-container {
-        width: 35%;
-    }
-
-    .email-container {
-        width: 40%;
+        background-color: #222222;
+        color: #f8f8f8;
+        border-radius: 5px;
+        border: 1px solid #3a3a3a;
     }
 </style>
