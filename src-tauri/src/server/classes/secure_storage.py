@@ -31,9 +31,9 @@ class InvalidAccountColumnError(Exception):
 """
 Enums, Types
 """
-class SecureStorageKey(Enum):
-    CIPHER_KEY = "CIPHER_KEY"
-    ACCOUNTS = "ACCOUNTS"
+class SecureStorageKey(str, Enum):
+    CIPHER_KEY = "cipher_key"
+    ACCOUNTS = "accounts"
 
     @classmethod
     def keys(cls) -> list[str]:
@@ -42,10 +42,10 @@ class SecureStorageKey(Enum):
     def __str__(self) -> str:
         return self.value
 
-class AccountColumn(Enum):
-    EMAIL = "EMAIL"
-    PASSWORD = "PASSWORD"
-    FULLNAME = "FULLNAME"
+class AccountColumn(str, Enum):
+    EMAIL_ADDRESS = "email_address"
+    PASSWORD = "password"
+    FULLNAME = "fullname"
 
     @classmethod
     def keys(cls) -> list[str]:
@@ -55,7 +55,7 @@ class AccountColumn(Enum):
         return self.value
 
 class Account(TypedDict):
-    email: str
+    email_address: str
     password: str
     fullname: str | None
 
@@ -83,14 +83,17 @@ class SecureStorage:
     def __del__(self):
         self.clear()
 
-    def _load_key(self):
-        key_name = self._check_and_format_key(SecureStorageKey.CIPHER_KEY)
-        key = keyring.get_password(APP_NAME, key_name)
+    def _load_key(self) -> bytes:
+        key = keyring.get_password(APP_NAME, SecureStorageKey.CIPHER_KEY)
         if not key:
             key = os.urandom(32).hex()
-            keyring.set_password(APP_NAME, key_name, key)
+            keyring.set_password(APP_NAME, SecureStorageKey.CIPHER_KEY, key)
 
-        return bytes.fromhex(key)
+        try:
+            return bytes.fromhex(key)
+        except ValueError:
+            self.destroy()
+            self._load_key()
 
     def _create_accounts(self) -> None:
         if self.has_any_accounts():
@@ -98,14 +101,12 @@ class SecureStorage:
 
         self._add_key(SecureStorageKey.ACCOUNTS, [])
 
-    def _check_and_format_key(self, key: str | SecureStorageKey) -> str:
-        key_name = str(key).upper()
-        if key_name not in SECURE_STORAGE_KEY_LIST:
+    def _check_key(self, key: str | SecureStorageKey) -> None:
+        if str(key) not in SECURE_STORAGE_KEY_LIST:
             raise InvalidSecureStorageKeyError
-        return key_name
 
     def _get_key_value(self, key_name: SecureStorageKey, associated_data: bytes = None, decrypt: bool = True) -> any:
-        key_name = self._check_and_format_key(key_name)
+        self._check_key(key_name)
 
         key_value = self._cache.get(key_name)
         if not key_value:
@@ -123,8 +124,8 @@ class SecureStorage:
 
         return key_value
 
-    def _add_key(self, key_name: SecureStorageKey, key_value: any, associated_data: bytes = None):
-        key_name = self._check_and_format_key(key_name)
+    def _add_key(self, key_name: SecureStorageKey, key_value: any, associated_data: bytes = None) -> None:
+        self._check_key(key_name)
 
         key_value = json.dumps(key_value)
         if not self._encryptor:
@@ -134,15 +135,10 @@ class SecureStorage:
         keyring.set_password(APP_NAME, key_name, key_value)
         self._cache.set(key_name, key_value)
 
-    def _check_and_format_columns(self, columns: list[str | AccountColumn]) -> list[str]:
-        upper_columns = []
+    def _check_columns(self, columns: list[str | AccountColumn]) -> None:
         for column in columns:
-            column_name = str(column).upper()
-            if column_name not in ACCOUNT_COLUMN_LIST:
+            if str(column) not in ACCOUNT_COLUMN_LIST:
                 raise InvalidAccountColumnError
-            upper_columns.append(column_name)
-
-        return upper_columns
 
     def has_any_accounts(self) -> bool:
         accounts = self._get_key_value(SecureStorageKey.ACCOUNTS, decrypt=False)
@@ -150,7 +146,7 @@ class SecureStorage:
 
     def get_accounts(self, emails: list[str] | None = None, columns: list[AccountColumn] | None = None) -> list[Account] | None:
         if columns:
-            columns = self._check_and_format_columns(columns)
+            self._check_columns(columns)
         else:
             columns = ACCOUNT_COLUMN_LIST
 
@@ -158,13 +154,13 @@ class SecureStorage:
 
         filtered_accounts = []
         for account in accounts:
-            if emails and account["email"] not in emails:
+            if emails and account["email_address"] not in emails:
                 continue
-            filtered_accounts.append({column: account[column] for column in columns})
+            filtered_accounts.append({column: account[column.lower()] for column in columns})
 
         return filtered_accounts
 
-    def insert_account(self, account: Account):
+    def insert_account(self, account: Account) -> None:
         accounts = self.get_accounts()
         if not accounts:
             accounts = []
@@ -172,25 +168,25 @@ class SecureStorage:
         accounts.append(account)
         self._add_key(SecureStorageKey.ACCOUNTS, accounts)
 
-    def delete_account(self, email: str):
+    def delete_account(self, email: str) -> None:
         accounts = self.get_accounts()
         if not accounts:
             return
 
         self._add_key(
             SecureStorageKey.ACCOUNTS,
-            filter(lambda account: account["email"] != email, accounts)
+            filter(lambda account: account["email_address"] != email, accounts)
         )
 
-    def delete_accounts(self):
+    def delete_accounts(self) -> None:
         keyring.delete_password(APP_NAME, SecureStorageKey.ACCOUNTS)
         self._cache.delete(SecureStorageKey.ACCOUNTS)
         self._create_accounts() # Create empty list
 
-    def clear(self):
+    def clear(self) -> None:
         self._cache.destroy()
 
-    def destroy(self):
+    def destroy(self) -> None:
         if self._cache:
             self._cache.destroy()
 
