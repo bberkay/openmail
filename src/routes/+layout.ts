@@ -1,8 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Response } from "$lib/types";
+import { TauriCommand } from "$lib/types";
 import { sharedStore } from "$lib/stores/shared.svelte";
 import { error } from "@sveltejs/kit";
 import type { LayoutLoad } from './$types';
+import { ApiService, GetRoutes, type Response } from "$lib/services/ApiService";
 
 const SERVER_CONNECTION_TIMEOUT = 1000 * 2; // 2 seconds
 const SERVER_CONNECTION_TRY_COUNT = 5;
@@ -20,16 +21,15 @@ async function initServerUrl(): Promise<void> {
     }
 
     let serverConnectionTryCount = 0;
-    if (serverConnectionTryCount > SERVER_CONNECTION_TRY_COUNT) {
-        error(500, "There was an error while connecting to the server!");
-    }
 
     const getHelloMessageAndSetUrl = async (url: string) => {
         try {
+            if (serverConnectionTryCount > SERVER_CONNECTION_TRY_COUNT) {
+                error(500, "There was an error while connecting to the server!");
+            }
+
             serverConnectionTryCount++;
-            const response: Response = await fetch(`${url}/hello`).then((res) =>
-                res.json()
-            );
+            const response: Response = await ApiService.get(url, GetRoutes.HELLO);
             if (response.success) {
                 sharedStore.server = url;
             } else {
@@ -43,15 +43,28 @@ async function initServerUrl(): Promise<void> {
         }
     }
 
-    await invoke("get_server_url").then(async (url) => {
+    await invoke(TauriCommand.GET_SERVER_URL).then(async (url) => {
         await getHelloMessageAndSetUrl(url as string);
     }).catch(async () => {
         error(500, "Error while getting server url!");
     })
 }
 
+/**
+ * Load the accounts from the server
+ * and set them in the shared store
+ */
+async function loadAccounts() {
+    if(!sharedStore.server)
+        return;
+
+    const response: Response = await ApiService.get(sharedStore.server, GetRoutes.GET_EMAIL_ACCOUNTS);
+    sharedStore.accounts = response.data;
+}
+
 export const load: LayoutLoad = async ({}) => {
     await initServerUrl();
+    await loadAccounts();
 };
 
 // Tauri doesn't have a Node.js server to do proper SSR
