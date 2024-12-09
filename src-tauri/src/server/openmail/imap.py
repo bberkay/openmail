@@ -125,6 +125,7 @@ BODY_SHORT_THRESHOLD = 250
 MAX_FOLDER_NAME_LENGTH = 100
 CONN_TIMEOUT = 30 # 30 seconds
 IDLE_TIMEOUT = 30 * 60 # 30 minutes
+JOIN_TIMEOUT = 3 # 3 seconds
 WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
 READLINE_SLEEP = 1 # 1 seconds
 
@@ -609,17 +610,21 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def _terminate_threads(self):
         """Terminates all threads used by the IMAPManager."""
-        if self._idle_thread_event:
+        if self._idle_thread_event is not None:
+            print("Setting idle thread event...")
             self._idle_thread_event.set()
 
-        if self._readline_thread_event:
+        if self._readline_thread_event is not None:
+            print("Setting readline thread event...")
             self._readline_thread_event.set()
 
-        if self._idle_thread and self._idle_thread.is_alive():
-            self._idle_thread.join()
+        if self._idle_thread is not None and self._idle_thread.is_alive():
+            print("Joining idle thread...")
+            self._idle_thread.join(timeout=JOIN_TIMEOUT)
 
-        if self._readline_thread and self._readline_thread.is_alive():
-            self._readline_thread.join()
+        if self._readline_thread is not None and self._readline_thread.is_alive():
+            print("Joining readline thread...")
+            self._readline_thread.join(timeout=JOIN_TIMEOUT)
 
     def find_matching_folder(self, requested_folder: Folder) -> bytes | None:
         """
