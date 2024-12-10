@@ -9,6 +9,7 @@ as the core, offering static methods to handle common email parsing
 tasks, while the MessageHeaders type defines the structure of parsed
 header fields.
 """
+import base64
 import re
 import quopri
 from email.header import decode_header
@@ -176,11 +177,13 @@ class MessageParser:
 
         body = body_match.group(1)
         body = bytes(body, "utf-8").decode("unicode_escape")
+        body = base64.b64decode(body[:-(len(body) % 4)]).decode("utf-8")
         body = MessageParser.decode_quoted_printable_message(body)
         body = LINK_PATTERN.sub(' ', body)
         body = LINE_PATTERN.sub(' ', body)
         body = SPECIAL_CHAR_PATTERN.sub(' ', body)
         body = SPACES_PATTERN.sub(' ', body)
+
         return body.strip()
 
     @staticmethod
