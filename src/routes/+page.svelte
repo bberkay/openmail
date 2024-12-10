@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Inbox from "$lib/components/Inbox.svelte";
     import Register from "$lib/components/Register.svelte";
     import { sharedStore } from "$lib/stores/shared.svelte";
 
@@ -7,19 +8,17 @@
 
 <!--<Alert message="This is a success message" type="success" />-->
 {#if sharedStore.inboxes.length > 0}
-    <!--
     <main>
-        <section>
+        <!--<section>
             <Sidebar />
-        </section>
+        </section>-->
         <section>
             <Inbox />
         </section>
-        <section>
+        <!--<section>
             <Content />
-        </section>
+        </section>-->
     </main>
-    -->
 {:else if isLoading}
     <span><small class="loader"></small> Loading</span>
 {:else}
@@ -38,40 +37,5 @@
         & section {
             margin: 10px;
         }
-    }
-
-    .loader {
-        border: 2px solid #2a2a2a;
-        border-radius: 50%;
-        border-top: 2px solid #fff;
-        width: 10px;
-        height: 10px;
-        -webkit-animation: spin 2s linear infinite;
-        animation: spin 2s linear infinite;
-        display: inline-block;
-        margin-right: 5px;
-    }
-
-    @-webkit-keyframes spin {
-        0% { -webkit-transform: rotate(0deg); }
-        100% { -webkit-transform: rotate(360deg); }
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    pre {
-        overflow: scroll;
-        max-height: 50vh;
-        padding: 10px;
-        margin: 0;
-        font-size: 12px;
-        font-family: monospace;
-        background-color: #222222;
-        color: #f8f8f8;
-        border-radius: 5px;
-        border: 1px solid #3a3a3a;
     }
 </style>

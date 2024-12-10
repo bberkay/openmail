@@ -2,10 +2,11 @@
     import InboxItem from "./Inbox/InboxItem.svelte";
     import { sharedStore } from "$lib/stores/shared.svelte";
     import { onMount } from "svelte";
-    import type { Response } from "$lib/types";
+    import type { Account } from "$lib/types";
+    import { ApiService, GetRoutes, type Response } from "$lib/services/ApiService";
 
     let totalEmailCount = $derived(sharedStore.inboxes.reduce(
-        (acc, account) => sharedStore.accounts.find((a) => a.email == account.email) ? acc + account.total : acc,
+        (acc, account) => acc + account.total,
         0,
     ));
 
@@ -21,33 +22,33 @@
 
         $effect(() => {
             if (sharedStore.currentOffset >= 10) {
-                someFunc();
+                completeToTen();
             }
         })
     });
 
-    async function someFunc(): Promise<void> {
-        /**
-         * If user moves email to another folder, the offset will not be a multiple of 10.
-         * In this case, we need to fetch the emails from the previous page to complete the page.
-         * For example, if the offset is 13, we need to fetch the emails from 10 to 20.
-         * This is not a good solution but it is enough for now.
-         */
-        const complete_to_ten = sharedStore.currentOffset - (sharedStore.currentOffset % 10);
-        if (complete_to_ten != sharedStore.currentOffset) {
-            let response: Response = await fetch(
-                `${sharedStore.server}/get-emails/${
-                    getCurrentAccountsAsString()
-                }?folder=${
-                    encodeURIComponent(sharedStore.selectedFolder)
-                }&offset=${
-                    complete_to_ten.toString()
-                }&search=${
-                    getSearchMenuValue()
-                }`,
-            ).then((response) => response.json());
+    async function completeToTen(): Promise<void> {
+        const missing = sharedStore.currentOffset - (sharedStore.currentOffset % 10);
+        if (missing != sharedStore.currentOffset) {
+            let response: Response = await ApiService.get(
+                sharedStore.server,
+                GetRoutes.GET_EMAILS,
+                {
+                    pathParams: {
+                        accounts: getCurrentAccountsAsString()
+
+                    },
+                    queryParams: {
+                        folder: encodeURIComponent(sharedStore.selectedFolder),
+                        offset_start: missing,
+                        offset_end: missing + 10,
+                        search: getSearchMenuValue()
+                    }
+                }
+            );
+
             if (response.success) {
-                sharedStore.currentOffset = 10 + complete_to_ten;
+                sharedStore.currentOffset = 10 + missing;
                 sharedStore.inboxes = response.data.map((item: { email: string; data: object }) => ({
                     email: item.email,
                     ...item.data
@@ -57,30 +58,34 @@
     }
 
     function getSearchMenuValue() {
-        const search = (document.getElementById("search") as HTMLInputElement)
-            .value;
-        return search.trim() == "" ? "" : search;
+        return "ALL";
     }
 
     function getCurrentAccountsAsString() {
-        return sharedStore.selectedAccounts.map((account) => account.email).join(", ");
+        return sharedStore.selectedAccounts.map((account) => account.email_address).join(", ");
     }
 
     async function getPreviousEmails() {
-        if (sharedStore.currentOffset <= 10) return;
+        if (sharedStore.currentOffset <= 10)
+            return;
 
         prevButton.disabled = true;
-        let response: Response = await fetch(
-            `${sharedStore.server}/get-emails/${
-                getCurrentAccountsAsString()
-            }?folder=${
-                encodeURIComponent(sharedStore.selectedFolder)
-            }&offset=${
-                sharedStore.currentOffset - 20
-            }&search=${
-                getSearchMenuValue()
-            }`,
-        ).then((response) => response.json());
+        let response: Response = await ApiService.get(
+            sharedStore.server,
+            GetRoutes.GET_EMAILS,
+            {
+                pathParams: {
+                    accounts: getCurrentAccountsAsString(),
+                },
+                queryParams: {
+                    folder: encodeURIComponent(sharedStore.selectedFolder),
+                    offset_start: (Math.max(0, sharedStore.currentOffset - 20)),
+                    offset_end: (sharedStore.currentOffset - 10),
+                    search: getSearchMenuValue()
+                }
+            }
+        );
+
         if (response.success) {
             sharedStore.currentOffset = sharedStore.currentOffset - 10;
             sharedStore.inboxes = response.data.map((item: { email: string; data: object }) => ({
@@ -88,24 +93,31 @@
                 ...item.data
             }))
         }
+
         prevButton.disabled = false;
     }
 
     async function getNextEmails() {
-        if (sharedStore.currentOffset >= totalEmailCount) return;
+        if (sharedStore.currentOffset >= totalEmailCount)
+            return;
 
         nextButton.disabled = true;
-        let response: Response = await fetch(
-            `${sharedStore.server}/get-emails/${
-                getCurrentAccountsAsString()
-            }?folder=${
-                encodeURIComponent(sharedStore.selectedFolder)
-            }&offset=${
-                sharedStore.currentOffset
-            }&search=${
-                getSearchMenuValue()
-            }`,
-        ).then((response) => response.json());
+        let response: Response = await ApiService.get(
+            sharedStore.server,
+            GetRoutes.GET_EMAILS,
+            {
+                pathParams: {
+                    accounts: getCurrentAccountsAsString(),
+                },
+                queryParams: {
+                    folder: encodeURIComponent(sharedStore.selectedFolder),
+                    offset_start: (sharedStore.currentOffset + 10),
+                    offset_end: (sharedStore.currentOffset + 20),
+                    search: getSearchMenuValue()
+                }
+            }
+        );
+
         if (response.success) {
             sharedStore.currentOffset = sharedStore.currentOffset + 10;
             sharedStore.inboxes = response.data.map((item: { email: string; data: object }) => ({
@@ -113,56 +125,35 @@
                 ...item.data
             }))
         }
+
         nextButton.disabled = false;
     }
 </script>
 
-<section class="card">
-    <div class="inbox-header">
-        <h2>{sharedStore.selectedFolder == "inbox" ? "Inbox" : sharedStore.selectedFolder}</h2>
+<section>
+    <div>
+        <h2>{sharedStore.selectedFolder}</h2>
         <hr />
-        <div class="inbox-pagination">
-            <button
-                id="prev-button"
-                onclick={getPreviousEmails}
-                disabled={sharedStore.currentOffset <= 10}>Previous</button>
-            <small>{Math.max(1, sharedStore.currentOffset - 9)} - {sharedStore.currentOffset} of {totalEmailCount}</small>
-            <button
-                id="next-button"
-                onclick={getNextEmails}
-                disabled={sharedStore.currentOffset >= totalEmailCount}>Next</button>
+        <div>
+            <button id="prev-button" onclick={getPreviousEmails} disabled={sharedStore.currentOffset <= 10}>
+                Previous
+            </button>
+            <small>
+                {Math.max(1, sharedStore.currentOffset - 9)} - {sharedStore.currentOffset} of {totalEmailCount}
+            </small>
+            <button id="next-button" onclick={getNextEmails} disabled={sharedStore.currentOffset >= totalEmailCount}>
+                Next
+            </button>
         </div>
         <hr />
     </div>
-    <div class="inbox-content">
+    <div>
       {#each sharedStore.inboxes as account}
-        {#if sharedStore.accounts.length == 0 || sharedStore.accounts.find((acc) => acc.email == account.email)}
+        {#if sharedStore.accounts.find((acc: Account) => acc.email_address == account.email_address)}
           {#each account.emails as email}
-            <InboxItem owner={account.email} email={email} />
+            <InboxItem owner={account.email_address} email={email} />
           {/each}
         {/if}
       {/each}
     </div>
 </section>
-
-<style>
-    .inbox-pagination {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .inbox-content {
-        & h3 {
-            margin: 0;
-        }
-
-        & .inbox-item:first-child {
-            padding-top: 0.5rem;
-        }
-
-        & .inbox-item:last-child {
-            border-bottom: none;
-        }
-    }
-</style>
