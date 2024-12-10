@@ -3,7 +3,6 @@ This module contains the main FastAPI application and its routes.
 TODO: improve docstring
 """
 
-import json
 import os
 import concurrent.futures
 from urllib.parse import unquote
@@ -125,12 +124,12 @@ async def hello() -> Response:
 
 ################ FOR TESTS ONLY #################
 
-@app.post("/refresh-whole-universe")
-def refresh_whole_universe() -> Response:
+@app.post("/recreate-whole-universe")
+def recreate_whole_universe() -> Response:
     try:
         FileSystem().reset()
         secure_storage.delete_accounts()
-        return Response(success=True, message="You asked and the whole universe completely refreshed!")
+        return Response(success=True, message="You asked and the whole universe completely recreated!")
     except Exception as e:
         return Response(success=False, message=err_msg("Some forces prevented you from doing this.", str(e)))
 
@@ -258,7 +257,7 @@ def check_if_email_accounts_are_connected(accounts: str) -> Response | bool:
 @app.get("/get-emails/{accounts}")
 async def get_emails(
     accounts: str,
-    folder: Optional[str] = Folder.Inbox,
+    folder: Optional[str] = "INBOX",
     search: Optional[str] = "ALL",
     offset_start: Optional[int] = 0,
     offset_end: Optional[int] = 10,
@@ -270,7 +269,7 @@ async def get_emails(
 
         run_openmail_func_concurrently(
             accounts.split(","),
-            lambda client, **params: client.search_emails(**params),
+            lambda client, **params: client.imap.search_emails(**params),
             folder=folder,
             search=search,
         )
@@ -280,7 +279,7 @@ async def get_emails(
             message="Emails fetched successfully.",
             data=run_openmail_func_concurrently(
                 accounts.split(","),
-                lambda client, **params: client.get_emails(**params),
+                lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
                 offset_end=offset_end,
             ),
@@ -289,11 +288,11 @@ async def get_emails(
         return Response(success=False, message=err_msg("There was an error while fetching emails.", str(e)))
 
 
-@app.get("/paginate-emails/{accounts}")
+@app.get("/paginate-emails/{accounts}/{offset_start}/{offset_end}")
 async def paginate_emails(
     accounts: str,
-    offset_start: Optional[int] = 0,
-    offset_end: Optional[int] = 10,
+    offset_start: int,
+    offset_end: int,
 ) -> Response:
     try:
         response = check_if_email_accounts_are_connected(accounts)
@@ -328,7 +327,7 @@ async def get_folders(
             message="Folders fetched successfully.",
             data=run_openmail_func_concurrently(
                 accounts.split(","),
-                lambda client: client.get_folders(),
+                lambda client: client.imap.get_folders(),
             ),
         )
     except Exception as e:
