@@ -21,7 +21,7 @@ class FileObject:
     def __repr__(self):
         return f"FileObject({self.name})"
 
-    def create(self, fullpath: str):
+    def create(self, fullpath: str, overwrite: bool = False):
         if not isinstance(fullpath, str):
             raise TypeError(f"Invalid file path: {fullpath}. File paths must be a string.")
         if not fullpath:
@@ -29,7 +29,7 @@ class FileObject:
 
         self.fullpath = fullpath
 
-        if os.path.exists(self.fullpath):
+        if not overwrite and os.path.exists(self.fullpath):
             return
 
         with open(self.fullpath, "w", encoding="utf-8") as file:
@@ -75,7 +75,7 @@ class DirObject:
                 return child
         raise KeyError(f"'{name}' not found in {self.name}")
 
-    def create(self, fullpath: str):
+    def create(self, fullpath: str, overwrite: bool = False):
         if not isinstance(fullpath, str):
             raise TypeError(f"Invalid directory path: {fullpath}. Directory paths must be a string.")
         if not fullpath:
@@ -83,7 +83,7 @@ class DirObject:
 
         self.fullpath = fullpath
 
-        if os.path.exists(self.fullpath):
+        if not overwrite and os.path.exists(self.fullpath):
             return
 
         os.makedirs(self.fullpath, exist_ok=True)
@@ -127,13 +127,13 @@ class FileSystem:
         fullpath = os.path.join(parent_path, obj.name)
 
         if isinstance(obj, DirObject):
-            obj.create(fullpath)
+            obj.create(fullpath, overwrite=True)
 
             for child in obj.children:
                 self._create_structure(child, fullpath)
 
         elif isinstance(obj, FileObject):
-            obj.create(fullpath)
+            obj.create(fullpath, overwrite=True)
 
     @property
     def root(self) -> DirObject:
