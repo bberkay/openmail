@@ -4,13 +4,13 @@ import os
 import json
 import time
 from enum import Enum
-from typing import TypedDict
-from dataclasses import dataclass, is_dataclass
+from typing import Optional, TypedDict
+from dataclasses import dataclass
 
 import keyring
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from utils import safe_json_loads, convert_dataclass_to_dict
+from utils import safe_json_loads
 from consts import APP_NAME
 
 """
@@ -54,14 +54,10 @@ class AccountColumn(str, Enum):
     def __str__(self) -> str:
         return self.value
 
-@dataclass
-class Account():
+class Account(TypedDict):
     email_address: str
     password: str
-    fullname: str | None
-
-    def __getitem__(self, column: AccountColumn) -> any:
-        return getattr(self, column)
+    fullname: Optional[str]
 
 """
 Constants
@@ -131,7 +127,7 @@ class SecureStorage:
     def _add_key(self, key_name: SecureStorageKey, key_value: any, associated_data: bytes = None) -> None:
         self._check_key(key_name)
 
-        key_value = json.dumps(convert_dataclass_to_dict(key_value))
+        key_value = json.dumps(key_value)
         if not self._encryptor:
             raise CipherNotInitializedError
 
@@ -159,7 +155,7 @@ class SecureStorage:
 
         filtered_accounts = []
         for account in accounts:
-            if emails and account.email_address not in emails:
+            if emails and account["email_address"] not in emails:
                 continue
 
             filtered_accounts.append({column: account[column] for column in columns})
@@ -181,7 +177,7 @@ class SecureStorage:
 
         self._add_key(
             SecureStorageKey.ACCOUNTS,
-            filter(lambda account: account.email_address != email, accounts)
+            [account for account in accounts if account["email_address"] != email],
         )
 
     def delete_accounts(self) -> None:
