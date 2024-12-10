@@ -16,7 +16,7 @@
         }
     }
 
-	async function refreshWholeUniverse() {
+	async function recreateWholeUniverse() {
         const response = await ApiService.post(
             sharedStore.server,
             PostRoutes.REFRESH_WHOLE_UNIVERSE,
@@ -55,7 +55,7 @@
 <hr>
 <button onclick={deleteAllAccounts}>Delete All Accounts</button>
 <button onclick={resetFileSystem}>Reset File System</button>
-<button onclick={refreshWholeUniverse}>Refresh whole universe</button>
+<button onclick={recreateWholeUniverse}>Recreate whole universe</button>
 
 <style>
 	.container {

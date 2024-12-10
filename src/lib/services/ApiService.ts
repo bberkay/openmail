@@ -37,24 +37,34 @@ interface GetQueryParams {
     [GetRoutes.HELLO]: {};
     [GetRoutes.GET_EMAIL_ACCOUNTS]: {};
     [GetRoutes.GET_EMAILS]: {
-        accounts: string;
-        folder?: string;
-        search?: string;
-        offset_start?: number;
-        offset_end?: number;
+        pathParams: {
+            accounts: string
+        }
+        queryParams?: {
+            folder?: string;
+            search?: string;
+            offset_start?: number;
+            offset_end?: number;
+        }
     };
     [GetRoutes.PAGINATE_EMAILS]: {
-        accounts: string;
-        offset_start?: number;
-        offset_end?: number;
+        pathParams: {
+            accounts: string
+            offset_start: number;
+            offset_end: number;
+        }
     };
     [GetRoutes.GET_FOLDERS]: {
-        accounts: string;
+        pathParams: {
+            accounts: string;
+        }
     };
     [GetRoutes.GET_EMAIL_CONTENT]: {
-        accounts: string;
-        folder: string;
-        uid: string;
+        pathParams: {
+            accounts: string;
+            folder: string;
+            uid: string;
+        }
     };
 }
 
@@ -146,11 +156,24 @@ export class ApiService {
         endpoint: T,
         params?: GetQueryParams[T]
     ): Promise<Response> {
-        const queryString = params
-            ? "?" + new URLSearchParams(ApiService._removeUndefinedParams(params)).toString()
-            : "";
+        const createQueryString = (params: GetQueryParams[T]) => {
+            let queryString = "";
 
+            if(params && "pathParams" in params && params.pathParams)
+                queryString += "/" + Object.values(params.pathParams).join("/")
+
+            if(params && "queryParams" in params && params.queryParams)
+                queryString += "?" + new URLSearchParams(
+                    ApiService._removeUndefinedParams(params.queryParams)
+                ).toString()
+
+            return queryString
+        }
+
+        const queryString = params ? createQueryString(params) : "";
         const response = await fetch(url + endpoint + queryString);
+        console.log("API Service GET Request: ", url + endpoint + queryString);
+        console.log("API Service GET Response: ", response);
         return response.json();
     }
 
@@ -168,6 +191,8 @@ export class ApiService {
                 ? body
                 : JSON.stringify(body),
         });
+        console.log("API Service POST Request: ", url + endpoint, JSON.stringify(body));
+        console.log("API Service POST Response: ", response);
         return response.json();
     }
 }

@@ -5,8 +5,7 @@ import { error } from "@sveltejs/kit";
 import type { LayoutLoad } from './$types';
 import { ApiService, GetRoutes, type Response } from "$lib/services/ApiService";
 
-const SERVER_CONNECTION_TIMEOUT = 1000 * 2; // 2 seconds
-const SERVER_CONNECTION_TRY_COUNT = 5;
+const SERVER_CONNECTION_TRY_SLEEP = 1000 * 2; // 2 seconds
 
 /**
  * Load the accounts from the server
@@ -33,15 +32,8 @@ async function connectToLocalServer(): Promise<void> {
         return;
     }
 
-    let serverConnectionTryCount = 0;
-
     const checkUrlAndLoadAccounts = async (url: string) => {
         try {
-            if (serverConnectionTryCount > SERVER_CONNECTION_TRY_COUNT) {
-                error(500, "There was an error while connecting to the server!");
-            }
-
-            serverConnectionTryCount++;
             const response: Response = await ApiService.get(url, GetRoutes.HELLO);
             if (response.success) {
                 sharedStore.server = url;
@@ -53,7 +45,7 @@ async function connectToLocalServer(): Promise<void> {
         } catch {
             setTimeout(async () => {
                 await checkUrlAndLoadAccounts(url);
-            }, SERVER_CONNECTION_TIMEOUT);
+            }, SERVER_CONNECTION_TRY_SLEEP);
         }
     }
 

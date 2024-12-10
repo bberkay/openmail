@@ -65,9 +65,11 @@
             sharedStore.server,
             GetRoutes.GET_EMAILS,
             {
-                accounts: sharedStore.accounts
-                    .map((account) => account.email_address)
-                    .join(","),
+                pathParams: {
+                    accounts: sharedStore.accounts
+                        .map((account) => account.email_address)
+                        .join(",")
+                }
             }
         );
 
@@ -86,9 +88,11 @@
             sharedStore.server,
             GetRoutes.GET_FOLDERS,
             {
-                accounts: sharedStore.accounts
-                    .map((account) => account.email_address)
-                    .join(","),
+                pathParams: {
+                    accounts: sharedStore.accounts
+                        .map((account) => account.email_address)
+                        .join(","),
+                }
             }
         )
 
