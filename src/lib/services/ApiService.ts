@@ -27,12 +27,6 @@ export enum PostRoutes {
     REFRESH_WHOLE_UNIVERSE = "/refresh-whole-universe",
 }
 
-export type Response = {
-    success: boolean;
-    message: string;
-    data: any;
-}
-
 interface GetQueryParams {
     [GetRoutes.HELLO]: {};
     [GetRoutes.GET_EMAIL_ACCOUNTS]: {};
@@ -142,6 +136,12 @@ interface PostBody {
     [PostRoutes.REFRESH_WHOLE_UNIVERSE]: {};
 }
 
+export type Response = {
+    success: boolean;
+    message: string;
+    data: any;
+}
+
 export class ApiService {
     static _removeUndefinedParams(
         params: Record<string, any | undefined>
@@ -172,8 +172,6 @@ export class ApiService {
 
         const queryString = params ? createQueryString(params) : "";
         const response = await fetch(url + endpoint + queryString);
-        console.log("API Service GET Request: ", url + endpoint + queryString);
-        console.log("API Service GET Response: ", response);
         return response.json();
     }
 
@@ -191,8 +189,7 @@ export class ApiService {
                 ? body
                 : JSON.stringify(body),
         });
-        console.log("API Service POST Request: ", url + endpoint, JSON.stringify(body));
-        console.log("API Service POST Response: ", response);
+
         return response.json();
     }
 }
