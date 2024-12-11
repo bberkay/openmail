@@ -304,7 +304,7 @@ async def paginate_emails(
             message="Emails paginated successfully.",
             data=run_openmail_func_concurrently(
                 accounts.split(","),
-                lambda client, **params: client.get_emails(**params),
+                lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
                 offset_end=offset_end,
             ),
