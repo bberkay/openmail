@@ -177,12 +177,13 @@ class MessageParser:
 
         body = body_match.group(1)
         body = bytes(body, "utf-8").decode("unicode_escape")
-        body = base64.b64decode(body[:-(len(body) % 4)]).decode("utf-8")
         body = MessageParser.decode_quoted_printable_message(body)
         body = LINK_PATTERN.sub(' ', body)
         body = LINE_PATTERN.sub(' ', body)
         body = SPECIAL_CHAR_PATTERN.sub(' ', body)
         body = SPACES_PATTERN.sub(' ', body)
+        # TODO: FIXME
+        #body = base64.b64decode(body[:-(len(body) % 4)]).decode("utf-8")
 
         return body.strip()
 
