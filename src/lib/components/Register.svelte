@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount, mount, unmount } from "svelte";
+    import Loader from "$lib/components/Loader.svelte";
     import { sharedStore } from "$lib/stores/shared.svelte";
     import { ApiService, GetRoutes, PostRoutes, type Response } from "$lib/services/ApiService";
 
@@ -74,12 +75,10 @@
         );
 
         if (response.success) {
-            sharedStore.inboxes = response.data.map((item: { email: string; data: object }) => ({
-                email: item.email,
-                ...item.data,
-            }));
+            console.log("emails response", response);
+            sharedStore.mailboxes = response.data;
             sharedStore.selectedFolder = "Inbox";
-            sharedStore.currentOffset = response.data["total"] < 10 ? response.data["total"] : 10;
+            sharedStore.currentOffset = 10;
         }
     }
 
@@ -97,16 +96,27 @@
         )
 
         if (response.success) {
-            sharedStore.folders = response.data.map((item: { email: string; data: any }) => ({
-                email: item.email,
-                folders: item.data,
-            }));
+            sharedStore.folders = response.data;
         }
     }
 
-    async function continueToInbox() {
+    async function continueToInbox(event: Event) {
+        event.preventDefault();
+
+        const continueToInboxBtn = event.target as HTMLButtonElement;
+
+        continueToInboxBtn.disabled = true;
+        continueToInboxBtn.innerText = '';
+        const loader = mount(Loader, {
+            target: continueToInboxBtn,
+        });
+
         await getFoldersOfAllAccounts();
         await getEmailsOfAllAccounts();
+
+        continueToInboxBtn.disabled = false;
+        unmount(loader);
+        continueToInboxBtn.innerHTML = 'Continue to Inbox';
     }
 </script>
 
@@ -139,6 +149,6 @@
                 </li>
             {/each}
         </ul>
-        <button class ="bg-primary" onclick={continueToInbox}>Continue to Inbox</button>
+        <button class ="bg-primary" id="continue-to-inbox" onclick={continueToInbox}>Continue to Inbox</button>
     {/if}
 </section>

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Loader from "$lib/components/Loader.svelte";
     import Inbox from "$lib/components/Inbox.svelte";
     import Register from "$lib/components/Register.svelte";
     import { sharedStore } from "$lib/stores/shared.svelte";
@@ -7,7 +8,7 @@
 </script>
 
 <!--<Alert message="This is a success message" type="success" />-->
-{#if sharedStore.inboxes.length > 0}
+{#if sharedStore.mailboxes.length > 0}
     <main>
         <!--<section>
             <Sidebar />
@@ -20,7 +21,7 @@
         </section>-->
     </main>
 {:else if isLoading}
-    <span><small class="loader"></small> Loading</span>
+    <Loader />
 {:else}
     <Register/>
 {/if}

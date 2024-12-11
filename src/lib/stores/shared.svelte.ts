@@ -3,7 +3,7 @@ import type { SharedStore } from "../types";
 export let sharedStore: SharedStore = $state({
     server: "",
     accounts: [],
-    inboxes: [],
+    mailboxes: [],
     folders: [],
     selectedAccounts: [],
     selectedFolder: "Inbox",

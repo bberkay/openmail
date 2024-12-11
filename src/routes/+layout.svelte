@@ -26,7 +26,7 @@
         if (response.success) {
             sharedStore.server = "";
             sharedStore.accounts = [];
-            sharedStore.inboxes = [];
+            sharedStore.mailboxes = [];
             sharedStore.folders = [];
             sharedStore.selectedAccounts = [];
             sharedStore.selectedFolder = "Inbox";

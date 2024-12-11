@@ -5,10 +5,7 @@
     import type { Account } from "$lib/types";
     import { ApiService, GetRoutes, type Response } from "$lib/services/ApiService";
 
-    let totalEmailCount = $derived(sharedStore.inboxes.reduce(
-        (acc, account) => acc + account.total,
-        0,
-    ));
+    let totalEmailCount = $derived(0);
 
     let prevButton: HTMLButtonElement;
     let nextButton: HTMLButtonElement;
@@ -20,11 +17,11 @@
             "next-button",
         ) as HTMLButtonElement;
 
-        $effect(() => {
+        /*$effect(() => {
             if (sharedStore.currentOffset >= 10) {
                 completeToTen();
             }
-        })
+        })*/
     });
 
     async function completeToTen(): Promise<void> {
@@ -49,8 +46,8 @@
 
             if (response.success) {
                 sharedStore.currentOffset = 10 + missing;
-                sharedStore.inboxes = response.data.map((item: { email: string; data: object }) => ({
-                    email: item.email,
+                sharedStore.mailboxes = response.data.map((item: { email_adress: string; data: object }) => ({
+                    email_adress: item.email_adress,
                     ...item.data
                 }))
             }
@@ -88,7 +85,7 @@
 
         if (response.success) {
             sharedStore.currentOffset = sharedStore.currentOffset - 10;
-            sharedStore.inboxes = response.data.map((item: { email: string; data: object }) => ({
+            sharedStore.mailboxes = response.data.map((item: { email: string; data: object }) => ({
                 email: item.email,
                 ...item.data
             }))
@@ -120,8 +117,8 @@
 
         if (response.success) {
             sharedStore.currentOffset = sharedStore.currentOffset + 10;
-            sharedStore.inboxes = response.data.map((item: { email: string; data: object }) => ({
-                email: item.email,
+            sharedStore.mailboxes = response.data.map((item: { email_adress: string; data: object }) => ({
+                email_address: item.email_adress,
                 ...item.data
             }))
         }
@@ -148,12 +145,17 @@
         <hr />
     </div>
     <div>
-      {#each sharedStore.inboxes as account}
-        {#if sharedStore.accounts.find((acc: Account) => acc.email_address == account.email_address)}
-          {#each account.emails as email}
-            <InboxItem owner={account.email_address} email={email} />
+        {#each sharedStore.mailboxes as mailbox}
+            {#each mailbox.data.emails as email}
+              <InboxItem owner={mailbox.email_address} email={email} />
+            {/each}
+        {/each}
+      <!--{#each sharedStore.mailboxes as mailbox}
+        {#if sharedStore.accounts.find((acc: Account) => acc.email_address == mailbox.email_address)}
+          {#each mailbox.mailbox.emails as email}
+            <InboxItem owner={mailbox.email_address} email={email} />
           {/each}
         {/if}
-      {/each}
+      {/each}-->
     </div>
 </section>

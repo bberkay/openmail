@@ -27,7 +27,6 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div onclick={getEmailContent}>
-    <pre>
-        {JSON.stringify(email, null, 2)}
-    </pre>
+    <pre>{JSON.stringify(email, null, 2)}</pre>
 </div>
+<br>

@@ -54,20 +54,11 @@ export interface Attachment {
     cid: string | null;
 }
 
-export type Inboxes = {
-    email_address: string;
-    folder: string;
-    emails: EmailSummary[];
-    total: number;
-}[];
-
-export type Folders = { email_address: string; folders: string[] }[];
-
 export interface SharedStore {
     server: string;
     accounts: Account[];
-    inboxes: Inboxes;
-    folders: Folders;
+    mailboxes: any;
+    folders: any;
     selectedAccounts: Account[];
     selectedFolder: string;
     selectedEmail: EmailWithContent | null;
