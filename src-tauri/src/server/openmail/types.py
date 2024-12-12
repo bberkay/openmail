@@ -107,9 +107,10 @@ class Flags():
 
 __all__ = [
     "SearchCriteria",
-    "Attachment",
     "EmailSummary",
+    "Attachment",
     "EmailWithContent",
     "EmailToSend",
     "Mailbox",
+    "Flags"
 ]
