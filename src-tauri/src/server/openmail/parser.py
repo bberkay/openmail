@@ -38,14 +38,16 @@ SUBJECT_PATTERN = re.compile(r'Subject:\s+(.*?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.
 DATE_PATTERN = re.compile(r'Date:\s+(.+?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.DOTALL)
 BODY_PATTERN = re.compile(r"BODY\[TEXT\].*?b(.*?)(?=\),\s+\(b\'|$)", re.DOTALL)
 BODY_TEXT_PATTERN = re.compile(r'Content-Type:\s*text/plain;.*?\\r\\n\\r\\n(.*?)(?=\\r\\n\\r\\n--.*?Content-Type|$)', re.DOTALL | re.IGNORECASE)
+BODY_TEXT_ENCODING_PATTERN = re.compile(r'Content-Transfer-Encoding:\s*(.+?)\\r\\n', re.DOTALL | re.IGNORECASE)
 ATTACHMENT_PATTERN = re.compile(r'ATTACHMENT.*?\("FILENAME" "([^"]+)"\)', re.DOTALL)
 INLINE_ATTACHMENT_CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"', re.DOTALL)
 SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
 INLINE_ATTACHMENT_DATA_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"', re.DOTALL)
 FLAGS_PATTERN = re.compile(r'FLAGS \((.*?)\)', re.DOTALL)
 LINE_PATTERN = re.compile(r'(=\\r|\\.*?r\\.*?n)')
-SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>]')
+SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>\(]')
 LINK_PATTERN = re.compile(r'https?://[^\s]+|\([^\)]+\)', re.DOTALL)
+BRACKET_PATTERN = re.compile(r'\[.*?\]')
 SPACES_PATTERN = re.compile(r'\s+')
 
 class MessageParser:
@@ -87,6 +89,25 @@ class MessageParser:
         return decoded_partial_text
 
     @staticmethod
+    def decode_base64_message(message: str) -> str:
+        """
+        Decode base64 message. Ignore errors.
+
+        Args:
+            message (str): Raw message string.
+
+        Returns:
+            str: Decoded message string.
+
+        Example:
+            >>> decode_base64_message("W2ltYWdlOiBHb29nbGVdDQpIZXNhYsSxbsSxemRhIG90dXJ1bSBhw6dtY
+            WsgacOnaW4gdXlndWxh")
+            'Hello, World'
+        """
+
+        return base64.b64decode(message[:-(len(message) % 4)]).decode("utf-8")
+
+    @staticmethod
     def decode_utf8_header(message: str) -> str:
         """
         Decode UTF-8 header.
@@ -113,6 +134,27 @@ class MessageParser:
                 decoded_message += line + " "
 
         return decoded_message.strip()
+
+    @staticmethod
+    def decode_filename(message: str) -> str:
+        """
+        Decode filename.
+
+        Args:
+            message (str): Raw message string.
+
+        Returns:
+            str: Decoded message string.
+
+        Example:
+            >>> decode_filename("['g\\xc3\\xbcnl\\xc3\\xbck rapor.pdf']")
+            ['günlük rapor.pdf'] # "Daily Report.pdf" in Turkish
+        """
+        try:
+            decoded = bytes(message, "utf-8").decode("unicode_escape").encode("latin1").decode("utf-8")
+            return decoded
+        except (UnicodeDecodeError, ValueError):
+            return message
 
     @staticmethod
     def messages(message: str) -> list[str]:
@@ -175,15 +217,23 @@ class MessageParser:
         if not body_match:
             return ""
 
+        encoding_match = BODY_TEXT_ENCODING_PATTERN.search(body)
+
         body = body_match.group(1)
         body = bytes(body, "utf-8").decode("unicode_escape")
-        body = MessageParser.decode_quoted_printable_message(body)
+
+        if encoding_match:
+            encoding_match = encoding_match.group(1)
+            if encoding_match == "quoted-printable":
+                body = MessageParser.decode_quoted_printable_message(body)
+            elif encoding_match == "base64":
+                body = MessageParser.decode_base64_message(body)
+
         body = LINK_PATTERN.sub(' ', body)
+        body = BRACKET_PATTERN.sub(' ', body)
         body = LINE_PATTERN.sub(' ', body)
         body = SPECIAL_CHAR_PATTERN.sub(' ', body)
         body = SPACES_PATTERN.sub(' ', body)
-        # TODO: FIXME
-        #body = base64.b64decode(body[:-(len(body) % 4)]).decode("utf-8")
 
         return body.strip()
 
@@ -202,7 +252,8 @@ class MessageParser:
             >>> attachments_from_message("b'(UID ... ATTACHMENT (FILENAME \"file.txt\") ... ATTACHMENT (FILENAME \"banner.jpg\") b'")
             ['file.txt', 'banner.jpg']
         """
-        return ATTACHMENT_PATTERN.findall(message)
+        matches = ATTACHMENT_PATTERN.findall(message)
+        return [MessageParser.decode_filename(match) for match in matches]
 
     @staticmethod
     def inline_attachment_cids_from_message(message: str) -> list[str]:
