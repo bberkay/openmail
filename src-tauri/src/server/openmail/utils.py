@@ -80,9 +80,6 @@ def truncate_text(content: str, max_length: int) -> str:
         >>> truncate_text("Short", 10)
         'Short'
     """
-    if not content:
-        return "No Content"
-
     if len(content) > max_length:
         return content[:max_length] + "..."
 
