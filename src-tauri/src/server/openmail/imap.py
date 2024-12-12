@@ -46,39 +46,49 @@ class IMAPManagerLoggedOutException(IMAPManagerException):
 """
 Enums
 """
-class Mark(Enum):
+class Mark(str, Enum):
     """
     Standard email marks.
 
     References:
         - https://datatracker.ietf.org/doc/html/rfc9051#name-flags-message-attribute
     """
-    FLAGGED = "\\Flagged"
-    SEEN = "\\Seen"
-    ANSWERED = "\\Answered"
-    DRAFT = "\\Draft"
-    DELETED = "\\Deleted"
-    UNFLAGGED = "\\Unflagged"
-    UNSEEN = "\\Unseen"
-    UNANSWERED = "\\Unanswered"
-    UNDRAFT = "\\Undraft"
-    UNDELETED = "\\Undeleted"
+    Flagged = "\\Flagged"
+    Seen = "\\Seen"
+    Answered = "\\Answered"
+    Draft = "\\Draft"
+    Deleted = "\\Deleted"
+    Unflagged = "\\Unflagged"
+    Unseen = "\\Unseen"
+    Unanswered = "\\Unanswered"
+    Undraft = "\\Undraft"
+    Undeleted = "\\Undeleted"
 
-class Folder(Enum):
+    def __str__(self):
+        return self.value
+
+MARK_LIST = [m for m in Mark]
+
+class Folder(str, Enum):
     """
     Standard email folders.
 
     References:
         - https://datatracker.ietf.org/doc/html/rfc6154#autoid-3
     """
-    Inbox = b'\\Inbox'
-    All = b'\\All'
-    Archive = b'\\Archive'
-    Drafts = b'\\Drafts'
-    Flagged = b'\\Flagged'
-    Junk = b'\\Junk'
-    Sent = b'\\Sent'
-    Trash = b'\\Trash'
+    Inbox = 'Inbox'
+    All = 'All'
+    Archive = 'Archive'
+    Drafts = 'Drafts'
+    Flagged = 'Flagged'
+    Junk = 'Junk'
+    Sent = 'Sent'
+    Trash = 'Trash'
+
+    def __str__(self):
+        return self.value
+
+FOLDER_LIST = [m for m in Folder]
 
 """
 Types, that are only used in this module
@@ -109,19 +119,12 @@ UNKNOWN_PLACEHOLDERS = MappingProxyType({
     "receiver": "Unknown Receiver",
     "sender": "Unknown Sender",
     "subject": "No Subject",
-    "date": "Unknown Date"
+    "body": "No Body",
+    "date": "Unknown Date",
 })
-
-# Default number of emails to get.
-# If there is not enough emails, then
-# gets all of them.
+GET_EMAILS_OFFSET_START = 0
 GET_EMAILS_OFFSET_END = 10
-
-# Maximum length of the body of an email
-# in characters. After this, it is truncated
-# and appended with "..."
 BODY_SHORT_THRESHOLD = 250
-
 MAX_FOLDER_NAME_LENGTH = 100
 CONN_TIMEOUT = 30 # 30 seconds
 IDLE_TIMEOUT = 30 * 60 # 30 minutes
@@ -132,8 +135,8 @@ READLINE_SLEEP = 1 # 1 seconds
 class IMAPManager(imaplib.IMAP4_SSL):
     """
     IMAPManager extends the `imaplib.IMAP4` class.
-    Overrides `login`, `logout`, `shutodown`, and
-    `__simple_command`. Provides additional features
+    Overrides `login`, `logout`, `shutdown`, `select`,
+    and `__simple_command`. Provides additional features
     especially idling and listening exists responses on
     different threads. Mainly used in `OpenMail` class.
     """
@@ -196,10 +199,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         )
 
         self.login(email_address, password)
-
-    def __del__(self):
-        """Closes the connection to the IMAP server and logs out."""
-        self.logout()
 
     def _find_imap_server(self, email_address: str) -> str:
         """
@@ -284,11 +283,27 @@ class IMAPManager(imaplib.IMAP4_SSL):
             If there is an error while closing the mailbox, it will be logged but not
             raised.
         """
-        self._terminate_threads()
+        try:
+            return self._parse_command_result(
+                super().logout(),
+                success_message="Logout successful",
+                failure_message="Could not logout from the target imap server"
+            )
+        finally:
+            self._terminate_threads()
+
+    @override
+    def select(self, folder: str | Folder, readonly: bool = False) -> IMAPCommandResult:
+        """
+        Overrides the `select` method to handle the `Folder` enum type.
+        """
+        if isinstance(folder, Folder):
+            folder = self.find_matching_folder(folder)
+
         return self._parse_command_result(
-            super().logout(),
-            success_message="Logout successful",
-            failure_message="Could not logout from the target imap server"
+            super().select(folder, readonly),
+            success_message=f"Successfully selected {folder}",
+            failure_message=f"Could not select {folder}"
         )
 
     @override
@@ -626,7 +641,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             print("Joining readline thread...")
             self._readline_thread.join(timeout=JOIN_TIMEOUT)
 
-    def find_matching_folder(self, requested_folder: Folder) -> bytes | None:
+    def find_matching_folder(self, requested_folder: Folder, encoded: bool = True) -> bytes | None:
         """
         Retrieve the IMAP folder name matching a specific byte string.
 
@@ -634,26 +649,30 @@ class IMAPManager(imaplib.IMAP4_SSL):
         are localized in a different language.
 
         Args:
-            requested_folder (bytes): The IMAP folder name (e.g., `b'\\Inbox'` or `b'\\Trash'`).
+            requested_folder (str): The IMAP folder name (e.g., 'Inbox' or 'Trash').
 
         Returns:
             bytes | None: The folder name in bytes if a match is found; otherwise, None.
 
         Example:
-            >>> find_matching_folder(b'\\Inbox')
+            >>> find_matching_folder(Folder.Inbox)
             b'INBOX'
-            >>> find_matching_folder(b'\\Trash')
-            b'Papelera' # In Spanish
+            >>> find_matching_folder(Folder.Flagged, encoded=True)
+            b'"[Gmail]/Y\xc4\xb1ld\xc4\xb1zl\xc4\xb1"'
+            >>> find_matching_folder(Folder.Flagged, encoded=False)
+            b'"[Gmail]/Yıldızlı"' # Flagged in Turkish
         """
-        folder_list = [m.value for m in Folder]
-        if requested_folder not in folder_list:
-            raise IMAPManagerException(f"Invalid folder name: {requested_folder}. Please use one of the following: {folder_list}")
+        if requested_folder not in FOLDER_LIST:
+            raise IMAPManagerException(f"Invalid folder name: {requested_folder}. Please use one of the following: {FOLDER_LIST}")
 
         status, folders_as_bytes = self.list()
         if status == "OK" and folders_as_bytes and isinstance(folders_as_bytes, list):
             for folder_as_bytes in folders_as_bytes:
-                if requested_folder == folder_as_bytes:
-                    return folder_as_bytes
+                if requested_folder.upper() in folder_as_bytes.decode("utf-8").upper():
+                    if encoded:
+                        return self._encode_folder(self._decode_folder(folder_as_bytes))
+                    else:
+                        return self._decode_folder(folder_as_bytes)
         return None
 
     def _encode_folder(self, folder: str) -> bytes:
@@ -697,7 +716,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             # Most of the servers return folder name as b'(\\HasNoChildren) "/" "INBOX"'
             # But some servers like yandex return folder name as b'(\\HasNoChildren) "|" "INBOX"'
             # So we're replacing "|" with "/" to make it consistent
-            return folder.decode().replace(' "|" ', ' "/" ').split(' "/" ')[1].replace('"', '')
+            return folder.decode().replace(' "|" ', ' "/" ', 1).split(' "/" ', 1)[1].replace('"', '')
         except Exception as e:
             raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
 
@@ -842,9 +861,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             return f' ({criteria} "{value}")'
 
         try:
-            mark_list = [m.value for m in Mark]
-            included_flag_list = ["KEYWORD " + flag if flag not in mark_list else flag for flag in search_criteria.included_flags]
-            excluded_flag_list = ["NOT KEYWORD " + flag if flag not in mark_list else flag for flag in search_criteria.excluded_flags]
+            included_flag_list = ["KEYWORD " + flag if flag not in MARK_LIST else flag for flag in search_criteria.included_flags]
+            excluded_flag_list = ["NOT KEYWORD " + flag if flag not in MARK_LIST else flag for flag in search_criteria.excluded_flags]
 
             search_criteria_query = ''
             search_criteria_query += add_criterion(
@@ -882,7 +900,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         return search_criteria_query.strip()
 
     def search_emails(self,
-        folder: str = INBOX,
+        folder: str = Folder.Inbox,
         search: str | SearchCriteria = ALL
     ) -> IMAPCommandResult:
         """
@@ -902,7 +920,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             True, "Search in folder `MyCustomFolder` was successful. Results are saved."
         """
 
-        def save_emails(uids: list[str], folder: str, search_query: str):
+        def save_emails(uids: list[str], folder: str | Folder, search_query: str):
             """
             Save emails to a specified folder for later use.
 
@@ -912,13 +930,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 search_query (str): The search query used to fetch the emails.
             """
             self._searched_emails = IMAPManager.SearchedEmails(
-                folder=folder,
+                folder=self.find_matching_folder(str(folder), encoded=False),
                 search_query=search_query,
                 uids=uids
             )
 
         status, _ = self.select(folder, readonly=True)
-        if status != 'OK':
+        if not status:
             raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
         search_criteria_query = ''
@@ -939,7 +957,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}` and error is `{search_status}.`")
 
             if not uids or not uids[0]:
-                return []
+                return False, "No emails found."
 
             uids = uids[0].split()[::-1]
             save_emails(uids, folder, search_criteria_query)
@@ -949,7 +967,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def get_emails(
         self,
-        offset_start: int = 0,
+        offset_start: int = GET_EMAILS_OFFSET_START,
         offset_end: int = GET_EMAILS_OFFSET_END
     ) -> Mailbox:
         """
@@ -1002,15 +1020,45 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
 
             messages = MessageParser.messages(str(messages))
+            messages = messages[::-1]
             for message in messages:
+                uid = MessageParser.uid_from_message(message)
                 message_headers = MessageParser.headers_from_message(message)
+
+                body = MessageParser.body_from_message(message)
+                if not body:
+                    """
+                    1. Get the content-type and rfc.size in the header fields and parse them
+                    2. If the body is just text html then check the size and get half of the
+                    html content with ThreadPoolExecutor(learn the threadpoolexecuter).
+                    """
+                    body = UNKNOWN_PLACEHOLDERS["body"]
+
+                """if not body:
+                    from bs4 import BeautifulSoup
+                    status, comp = self.uid('FETCH', uid, '(BODY.PEEK[TEXT])')
+                    print("comp: ", comp)
+                    if status == 'OK':
+                        new_body = MessageParser.body_from_message(comp)
+                        print("new_body: ", new_body)
+                        msg = email.message_from_bytes(messages[0][1])
+                        for part in msg.walk():
+                            if part.get_content_type() == 'text/html':
+                                body = part.get_payload(decode=True).decode('utf-8')
+                                body = BeautifulSoup(body, "html.parser").get_text(" ", strip=True)
+                                print("body: ", body)
+                                #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
+                                #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
+                    else:
+                        body = UNKNOWN_PLACEHOLDERS["body"]"""
+
                 emails.append(EmailSummary(
-                    uid=MessageParser.uid_from_message(message),
+                    uid=uid,
                     sender=message_headers.get("sender", UNKNOWN_PLACEHOLDERS["sender"]),
                     receiver=message_headers.get("receiver", UNKNOWN_PLACEHOLDERS["receiver"]),
                     subject=message_headers.get("subject", UNKNOWN_PLACEHOLDERS["subject"]),
                     date=message_headers.get("date", UNKNOWN_PLACEHOLDERS["date"]),
-                    body_short=truncate_text(MessageParser.body_from_message(message), BODY_SHORT_THRESHOLD),
+                    body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
                     flags=MessageParser.flags_from_message(message),
                     attachments=MessageParser.attachments_from_message(message)
                 ))
@@ -1094,7 +1142,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             without raising an error but it will be logged as a warning.
         """
         status, _ = self.select(folder, readonly=True)
-        if status != 'OK':
+        if not status:
             raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
         # Get body and attachments
@@ -1222,15 +1270,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
             - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
         """
         status, _ = self.select(folder)
-        if status != 'OK':
+        if not status:
             raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
-        mark = mark.lower()
-        mark_list = [m.value for m in Mark]
-        if not mark or (mark not in mark_list and not mark.startswith("\\") and not mark.isalnum()):
-            raise IMAPManagerException(
-                f"Unsupported mark: `{mark}`. Please use one of the following or provide a valid custom flag: `{', '.join(mark_list)}`"
-            )
+        if not mark:
+            raise IMAPManagerException(f"`mark` cannot be empty.")
 
         mark_result = self._parse_command_result(
             self.uid(
@@ -1300,7 +1344,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             mark,
             sequence_set,
             "+FLAGS",
-            folder if isinstance(folder, str) else folder.decode("utf-8"),
+            folder,
             f"Email(s) `{sequence_set}` in `{folder}` marked with `{mark}` successfully.",
             f"There was an error while marking the email(s) `{sequence_set}` in `{folder}` with `{mark}`."
         )
@@ -1325,16 +1369,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message or an error message.
 
         Example:
-            >>> unmark_email(Mark.Seen, "1") # Unmarks email with UID 1 from INBOX
-            True, "Email(s) `1` unmarked with `seen` successfully."
-            >>> unmark_email(Mark.Seen, "1:3") # Unmarks email with UID 1,2,3 from INBOX
-            True, "Email(s) `1:3` unmarked with `seen` successfully."
-            >>> unmark_email(Mark.Seen, "1,3:5") # Unmarks email with UID 1 and 3,4,5 from INBOX
-            True, "Email(s) `1,3:5` unmarked with `seen` successfully."
-            >>> unmark_email(Mark.Seen, "1:*") # Unmarks all emails in the INBOX
-            True, "Email(s) `1:*` unmarked with `seen` successfully."
-            >>> unmark_email(Mark.Seen, "1,3:*") # Unmarks all emails in the INBOX, except email with UID 2
-            True, "Email(s) `1,3:*` unmarked with `seen` successfully."
+            >>> unmark_email(Mark.Seen, "1") # Removes Seen flag from email with UID 1
+            True, "Seen removed from email(s) 1 in `INBOX` successfully."
+            >>> unmark_email(Mark.Seen, "1:3") # Removes Seen flag from email with UID 1,2,3
+            True, "Seen removed from email(s) 1:3 in `INBOX` successfully."
+            >>> unmark_email(Mark.Seen, "1,3:5") # Removes Seen flag from email with UID 1 and 3,4,5
+            True, "Seen removed from email(s) 1,3:5 in `INBOX` successfully."
+            >>> unmark_email(Mark.Seen, "1:*") # Removes Seen flag from all emails
+            True, "Seen removed from email(s) 1:* in `INBOX` successfully."
+            >>> unmark_email(Mark.Seen, "1,3:*") Removes Seen flag from all emails, except email with UID 2
+            True, "Seen removed from email(s) 1,3:* in `INBOX` successfully."
 
         References:
             uid_range is a sequence set as defined in RFC 9051:
@@ -1353,7 +1397,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             sequence_set,
             "-FLAGS",
             folder,
-            f"Email(s) `{sequence_set}` in `{folder}` unmarked with `{mark}` successfully.",
+            f"{mark} removed from email(s) `{sequence_set}` in `{folder}` successfully.",
             f"There was an error while unmarking the email(s) `{sequence_set}` in `{folder}` with `{mark}`."
         )
 
@@ -1405,7 +1449,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             return IMAPCommandResult(success=True, message=f"Destination folder `{destination_folder}` is the same as the source folder `{source_folder}`.")
 
         status, _ = self.select(source_folder)
-        if status != "OK":
+        if not status:
             raise IMAPManagerException(f"Error while selecting folder `{source_folder}`: `{status}`")
 
         succes_msg = f"Email(s) `{sequence_set}` moved successfully from `{source_folder}` to `{destination_folder}`."
@@ -1475,7 +1519,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._check_folder_names([source_folder, destination_folder])
 
         status, _ = self.select(source_folder)
-        if status != "OK":
+        if not status:
             raise IMAPManagerException(f"Error while selecting folder `{source_folder}`: `{status}`")
 
         succes_message = f"Email(s) `{sequence_set}` copied successfully from `{source_folder}` to `{destination_folder}`."
@@ -1553,7 +1597,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             ) from None
 
         status, _ = self.select(trash_mailbox_name)
-        if status != 'OK':
+        if not status:
             raise IMAPManagerException(
                 f"Error while selecting trash folder for deletion: `{status}`."
             )
