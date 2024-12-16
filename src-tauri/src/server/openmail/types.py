@@ -46,11 +46,12 @@ class EmailSummary():
 @dataclass
 class Attachment():
     """Represents an email attachment."""
-    name: str
-    data: str
-    size: str
-    type: str
-    cid: str | None = None
+    path: Optional[str] = None
+    name: Optional[str] = None
+    size: Optional[int] = None
+    data: Optional[str] = None
+    type: Optional[str] = None
+    cid: Optional[str] = None
 
 @dataclass
 class EmailWithContent():
@@ -84,7 +85,7 @@ class EmailToSend():
     cc: Optional[str] = ""
     bcc: Optional[str] = ""
     metadata: Optional[dict] = field(default_factory=dict)
-    attachments: Optional[list[Attachment]] = field(default_factory=list)
+    attachments: Optional[list[Attachment | str]] = field(default_factory=list)
     mail_options: Optional[Sequence[str]] = field(default_factory=list)
     rcpt_options: Optional[Sequence[str]] = field(default_factory=list)
 
