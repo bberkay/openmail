@@ -749,6 +749,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             folders = [folders]
 
         for folder_name in folders:
+            if not folder_name:
+                continue
+
             folder_name_length = len(folder_name)
             if folder_name is None or folder_name == "" or folder_name_length > MAX_FOLDER_NAME_LENGTH or folder_name_length < 1:
                 if raise_error:
@@ -757,14 +760,29 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return True
 
-    def get_folders(self) -> list[str]:
+    def get_folders(self, folder_name: str | None = None) -> list[str]:
         """
         Retrieve a list of all email folders.
+
+        Args:
+            folder_name (str, optional): Subfolders of the specified folder.
+            Defaults to None. If None, returns all folders.
 
         Returns:
             list[str]: List of folder names in the email account
         """
-        return [self._decode_folder(i) for i in self.list()[1] if i and i.find(b'\\NoSelect') == -1]
+        status, folders = self.list()
+        if not status == "OK":
+            raise IMAPManagerException(f"Failed to list folders with status: {status}.")
+
+        folder_list = []
+        for folder in folders:
+            if folder and folder.find(b'\\NoSelect') == -1:
+                decoded_folder = self._decode_folder(folder)
+                if not folder_name or (folder_name in decoded_folder and not decoded_folder.endswith(folder_name)):
+                    folder_list.append(decoded_folder)
+
+        return folder_list
 
     def build_search_criteria_query_string(self, search_criteria: SearchCriteria) -> str:
         """
@@ -1034,7 +1052,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     """
                     body = UNKNOWN_PLACEHOLDERS["body"]
 
-                """if not body:
+                """
+                # TODO: if text plain body does not exists.
+                https://mail.google.com/mail/u/0/?ik=ee9acb692d&view=om&permmsgid=msg-f:1818347503870535537
+                if not body:
                     from bs4 import BeautifulSoup
                     status, comp = self.uid('FETCH', uid, '(BODY.PEEK[TEXT])')
                     print("comp: ", comp)
@@ -1159,7 +1180,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 file_name = part.get_filename()
                 if file_name:
                     attachments.append(Attachment(
-                        cid=part.get("X-Attachment-Id"),
+                        id=part.get("X-Attachment-Id"),
                         name=file_name,
                         data=base64.b64encode(
                             part.get_payload(decode=True)
@@ -1584,9 +1605,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._check_folder_names(folder)
 
         try:
-            trash_mailbox_name = self.find_matching_folder(Folder.Trash)
-            if folder != trash_mailbox_name:
-                status, _ = self.move_email(folder, sequence_set, trash_mailbox_name)
+            trash_mailbox_name = self.find_matching_folder(Folder.Trash, False)
+            if folder != trash_mailbox_name or folder != Folder.Trash:
+                status, _ = self.move_email(folder, trash_mailbox_name, sequence_set)
                 if not status:
                     raise IMAPManagerException(
                         f"Error while moving email(s) `{sequence_set}` to trash folder for deletion."
@@ -1594,9 +1615,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(
                 f"Error while moving email(s) `{sequence_set}` to trash folder for deletion: `{str(e)}`."
-            ) from None
+            ) from e
 
-        status, _ = self.select(trash_mailbox_name)
+        status, _ = self.select(self._encode_folder(trash_mailbox_name))
         if not status:
             raise IMAPManagerException(
                 f"Error while selecting trash folder for deletion: `{status}`."
@@ -1653,22 +1674,27 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._check_folder_names([folder_name, parent_folder])
 
         if parent_folder:
+            if parent_folder not in self.get_folders():
+                self.create_folder(parent_folder)
+
             folder_name = f"{parent_folder}/{folder_name}"
 
-        encoded_folder_name = self._encode_folder(folder_name)
-
         return self._parse_command_result(
-            self.create(encoded_folder_name),
+            self.create(
+                self._encode_folder(folder_name)
+            ),
             f"Folder `{folder_name}` created successfully.",
             f"There was an error while creating folder `{folder_name}`."
         )
 
-    def delete_folder(self, folder_name: str) -> IMAPCommandResult:
+    def delete_folder(self, folder_name: str, subfolders: bool = False) -> IMAPCommandResult:
         """
         Delete an existing email folder.
 
         Args:
             folder_name (str): Name of the folder to delete.
+            subfolders (bool, optional): Whether to also delete subfolders.
+                                        Defaults to False.
 
         Returns:
             IMAPCommandResult: A tuple containing:
@@ -1681,10 +1707,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         self._check_folder_names(folder_name)
 
-        encoded_folder_name = self._encode_folder(folder_name)
+        if subfolders:
+            for subfolder in self.get_folders(folder_name):
+                self.delete_folder(subfolder, True)
 
         return self._parse_command_result(
-            self.delete(encoded_folder_name),
+            self.delete(
+                self._encode_folder(folder_name)
+            ),
             f"Folder `{folder_name}` deleted successfully.",
             f"There was an error while deleting folder `{folder_name}`."
         )
@@ -1708,16 +1738,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         self._check_folder_names([folder_name, destination_folder])
 
-        if "/" in folder_name:
-            destination_folder = f"{destination_folder}/{folder_name.split("/")[-1]}"
-
-        encoded_folder_name = self._encode_folder(folder_name)
-        encoded_destination_folder = self._encode_folder(destination_folder)
-
         return self._parse_command_result(
             self.rename(
-                encoded_folder_name,
-                encoded_destination_folder
+                self._encode_folder(folder_name),
+                self._encode_folder(f"{destination_folder}/{folder_name}")
             ),
             f"Folder `{folder_name}` moved to `{destination_folder}` successfully.",
             f"There was an error while moving folder `{folder_name}` to `{destination_folder}`."
@@ -1742,19 +1766,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         self._check_folder_names([folder_name, new_folder_name])
 
-        if "/" in folder_name:
-            new_folder_name = folder_name.replace(
-                folder_name.split("/")[-1],
-                new_folder_name
-            )
-
-        encoded_folder_name = self._encode_folder(folder_name)
-        encoded_new_folder_name = self._encode_folder(new_folder_name)
-
         return self._parse_command_result(
             self.rename(
-                encoded_folder_name,
-                encoded_new_folder_name
+                self._encode_folder(folder_name),
+                self._encode_folder(new_folder_name)
             ),
             f"Folder `{folder_name}` renamed to `{new_folder_name}` successfully.",
             f"There was an error while renaming folder `{folder_name}` to `{new_folder_name}`."
