@@ -41,8 +41,9 @@ BODY_TEXT_PATTERN = re.compile(r'Content-Type:\s*text/plain;.*?\\r\\n\\r\\n(.*?)
 BODY_TEXT_ENCODING_PATTERN = re.compile(r'Content-Transfer-Encoding:\s*(.+?)\\r\\n', re.DOTALL | re.IGNORECASE)
 ATTACHMENT_PATTERN = re.compile(r'ATTACHMENT.*?\("FILENAME" "([^"]+)"\)', re.DOTALL)
 INLINE_ATTACHMENT_CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"', re.DOTALL)
-SUPPORTED_EXTENSIONS = r'png|jpg|jpeg|gif|bmp|webp|svg|ico|tiff'
-INLINE_ATTACHMENT_DATA_PATTERN = re.compile(r'<img src="data:image/(' + SUPPORTED_EXTENSIONS + r');base64,([^"]+)"', re.DOTALL)
+INLINE_ATTACHMENT_FILEPATH_PATTERN = re.compile(r'<img\s+[^>]*src=["\']((?!data:|cid:)[^"\']+)["\']', re.DOTALL | re.IGNORECASE)
+INLINE_ATTACHMENT_DATA_CID_PATTERN = re.compile(r'data:([a-zA-Z0-9+/.-]+);base64,([a-zA-Z0-9+/=]+)', re.DOTALL | re.IGNORECASE)
+INLINE_ATTACHMENT_SRC_PATTERN = re.compile(r'(<img\s+[^>]*src=")(.*?)(")')
 FLAGS_PATTERN = re.compile(r'FLAGS \((.*?)\)', re.DOTALL)
 LINE_PATTERN = re.compile(r'(=\\r|\\.*?r\\.*?n)')
 SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>\(]')
@@ -253,6 +254,9 @@ class MessageParser:
             ['file.txt', 'banner.jpg']
         """
         matches = ATTACHMENT_PATTERN.findall(message)
+        if not matches:
+            return []
+
         return [MessageParser.decode_filename(match) for match in matches]
 
     @staticmethod
@@ -280,13 +284,16 @@ class MessageParser:
             ['image1', 'image2']
 
         """
-        return [match.group(1) for match in INLINE_ATTACHMENT_CID_PATTERN.finditer(message)]
+        matches = INLINE_ATTACHMENT_CID_PATTERN.finditer(message)
+        if not matches:
+            return []
+
+        return [match.group(1) for match in matches]
 
     @staticmethod
-    def inline_attachment_data_and_cid_from_message(message: str) -> list[tuple[str, str, int]]:
-        # TODO: Look at this later.
+    def inline_attachment_base64_data_from_message(message: str) -> list[tuple[str, str]]:
         """
-        Get inline attachments' data and cid from raw message string.
+        Get inline attachments' base64 data from raw message string.
 
         Args:
             message (str): Raw message string.
@@ -298,17 +305,81 @@ class MessageParser:
             >>> message = '''
             ... <html>
             ...     <body>
-            ...         <p>Check out this image:</p>
+            ...         <p>Check out this inline files:</p>
             ...         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA">
-            ...         <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAAAAA">
+            ...         <img src="data:audio/mp3;base64,/9j/4AAQSkZJRgABAQEAAAAAA">
+            ...         <img src="data:text/plain;base64,SGVsbG8sIHdvcmxkIQ==">
             ...     </body>
             ... </html>
             ... '''
             >>> inline_attachment_data_and_cid_from_message(message)
-            [('png', 'iVBORw0KGgoAAAANSUhEUgAAAAUA', 58),
-            ('jpeg', '/9j/4AAQSkZJRgABAQEAAAAAA', 119)]
+            [('image/png', 'iVBORw0KGgoAAAANSUhEUgAAAAUA'),
+             ('audio/mp3', '/9j/4AAQSkZJRgABAQEAAAAAA'),
+             ('text/plain', 'SGVsbG8sIHdvcmxkIQ==')]
         """
-        return [(match.group(1), match.group(2), match.start()) for match in INLINE_ATTACHMENT_CID_PATTERN.finditer(message)]
+        matches = INLINE_ATTACHMENT_DATA_CID_PATTERN.finditer(message)
+        if not matches:
+            return []
+
+        return [(match.group(1), match.group(2)) for match in matches]
+
+    @staticmethod
+    def inline_attachment_filepath_and_url_from_message(message: str) -> list[str]:
+        """
+        Get inline attachments' filepath and url from raw message string.
+
+        Args:
+            message (str): Raw message string.
+
+        Returns:
+            list[str]: List of inline attachments.
+
+        Example:
+            >>> message = '''
+            ... <html>
+            ...     <body>
+            ...         <p>Check out this image:</p>
+            ...         <img src="mymedia/image1.jpg">
+            ...         <img src="https://example.com/mymedia/image2.jpg">
+            ...         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA">
+            ...     </body>
+            ... </html>
+            ... '''
+            >>> inline_attachment_filepath_from_message(message)
+            ['mymedia/image1.jpg', 'https://example.com/mymedia/image2.jpg']
+        """
+        matches = INLINE_ATTACHMENT_FILEPATH_PATTERN.finditer(message)
+        if not matches:
+            return []
+
+        return [match.group(1) for match in matches]
+
+    @staticmethod
+    def inline_attachment_src_from_message(message: str) -> list[str]:
+        """
+        Get inline attachments' src from raw message string.
+
+        Args:
+            message (str): Raw message string.
+
+        Returns:
+            list[tuple[str, str]]: List of inline attachments as src and cid.
+
+        Example:
+            >>> message = '''
+            ... <html>
+            ...     <body>
+            ...         <p>Check out this inline files:</p>
+            ...         <img src="image1.png">
+            ...         <img src="image2.jpeg">
+            ...         <img src="image3.jpg">
+            ...     </body>
+            ... </html>
+            ... '''
+            >>> inline_attachment_src_from_message(message)
+            ['image1.png', 'image2.jpeg', 'image3.jpg']
+        """
+        return list(INLINE_ATTACHMENT_SRC_PATTERN.finditer(message))
 
     @staticmethod
     def flags_from_message(message: str) -> list[str]:
