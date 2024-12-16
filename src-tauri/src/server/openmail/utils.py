@@ -4,7 +4,6 @@ Utility functions to be used in other modules of OpenMail.
 These functions provide helper methods for email-related operations,
 including domain extraction, date conversion, and other utility tasks.
 """
-from datetime import datetime
 
 def extract_domain(email: str) -> str:
     """
@@ -21,46 +20,6 @@ def extract_domain(email: str) -> str:
         'example'
     """
     return email.split('@')[1].split(".")[0]
-
-def convert_to_imap_date(date: str) -> str:
-    """
-    Convert a date to IMAP-compatible format as specified in RFC 5322.
-
-    Transforms a date from 'YYYY-MM-DD' to the IMAP standard 'DD-MMM-YYYY' format.
-
-    Args:
-        date (str): Date string in 'YYYY-MM-DD' format
-
-    Returns:
-        str: Date formatted as 'DD-MMM-YYYY'
-
-    References:
-        https://datatracker.ietf.org/doc/html/rfc5322#section-3.3
-
-    Example:
-        >>> convert_to_imap_date('2022-01-01')
-        '01-Jan-2022'
-    """
-    return datetime.strptime(date, '%Y-%m-%d').strftime('%d-%b-%Y')
-
-def convert_date_to_iso(date: str) -> str:
-    """
-    Convert email date string to ISO 8601 format.
-
-    Converts an email date string (RFC 2822 format) to a standardized
-    datetime string in 'YYYY-MM-DD HH:MM:SS' format.
-
-    Args:
-        date (str): Email date string in format like 'Wed, 15 Nov 2023 14:30:00 +0000'
-
-    Returns:
-        str: Formatted date string in 'YYYY-MM-DD HH:MM:SS' format
-
-    Example:
-        >>> convert_date_to_iso('Wed, 15 Nov 2023 14:30:00 +0000')
-        '2023-11-15 14:30:00'
-    """
-    return datetime.strptime(date, "%a, %d %b %Y %H:%M:%S %z").strftime("%Y-%m-%d %H:%M:%S")
 
 def truncate_text(content: str, max_length: int) -> str:
     """
