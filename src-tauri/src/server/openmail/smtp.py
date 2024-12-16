@@ -15,11 +15,11 @@ Primarily designed for use by the `OpenMail` class.
 Author: <berkaykayaforbusiness@outlook.com>
 License: MIT
 """
-import smtplib
 import base64
+import smtplib
 import copy
 
-from typing import override
+from typing import Generator, override
 from types import MappingProxyType
 
 from email.mime.image import MIMEImage
@@ -28,8 +28,10 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
 from .parser import MessageParser
+from .encoder import FileBase64Encoder
+from .converter import AttachmentConverter
 from .utils import extract_domain, choose_positive, make_size_human_readable
-from .types import EmailToSend
+from .types import EmailToSend, Attachment
 
 """
 Exceptions
@@ -59,6 +61,7 @@ SMTP_PORT = 587
 Custom consts
 """
 MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024 # 25MB
+MAX_INLINE_IMAGE_SIZE = 25 * 1024 * 1024 # 25MB
 DEFAULT_CONN_TIMEOUT = 30 # 30 seconds
 
 class SMTPManager(smtplib.SMTP):
@@ -207,38 +210,85 @@ class SMTPManager(smtplib.SMTP):
                 for key, value in email.metadata.items():
                     msg[key] = value
         except Exception as e:
-            raise SMTPManagerException(f"Error while adding metadata to headers: {str(e)}") from None
+            print(f"Error while adding metadata to headers: {str(e)} - Skipping metadata.")
 
-        # Attach inline images.
-        try:
-            body = email.body
-            inline_data = MessageParser.inline_attachment_data_and_cid_from_message(body)
-            if inline_data:
-                for match in inline_data:
-                    img_ext, img_data = match[0], match[1]
-                    # FIXME: What is this? is this even working?
-                    cid = f'image{match[2]}'
-                    body = body.replace(f'data:image/{img_ext};base64,{img_data}', f'cid:{cid}')
-                    image = base64.b64decode(img_data)
-                    image = MIMEImage(image, name=f"{cid}.{img_ext}")
-                    image.add_header('Content-ID', f'<{cid}>')
+        body = email.body
+
+        # Extract inline attachments.
+        inline_attachments: list[Attachment] = []
+        inline_attachment_srcs = MessageParser.inline_attachment_src_from_message(body)
+        for match in inline_attachment_srcs:
+            try:
+                inline_attachment = match.group(2)
+                if inline_attachment.startswith("data:"):
+                    inline_attachments.append(AttachmentConverter.from_base64(inline_attachment))
+                else:
+                    inline_attachments.append(AttachmentConverter.resolve_and_convert(inline_attachment))
+            except Exception as e:
+                print(f"Error while converting inline attachment to base64 data: `{str(e)}` - Skipping inline image...")
+
+        # Create MIME attachments from inline attachments
+        # and replace inline images with cid.
+        if inline_attachments:
+            generated_inline_attachment_cids = set()
+            for i, match in enumerate(reversed(inline_attachment_srcs)):
+                try:
+                    if inline_attachments[i].size > MAX_INLINE_IMAGE_SIZE:
+                        raise SMTPManagerException("Inline image size exceeds the maximum allowed size.")
+
+                    body = body[:match.start(2)] + f"cid:{inline_attachments[i].cid}" + body[match.end(2):]
+
+                    if inline_attachments[i].cid in generated_inline_attachment_cids:
+                        print("Duplicate inline images found. Skipping MIME attachment.")
+                        continue
+
+                    image = base64.b64decode(
+                        inline_attachments[i].data or FileBase64Encoder.read_file(inline_attachments[i].path)[3]
+                    )
+                    image = MIMEImage(image, name=f"{inline_attachments[i].cid}.{inline_attachments[i].type.split('/')[1]}")
+                    image.add_header('Content-Id', f'<{inline_attachments[i].cid}>')
+                    image.add_header('Content-Disposition', 'inline')
+                    image.add_header('Content-Type', f'{inline_attachments[i].type}')
+                    image.add_header('Content-Transfer-Encoding', 'base64')
                     msg.attach(image)
-        except Exception as e:
-            raise SMTPManagerException(f"Error while handling inline attachments: {str(e)}") from None
+                    generated_inline_attachment_cids.add(inline_attachments[i].cid)
+                except Exception as e:
+                    print(f"Error while replacing inline images with cid: `{str(e)}` - Skipping inline image...")
 
-        # Create message and attach attachments.
+            inline_attachment_srcs.clear()
+            inline_attachments.clear()
+
         try:
             msg.attach(MIMEText(body, 'html'))
-            if email.attachments:
-                for attachment in email.attachments:
-                    if attachment.size > MAX_ATTACHMENT_SIZE:
-                        raise SMTPManagerException(f"Attachment size `{make_size_human_readable(attachment.size)}` is too large. Max size is {make_size_human_readable(MAX_ATTACHMENT_SIZE)}")
-
-                    part = MIMEApplication(attachment.file.read())
-                    part.add_header('content-disposition', 'attachment', filename=attachment.filename)
-                    msg.attach(part)
         except Exception as e:
-            raise SMTPManagerException(f"Error while creating email message: {str(e)}") from None
+            raise SMTPManagerException(f"Error while creating email message body: {str(e)}") from e
+
+        # Attach attachments
+        if email.attachments:
+            generated_attachment_cids = set()
+            for attachment in email.attachments:
+                try:
+                    attachment = AttachmentConverter.resolve_and_convert(attachment)
+                    if attachment.cid in generated_attachment_cids:
+                        print("Duplicate attachments found. Skipping MIME attachment.")
+                        continue
+
+                    if attachment.size > MAX_ATTACHMENT_SIZE:
+                        print(f"Attachment size `{make_size_human_readable(attachment.size)}` is too large. Max size is {make_size_human_readable(MAX_ATTACHMENT_SIZE)} - Skipping MIME attachment.")
+                        continue
+
+                    part = MIMEApplication(base64.b64decode(
+                        attachment.data or FileBase64Encoder.read_file(attachment.path)[3]
+                    ))
+                    part.add_header('Content-Id', attachment.cid)
+                    part.add_header('Content-Disposition', 'attachment', filename=attachment.name)
+                    part.add_header('Content-Transfer-Encoding', 'base64')
+                    part.add_header('Content-Type', attachment.type)
+                    part.add_header('Content-Length', str(attachment.size))
+                    msg.attach(part)
+                    generated_attachment_cids.add(attachment.cid)
+                except Exception as e:
+                    print(f"Error while creating MIME attachment: `{str(e)}` - Skipping MIME attachment.")
 
         # Handle receipients.
         try:
@@ -261,7 +311,7 @@ class SMTPManager(smtplib.SMTP):
                 email.rcpt_options
             ) or (True, "Email sent successfully") # `sendmail` func returns empty dict on success.
         except Exception as e:
-            raise SMTPManagerException(f"Error, email prepared but could not be sent: {str(e)}") from None
+            raise SMTPManagerException(f"Error, email prepared but could not be sent: {str(e)}") from e
 
     def reply_email(self, email: EmailToSend) -> SMTPCommandResult:
         """
