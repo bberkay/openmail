@@ -2,11 +2,11 @@
 This module contains the main FastAPI application and its routes.
 TODO: improve docstring
 """
-
+from __future__ import annotations
 import os
 import concurrent.futures
 from urllib.parse import unquote
-from typing import Annotated, Optional
+from typing import Annotated, Callable, Generic, Optional, TypedDict, TypeVar
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from openmail import OpenMail
-from openmail.types import EmailToSend, Attachment
+from openmail.types import EmailSummary, EmailToSend, Attachment, EmailWithContent, Mailbox
 from openmail.imap import Folder, Mark
 
 from classes.file_system import FileSystem
@@ -28,11 +28,11 @@ from consts import TRUSTED_HOSTS
 from utils import is_email_valid, err_msg, parse_err_msg
 
 #################### SET UP #######################
-
 openmail_clients: dict[str, OpenMail] = {}
+failed_openmail_clients: list[str] = []
 secure_storage = SecureStorage()
 http_request_logger = HTTPRequestLogger()
-
+T = TypeVar("T")
 
 def create_and_idle_openmail_clients():
     accounts: list[Account] = secure_storage.get_accounts(
@@ -42,23 +42,27 @@ def create_and_idle_openmail_clients():
         return
 
     for account in accounts:
-        openmail_clients[account["email_address"]] = OpenMail()
-        status, _ = openmail_clients[account["email_address"]].connect(
-            account["email_address"], account["password"]
-        )
-        print(f"Connected to {account['email_address']}")
-        """if status:
-            openmail_clients[account["email_address"]].imap.idle()"""
-
+        try:
+            openmail_clients[account.email_address] = OpenMail()
+            status, _ = openmail_clients[account.email_address].connect(
+                account.email_address, account.password
+            )
+            print(f"Connected to {account.email_address}")
+            """if status:
+                openmail_clients[account["email_address"]].imap.idle()"""
+        except Exception as e:
+            openmail_clients.pop(account.email_address)
+            failed_openmail_clients.append(account.email_address)
+            print(f"Failed to connect to {account.email_address}: {e}")
 
 def reconnect_and_idle_logged_out_openmail_clients():
     for email_address, openmail_client in openmail_clients.items():
         if not openmail_client.is_logged_in():
-            account: Account = secure_storage.get_accounts(
+            accounts = secure_storage.get_accounts(
                 [email_address], AccountColumn.PASSWORD
             )
-            if account:
-                status = openmail_client.connect(email_address, account[0]["password"])
+            if accounts:
+                status = openmail_client.connect(email_address, accounts[0].password)
                 print(f"Reconnected to {email_address}")
                 if status:
                     openmail_client.imap.idle()
@@ -89,12 +93,10 @@ app.add_middleware(
 )
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
 
-
-class Response(BaseModel):
+class Response(BaseModel, Generic[T]):
     success: bool
     message: str
-    data: dict | list | None = None
-
+    data: Optional[T] = None
 
 @app.middleware("http")
 async def catch_request_for_logging(request: Request, call_next):
@@ -106,7 +108,6 @@ async def catch_request_for_logging(request: Request, call_next):
 
     response = await call_next(request)
     response._body = await get_response_body(response)
-    print("Response Body: ", response._body)
     http_request_logger.request(request, response)
     return FastAPIResponse(
         content=parse_err_msg(response._body)[0],
@@ -128,7 +129,7 @@ async def hello() -> Response:
 def recreate_whole_universe() -> Response:
     try:
         FileSystem().reset()
-        secure_storage.delete_accounts()
+        secure_storage.remove_accounts()
         return Response(success=True, message="You asked and the whole universe completely recreated!")
     except Exception as e:
         return Response(success=False, message=err_msg("Some forces prevented you from doing this.", str(e)))
@@ -147,11 +148,39 @@ def reset_file_system() -> Response:
 
 ################ ACCOUNT OPERATIONS #################
 
+class GetEmailAccountsData(BaseModel):
+    connected: list[Account]
+    failed: list[Account]
+
+@app.get("/get-email-accounts")
+def get_email_accounts() -> Response[GetEmailAccountsData]:
+    try:
+        all_accounts = secure_storage.get_accounts(None, [AccountColumn.FULLNAME, AccountColumn.EMAIL_ADDRESS])
+        email_to_account = {account.email_address: account for account in all_accounts}
+
+        connected_accounts = []
+        if openmail_clients:
+            connected_accounts = [email_to_account[email_address] for email_address in openmail_clients.keys()]
+
+        failed_accounts = []
+        if failed_openmail_clients:
+            failed_accounts = [email_to_account[email_address] for email_address in failed_openmail_clients]
+
+        return Response[GetEmailAccountsData](
+            success=True,
+            message="Email accounts fetched successfully",
+            data=GetEmailAccountsData(
+                connected=connected_accounts,
+                failed=failed_accounts
+            )
+        )
+    except Exception as e:
+        return Response(success=False, message=err_msg("Failed to fetch email accounts.", str(e)))
+
 class AddEmailAccountFormData(BaseModel):
     email_address: str
     password: str
     fullname: Optional[str] = None
-
 
 @app.post("/add-email-account")
 def add_email_account(
@@ -161,6 +190,9 @@ def add_email_account(
         return Response(success=False, message="Invalid email address format")
 
     try:
+        if secure_storage.get_accounts([form_data.email_address]):
+            return Response(success=False, message="Email address already exists")
+
         openmail_client = OpenMail()
         status, msg = openmail_client.connect(
             form_data.email_address,
@@ -168,9 +200,9 @@ def add_email_account(
         )
 
         if not status:
-            return Response(success=status, message=err_msg("Failed to add email.", msg))
+            return Response(success=status, message=err_msg("Could not connect to email.", msg))
 
-        secure_storage.insert_account(Account(
+        secure_storage.add_account(Account(
             email_address=form_data.email_address,
             password=form_data.password,
             fullname=form_data.fullname
@@ -184,29 +216,54 @@ def add_email_account(
     except Exception as e:
         return Response(success=False, message=err_msg("Failed to add email.", str(e)))
 
+class EditEmailAccountRequest(BaseModel):
+    email_address: str
+    password: str
+    fullname: Optional[str] = None
 
-@app.get("/get-email-accounts")
-def get_email_accounts() -> Response:
+@app.post("/edit-email-account")
+def edit_email_account(
+    form_data: Annotated[EditEmailAccountRequest, Form()]
+) -> Response:
+    if not is_email_valid(form_data.email_address):
+        return Response(success=False, message="Invalid email address format")
+
     try:
+        if not secure_storage.get_accounts([form_data.email_address]):
+            return Response(success=False, message="Email address does not exists")
+
+        openmail_client = OpenMail()
+        status, msg = openmail_client.connect(
+            form_data.email_address,
+            form_data.password
+        )
+
+        if not status:
+            return Response(success=status, message=err_msg("Could not connect to email.", msg))
+
+        secure_storage.edit_account(Account(
+            email_address=form_data.email_address,
+            password=form_data.password,
+            fullname=form_data.fullname
+        ))
+
+        openmail_clients[form_data.email_address] = openmail_client
+        failed_openmail_clients.pop(form_data.email_address)
         return Response(
             success=True,
-            message="Email accounts fetched successfully",
-            data=secure_storage.get_accounts(
-                None, [AccountColumn.FULLNAME, AccountColumn.EMAIL_ADDRESS]
-            ),
+            message="Email added"
         )
     except Exception as e:
-        return Response(success=False, message=err_msg("Failed to fetch email accounts.", str(e)))
+        return Response(success=False, message=err_msg("Failed to add email.", str(e)))
 
 
 class DeleteEmailAccountRequest(BaseModel):
     account: str
 
-
 @app.post("/delete-email-account")
 def delete_email_account(request_body: DeleteEmailAccountRequest) -> Response:
     try:
-        secure_storage.delete_account(request_body.account)
+        secure_storage.remove_account(request_body.account)
         return Response(success=True, message="Account deleted successfully")
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while deleting account.", str(e)))
@@ -215,7 +272,7 @@ def delete_email_account(request_body: DeleteEmailAccountRequest) -> Response:
 @app.post("/delete-email-accounts")
 def delete_email_accounts() -> Response:
     try:
-        secure_storage.delete_accounts()
+        secure_storage.remove_accounts()
         return Response(success=True, message="Accounts deleted successfully")
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while deleting accounts.", str(e)))
@@ -224,9 +281,18 @@ def delete_email_accounts() -> Response:
 
 
 ################ EMAIL OPERATIONS ###################
+class OpenMailTaskResult(BaseModel, Generic[T]):
+    email_address: str
+    data: T
 
-def run_openmail_func_concurrently(accounts: list, func, **params) -> list[dict]:
-    result = []
+type OpenMailTaskResults[T] = list[OpenMailTaskResult[T]]
+
+def execute_openmail_task_concurrently[T](
+    accounts: list[str],
+    func: Callable[..., T],
+    **params
+) -> OpenMailTaskResults[T]:
+    results: OpenMailTaskResults[T] = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_emails = {
             executor.submit(func, client, **params): email_address
@@ -237,10 +303,13 @@ def run_openmail_func_concurrently(accounts: list, func, **params) -> list[dict]
         for future in concurrent.futures.as_completed(future_to_emails):
             email_address = future_to_emails[future]
             future = future.result()
-            result.append({"email_address": email_address, "data": future})
+            results.append(OpenMailTaskResult(
+                email_address=email_address,
+                data= future
+            ))
             print(f"Result for {email_address}: {future}")
 
-    return result
+        return results
 
 def check_if_email_accounts_are_connected(accounts: str) -> Response | bool:
     accounts = accounts.split(",")
@@ -253,7 +322,6 @@ def check_if_email_accounts_are_connected(accounts: str) -> Response | bool:
 
     return True
 
-
 @app.get("/get-emails/{accounts}")
 async def get_emails(
     accounts: str,
@@ -261,23 +329,23 @@ async def get_emails(
     search: Optional[str] = "ALL",
     offset_start: Optional[int] = 0,
     offset_end: Optional[int] = 10,
-) -> Response:
+) -> Response[OpenMailTaskResults[Mailbox]]:
     try:
         response = check_if_email_accounts_are_connected(accounts)
         if not response:
             return response
 
-        run_openmail_func_concurrently(
+        execute_openmail_task_concurrently(
             accounts.split(","),
             lambda client, **params: client.imap.search_emails(**params),
             folder=folder,
             search=search,
         )
 
-        return Response(
+        return Response[OpenMailTaskResults[Mailbox]](
             success=True,
             message="Emails fetched successfully.",
-            data=run_openmail_func_concurrently(
+            data=execute_openmail_task_concurrently[Mailbox](
                 accounts.split(","),
                 lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
@@ -287,22 +355,21 @@ async def get_emails(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching emails.", str(e)))
 
-
 @app.get("/paginate-emails/{accounts}/{offset_start}/{offset_end}")
 async def paginate_emails(
     accounts: str,
     offset_start: int,
     offset_end: int,
-) -> Response:
+) -> Response[OpenMailTaskResults[Mailbox]]:
     try:
         response = check_if_email_accounts_are_connected(accounts)
         if not response:
             return response
 
-        return Response(
+        return Response[OpenMailTaskResults[Mailbox]](
             success=True,
             message="Emails paginated successfully.",
-            data=run_openmail_func_concurrently(
+            data=execute_openmail_task_concurrently[Mailbox](
                 accounts.split(","),
                 lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
@@ -312,20 +379,19 @@ async def paginate_emails(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while paginating emails.", str(e)))
 
-
 @app.get("/get-folders/{accounts}")
 async def get_folders(
     accounts: str,
-) -> Response:
+) -> Response[OpenMailTaskResults[list[str]]]:
     try:
         response = check_if_email_accounts_are_connected(accounts)
         if not response:
             return response
 
-        return Response(
+        return Response[OpenMailTaskResults[list[str]]](
             success=True,
             message="Folders fetched successfully.",
-            data=run_openmail_func_concurrently(
+            data=execute_openmail_task_concurrently[list[str]](
                 accounts.split(","),
                 lambda client: client.imap.get_folders(),
             ),
@@ -333,22 +399,24 @@ async def get_folders(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching folders.", str(e)))
 
-
 @app.get("/get-email-content/{account}/{folder}/{uid}")
-def get_email_content(account: str, folder: str, uid: str) -> Response:
+def get_email_content(
+    account: str,
+    folder: str,
+    uid: str
+) -> Response[EmailWithContent]:
     try:
         response = check_if_email_accounts_are_connected(account)
         if not response:
             return response
 
-        return Response(
+        return Response[EmailWithContent](
             success=True,
             message="Email content fetched successfully.",
             data=openmail_clients[account].imap.get_email_content(uid, unquote(folder)),
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
-
 
 class SendEmailFormData(BaseModel):
     sender: str | tuple[str, str]  # (sender_name, sender_email)

@@ -1,6 +1,7 @@
 """
 This module contains the types used in the OpenMail module.
 """
+from __future__ import annotations
 from typing import Optional, Sequence, Tuple
 from dataclasses import dataclass, field
 
@@ -41,7 +42,7 @@ class EmailSummary():
     subject: str
     body_short: str
     flags: Optional[list[str]] = field(default_factory=list)
-    attachments: Optional[list[str]] = field(default_factory=list)
+    attachments: Optional[list[Attachment]] = field(default_factory=list)
 
 @dataclass
 class Attachment():
@@ -85,7 +86,7 @@ class EmailToSend():
     cc: Optional[str] = ""
     bcc: Optional[str] = ""
     metadata: Optional[dict] = field(default_factory=dict)
-    attachments: Optional[list[Attachment | str]] = field(default_factory=list)
+    attachments: Optional[list[Attachment]] = field(default_factory=list)
     mail_options: Optional[Sequence[str]] = field(default_factory=list)
     rcpt_options: Optional[Sequence[str]] = field(default_factory=list)
 
