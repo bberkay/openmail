@@ -1,3 +1,5 @@
+import type { Account, EmailWithContent, Mailbox } from "$lib/types";
+
 export enum GetRoutes {
     HELLO = "/hello",
     GET_EMAIL_ACCOUNTS = "/get-email-accounts",
@@ -9,6 +11,7 @@ export enum GetRoutes {
 
 export enum PostRoutes {
     ADD_EMAIL_ACCOUNT = "/add-email-account",
+    EDIT_EMAIL_ACCOUNT = "/edit-email-account",
     DELETE_EMAIL_ACCOUNT = "/delete-email-account",
     DELETE_EMAIL_ACCOUNTS = "/delete-email-accounts",
     SEND_EMAIL = "/send-email",
@@ -27,43 +30,13 @@ export enum PostRoutes {
     REFRESH_WHOLE_UNIVERSE = "/refresh-whole-universe",
 }
 
-interface GetQueryParams {
-    [GetRoutes.HELLO]: {};
-    [GetRoutes.GET_EMAIL_ACCOUNTS]: {};
-    [GetRoutes.GET_EMAILS]: {
-        pathParams: {
-            accounts: string
-        }
-        queryParams?: {
-            folder?: string;
-            search?: string;
-            offset_start?: number;
-            offset_end?: number;
-        }
-    };
-    [GetRoutes.PAGINATE_EMAILS]: {
-        pathParams: {
-            accounts: string
-            offset_start: number;
-            offset_end: number;
-        }
-    };
-    [GetRoutes.GET_FOLDERS]: {
-        pathParams: {
-            accounts: string;
-        }
-    };
-    [GetRoutes.GET_EMAIL_CONTENT]: {
-        pathParams: {
-            accounts: string;
-            folder: string;
-            uid: string;
-        }
-    };
-}
-
 interface PostBody {
     [PostRoutes.ADD_EMAIL_ACCOUNT]: {
+        email: string
+        password: string
+        fullname: string
+    };
+    [PostRoutes.EDIT_EMAIL_ACCOUNT]: {
         email: string
         password: string
         fullname: string
@@ -136,10 +109,71 @@ interface PostBody {
     [PostRoutes.REFRESH_WHOLE_UNIVERSE]: {};
 }
 
-export type Response = {
+interface GetQueryParams {
+    [GetRoutes.HELLO]: {};
+    [GetRoutes.GET_EMAIL_ACCOUNTS]: {};
+    [GetRoutes.GET_EMAILS]: {
+        pathParams: {
+            accounts: string
+        }
+        queryParams?: {
+            folder?: string;
+            search?: string;
+            offset_start?: number;
+            offset_end?: number;
+        }
+    };
+    [GetRoutes.PAGINATE_EMAILS]: {
+        pathParams: {
+            accounts: string
+            offset_start: number;
+            offset_end: number;
+        }
+    };
+    [GetRoutes.GET_FOLDERS]: {
+        pathParams: {
+            accounts: string;
+        }
+    };
+    [GetRoutes.GET_EMAIL_CONTENT]: {
+        pathParams: {
+            accounts: string;
+            folder: string;
+            uid: string;
+        }
+    };
+}
+
+interface GetQueryResponse {
+    [GetRoutes.HELLO]: {},
+    [GetRoutes.GET_EMAIL_ACCOUNTS]: {
+        connected: Account[];
+        failed: Account[];
+    },
+    [GetRoutes.GET_EMAILS]: {
+        email_address: string;
+        data: Mailbox;
+    }[],
+    [GetRoutes.PAGINATE_EMAILS]: {
+        email_address: string;
+        data: Mailbox;
+    }[],
+    [GetRoutes.GET_FOLDERS]: {
+        email_address: string;
+        data: string[];
+    }[],
+    [GetRoutes.GET_EMAIL_CONTENT]: EmailWithContent
+}
+
+export type GetResponse<T extends GetRoutes> = {
     success: boolean;
     message: string;
-    data: any;
+    data?: GetQueryResponse[T];
+}
+
+export type PostResponse = {
+    success: boolean;
+    message: string;
 }
 
 export class ApiService {
@@ -155,7 +189,7 @@ export class ApiService {
         url: string,
         endpoint: T,
         params?: GetQueryParams[T]
-    ): Promise<Response> {
+    ): Promise<GetResponse<T>> {
         const createQueryString = (params: GetQueryParams[T]) => {
             let queryString = "";
 
@@ -179,7 +213,7 @@ export class ApiService {
         url: string,
         endpoint: T,
         body: PostBody[T] | FormData
-    ): Promise<Response> {
+    ): Promise<PostResponse> {
         const response = await fetch(url + endpoint, {
             method: "POST",
             headers: body instanceof FormData

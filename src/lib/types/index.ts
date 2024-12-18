@@ -1,11 +1,11 @@
 export interface Account {
-    fullname: string;
     email_address: string;
+    fullname?: string;
 }
 
 export interface EmailSummary {
     uid: string;
-    sender: string;
+    sender: string | [string, string];
     receiver: string;
     date: string;
     subject: string;
@@ -30,33 +30,61 @@ export interface EmailWithContent {
 }
 
 export interface SearchCriteria {
-    senders: string[] | null;
-    receivers: string[] | null;
-    cc: string[] | null;
-    bcc: string[] | null;
-    subject: string | null;
-    since: string | null;
-    before: string | null;
-    included_flags: string[] | null;
-    excluded_flags: string[] | null;
-    smaller_than: number | null;
-    larger_than: number | null;
-    include: string | null;
-    exclude: string | null;
-    has_attachments: boolean;
+    senders?: string[];
+    receivers?: string[];
+    cc?: string[];
+    bcc?: string[];
+    subject?: string;
+    since?: string;
+    before?: string;
+    included_flags?: string[];
+    excluded_flags?: string[];
+    smaller_than?: number;
+    larger_than?: number;
+    include?: string;
+    exclude?: string;
+    has_attachments?: boolean;
 }
 
 export interface Attachment {
-    name: string;
-    data: string;
-    size: string;
-    type: string;
-    cid: string | null;
+    path?: string;
+    name?: string;
+    data?: string;
+    size?: string;
+    type?: string;
+    cid?: string | null;
+}
+
+export interface EmailToSend {
+    sender: string | [string, string];
+    receiver: string;
+    //date: string;
+    subject: string;
+    body: string;
+    uid?: string;
+    cc?: string;
+    bcc?: string;
+    metadata?: Record<string, string>;
+    attachments?: Attachment[];
+    mail_options?: string[];
+    rcpt_options?: string[];
+}
+
+export interface Mailbox {
+    folder: string;
+    emails: EmailSummary[];
+    total: number;
+}
+
+export interface Flags {
+    uid: string;
+    flags: string[];
 }
 
 export interface SharedStore {
     server: string;
     accounts: Account[];
+    failedAccounts: Account[];
     mailboxes: any;
     folders: any;
     selectedAccounts: Account[];
