@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 import keyring
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from pydantic import BaseModel
 
 from utils import safe_json_loads
 from consts import APP_NAME
@@ -54,10 +55,10 @@ class AccountColumn(str, Enum):
     def __str__(self) -> str:
         return self.value
 
-class Account(TypedDict):
+class Account(BaseModel):
     email_address: str
-    password: str
-    fullname: Optional[str]
+    password: Optional[str] = None
+    fullname: Optional[str] = None
 
 """
 Constants
@@ -150,7 +151,7 @@ class SecureStorage:
         else:
             columns = ACCOUNT_COLUMN_LIST
 
-        accounts: list[Account] = self._get_key_value(SecureStorageKey.ACCOUNTS)
+        accounts = self._get_key_value(SecureStorageKey.ACCOUNTS)
         columns = [column.value if isinstance(column, AccountColumn) else column for column in columns]
 
         filtered_accounts = []
@@ -158,29 +159,50 @@ class SecureStorage:
             if emails and account["email_address"] not in emails:
                 continue
 
-            filtered_accounts.append({column: account[column] for column in columns})
+            filtered_accounts.append(
+                Account.model_validate({column: account[column] for column in columns})
+            )
 
         return filtered_accounts
 
-    def insert_account(self, account: Account) -> None:
+    def add_account(self, account: Account) -> None:
         accounts = self.get_accounts()
         if not accounts:
             accounts = []
 
-        accounts.append(account)
-        self._add_key(SecureStorageKey.ACCOUNTS, accounts)
+        self._add_key(
+            SecureStorageKey.ACCOUNTS,
+            [account.model_dump() for account in accounts].append(account.model_dump())
+        )
 
-    def delete_account(self, email: str) -> None:
+    def edit_account(self, account: Account) -> None:
+        accounts = self.get_accounts()
+        if not accounts:
+            return
+
+        i = 0
+        while i < len(accounts):
+            if accounts[i].email_address == account.email_address:
+                accounts[i] = account
+                break
+            i += 1
+
+        self._add_key(
+            SecureStorageKey.ACCOUNTS,
+            [account.model_dump() for account in accounts].append(account.model_dump())
+        )
+
+    def remove_account(self, email: str) -> None:
         accounts = self.get_accounts()
         if not accounts:
             return
 
         self._add_key(
             SecureStorageKey.ACCOUNTS,
-            [account for account in accounts if account["email_address"] != email],
+            [account.model_dump() for account in accounts if account.email_address!= email]
         )
 
-    def delete_accounts(self) -> None:
+    def remove_accounts(self) -> None:
         keyring.delete_password(APP_NAME, SecureStorageKey.ACCOUNTS)
         self._cache.delete(SecureStorageKey.ACCOUNTS)
         self._create_accounts() # Create empty list
