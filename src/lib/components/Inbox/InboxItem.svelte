@@ -1,25 +1,25 @@
 <script lang="ts">
-    import { sharedStore } from "$lib/stores/shared.svelte";
-    import type { EmailWithContent, EmailSummary } from "$lib/types";
-    import { ApiService, GetRoutes, PostRoutes, type Response } from "$lib/services/ApiService";
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import type { EmailSummary } from "$lib/types";
+    import { ApiService, GetRoutes } from "$lib/services/ApiService";
 
     let { owner, email }: { owner: string; email: EmailSummary } = $props();
 
     async function getEmailContent(){
-        const response: Response = await ApiService.get(
-            sharedStore.server,
+        const response = await ApiService.get(
+            SharedStore.server,
             GetRoutes.GET_EMAIL_CONTENT,
             {
                 pathParams: {
                     accounts: owner,
-                    folder: encodeURIComponent(sharedStore.selectedFolder),
+                    folder: encodeURIComponent(SharedStore.selectedFolder),
                     uid: email.uid
                 }
             }
         );
 
-        if (response.success) {
-            sharedStore.selectedEmail = response.data as EmailWithContent;
+        if (response.success && response.data) {
+            SharedStore.shownEmail = response.data;
         }
     }
 </script>

@@ -1,19 +1,19 @@
-import type { Account, EmailWithContent, Mailbox } from "$lib/types";
+import type { Account, EmailWithContent, Mailbox, OpenMailTaskResults } from "$lib/types";
 
 export enum GetRoutes {
     HELLO = "/hello",
-    GET_EMAIL_ACCOUNTS = "/get-email-accounts",
-    GET_EMAILS = "/get-emails",
-    PAGINATE_EMAILS = "/paginate-emails",
+    GET_ACCOUNTS = "/get-accounts",
+    GET_MAILBOXES = "/get-mailboxes",
+    PAGINATE_MAILBOXES = "/paginate-mailboxes",
     GET_FOLDERS = "/get-folders",
     GET_EMAIL_CONTENT = "/get-email-content",
 }
 
 export enum PostRoutes {
-    ADD_EMAIL_ACCOUNT = "/add-email-account",
-    EDIT_EMAIL_ACCOUNT = "/edit-email-account",
-    DELETE_EMAIL_ACCOUNT = "/delete-email-account",
-    DELETE_EMAIL_ACCOUNTS = "/delete-email-accounts",
+    ADD_ACCOUNT = "/add-account",
+    EDIT_ACCOUNT = "/edit-account",
+    REMOVE_ACCOUNT = "/remove-account",
+    REMOVE_ACCOUNTS = "/remove-accounts",
     SEND_EMAIL = "/send-email",
     REPLY_EMAIL = "/reply-email",
     FORWARD_EMAIL = "/forward-email",
@@ -31,20 +31,20 @@ export enum PostRoutes {
 }
 
 interface PostBody {
-    [PostRoutes.ADD_EMAIL_ACCOUNT]: {
+    [PostRoutes.ADD_ACCOUNT]: {
         email: string
         password: string
         fullname: string
     };
-    [PostRoutes.EDIT_EMAIL_ACCOUNT]: {
+    [PostRoutes.EDIT_ACCOUNT]: {
         email: string
         password: string
         fullname: string
     };
-    [PostRoutes.DELETE_EMAIL_ACCOUNT]: {
+    [PostRoutes.REMOVE_ACCOUNT]: {
         account: string
     };
-    [PostRoutes.DELETE_EMAIL_ACCOUNTS]: {};
+    [PostRoutes.REMOVE_ACCOUNTS]: {};
     [PostRoutes.SEND_EMAIL]: {
         sender: [string, string] | string
         receiver: string
@@ -111,8 +111,8 @@ interface PostBody {
 
 interface GetQueryParams {
     [GetRoutes.HELLO]: {};
-    [GetRoutes.GET_EMAIL_ACCOUNTS]: {};
-    [GetRoutes.GET_EMAILS]: {
+    [GetRoutes.GET_ACCOUNTS]: {};
+    [GetRoutes.GET_MAILBOXES]: {
         pathParams: {
             accounts: string
         }
@@ -123,7 +123,7 @@ interface GetQueryParams {
             offset_end?: number;
         }
     };
-    [GetRoutes.PAGINATE_EMAILS]: {
+    [GetRoutes.PAGINATE_MAILBOXES]: {
         pathParams: {
             accounts: string
             offset_start: number;
@@ -144,24 +144,15 @@ interface GetQueryParams {
     };
 }
 
-interface GetQueryResponse {
+export interface GetQueryResponse {
     [GetRoutes.HELLO]: {},
-    [GetRoutes.GET_EMAIL_ACCOUNTS]: {
+    [GetRoutes.GET_ACCOUNTS]: {
         connected: Account[];
         failed: Account[];
     },
-    [GetRoutes.GET_EMAILS]: {
-        email_address: string;
-        data: Mailbox;
-    }[],
-    [GetRoutes.PAGINATE_EMAILS]: {
-        email_address: string;
-        data: Mailbox;
-    }[],
-    [GetRoutes.GET_FOLDERS]: {
-        email_address: string;
-        data: string[];
-    }[],
+    [GetRoutes.GET_MAILBOXES]: OpenMailTaskResults<Mailbox>,
+    [GetRoutes.PAGINATE_MAILBOXES]: OpenMailTaskResults<Mailbox>,
+    [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>
     [GetRoutes.GET_EMAIL_CONTENT]: EmailWithContent
 }
 

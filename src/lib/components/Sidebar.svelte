@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { sharedStore } from "$lib/stores/shared.svelte";
+    import { SharedStore } from "$lib/stores/shared.svelte";
 
     onMount(() => {
     });

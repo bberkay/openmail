@@ -1,3 +1,7 @@
+export enum TauriCommand {
+    GET_SERVER_URL = "get_server_url",
+}
+
 export interface Account {
     email_address: string;
     fullname?: string;
@@ -70,6 +74,13 @@ export interface EmailToSend {
     rcpt_options?: string[];
 }
 
+export interface OpenMailTaskResult<T> {
+    email_address: string;
+    result: T;
+}
+
+export type OpenMailTaskResults<T> = OpenMailTaskResult<T>[];
+
 export interface Mailbox {
     folder: string;
     emails: EmailSummary[];
@@ -79,20 +90,4 @@ export interface Mailbox {
 export interface Flags {
     uid: string;
     flags: string[];
-}
-
-export interface SharedStore {
-    server: string;
-    accounts: Account[];
-    failedAccounts: Account[];
-    mailboxes: any;
-    folders: any;
-    selectedAccounts: Account[];
-    selectedFolder: string;
-    selectedEmail: EmailWithContent | null;
-    currentOffset: number;
-}
-
-export enum TauriCommand {
-    GET_SERVER_URL = "get_server_url",
 }

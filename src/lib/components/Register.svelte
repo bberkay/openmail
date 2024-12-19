@@ -1,11 +1,15 @@
 <script lang="ts">
     import { onMount, mount, unmount } from "svelte";
     import Loader from "$lib/components/Loader.svelte";
-    import { sharedStore } from "$lib/stores/shared.svelte";
+    import { SharedStore } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
-    import { ApiService, GetRoutes, PostRoutes, type Response } from "$lib/services/ApiService";
+    import { ApiService, GetRoutes, PostRoutes, type GetResponse } from "$lib/services/ApiService";
 
-    let currentEditingAccount: Account | null = $state(sharedStore.failedAccounts ? sharedStore.failedAccounts[0] : null);
+    let currentEditingAccount: Account | null = $state(
+        SharedStore.failedAccounts
+            ? SharedStore.failedAccounts[0]
+            : null
+    );
 
     async function addAccount(event: Event) {
         event.preventDefault();
@@ -18,14 +22,14 @@
         addAccountBtn.textContent = 'Adding Account...';
 
         const formData = new FormData(form);
-        const response: Response = await ApiService.post(
-            sharedStore.server,
-            PostRoutes.ADD_EMAIL_ACCOUNT,
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.ADD_ACCOUNT,
             formData
         );
 
         if(response.success){
-            sharedStore.accounts.push({
+            SharedStore.accounts.push({
                 email_address: formData.get('email_address') as string,
                 fullname: formData.get('fullname') as string
             });
@@ -49,27 +53,28 @@
         editAccountBtn.textContent = 'Editing Account...';
 
         const formData = new FormData(form);
-        const response: Response = await ApiService.post(
-            sharedStore.server,
-            PostRoutes.EDIT_EMAIL_ACCOUNT,
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.EDIT_ACCOUNT,
             formData
         );
 
         if(response.success){
-            sharedStore.accounts.push({
+            SharedStore.accounts.push({
                 email_address: currentEditingAccount.email_address,
                 fullname: formData.get('fullname') as string
             });
 
-            sharedStore.failedAccounts = sharedStore.failedAccounts.filter(
+            SharedStore.failedAccounts = SharedStore.failedAccounts.filter(
                 (item) => item.email_address !== currentEditingAccount!.email_address
             );
-            if(sharedStore.failedAccounts.length > 0){
-                currentEditingAccount = sharedStore.failedAccounts[0];
+
+            if(SharedStore.failedAccounts.length > 0){
+                currentEditingAccount = SharedStore.failedAccounts[0];
             }
         } else {
-            if (sharedStore.failedAccounts.find((item) => item.email_address !== currentEditingAccount!.email_address)) {
-                sharedStore.failedAccounts.push({
+            if (SharedStore.failedAccounts.find((item) => item.email_address !== currentEditingAccount!.email_address)) {
+                SharedStore.failedAccounts.push({
                     email_address: currentEditingAccount.email_address,
                     fullname: formData.get('fullname') as string
                 });
@@ -81,7 +86,7 @@
         form.reset();
     }
 
-    async function deleteAccount(event: Event) {
+    async function removeAccount(event: Event) {
         event.preventDefault();
 
         const button = event.target as HTMLButtonElement;
@@ -89,58 +94,56 @@
         button.disabled = true;
 
         const account = button.getAttribute('data-email-address')!
-        const response: Response = await ApiService.post(
-            sharedStore.server,
-            PostRoutes.DELETE_EMAIL_ACCOUNT,
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.REMOVE_ACCOUNT,
             {
                 account: account
             }
         );
 
         if (response.success) {
-            sharedStore.accounts = sharedStore.accounts.filter((item) => item.email_address !== account);
+            SharedStore.accounts = SharedStore.accounts.filter((item) => item.email_address !== account);
         } else {
             button.disabled = false;
             button.textContent = 'Delete Account';
         }
     }
 
-    async function getEmailsOfAllAccounts() {
-        const response: Response = await ApiService.get(
-            sharedStore.server,
-            GetRoutes.GET_EMAILS,
+    async function getMailboxesOfAllAccounts() {
+        const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_MAILBOXES,
             {
                 pathParams: {
-                    accounts: sharedStore.accounts
+                    accounts: SharedStore.accounts
                         .map((account) => account.email_address)
                         .join(",")
                 }
             }
         );
 
-        if (response.success) {
-            console.log("emails response", response);
-            sharedStore.mailboxes = response.data;
-            sharedStore.selectedFolder = "Inbox";
-            sharedStore.currentOffset = 10;
+        if (response.success && response.data) {
+            SharedStore.mailboxes = response.data;
+            SharedStore.selectedFolder = response.data[0].result.folder;
         }
     }
 
     async function getFoldersOfAllAccounts() {
-        const response: Response = await ApiService.get(
-            sharedStore.server,
+        const response = await ApiService.get(
+            SharedStore.server,
             GetRoutes.GET_FOLDERS,
             {
                 pathParams: {
-                    accounts: sharedStore.accounts
+                    accounts: SharedStore.accounts
                         .map((account) => account.email_address)
                         .join(","),
                 }
             }
-        )
+        );
 
-        if (response.success) {
-            sharedStore.folders = response.data;
+        if (response.success && response.data) {
+            SharedStore.folders = response.data;
         }
     }
 
@@ -156,7 +159,7 @@
         });
 
         await getFoldersOfAllAccounts();
-        await getEmailsOfAllAccounts();
+        await getMailboxesOfAllAccounts();
 
         continueToInboxBtn.disabled = false;
         unmount(loader);
@@ -167,13 +170,13 @@
 <section>
     {#if currentEditingAccount}
         <h3>Updating accounts</h3>
-        <small>There were {sharedStore.failedAccounts.length} accounts that failed to connect.</small>
+        <small>There were {SharedStore.failedAccounts.length} accounts that failed to connect.</small>
         <ul>
-            {#each sharedStore.failedAccounts as account}
+            {#each SharedStore.failedAccounts as account}
                 <li>
                     <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
                     <button style="margin-right: 5px;" onclick={() => { currentEditingAccount = account }}>Edit</button>
-                    <button onclick={deleteAccount} data-email-address={account.email_address}>Remove</button>
+                    <button onclick={removeAccount} data-email-address={account.email_address}>Remove</button>
                 </li>
             {/each}
         </ul>
@@ -195,7 +198,7 @@
                 <small style="font-style:italic;margin-top:5px;">Enter your fullname to be displayed in the email.</small>
             </div>
             <button type="submit" id="edit-account-btn">Edit Account</button>
-            <button onclick={deleteAccount} data-email-address={currentEditingAccount.email_address}>Remove</button>
+            <button onclick={removeAccount} data-email-address={currentEditingAccount.email_address}>Remove</button>
         </form>
     {:else}
         <h3>Add Account</h3>
@@ -218,14 +221,14 @@
         </form>
     {/if}
 
-    {#if sharedStore.accounts && sharedStore.accounts.length > 0}
+    {#if SharedStore.accounts && SharedStore.accounts.length > 0}
         <h3>Current Accounts</h3>
         <ul>
-            {#each sharedStore.accounts as account}
+            {#each SharedStore.accounts as account}
                 <li>
                     <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
                     <button style="margin-right: 5px;" onclick={() => { currentEditingAccount = account }}>Edit</button>
-                    <button onclick={deleteAccount} data-email-address={account.email_address}>Remove</button>
+                    <button onclick={removeAccount} data-email-address={account.email_address}>Remove</button>
                 </li>
             {/each}
         </ul>

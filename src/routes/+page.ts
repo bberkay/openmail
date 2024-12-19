@@ -1,9 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { TauriCommand } from "$lib/types";
-import { sharedStore } from "$lib/stores/shared.svelte";
+import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from './$types';
-import { ApiService, GetRoutes, type Response } from "$lib/services/ApiService";
+import { ApiService, GetRoutes, type GetResponse } from "$lib/services/ApiService";
 
 /**
  * Constants
@@ -15,12 +15,13 @@ const SERVER_CONNECTION_TRY_SLEEP = 1000 * 2; // 2 seconds
  * and set them in the shared store
  */
 async function loadAccounts() {
-    if(!sharedStore.server)
+    if(!SharedStore.server)
         return;
 
-    const response: Response = await ApiService.get(sharedStore.server, GetRoutes.GET_EMAIL_ACCOUNTS);
-    sharedStore.accounts = response.data["connected"];
-    sharedStore.failedAccounts = response.data["failed"];
+    const response = await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS)
+    if (response.success && response.data) {
+        SharedStore.accounts = response.data;
+    }
 }
 
 /**
@@ -32,15 +33,15 @@ async function loadAccounts() {
  * again max `SERVER_CONNECTION_TRY_COUNT` times.
  */
 async function connectToLocalServer(): Promise<void> {
-    if (sharedStore.server) {
+    if (SharedStore.server) {
         return;
     }
 
     const checkUrlAndLoadAccounts = async (url: string) => {
         try {
-            const response: Response = await ApiService.get(url, GetRoutes.HELLO);
+            const response: GetResponse<GetRoutes.HELLO> = await ApiService.get(url, GetRoutes.HELLO);
             if (response.success) {
-                sharedStore.server = url;
+                SharedStore.server = url;
                 await loadAccounts();
             } else {
                 error(500, response.message);

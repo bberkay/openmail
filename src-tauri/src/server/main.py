@@ -148,12 +148,12 @@ def reset_file_system() -> Response:
 
 ################ ACCOUNT OPERATIONS #################
 
-class GetEmailAccountsData(BaseModel):
+class GetAccountsData(BaseModel):
     connected: list[Account]
     failed: list[Account]
 
-@app.get("/get-email-accounts")
-def get_email_accounts() -> Response[GetEmailAccountsData]:
+@app.get("/get-accounts")
+def get_accounts() -> Response[GetAccountsData]:
     try:
         all_accounts = secure_storage.get_accounts(None, [AccountColumn.FULLNAME, AccountColumn.EMAIL_ADDRESS])
         email_to_account = {account.email_address: account for account in all_accounts}
@@ -166,10 +166,10 @@ def get_email_accounts() -> Response[GetEmailAccountsData]:
         if failed_openmail_clients:
             failed_accounts = [email_to_account[email_address] for email_address in failed_openmail_clients]
 
-        return Response[GetEmailAccountsData](
+        return Response[GetAccountsData](
             success=True,
             message="Email accounts fetched successfully",
-            data=GetEmailAccountsData(
+            data=GetAccountsData(
                 connected=connected_accounts,
                 failed=failed_accounts
             )
@@ -177,14 +177,14 @@ def get_email_accounts() -> Response[GetEmailAccountsData]:
     except Exception as e:
         return Response(success=False, message=err_msg("Failed to fetch email accounts.", str(e)))
 
-class AddEmailAccountFormData(BaseModel):
+class AddAccountFormData(BaseModel):
     email_address: str
     password: str
     fullname: Optional[str] = None
 
-@app.post("/add-email-account")
-def add_email_account(
-    form_data: Annotated[AddEmailAccountFormData, Form()]
+@app.post("/add-account")
+def add_account(
+    form_data: Annotated[AddAccountFormData, Form()]
 ) -> Response:
     if not is_email_valid(form_data.email_address):
         return Response(success=False, message="Invalid email address format")
@@ -216,14 +216,14 @@ def add_email_account(
     except Exception as e:
         return Response(success=False, message=err_msg("Failed to add email.", str(e)))
 
-class EditEmailAccountRequest(BaseModel):
+class EditAccountFormData(BaseModel):
     email_address: str
     password: str
     fullname: Optional[str] = None
 
-@app.post("/edit-email-account")
-def edit_email_account(
-    form_data: Annotated[EditEmailAccountRequest, Form()]
+@app.post("/edit-account")
+def edit_account(
+    form_data: Annotated[EditAccountFormData, Form()]
 ) -> Response:
     if not is_email_valid(form_data.email_address):
         return Response(success=False, message="Invalid email address format")
@@ -257,25 +257,25 @@ def edit_email_account(
         return Response(success=False, message=err_msg("Failed to add email.", str(e)))
 
 
-class DeleteEmailAccountRequest(BaseModel):
+class RemoveAccountRequest(BaseModel):
     account: str
 
-@app.post("/delete-email-account")
-def delete_email_account(request_body: DeleteEmailAccountRequest) -> Response:
+@app.post("/remove-account")
+def remove_email_account(request_body: RemoveAccountRequest) -> Response:
     try:
         secure_storage.remove_account(request_body.account)
-        return Response(success=True, message="Account deleted successfully")
+        return Response(success=True, message="Account removed successfully")
     except Exception as e:
-        return Response(success=False, message=err_msg("There was an error while deleting account.", str(e)))
+        return Response(success=False, message=err_msg("There was an error while removing account.", str(e)))
 
 
-@app.post("/delete-email-accounts")
-def delete_email_accounts() -> Response:
+@app.post("/remove-accounts")
+def remove_accounts() -> Response:
     try:
         secure_storage.remove_accounts()
-        return Response(success=True, message="Accounts deleted successfully")
+        return Response(success=True, message="Accounts removed successfully")
     except Exception as e:
-        return Response(success=False, message=err_msg("There was an error while deleting accounts.", str(e)))
+        return Response(success=False, message=err_msg("There was an error while removing accounts.", str(e)))
 
 #####################################################
 
@@ -283,7 +283,7 @@ def delete_email_accounts() -> Response:
 ################ EMAIL OPERATIONS ###################
 class OpenMailTaskResult(BaseModel, Generic[T]):
     email_address: str
-    data: T
+    result: T
 
 type OpenMailTaskResults[T] = list[OpenMailTaskResult[T]]
 
@@ -305,7 +305,7 @@ def execute_openmail_task_concurrently[T](
             future = future.result()
             results.append(OpenMailTaskResult(
                 email_address=email_address,
-                data= future
+                result=future
             ))
             print(f"Result for {email_address}: {future}")
 
@@ -322,8 +322,8 @@ def check_if_email_accounts_are_connected(accounts: str) -> Response | bool:
 
     return True
 
-@app.get("/get-emails/{accounts}")
-async def get_emails(
+@app.get("/get-mailboxes/{accounts}")
+async def get_mailboxes(
     accounts: str,
     folder: Optional[str] = "INBOX",
     search: Optional[str] = "ALL",
@@ -355,8 +355,8 @@ async def get_emails(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching emails.", str(e)))
 
-@app.get("/paginate-emails/{accounts}/{offset_start}/{offset_end}")
-async def paginate_emails(
+@app.get("/paginate-mailboxes/{accounts}/{offset_start}/{offset_end}")
+async def paginate_mailboxes(
     accounts: str,
     offset_start: int,
     offset_end: int,
