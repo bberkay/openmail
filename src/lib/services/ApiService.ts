@@ -7,6 +7,7 @@ export enum GetRoutes {
     PAGINATE_MAILBOXES = "/paginate-mailboxes",
     GET_FOLDERS = "/get-folders",
     GET_EMAIL_CONTENT = "/get-email-content",
+    GET_PUBLIC_KEY = "/get-public-key",
 }
 
 export enum PostRoutes {
@@ -32,13 +33,13 @@ export enum PostRoutes {
 
 interface PostBody {
     [PostRoutes.ADD_ACCOUNT]: {
-        email: string
-        password: string
+        email_address: string
+        encrypted_password: string
         fullname: string
     };
     [PostRoutes.EDIT_ACCOUNT]: {
-        email: string
-        password: string
+        email_address: string
+        encrypted_password: string
         fullname: string
     };
     [PostRoutes.REMOVE_ACCOUNT]: {
@@ -142,6 +143,7 @@ interface GetQueryParams {
             uid: string;
         }
     };
+    [GetRoutes.GET_PUBLIC_KEY]: {};
 }
 
 export interface GetQueryResponse {
@@ -152,8 +154,11 @@ export interface GetQueryResponse {
     },
     [GetRoutes.GET_MAILBOXES]: OpenMailTaskResults<Mailbox>,
     [GetRoutes.PAGINATE_MAILBOXES]: OpenMailTaskResults<Mailbox>,
-    [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>
-    [GetRoutes.GET_EMAIL_CONTENT]: EmailWithContent
+    [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>,
+    [GetRoutes.GET_EMAIL_CONTENT]: EmailWithContent,
+    [GetRoutes.GET_PUBLIC_KEY]: {
+        public_key: string;
+    }
 }
 
 export type GetResponse<T extends GetRoutes> = {

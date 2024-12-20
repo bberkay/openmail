@@ -4,12 +4,12 @@ import os
 import json
 import time
 from enum import Enum
-from typing import Optional, TypedDict
 from dataclasses import dataclass
 
 import keyring
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from pydantic import BaseModel
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import serialization, hashes
 
 from utils import safe_json_loads
 from consts import APP_NAME
@@ -17,23 +17,25 @@ from consts import APP_NAME
 """
 Exceptions
 """
-class CipherNotInitializedError(Exception):
-    """Cipher is not initialized."""
+class AESGCMCipherNotInitializedError(Exception):
+    """AESGCMCipher is not initialized."""
+    pass
+
+class RSACipherNotInitializedError(Exception):
+    """RSACipher is not initialized."""
     pass
 
 class InvalidSecureStorageKeyError(Exception):
     """Invalid secure storage key."""
     pass
 
-class InvalidAccountColumnError(Exception):
-    """Invalid account column."""
-    pass
-
 """
 Enums, Types
 """
 class SecureStorageKey(str, Enum):
-    CIPHER_KEY = "cipher_key"
+    AESGCM_CIPHER_KEY = "aesgcm_cipher_key"
+    PUBLIC_PEM = "public_pem"
+    PRIVATE_PEM = "private_pem"
     ACCOUNTS = "accounts"
 
     @classmethod
@@ -43,30 +45,12 @@ class SecureStorageKey(str, Enum):
     def __str__(self) -> str:
         return self.value
 
-class AccountColumn(str, Enum):
-    EMAIL_ADDRESS = "email_address"
-    PASSWORD = "password"
-    FULLNAME = "fullname"
-
-    @classmethod
-    def keys(cls) -> list[str]:
-        return [key.value for key in cls]
-
-    def __str__(self) -> str:
-        return self.value
-
-class Account(BaseModel):
-    email_address: str
-    password: Optional[str] = None
-    fullname: Optional[str] = None
-
 """
 Constants
 """
 SECURE_STORAGE_KEY_LIST = SecureStorageKey.keys()
-ACCOUNT_COLUMN_LIST = AccountColumn.keys()
 CACHE_TTL = 1800
-
+# TODO: Add Key rotation
 class SecureStorage:
     _instance = None
     _cache: SecureStorageCache = None
@@ -76,37 +60,40 @@ class SecureStorage:
         if not cls._instance:
             cls._instance = super().__new__(cls)
             cls._instance._cache = SecureStorageCache()
-            cls._instance._encryptor = AESGCMCipher(cls._instance._load_key())
-            cls._instance._create_accounts()
+            cls._instance._init_aesgcm_cipher()
+            cls._instance._init_rsa_cipher()
 
         return cls._instance
 
     def __del__(self):
         self.clear()
 
-    def _load_key(self) -> bytes:
-        key = keyring.get_password(APP_NAME, SecureStorageKey.CIPHER_KEY)
+    def _init_aesgcm_cipher(self) -> bytes:
+        key = keyring.get_password(APP_NAME, SecureStorageKey.AESGCM_CIPHER_KEY)
         if not key:
             key = os.urandom(32).hex()
-            keyring.set_password(APP_NAME, SecureStorageKey.CIPHER_KEY, key)
+            keyring.set_password(APP_NAME, SecureStorageKey.AESGCM_CIPHER_KEY, key)
 
-        try:
-            return bytes.fromhex(key)
-        except ValueError:
-            self.destroy()
-            self._load_key()
+        self._encryptor = AESGCMCipher(bytes.fromhex(key))
 
-    def _create_accounts(self) -> None:
-        if self.has_any_accounts():
-            return
+    def _init_rsa_cipher(self) -> None:
+        is_private_pem_set = bool(keyring.get_password(APP_NAME, SecureStorageKey.PRIVATE_PEM))
+        is_public_pem_set = bool(keyring.get_password(APP_NAME, SecureStorageKey.PUBLIC_PEM))
 
-        self._add_key(SecureStorageKey.ACCOUNTS, [])
+        if not is_private_pem_set or not is_public_pem_set:
+            rsa_cipher = RSACipher()
+            self.add_key(SecureStorageKey.PRIVATE_PEM, rsa_cipher.get_private_pem())
+            self.add_key(SecureStorageKey.PUBLIC_PEM, rsa_cipher.get_public_pem())
 
     def _check_key(self, key: str | SecureStorageKey) -> None:
         if str(key) not in SECURE_STORAGE_KEY_LIST:
             raise InvalidSecureStorageKeyError
 
-    def _get_key_value(self, key_name: SecureStorageKey, associated_data: bytes = None, decrypt: bool = True) -> any:
+    def get_key_value(self,
+        key_name: SecureStorageKey,
+        associated_data: bytes = None,
+        decrypt: bool = True
+    ) -> any:
         self._check_key(key_name)
 
         key_value = self._cache.get(key_name)
@@ -121,91 +108,29 @@ class SecureStorage:
                 key_value = self._encryptor.decrypt(key_value, associated_data)
                 key_value = safe_json_loads(key_value)
             else:
-                raise CipherNotInitializedError
+                raise AESGCMCipherNotInitializedError
 
         return key_value
 
-    def _add_key(self, key_name: SecureStorageKey, key_value: any, associated_data: bytes = None) -> None:
+    def add_key(self,
+        key_name: SecureStorageKey,
+        key_value: any,
+        associated_data: bytes = None
+    ) -> None:
         self._check_key(key_name)
 
         key_value = json.dumps(key_value)
         if not self._encryptor:
-            raise CipherNotInitializedError
+            raise AESGCMCipherNotInitializedError
 
         key_value = self._encryptor.encrypt(key_value, associated_data)
         keyring.set_password(APP_NAME, key_name, key_value)
         self._cache.set(key_name, key_value)
 
-    def _check_columns(self, columns: list[str | AccountColumn]) -> None:
-        for column in columns:
-            if str(column) not in ACCOUNT_COLUMN_LIST:
-                raise InvalidAccountColumnError
-
-    def has_any_accounts(self) -> bool:
-        accounts = self._get_key_value(SecureStorageKey.ACCOUNTS, decrypt=False)
-        return bool(accounts)
-
-    def get_accounts(self, emails: list[str] | None = None, columns: list[AccountColumn] | None = None) -> list[Account] | None:
-        if columns:
-            self._check_columns(columns)
-        else:
-            columns = ACCOUNT_COLUMN_LIST
-
-        accounts = self._get_key_value(SecureStorageKey.ACCOUNTS)
-        columns = [column.value if isinstance(column, AccountColumn) else column for column in columns]
-
-        filtered_accounts = []
-        for account in accounts:
-            if emails and account["email_address"] not in emails:
-                continue
-
-            filtered_accounts.append(
-                Account.model_validate({column: account[column] for column in columns})
-            )
-
-        return filtered_accounts
-
-    def add_account(self, account: Account) -> None:
-        accounts = self.get_accounts()
-        if not accounts:
-            accounts = []
-
-        self._add_key(
-            SecureStorageKey.ACCOUNTS,
-            [account.model_dump() for account in accounts].append(account.model_dump())
-        )
-
-    def edit_account(self, account: Account) -> None:
-        accounts = self.get_accounts()
-        if not accounts:
-            return
-
-        i = 0
-        while i < len(accounts):
-            if accounts[i].email_address == account.email_address:
-                accounts[i] = account
-                break
-            i += 1
-
-        self._add_key(
-            SecureStorageKey.ACCOUNTS,
-            [account.model_dump() for account in accounts].append(account.model_dump())
-        )
-
-    def remove_account(self, email: str) -> None:
-        accounts = self.get_accounts()
-        if not accounts:
-            return
-
-        self._add_key(
-            SecureStorageKey.ACCOUNTS,
-            [account.model_dump() for account in accounts if account.email_address!= email]
-        )
-
-    def remove_accounts(self) -> None:
-        keyring.delete_password(APP_NAME, SecureStorageKey.ACCOUNTS)
-        self._cache.delete(SecureStorageKey.ACCOUNTS)
-        self._create_accounts() # Create empty list
+    def delete_key(self, key_name: SecureStorageKey) -> None:
+        self._check_key(key_name)
+        keyring.delete_password(APP_NAME, key_name)
+        self._cache.delete(key_name)
 
     def clear(self) -> None:
         self._cache.destroy()
@@ -290,4 +215,62 @@ class AESGCMCipher:
         cipher_text = encrypted_text[12:]
         return self._cipher.decrypt(nonce, cipher_text, associated_data).decode('utf-8')
 
-__all__ = ["SecureStorage", "Account", "AccountColumn"]
+class RSACipher:
+    def __init__(self):
+        self._create_private_key()
+        self._create_public_key()
+
+    def _create_private_key(self):
+        self._private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+        self._private_pem = self._private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+
+    def _create_public_key(self):
+        if not self._private_key:
+            raise RSACipherNotInitializedError
+
+        self._public_key = self._private_key.public_key()
+        self._public_pem = self._public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+    def get_public_pem(self) -> str:
+        return self._public_pem.decode("utf-8") if isinstance(self._public_pem, bytes) else self._public_pem
+
+    def get_private_pem(self) -> str:
+        return self._private_pem.decode("utf-8") if isinstance(self._private_pem, bytes) else self._private_pem
+
+    @staticmethod
+    def decrypt_password(
+        encrypted_b64_password: str,
+        private_pem: str | bytes
+    ) -> str:
+        if isinstance(private_pem, str):
+            private_pem = private_pem.encode('utf-8')
+
+        private_key = serialization.load_pem_private_key(private_pem, password=None)
+        return private_key.decrypt(
+            base64.b64decode(encrypted_b64_password),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        ).decode("utf-8")
+
+__all__ = [
+    "SecureStorage",
+    "SecureStorageKey",
+    "AESGCMCipher",
+    "RSACipher",
+    "RSACipherNotInitializedError",
+    "AESGCMCipherNotInitializedError",
+    "InvalidSecureStorageKeyError"
+]

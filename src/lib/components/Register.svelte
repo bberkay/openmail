@@ -3,7 +3,8 @@
     import Loader from "$lib/components/Loader.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
-    import { ApiService, GetRoutes, PostRoutes, type GetResponse } from "$lib/services/ApiService";
+    import { ApiService, GetRoutes, PostRoutes } from "$lib/services/ApiService";
+    import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 
     let currentEditingAccount: Account | null = $state(
         SharedStore.failedAccounts
@@ -22,10 +23,16 @@
         addAccountBtn.textContent = 'Adding Account...';
 
         const formData = new FormData(form);
+        const encryptor = new RSAEncryptor();
+        const encryptedPassword = await encryptor.encryptPassword(formData.get("password") as string);
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.ADD_ACCOUNT,
-            formData
+            {
+                email_address: formData.get('email_address') as string,
+                fullname: formData.get('fullname') as string,
+                encrypted_password: encryptedPassword
+            }
         );
 
         if(response.success){
@@ -53,10 +60,16 @@
         editAccountBtn.textContent = 'Editing Account...';
 
         const formData = new FormData(form);
+        const encryptor = new RSAEncryptor();
+        const encryptedPassword = await encryptor.encryptPassword(formData.get("password") as string);
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.EDIT_ACCOUNT,
-            formData
+            {
+                email_address: formData.get('email_address') as string,
+                fullname: formData.get('fullname') as string,
+                encrypted_password: encryptedPassword
+            }
         );
 
         if(response.success){

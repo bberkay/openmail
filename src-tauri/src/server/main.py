@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import concurrent.futures
 from urllib.parse import unquote
-from typing import Annotated, Callable, Generic, Optional, TypedDict, TypeVar
+from typing import Annotated, Callable, Generic, Optional, TypeVar
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -16,26 +16,29 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from openmail import OpenMail
-from openmail.types import EmailSummary, EmailToSend, Attachment, EmailWithContent, Mailbox
+from openmail.types import EmailToSend, Attachment, EmailWithContent, Mailbox
 from openmail.imap import Folder, Mark
 
+from classes.account_manager import AccountManager, Account, AccountColumn
 from classes.file_system import FileSystem
 from classes.http_request_logger import HTTPRequestLogger
-from classes.secure_storage import SecureStorage, Account, AccountColumn
-from classes.port_manager import PortManager
+from classes.secure_storage import SecureStorage, SecureStorageKey, RSACipher
+from classes.port_scanner import PortScanner
 
 from consts import TRUSTED_HOSTS
 from utils import is_email_valid, err_msg, parse_err_msg
 
+
 #################### SET UP #######################
 openmail_clients: dict[str, OpenMail] = {}
 failed_openmail_clients: list[str] = []
+account_manager = AccountManager()
 secure_storage = SecureStorage()
 http_request_logger = HTTPRequestLogger()
 T = TypeVar("T")
 
 def create_and_idle_openmail_clients():
-    accounts: list[Account] = secure_storage.get_accounts(
+    accounts: list[Account] = account_manager.get(
         None, [AccountColumn.EMAIL_ADDRESS, AccountColumn.PASSWORD]
     )
     if not accounts:
@@ -58,7 +61,7 @@ def create_and_idle_openmail_clients():
 def reconnect_and_idle_logged_out_openmail_clients():
     for email_address, openmail_client in openmail_clients.items():
         if not openmail_client.is_logged_in():
-            accounts = secure_storage.get_accounts(
+            accounts = account_manager.get(
                 [email_address], AccountColumn.PASSWORD
             )
             if accounts:
@@ -78,7 +81,7 @@ def shutdown_openmail_clients():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_and_idle_openmail_clients()
+    #create_and_idle_openmail_clients()
     yield
     shutdown_openmail_clients()
 
@@ -129,7 +132,7 @@ async def hello() -> Response:
 def recreate_whole_universe() -> Response:
     try:
         FileSystem().reset()
-        secure_storage.remove_accounts()
+        account_manager.remove_all()
         return Response(success=True, message="You asked and the whole universe completely recreated!")
     except Exception as e:
         return Response(success=False, message=err_msg("Some forces prevented you from doing this.", str(e)))
@@ -147,6 +150,18 @@ def reset_file_system() -> Response:
 
 
 ################ ACCOUNT OPERATIONS #################
+class GetPublicKeyData(BaseModel):
+    public_key: str
+
+@app.get("/get-public-key")
+async def get_public_key() -> Response[GetPublicKeyData]:
+    return Response[GetPublicKeyData](
+        success=True,
+        message="Public key fetched successfully",
+        data=GetPublicKeyData(
+            public_key=secure_storage.get_key_value(SecureStorageKey.PUBLIC_PEM)
+        )
+    )
 
 class GetAccountsData(BaseModel):
     connected: list[Account]
@@ -155,7 +170,7 @@ class GetAccountsData(BaseModel):
 @app.get("/get-accounts")
 def get_accounts() -> Response[GetAccountsData]:
     try:
-        all_accounts = secure_storage.get_accounts(None, [AccountColumn.FULLNAME, AccountColumn.EMAIL_ADDRESS])
+        all_accounts = account_manager.get(None, [AccountColumn.FULLNAME, AccountColumn.EMAIL_ADDRESS])
         email_to_account = {account.email_address: account for account in all_accounts}
 
         connected_accounts = []
@@ -177,78 +192,84 @@ def get_accounts() -> Response[GetAccountsData]:
     except Exception as e:
         return Response(success=False, message=err_msg("Failed to fetch email accounts.", str(e)))
 
-class AddAccountFormData(BaseModel):
+class AddAccountRequest(BaseModel):
     email_address: str
-    password: str
+    encrypted_password: str
     fullname: Optional[str] = None
 
 @app.post("/add-account")
 def add_account(
-    form_data: Annotated[AddAccountFormData, Form()]
+    request: AddAccountRequest
 ) -> Response:
-    if not is_email_valid(form_data.email_address):
+    if not is_email_valid(request.email_address):
         return Response(success=False, message="Invalid email address format")
 
     try:
-        if secure_storage.get_accounts([form_data.email_address]):
+        if account_manager.get([request.email_address]):
             return Response(success=False, message="Email address already exists")
 
         openmail_client = OpenMail()
         status, msg = openmail_client.connect(
-            form_data.email_address,
-            form_data.password
+            request.email_address,
+            RSACipher.decrypt_password(
+                request.encrypted_password,
+                secure_storage.get_key_value(SecureStorageKey.PRIVATE_PEM)
+            )
         )
 
         if not status:
             return Response(success=status, message=err_msg("Could not connect to email.", msg))
 
-        secure_storage.add_account(Account(
-            email_address=form_data.email_address,
-            password=form_data.password,
-            fullname=form_data.fullname
+        account_manager.add(Account(
+            email_address=request.email_address,
+            password=request.encrypted_password,
+            fullname=request.fullname
         ))
 
-        openmail_clients[form_data.email_address] = openmail_client
+        openmail_clients[request.email_address] = openmail_client
         return Response(
             success=True,
-            message="Email added"
+            message="Email successfully added"
         )
     except Exception as e:
         return Response(success=False, message=err_msg("Failed to add email.", str(e)))
 
-class EditAccountFormData(BaseModel):
+class EditAccountRequest(BaseModel):
     email_address: str
-    password: str
+    encrypted_password: str
     fullname: Optional[str] = None
 
 @app.post("/edit-account")
 def edit_account(
-    form_data: Annotated[EditAccountFormData, Form()]
+    request: EditAccountRequest
 ) -> Response:
-    if not is_email_valid(form_data.email_address):
+    if not is_email_valid(request.email_address):
         return Response(success=False, message="Invalid email address format")
 
     try:
-        if not secure_storage.get_accounts([form_data.email_address]):
+        if not account_manager.get([request.email_address]):
             return Response(success=False, message="Email address does not exists")
 
         openmail_client = OpenMail()
         status, msg = openmail_client.connect(
-            form_data.email_address,
-            form_data.password
+            request.email_address,
+            RSACipher.decrypt_password(
+                request.encrypted_password,
+                secure_storage.get_key_value(SecureStorageKey.PRIVATE_PEM)
+            )
         )
 
         if not status:
             return Response(success=status, message=err_msg("Could not connect to email.", msg))
 
-        secure_storage.edit_account(Account(
-            email_address=form_data.email_address,
-            password=form_data.password,
-            fullname=form_data.fullname
+        account_manager.edit(Account(
+            email_address=request.email_address,
+            password=request.encrypted_password,
+            fullname=request.fullname
         ))
 
-        openmail_clients[form_data.email_address] = openmail_client
-        failed_openmail_clients.pop(form_data.email_address)
+        openmail_clients[request.email_address] = openmail_client
+        failed_openmail_clients.pop(request.email_address)
         return Response(
             success=True,
             message="Email added"
@@ -263,7 +284,7 @@ class RemoveAccountRequest(BaseModel):
 @app.post("/remove-account")
 def remove_email_account(request_body: RemoveAccountRequest) -> Response:
     try:
-        secure_storage.remove_account(request_body.account)
+        account_manager.remove(request_body.account)
         return Response(success=True, message="Account removed successfully")
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while removing account.", str(e)))
@@ -272,7 +293,7 @@ def remove_email_account(request_body: RemoveAccountRequest) -> Response:
 @app.post("/remove-accounts")
 def remove_accounts() -> Response:
     try:
-        secure_storage.remove_accounts()
+        account_manager.remove_all()
         return Response(success=True, message="Accounts removed successfully")
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while removing accounts.", str(e)))
@@ -475,9 +496,9 @@ async def send_email(
                     .imap.get_email_flags(formData.uid, Folder.Inbox)
                     .flags
                 )
-                if Mark.SEEN not in flags:
+                if Mark.Seen not in flags:
                     status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.SEEN
+                        formData.uid, Mark.Seen
                     )
                     msg += " " + f"And {com_msg}"
         except Exception as e:
@@ -519,14 +540,14 @@ async def reply_email(
                     .imap.get_email_flags(formData.uid, Folder.Inbox)
                     .flags
                 )
-                if Mark.ANSWERED not in flags:
+                if Mark.Answered not in flags:
                     status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.ANSWERED
+                        formData.uid, Mark.Answered
                     )
                     msg += " " + f"And {com_msg}"
-                if Mark.SEEN not in flags:
+                if Mark.Seen not in flags:
                     status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.SEEN
+                        formData.uid, Mark.Seen
                     )
                     msg += " " + f"And {com_msg}"
         except Exception as e:
@@ -568,14 +589,14 @@ async def forward_email(
                     .imap.get_email_flags(formData.uid, Folder.Inbox)
                     .flags
                 )
-                if Mark.ANSWERED not in flags:
+                if Mark.Answered not in flags:
                     status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.ANSWERED
+                        formData.uid, Mark.Answered
                     )
                     msg += " " + f"And {com_msg}"
-                if Mark.SEEN not in flags:
+                if Mark.Seen not in flags:
                     status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.SEEN
+                        formData.uid, Mark.Seen
                     )
                     msg += " " + f"And {com_msg}"
         except Exception as e:
@@ -800,7 +821,7 @@ def main():
     http_request_logger.init()
 
     host = "127.0.0.1"
-    port = PortManager.find_free_port(8000, 9000)
+    port = PortScanner.find_free_port(8000, 9000)
     pid = str(os.getpid())
     create_uvicorn_info_file(host, str(port), pid)
 

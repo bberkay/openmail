@@ -111,8 +111,10 @@ export class SharedStore {
         }
 
         for (const key of keys) {
-            // @ts-ignore
-            SharedStore[key] = DefaultSharedStore[key];
+            if (key != SharedStoreKeys.server) {
+                // @ts-ignore
+                SharedStore[key] = DefaultSharedStore[key];
+            }
         }
     }
 }
