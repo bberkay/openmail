@@ -23,7 +23,7 @@
 	async function recreateWholeUniverse() {
         const response = await ApiService.post(
             SharedStore.server,
-            PostRoutes.REFRESH_WHOLE_UNIVERSE,
+            PostRoutes.RECREATE_WHOLE_UNIVERSE,
             {}
         );
 
