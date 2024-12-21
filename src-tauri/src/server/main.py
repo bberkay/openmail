@@ -19,7 +19,7 @@ from openmail import OpenMail
 from openmail.types import EmailToSend, Attachment, EmailWithContent, Mailbox
 from openmail.imap import Folder, Mark
 
-from classes.account_manager import AccountManager, Account, AccountColumn
+from classes.account_manager import AccountManager, Account, AccountWithPassword
 from classes.file_system import FileSystem
 from classes.http_request_logger import HTTPRequestLogger
 from classes.secure_storage import SecureStorage, SecureStorageKey, RSACipher
@@ -38,9 +38,7 @@ http_request_logger = HTTPRequestLogger()
 T = TypeVar("T")
 
 def create_and_idle_openmail_clients():
-    accounts: list[Account] = account_manager.get(
-        None, [AccountColumn.EMAIL_ADDRESS, AccountColumn.PASSWORD]
-    )
+    accounts: list[AccountWithPassword] = account_manager.get()
     if not accounts:
         return
 
@@ -48,7 +46,11 @@ def create_and_idle_openmail_clients():
         try:
             openmail_clients[account.email_address] = OpenMail()
             status, _ = openmail_clients[account.email_address].connect(
-                account.email_address, account.password
+                account.email_address,
+                RSACipher.decrypt_password(
+                    account.encrypted_password,
+                    secure_storage.get_key_value(SecureStorageKey.PRIVATE_PEM)
+                )
             )
             print(f"Connected to {account.email_address}")
             """if status:
@@ -59,13 +61,18 @@ def create_and_idle_openmail_clients():
             print(f"Failed to connect to {account.email_address}: {e}")
 
 def reconnect_and_idle_logged_out_openmail_clients():
+    # TODO: Implement reconnection
     for email_address, openmail_client in openmail_clients.items():
         if not openmail_client.is_logged_in():
-            accounts = account_manager.get(
-                [email_address], AccountColumn.PASSWORD
-            )
+            accounts: list[AccountWithPassword] = account_manager.get(email_address)
             if accounts:
-                status = openmail_client.connect(email_address, accounts[0].password)
+                status = openmail_client.connect(
+                    email_address,
+                    RSACipher.decrypt_password(
+                        accounts[0].encrypted_password,
+                        secure_storage.get_key_value(SecureStorageKey.PRIVATE_PEM)
+                    )
+                )
                 print(f"Reconnected to {email_address}")
                 if status:
                     openmail_client.imap.idle()
@@ -81,7 +88,7 @@ def shutdown_openmail_clients():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    #create_and_idle_openmail_clients()
+    create_and_idle_openmail_clients()
     yield
     shutdown_openmail_clients()
 
@@ -170,7 +177,7 @@ class GetAccountsData(BaseModel):
 @app.get("/get-accounts")
 def get_accounts() -> Response[GetAccountsData]:
     try:
-        all_accounts = account_manager.get(None, [AccountColumn.FULLNAME, AccountColumn.EMAIL_ADDRESS])
+        all_accounts = account_manager.get(include_encrypted_passwords=False)
         email_to_account = {account.email_address: account for account in all_accounts}
 
         connected_accounts = []
@@ -205,7 +212,7 @@ def add_account(
         return Response(success=False, message="Invalid email address format")
 
     try:
-        if account_manager.get([request.email_address]):
+        if account_manager.is_exists(request.email_address):
             return Response(success=False, message="Email address already exists")
 
         openmail_client = OpenMail()
@@ -220,23 +227,23 @@ def add_account(
         if not status:
             return Response(success=status, message=err_msg("Could not connect to email.", msg))
 
-        account_manager.add(Account(
+        account_manager.add(AccountWithPassword(
             email_address=request.email_address,
-            password=request.encrypted_password,
+            encrypted_password=request.encrypted_password,
             fullname=request.fullname
         ))
 
         openmail_clients[request.email_address] = openmail_client
         return Response(
             success=True,
-            message="Email successfully added"
+            message="Account successfully added"
         )
     except Exception as e:
         return Response(success=False, message=err_msg("Failed to add email.", str(e)))
 
 class EditAccountRequest(BaseModel):
     email_address: str
-    encrypted_password: str
+    encrypted_password: Optional[str] = None
     fullname: Optional[str] = None
 
 @app.post("/edit-account")
@@ -247,32 +254,41 @@ def edit_account(
         return Response(success=False, message="Invalid email address format")
 
     try:
-        if not account_manager.get([request.email_address]):
+        # E-mail cannot be edited.
+        if not account_manager.is_exists(request.email_address):
             return Response(success=False, message="Email address does not exists")
 
-        openmail_client = OpenMail()
-        status, msg = openmail_client.connect(
-            request.email_address,
-            RSACipher.decrypt_password(
-                request.encrypted_password,
-                secure_storage.get_key_value(SecureStorageKey.PRIVATE_PEM)
+        if not request.encrypted_password:
+            account_manager.edit(Account(
+                email_address=request.email_address,
+                fullname=request.fullname
+            ))
+        else:
+            # If user trying to edit password, connect to the email again.
+            openmail_client = OpenMail()
+            status, msg = openmail_client.connect(
+                request.email_address,
+                RSACipher.decrypt_password(
+                    request.encrypted_password,
+                    secure_storage.get_key_value(SecureStorageKey.PRIVATE_PEM)
+                )
             )
-        )
 
-        if not status:
-            return Response(success=status, message=err_msg("Could not connect to email.", msg))
+            if not status:
+                return Response(success=status, message=err_msg("Could not connect to email.", msg))
 
-        account_manager.edit(Account(
-            email_address=request.email_address,
-            password=request.encrypted_password,
-            fullname=request.fullname
-        ))
+            account_manager.edit(AccountWithPassword(
+                email_address=request.email_address,
+                encrypted_password=request.encrypted_password,
+                fullname=request.fullname
+            ))
 
-        openmail_clients[request.email_address] = openmail_client
-        failed_openmail_clients.pop(request.email_address)
+            openmail_clients[request.email_address] = openmail_client
+            failed_openmail_clients.pop(request.email_address)
+
         return Response(
             success=True,
-            message="Email added"
+            message="Account successfully edited"
         )
     except Exception as e:
         return Response(success=False, message=err_msg("Failed to add email.", str(e)))
@@ -332,13 +348,14 @@ def execute_openmail_task_concurrently[T](
 
         return results
 
-def check_if_email_accounts_are_connected(accounts: str) -> Response | bool:
+def check_if_email_client_is_exists(accounts: str) -> Response | bool:
     accounts = accounts.split(",")
 
     for account in accounts:
         if account not in openmail_clients:
             return Response(
-                success=False, message=f"Email account: {account} is not connected"
+                success=False,
+                message=f"Email account: {account} is not connected"
             )
 
     return True
@@ -352,7 +369,7 @@ async def get_mailboxes(
     offset_end: Optional[int] = 10,
 ) -> Response[OpenMailTaskResults[Mailbox]]:
     try:
-        response = check_if_email_accounts_are_connected(accounts)
+        response = check_if_email_client_is_exists(accounts)
         if not response:
             return response
 
@@ -383,7 +400,7 @@ async def paginate_mailboxes(
     offset_end: int,
 ) -> Response[OpenMailTaskResults[Mailbox]]:
     try:
-        response = check_if_email_accounts_are_connected(accounts)
+        response = check_if_email_client_is_exists(accounts)
         if not response:
             return response
 
@@ -405,7 +422,7 @@ async def get_folders(
     accounts: str,
 ) -> Response[OpenMailTaskResults[list[str]]]:
     try:
-        response = check_if_email_accounts_are_connected(accounts)
+        response = check_if_email_client_is_exists(accounts)
         if not response:
             return response
 
@@ -427,7 +444,7 @@ def get_email_content(
     uid: str
 ) -> Response[EmailWithContent]:
     try:
-        response = check_if_email_accounts_are_connected(account)
+        response = check_if_email_client_is_exists(account)
         if not response:
             return response
 
@@ -470,7 +487,7 @@ async def send_email(
     formData: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(formData.sender)
+        response = check_if_email_client_is_exists(formData.sender)
         if not response:
             return response
 
@@ -514,7 +531,7 @@ async def reply_email(
     formData: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(formData.sender)
+        response = check_if_email_client_is_exists(formData.sender)
         if not response:
             return response
 
@@ -563,7 +580,7 @@ async def forward_email(
     formData: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(formData.sender)
+        response = check_if_email_client_is_exists(formData.sender)
         if not response:
             return response
 
@@ -617,7 +634,7 @@ class MarkEmailRequest(BaseModel):
 @app.post("/mark-email")
 async def mark_email(request_body: MarkEmailRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 
@@ -641,7 +658,7 @@ class UnmarkEmailRequest(BaseModel):
 @app.post("/unmark-email")
 async def unmark_email(request_body: UnmarkEmailRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 
@@ -665,7 +682,7 @@ class MoveEmailRequest(BaseModel):
 @app.post("/move-email")
 async def move_email(request_body: MoveEmailRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 
@@ -689,7 +706,7 @@ class CopyEmailRequest(BaseModel):
 @app.post("/copy-email")
 async def copy_email(request_body: CopyEmailRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 
@@ -712,7 +729,7 @@ class DeleteEmailRequest(BaseModel):
 @app.post("/delete-email")
 async def delete_email(request_body: DeleteEmailRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 
@@ -733,7 +750,7 @@ class CreateFolderRequest(BaseModel):
 @app.post("/create-folder")
 async def create_folder(request_body: CreateFolderRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 
@@ -756,7 +773,7 @@ class RenameFolderRequest(BaseModel):
 @app.post("/rename-folder")
 async def rename_folder(request_body: RenameFolderRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 
@@ -779,7 +796,7 @@ class MoveFolderRequest(BaseModel):
 @app.post("/move-folder")
 async def move_folder(request_body: MoveFolderRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 
@@ -799,7 +816,7 @@ class DeleteFolderRequest(BaseModel):
 @app.post("/delete-folder")
 async def delete_folder(request_body: DeleteFolderRequest) -> Response:
     try:
-        response = check_if_email_accounts_are_connected(request_body.account)
+        response = check_if_email_client_is_exists(request_body.account)
         if not response:
             return response
 

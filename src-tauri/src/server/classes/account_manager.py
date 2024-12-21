@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel
@@ -15,27 +14,12 @@ class InvalidAccountColumnError(Exception):
 """
 Enums, Types
 """
-class AccountColumn(str, Enum):
-    EMAIL_ADDRESS = "email_address"
-    PASSWORD = "password"
-    FULLNAME = "fullname"
-
-    @classmethod
-    def keys(cls) -> list[str]:
-        return [key.value for key in cls]
-
-    def __str__(self) -> str:
-        return self.value
-
 class Account(BaseModel):
     email_address: str
-    password: Optional[str] = None
     fullname: Optional[str] = None
 
-"""
-Constants
-"""
-ACCOUNT_COLUMN_LIST = AccountColumn.keys()
+class AccountWithPassword(Account):
+    encrypted_password: Optional[str] = None
 
 class AccountManager:
     _instance = None
@@ -52,11 +36,6 @@ class AccountManager:
     def __del__(self):
         self.clear()
 
-    def _check_columns(self, columns: list[str | AccountColumn]) -> None:
-        for column in columns:
-            if str(column) not in ACCOUNT_COLUMN_LIST:
-                raise InvalidAccountColumnError
-
     def has_any(self) -> bool:
         accounts = self._secure_storage.get_key_value(
             SecureStorageKey.ACCOUNTS,
@@ -70,33 +49,33 @@ class AccountManager:
 
         self._secure_storage.add_key(SecureStorageKey.ACCOUNTS, [])
 
-    def get(self,
-        emails: list[str] | None = None,
-        columns: list[AccountColumn] | None = None
-    ) -> list[Account] | None:
-        if columns:
-            self._check_columns(columns)
-        else:
-            columns = ACCOUNT_COLUMN_LIST
+    def is_exists(self, email: str) -> bool:
+        return bool(self.get(emails=email, include_encrypted_passwords=False))
 
+    def get(self,
+        emails: str | list[str] | None = None,
+        include_encrypted_passwords: bool = True
+    ) -> list[Account] | None:
         accounts = self._secure_storage.get_key_value(SecureStorageKey.ACCOUNTS)
         if not accounts:
             return []
 
-        columns = [column.value if isinstance(column, AccountColumn) else column for column in columns]
+        if isinstance(emails, str):
+            emails = [emails]
 
         filtered_accounts = []
         for account in accounts:
             if emails and account["email_address"] not in emails:
                 continue
 
-            filtered_accounts.append(
-                Account.model_validate({column: account[column] for column in columns})
-            )
+            if include_encrypted_passwords:
+                filtered_accounts.append(AccountWithPassword.model_validate(account))
+            else:
+                filtered_accounts.append(Account.model_validate(account))
 
         return filtered_accounts
 
-    def add(self, account: Account) -> None:
+    def add(self, account: AccountWithPassword) -> None:
         accounts = self.get()
         if not accounts:
             accounts = []
@@ -108,8 +87,8 @@ class AccountManager:
             accounts
         )
 
-    def edit(self, account: Account) -> None:
-        accounts = self.get()
+    def edit(self, account: Account | AccountWithPassword) -> None:
+        accounts = self.get(include_encrypted_passwords=bool(account.encrypted_password))
         if not accounts:
             return
 
@@ -151,6 +130,6 @@ class AccountManager:
 __all__ = [
     "AccountManager",
     "Account",
-    "AccountColumn",
+    "AccountWithPassword",
     "InvalidAccountColumnError"
 ]
