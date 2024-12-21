@@ -29,11 +29,20 @@ class InvalidSecureStorageKeyError(Exception):
     """Invalid secure storage key."""
     pass
 
+class IllegalAESGCMCipherAccessError(Exception):
+    """
+    Illegal AESGCMCipher access.
+    Only accessible through `_get_password`
+    `_set_password` and/or `_delete_password`.
+    """
+    pass
+
 """
 Enums, Types
 """
 class SecureStorageKey(str, Enum):
     AESGCM_CIPHER_KEY = "aesgcm_cipher_key"
+    AESGCM_CIPHER_KEY_BACKUP = "aesgcm_cipher_key_backup"
     PUBLIC_PEM = "public_pem"
     PRIVATE_PEM = "private_pem"
     ACCOUNTS = "accounts"
@@ -50,6 +59,7 @@ Constants
 """
 SECURE_STORAGE_KEY_LIST = SecureStorageKey.keys()
 CACHE_TTL = 1800
+ROTATE_KEY_TTL = 86400
 
 class SecureStorage:
     _instance = None
@@ -68,37 +78,94 @@ class SecureStorage:
     def __del__(self):
         self.clear()
 
-    def _init_aesgcm_cipher(self) -> bytes:
-        key = keyring.get_password(APP_NAME, SecureStorageKey.AESGCM_CIPHER_KEY)
-        if not key:
-            key = os.urandom(32).hex()
-            keyring.set_password(APP_NAME, SecureStorageKey.AESGCM_CIPHER_KEY, key)
+    def _wrap_with_timestamp(self, key_value: str) -> str:
+        return json.dumps({
+            "created_at": time.time(),
+            "value": key_value
+        })
 
-        self._encryptor = AESGCMCipher(bytes.fromhex(key))
+    def _parse_key_value(self, key_value: str) -> tuple[any, float | None]:
+        key_value = safe_json_loads(key_value)
 
-    def _init_rsa_cipher(self) -> None:
-        is_private_pem_set = bool(keyring.get_password(APP_NAME, SecureStorageKey.PRIVATE_PEM))
-        is_public_pem_set = bool(keyring.get_password(APP_NAME, SecureStorageKey.PUBLIC_PEM))
+        if isinstance(key_value, dict) and "created_at" in key_value and "value" in key_value:
+            return key_value["value"], key_value["created_at"]
 
-        if not is_private_pem_set or not is_public_pem_set:
-            rsa_cipher = RSACipher()
-            self.add_key(SecureStorageKey.PRIVATE_PEM, rsa_cipher.get_private_pem())
-            self.add_key(SecureStorageKey.PUBLIC_PEM, rsa_cipher.get_public_pem())
+        return key_value, None
 
     def _check_key(self, key: str | SecureStorageKey) -> None:
         if str(key) not in SECURE_STORAGE_KEY_LIST:
             raise InvalidSecureStorageKeyError
+
+    def _get_password(self, key: SecureStorageKey) -> str:
+        self._check_key(key)
+        return keyring.get_password(APP_NAME, key)
+
+    def _set_password(self, key: SecureStorageKey, value: str) -> None:
+        self._check_key(key)
+        keyring.set_password(APP_NAME, key, value)
+
+    def _delete_password(self, key: SecureStorageKey) -> None:
+        self._check_key(key)
+        keyring.delete_password(APP_NAME, key)
+
+    def _init_aesgcm_cipher(self) -> bytes:
+        key = self._get_password(SecureStorageKey.AESGCM_CIPHER_KEY)
+        if not key:
+            key = os.urandom(32).hex()
+            self._set_password(SecureStorageKey.AESGCM_CIPHER_KEY, self._wrap_with_timestamp(key))
+            self._encryptor = AESGCMCipher(bytes.fromhex(key))
+        else:
+            key = self._parse_key_value(key)
+            if len(key) == 2 and key[1] + ROTATE_KEY_TTL < time.time():
+                self.clear()
+                self._rotate_aesgcm_cipher()
+
+    def _rotate_aesgcm_cipher(self) -> None:
+        temp_store = {}
+        for key in SECURE_STORAGE_KEY_LIST:
+            key_value = self.get_key_value(key)
+            if key_value:
+                temp_store[key] = key_value
+
+        aesgcm_cipher_key_backup = self._get_password(SecureStorageKey.AESGCM_CIPHER_KEY)
+        self._set_password(SecureStorageKey.AESGCM_CIPHER_KEY_BACKUP, aesgcm_cipher_key_backup)
+
+        try:
+            self._delete_password(SecureStorageKey.AESGCM_CIPHER_KEY)
+            self._init_aesgcm_cipher()
+            for key, value in temp_store.items():
+                self.add_key(key, value)
+        except Exception as e:
+            # Restore the AESGCM cipher key if the rotation fails
+            self._set_password(SecureStorageKey.AESGCM_CIPHER_KEY, aesgcm_cipher_key_backup)
+            self._init_aesgcm_cipher()
+            for key, value in temp_store.items():
+                self.add_key(key, value)
+
+            raise e
+
+    def _init_rsa_cipher(self) -> None:
+        is_private_pem_set = bool(self._get_password(SecureStorageKey.PRIVATE_PEM))
+        is_public_pem_set = bool(self._get_password(SecureStorageKey.PUBLIC_PEM))
+
+        if not is_private_pem_set or not is_public_pem_set:
+            rsa_cipher = RSACipher()
+            self.add_key(SecureStorageKey.PRIVATE_PEM, self._wrap_with_timestamp(rsa_cipher.get_private_pem()))
+            self.add_key(SecureStorageKey.PUBLIC_PEM, self._wrap_with_timestamp(rsa_cipher.get_public_pem()))
 
     def get_key_value(self,
         key_name: SecureStorageKey,
         associated_data: bytes = None,
         decrypt: bool = True
     ) -> any:
+        if key_name in [SecureStorageKey.AESGCM_CIPHER_KEY, SecureStorageKey.AESGCM_CIPHER_KEY_BACKUP]:
+            raise IllegalAESGCMCipherAccessError
+
         self._check_key(key_name)
 
         key_value = self._cache.get(key_name)
         if not key_value:
-            key_value = keyring.get_password(APP_NAME, key_name)
+            key_value = self._get_password(key_name)
             if not key_value:
                 return None
             self._cache.set(key_name, key_value)
@@ -106,7 +173,7 @@ class SecureStorage:
         if decrypt:
             if self._encryptor:
                 key_value = self._encryptor.decrypt(key_value, associated_data)
-                key_value = safe_json_loads(key_value)
+                key_value = self._parse_key_value(key_value)[0]
             else:
                 raise AESGCMCipherNotInitializedError
 
@@ -117,6 +184,9 @@ class SecureStorage:
         key_value: any,
         associated_data: bytes = None
     ) -> None:
+        if key_name in [SecureStorageKey.AESGCM_CIPHER_KEY, SecureStorageKey.AESGCM_CIPHER_KEY_BACKUP]:
+            raise IllegalAESGCMCipherAccessError
+
         self._check_key(key_name)
 
         key_value = json.dumps(key_value)
@@ -124,12 +194,14 @@ class SecureStorage:
             raise AESGCMCipherNotInitializedError
 
         key_value = self._encryptor.encrypt(key_value, associated_data)
-        keyring.set_password(APP_NAME, key_name, key_value)
+        self._set_password(key_name, key_value)
         self._cache.set(key_name, key_value)
 
     def delete_key(self, key_name: SecureStorageKey) -> None:
-        self._check_key(key_name)
-        keyring.delete_password(APP_NAME, key_name)
+        if key_name in [SecureStorageKey.AESGCM_CIPHER_KEY, SecureStorageKey.AESGCM_CIPHER_KEY_BACKUP]:
+            raise IllegalAESGCMCipherAccessError
+
+        self._delete_password(key_name)
         self._cache.delete(key_name)
 
     def clear(self) -> None:
@@ -141,7 +213,7 @@ class SecureStorage:
 
         try:
             for key in SECURE_STORAGE_KEY_LIST:
-                keyring.delete_password(APP_NAME, key)
+                self._delete_password(key)
         except keyring.errors.PasswordDeleteError:
             print("Failed to delete keyring password.")
             pass
@@ -272,5 +344,6 @@ __all__ = [
     "RSACipher",
     "RSACipherNotInitializedError",
     "AESGCMCipherNotInitializedError",
-    "InvalidSecureStorageKeyError"
+    "InvalidSecureStorageKeyError",
+    "IllegalAESGCMCipherAccessError"
 ]
