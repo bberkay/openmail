@@ -29,25 +29,11 @@ class AccountManager:
         if not cls._instance:
             cls._instance = super().__new__(cls)
             cls._instance._secure_storage = SecureStorage()
-            cls._instance._create()
 
         return cls._instance
 
     def __del__(self):
         self.clear()
-
-    def has_any(self) -> bool:
-        accounts = self._secure_storage.get_key_value(
-            SecureStorageKey.ACCOUNTS,
-            decrypt=False
-        )
-        return bool(accounts)
-
-    def _create(self) -> None:
-        if self.has_any():
-            return
-
-        self._secure_storage.add_key(SecureStorageKey.ACCOUNTS, [])
 
     def is_exists(self, email: str) -> bool:
         return bool(self.get(emails=email, include_encrypted_passwords=False))
@@ -56,7 +42,7 @@ class AccountManager:
         emails: str | list[str] | None = None,
         include_encrypted_passwords: bool = True
     ) -> list[Account] | None:
-        accounts = self._secure_storage.get_key_value(SecureStorageKey.ACCOUNTS)
+        accounts = self._secure_storage.get_key_value(SecureStorageKey.Accounts)
         if not accounts:
             return []
 
@@ -83,7 +69,7 @@ class AccountManager:
         accounts = [account.model_dump() for account in accounts]
         accounts.append(account.model_dump())
         self._secure_storage.add_key(
-            SecureStorageKey.ACCOUNTS,
+            SecureStorageKey.Accounts,
             accounts
         )
 
@@ -102,7 +88,7 @@ class AccountManager:
         accounts = [account.model_dump() for account in accounts]
         accounts.append(account.model_dump())
         self._secure_storage.add_key(
-            SecureStorageKey.ACCOUNTS,
+            SecureStorageKey.Accounts,
             accounts
         )
 
@@ -113,13 +99,12 @@ class AccountManager:
 
         accounts = [account.model_dump() for account in accounts if account.email_address != email]
         self._secure_storage.add_key(
-            SecureStorageKey.ACCOUNTS,
+            SecureStorageKey.Accounts,
             accounts
         )
 
     def remove_all(self) -> None:
-        self._secure_storage.delete_key(SecureStorageKey.ACCOUNTS)
-        self._create() # Create empty list for later use
+        self._secure_storage.delete_key(SecureStorageKey.Accounts)
 
     def destroy(self) -> None:
         self._secure_storage.destroy()
