@@ -4,7 +4,7 @@ import os
 import json
 import time
 from enum import Enum
-from dataclasses import dataclass
+from typing import TypedDict
 
 import keyring
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -303,16 +303,12 @@ class SecureStorage:
                 pass
 
 class SecureStorageCache:
-    @dataclass
-    class StoreData:
-        value: any
-        timestamp: float
-
-        def is_expired(self) -> bool:
-            return time.time() - self.timestamp > CACHE_TTL
+    class CachedData(TypedDict):
+        data: any
+        created_at: float
 
     _instance = None
-    _store: dict[str, StoreData]
+    _store: dict[str, CachedData]
 
     def __new__(cls):
         if not cls._instance:
@@ -324,18 +320,24 @@ class SecureStorageCache:
     def __del__(self):
         self.destroy()
 
+    def _is_expired(self, timestamp: float) -> bool:
+        return time.time() - timestamp > CACHE_TTL
+
     def get(self, key: str) -> any:
         if key not in self._store:
             return None
 
-        store_data: SecureStorageCache.StoreData = self._store[key]
-        if store_data.is_expired():
+        store_data: SecureStorageCache.CachedData = self._store[key]
+        if self._is_expired(store_data["created_at"]):
             self.delete(key)
 
         return store_data.value
 
     def set(self, key: str, value: any):
-        self._store[key] = SecureStorageCache.StoreData(value, time.time())
+        self._store[key] = {
+            "data": value,
+            "created_at": time.time()
+        }
 
     def delete(self, key: str):
         if key in self._store:
