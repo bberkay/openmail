@@ -1,6 +1,5 @@
 import re
 import json
-from typing import get_type_hints
 
 def is_email_valid(email: str) -> bool:
     return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
@@ -22,13 +21,6 @@ def safe_json_loads(value: any) -> any:
         return json.loads(value)
     except (json.JSONDecodeError, TypeError):
         return value
-
-def is_typeddict(instance: dict, typed_dict_class: dict):
-    hints = get_type_hints(typed_dict_class)
-    for key, expected_type in hints.items():
-        if key not in instance or not isinstance(instance[key], expected_type):
-            return False
-    return True
 
 def err_msg(message: str, traceback: str) -> str:
     return f"{message}\nError: {traceback}"

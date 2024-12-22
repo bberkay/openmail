@@ -49,7 +49,7 @@ def create_and_idle_openmail_clients():
                 account.email_address,
                 RSACipher.decrypt_password(
                     account.encrypted_password,
-                    secure_storage.get_key_value(SecureStorageKey.PrivatePem)
+                    secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
                 )
             )
             print(f"Connected to {account.email_address}")
@@ -70,7 +70,7 @@ def reconnect_and_idle_logged_out_openmail_clients():
                     email_address,
                     RSACipher.decrypt_password(
                         accounts[0].encrypted_password,
-                        secure_storage.get_key_value(SecureStorageKey.PrivatePem)
+                        secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
                     )
                 )
                 print(f"Reconnected to {email_address}")
@@ -166,7 +166,7 @@ async def get_public_key() -> Response[GetPublicKeyData]:
         success=True,
         message="Public key fetched successfully",
         data=GetPublicKeyData(
-            public_key=secure_storage.get_key_value(SecureStorageKey.PublicPem)
+            public_key=secure_storage.get_key_value(SecureStorageKey.PublicPem)["value"]
         )
     )
 
@@ -220,7 +220,7 @@ def add_account(
             request.email_address,
             RSACipher.decrypt_password(
                 request.encrypted_password,
-                secure_storage.get_key_value(SecureStorageKey.PrivatePem)
+                secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
             )
         )
 
@@ -270,7 +270,7 @@ def edit_account(
                 request.email_address,
                 RSACipher.decrypt_password(
                     request.encrypted_password,
-                    secure_storage.get_key_value(SecureStorageKey.PrivatePem)
+                    secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
                 )
             )
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
 import base64
+import copy
 import os
 import json
 import time
+import ast
 from enum import Enum
 from typing import TypedDict
 
@@ -11,7 +13,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 
-from utils import is_typeddict, safe_json_loads
+from utils import safe_json_loads
 from consts import APP_NAME
 
 """
@@ -131,16 +133,25 @@ class SecureStorage:
     ) -> SecureStorageKeyValue:
         self._is_key_value_type_valid(key_value_type)
         return SecureStorageKeyValue(
-            value=str(key_value),
-            type=key_value_type,
+            value=key_value,
+            type=str(key_value_type),
             created_at=time.time() if created_at is None else float(created_at),
             last_updated_at=time.time() if last_updated_at is None else float(last_updated_at),
+        )
+
+    def _fill_missing_key_value_dict(self, key_value: SecureStorageKeyValue):
+        self._is_key_value_type_valid(key_value["type"])
+        return SecureStorageKeyValue(
+            value=key_value["value"],
+            type=str(key_value["type"]),
+            created_at=float(key_value["created_at"]) if "created_at" in key_value else time.time(),
+            last_updated_at=float(key_value["last_updated_at"]) if "last_updated_at" in key_value else time.time(),
         )
 
     def _serialize_key_value_dict(self, key_value_dict: SecureStorageKeyValue) -> str:
         return json.dumps(key_value_dict)
 
-    def _parse_key_value_dict(self, key_value: str) -> SecureStorageKeyValue:
+    def _parse_key_value_dict(self, key_value: str) -> SecureStorageKeyValue | None:
         return safe_json_loads(key_value)
 
     def _is_key_valid(self, key: str | SecureStorageKey):
@@ -157,7 +168,7 @@ class SecureStorage:
 
     def _set_password(self, key: SecureStorageKey, value: SecureStorageKeyValue) -> None:
         self._is_key_valid(key)
-        keyring.set_password(APP_NAME, key, value)
+        keyring.set_password(APP_NAME, key, self._serialize_key_value_dict(value))
 
     def _delete_password(self, key: SecureStorageKey) -> None:
         self._is_key_valid(key)
@@ -198,7 +209,7 @@ class SecureStorage:
             self._delete_password(SecureStorageKey.AESGCMCipherKey)
             self._init_aesgcm_cipher()
             for key_name, key_value in temp_store.items():
-                self.add_key(key_name, key_value)
+                self.update_key(key_name, key_value)
 
             print("AESGCM cipher rotation completed successfully.")
         except Exception as e:
@@ -208,7 +219,7 @@ class SecureStorage:
             self._set_password(SecureStorageKey.AESGCMCipherKey, aesgcm_cipher_key_backup)
             self._init_aesgcm_cipher()
             for key_name, key_value in temp_store.items():
-                self.add_key(key_name, key_value)
+                self.update_key(key_name, key_value)
 
             print("AESGCM cipher rotation completed unsuccessfully.")
             raise e
@@ -271,7 +282,7 @@ class SecureStorage:
             new_public_pem = self.get_key_value(SecureStorageKey.PublicPem, use_cache=False)
             for key_name, key_value in temp_store.items():
                 key_value["value"] = RSACipher().encrypt_password(key_value["value"], new_public_pem["value"])
-                self.add_key(key_name, key_value)
+                self.update_key(key_name, key_value)
 
             print("RSA cipher rotation completed successfully.")
         except Exception as e:
@@ -285,7 +296,7 @@ class SecureStorage:
             self._init_rsa_cipher()
             for key_name, key_value in temp_store.items():
                 key_value["value"] = RSACipher().encrypt_password(key_value["value"], public_pem_backup["value"])
-                self.add_key(key_name, key_value)
+                self.update_key(key_name, key_value)
 
             print("RSA cipher rotation completed unsuccessfully.")
             raise e
@@ -302,11 +313,10 @@ class SecureStorage:
     ) -> SecureStorageKeyValue:
         self._is_key_valid(key_name)
         self._is_key_legal(key_name)
-        print(f"Getting key value...: {key_name}")
+
         key_value = self._cache.get(key_name) if use_cache else None
         if not key_value:
             key_value = self._get_password(key_name)
-            print(f"get_key_value: {key_value}")
             if not key_value:
                 return None
             if use_cache: self._cache.set(key_name, key_value)
@@ -316,7 +326,7 @@ class SecureStorage:
                 key_value["value"] = self._encryptor.decrypt(key_value["value"], associated_data)
             else:
                 raise AESGCMCipherNotInitializedError
-        print(f"Decrypted get_key_value: {key_value}")
+
         return key_value
 
     def add_key(self,
@@ -330,12 +340,22 @@ class SecureStorage:
         self._is_key_valid(key_name)
         self._is_key_legal(key_name)
 
-        if not is_typeddict(key_value, SecureStorageKeyValue):
-            raise InvalidSecureStorageKeyValueError
+        key_value = self._fill_missing_key_value_dict(key_value)
 
         key_value["value"] = self._encryptor.encrypt(key_value["value"], associated_data)
         self._set_password(key_name, key_value)
         self._cache.set(key_name, key_value)
+
+    def update_key(self,
+        key_name: SecureStorageKey,
+        key_value: SecureStorageKeyValue,
+        associated_data: bytes = None
+    ) -> None:
+        if "last_updated_at" not in key_value:
+            raise InvalidSecureStorageKeyValueError
+
+        key_value["last_updated_at"] = time.time()
+        self.add_key(key_name, key_value, associated_data)
 
     def delete_key(self, key_name: SecureStorageKey) -> None:
         self._is_key_legal(key_name)
@@ -385,11 +405,11 @@ class SecureStorageCache:
         if self._is_expired(store_data["created_at"]):
             self.delete(key)
 
-        return store_data.value
+        return copy.deepcopy(store_data["data"])
 
     def set(self, key: SecureStorageKey, value: SecureStorageKeyValue):
         self._store[key] = {
-            "data": value,
+            "data": copy.deepcopy(value),
             "created_at": time.time()
         }
 
@@ -417,11 +437,17 @@ class AESGCMCipher:
             key = random_bytes.hex()
 
     def encrypt(self, plain_text: str, associated_data: bytes = None) -> str:
+        if not isinstance(plain_text, str):
+            plain_text = json.dumps(plain_text)
+
         nonce = os.urandom(12)
         cipher_text = self._cipher.encrypt(nonce, plain_text.encode(), associated_data)
         return base64.b64encode(nonce + cipher_text).decode('utf-8')
 
     def decrypt(self, encrypted_text: str, associated_data: bytes = None) -> str:
+        if not isinstance(encrypted_text, str):
+            encrypted_text = json.dumps(encrypted_text)
+
         encrypted_text = base64.b64decode(encrypted_text)
         nonce = encrypted_text[:12]
         cipher_text = encrypted_text[12:]
@@ -461,15 +487,18 @@ class RSACipher:
 
     @staticmethod
     def encrypt_password(
-        password: str,
+        plain_text_password: str,
         public_pem: str | bytes
     ) -> str:
         if isinstance(public_pem, str):
             public_pem = public_pem.encode('utf-8')
 
+        if not isinstance(plain_text_password, str):
+            plain_text_password = json.dumps(plain_text_password)
+
         public_key = serialization.load_pem_public_key(public_pem)
         encrypted_b64_password = public_key.encrypt(
-            password.encode("utf-8"),
+            plain_text_password.encode("utf-8"),
             padding.OAEP(
                 mgf=padding.MGF1(algorithm=hashes.SHA256()),
                 algorithm=hashes.SHA256(),
@@ -485,6 +514,9 @@ class RSACipher:
     ) -> str:
         if isinstance(private_pem, str):
             private_pem = private_pem.encode('utf-8')
+
+        if not isinstance(encrypted_b64_password, str):
+            encrypted_b64_password = json.dumps(encrypted_b64_password)
 
         private_key = serialization.load_pem_private_key(private_pem, password=None)
         return private_key.decrypt(

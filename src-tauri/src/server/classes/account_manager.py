@@ -1,8 +1,9 @@
+import json
 from typing import Optional
 
 from pydantic import BaseModel
 
-from .secure_storage import SecureStorage, SecureStorageKey
+from .secure_storage import SecureStorage, SecureStorageKey, SecureStorageKeyValue, SecureStorageKeyValueType
 
 """
 Exceptions
@@ -46,6 +47,7 @@ class AccountManager:
         if not accounts:
             return []
 
+        accounts = json.loads(accounts["value"].replace("'", "\""))
         if isinstance(emails, str):
             emails = [emails]
 
@@ -58,7 +60,6 @@ class AccountManager:
                 filtered_accounts.append(AccountWithPassword.model_validate(account))
             else:
                 filtered_accounts.append(Account.model_validate(account))
-
         return filtered_accounts
 
     def add(self, account: AccountWithPassword) -> None:
@@ -68,9 +69,12 @@ class AccountManager:
 
         accounts = [account.model_dump() for account in accounts]
         accounts.append(account.model_dump())
-        self._secure_storage.add_key(
+        self._secure_storage.update_key(
             SecureStorageKey.Accounts,
-            accounts
+            SecureStorageKeyValue(
+                value=accounts,
+                type=SecureStorageKeyValueType.RSAEncryptedKey
+            )
         )
 
     def edit(self, account: Account | AccountWithPassword) -> None:
@@ -87,9 +91,12 @@ class AccountManager:
 
         accounts = [account.model_dump() for account in accounts]
         accounts.append(account.model_dump())
-        self._secure_storage.add_key(
+        self._secure_storage.update_key(
             SecureStorageKey.Accounts,
-            accounts
+            SecureStorageKeyValue(
+                value=accounts,
+                type=SecureStorageKeyValueType.RSAEncryptedKey
+            )
         )
 
     def remove(self, email: str) -> None:
@@ -100,7 +107,10 @@ class AccountManager:
         accounts = [account.model_dump() for account in accounts if account.email_address != email]
         self._secure_storage.add_key(
             SecureStorageKey.Accounts,
-            accounts
+            SecureStorageKeyValue(
+                value=accounts,
+                type=SecureStorageKeyValueType.RSAEncryptedKey
+            )
         )
 
     def remove_all(self) -> None:
