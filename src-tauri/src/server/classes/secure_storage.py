@@ -20,32 +20,34 @@ from consts import APP_NAME
 Exceptions
 """
 class AESGCMCipherNotInitializedError(Exception):
-    """AESGCMCipher is not initialized."""
-    pass
+    def __init__(self, msg: str = "AESGCMCipher is not initialized.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
 
 class RSACipherNotInitializedError(Exception):
-    """RSACipher is not initialized."""
-    pass
+    def __init__(self, msg: str = "RSACipher is not initialized.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
 
 class InvalidSecureStorageKeyError(Exception):
-    """Invalid secure storage key."""
-    pass
+    def __init__(self, msg: str = "Invalid secure storage key.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
 
 class InvalidSecureStorageKeyValueError(Exception):
-    """Invalid secure storage key value."""
-    pass
+    def __init__(self, msg: str = "Invalid secure storage key value.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
 
 class InvalidSecureStorageKeyValueTypeError(Exception):
-    """Invalid secure storage key value type."""
-    pass
+    def __init__(self, msg: str = "Invalid secure storage key value type.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
 
 class IllegalAESGCMCipherAccessError(Exception):
-    """
-    Illegal AESGCMCipher access.
-    Only accessible through `_get_password`
-    `_set_password` and/or `_delete_password`.
-    """
-    pass
+    def __init__(self,
+        msg: str = """Illegal AESGCMCipher access.
+        Only accessible through `_get_password`, `_set_password`
+        and/or `_delete_password`.""",
+        *args,
+        **kwargs
+    ):
+        super().__init__(msg, *args, **kwargs)
 
 """
 Enums, Types
@@ -209,7 +211,7 @@ class SecureStorage:
             self._delete_password(SecureStorageKey.AESGCMCipherKey)
             self._init_aesgcm_cipher()
             for key_name, key_value in temp_store.items():
-                self.update_key(key_name, key_value)
+                self.add_key(key_name, key_value)
 
             print("AESGCM cipher rotation completed successfully.")
         except Exception as e:
@@ -219,7 +221,7 @@ class SecureStorage:
             self._set_password(SecureStorageKey.AESGCMCipherKey, aesgcm_cipher_key_backup)
             self._init_aesgcm_cipher()
             for key_name, key_value in temp_store.items():
-                self.update_key(key_name, key_value)
+                self.add_key(key_name, key_value)
 
             print("AESGCM cipher rotation completed unsuccessfully.")
             raise e
@@ -282,7 +284,7 @@ class SecureStorage:
             new_public_pem = self.get_key_value(SecureStorageKey.PublicPem, use_cache=False)
             for key_name, key_value in temp_store.items():
                 key_value["value"] = RSACipher().encrypt_password(key_value["value"], new_public_pem["value"])
-                self.update_key(key_name, key_value)
+                self.add_key(key_name, key_value)
 
             print("RSA cipher rotation completed successfully.")
         except Exception as e:
@@ -296,7 +298,7 @@ class SecureStorage:
             self._init_rsa_cipher()
             for key_name, key_value in temp_store.items():
                 key_value["value"] = RSACipher().encrypt_password(key_value["value"], public_pem_backup["value"])
-                self.update_key(key_name, key_value)
+                self.add_key(key_name, key_value)
 
             print("RSA cipher rotation completed unsuccessfully.")
             raise e
@@ -327,7 +329,7 @@ class SecureStorage:
             else:
                 raise AESGCMCipherNotInitializedError
 
-        return key_value
+        return self._parse_key_value_dict(key_value)
 
     def add_key(self,
         key_name: SecureStorageKey,
@@ -340,22 +342,14 @@ class SecureStorage:
         self._is_key_valid(key_name)
         self._is_key_legal(key_name)
 
+        if "last_updated_at" in key_value:
+            key_value["last_updated_at"] = time.time()
+
         key_value = self._fill_missing_key_value_dict(key_value)
 
         key_value["value"] = self._encryptor.encrypt(key_value["value"], associated_data)
         self._set_password(key_name, key_value)
         self._cache.set(key_name, key_value)
-
-    def update_key(self,
-        key_name: SecureStorageKey,
-        key_value: SecureStorageKeyValue,
-        associated_data: bytes = None
-    ) -> None:
-        if "last_updated_at" not in key_value:
-            raise InvalidSecureStorageKeyValueError
-
-        key_value["last_updated_at"] = time.time()
-        self.add_key(key_name, key_value, associated_data)
 
     def delete_key(self, key_name: SecureStorageKey) -> None:
         self._is_key_legal(key_name)

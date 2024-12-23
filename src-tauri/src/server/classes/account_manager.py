@@ -6,13 +6,6 @@ from pydantic import BaseModel
 from .secure_storage import SecureStorage, SecureStorageKey, SecureStorageKeyValue, SecureStorageKeyValueType
 
 """
-Exceptions
-"""
-class InvalidAccountColumnError(Exception):
-    """Invalid account column."""
-    pass
-
-"""
 Enums, Types
 """
 class Account(BaseModel):
@@ -20,7 +13,7 @@ class Account(BaseModel):
     fullname: Optional[str] = None
 
 class AccountWithPassword(Account):
-    encrypted_password: Optional[str] = None
+    encrypted_password: str = None
 
 class AccountManager:
     _instance = None
@@ -69,7 +62,7 @@ class AccountManager:
 
         accounts = [account.model_dump() for account in accounts]
         accounts.append(account.model_dump())
-        self._secure_storage.update_key(
+        self._secure_storage.add_key(
             SecureStorageKey.Accounts,
             SecureStorageKeyValue(
                 value=accounts,
@@ -91,7 +84,7 @@ class AccountManager:
 
         accounts = [account.model_dump() for account in accounts]
         accounts.append(account.model_dump())
-        self._secure_storage.update_key(
+        self._secure_storage.add_key(
             SecureStorageKey.Accounts,
             SecureStorageKeyValue(
                 value=accounts,
@@ -125,6 +118,5 @@ class AccountManager:
 __all__ = [
     "AccountManager",
     "Account",
-    "AccountWithPassword",
-    "InvalidAccountColumnError"
+    "AccountWithPassword"
 ]
