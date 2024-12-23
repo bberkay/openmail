@@ -24,9 +24,8 @@
     }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div onclick={getEmailContent}>
+<div>
     <pre>{JSON.stringify(email, null, 2)}</pre>
+    <button onclick={getEmailContent} class = "bg-primary">Show Content</button>
 </div>
 <br>

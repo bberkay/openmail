@@ -318,18 +318,16 @@ def remove_accounts() -> Response:
 
 
 ################ EMAIL OPERATIONS ###################
-class OpenMailTaskResult(BaseModel, Generic[T]):
+class OpenMailTaskResult(BaseModel):
     email_address: str
-    result: T
+    result: dict | list | str | tuple | object
 
-type OpenMailTaskResults[T] = list[OpenMailTaskResult[T]]
-
-def execute_openmail_task_concurrently[T](
+def execute_openmail_task_concurrently(
     accounts: list[str],
-    func: Callable[..., T],
+    func: Callable[...],
     **params
-) -> OpenMailTaskResults[T]:
-    results: OpenMailTaskResults[T] = []
+) -> list[OpenMailTaskResult]:
+    results: list[OpenMailTaskResult] = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_emails = {
             executor.submit(func, client, **params): email_address
@@ -367,7 +365,7 @@ async def get_mailboxes(
     search: Optional[str] = "ALL",
     offset_start: Optional[int] = 0,
     offset_end: Optional[int] = 10,
-) -> Response[OpenMailTaskResults[Mailbox]]:
+) -> Response[list[OpenMailTaskResult]]:
     try:
         response = check_if_email_client_is_exists(accounts)
         if not response:
@@ -380,10 +378,10 @@ async def get_mailboxes(
             search=search,
         )
 
-        return Response[OpenMailTaskResults[Mailbox]](
+        return Response[list[OpenMailTaskResult]](
             success=True,
             message="Emails fetched successfully.",
-            data=execute_openmail_task_concurrently[Mailbox](
+            data=execute_openmail_task_concurrently(
                 accounts.split(","),
                 lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
@@ -398,16 +396,16 @@ async def paginate_mailboxes(
     accounts: str,
     offset_start: int,
     offset_end: int,
-) -> Response[OpenMailTaskResults[Mailbox]]:
+) -> Response[list[OpenMailTaskResult]]:
     try:
         response = check_if_email_client_is_exists(accounts)
         if not response:
             return response
 
-        return Response[OpenMailTaskResults[Mailbox]](
+        return Response[list[OpenMailTaskResult]](
             success=True,
             message="Emails paginated successfully.",
-            data=execute_openmail_task_concurrently[Mailbox](
+            data=execute_openmail_task_concurrently(
                 accounts.split(","),
                 lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
@@ -420,16 +418,16 @@ async def paginate_mailboxes(
 @app.get("/get-folders/{accounts}")
 async def get_folders(
     accounts: str,
-) -> Response[OpenMailTaskResults[list[str]]]:
+) -> Response[list[OpenMailTaskResult]]:
     try:
         response = check_if_email_client_is_exists(accounts)
         if not response:
             return response
 
-        return Response[OpenMailTaskResults[list[str]]](
+        return Response[list[OpenMailTaskResult]](
             success=True,
             message="Folders fetched successfully.",
-            data=execute_openmail_task_concurrently[list[str]](
+            data=execute_openmail_task_concurrently(
                 accounts.split(","),
                 lambda client: client.imap.get_folders(),
             ),

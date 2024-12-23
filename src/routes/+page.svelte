@@ -4,7 +4,7 @@
     import Register from "$lib/components/Register.svelte";
     import Sidebar from "$lib/components/Sidebar.svelte";
     import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
-    import { ApiService, PostRoutes, type GetResponse, type PostResponse } from "$lib/services/ApiService";
+    import { ApiService, PostRoutes, type PostResponse } from "$lib/services/ApiService";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
 
@@ -77,7 +77,11 @@
 <style>
     main {
         width: 100%;
-        display:flex;
+        background-color: #2e2e2e;
+        padding: 5px;
+        border-radius: 5px;
+        border:1px solid #5a5a5a;
+        box-sizing: border-box;
 
         & section {
             margin: 10px;

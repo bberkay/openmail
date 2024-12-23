@@ -67,7 +67,7 @@ class Mark(str, Enum):
     def __str__(self):
         return self.value
 
-MARK_LIST = [m for m in Mark]
+MARK_LIST = [str(m).lower() for m in Mark]
 
 class Folder(str, Enum):
     """
@@ -88,7 +88,7 @@ class Folder(str, Enum):
     def __str__(self):
         return self.value
 
-FOLDER_LIST = [m for m in Folder]
+FOLDER_LIST = [str(f).lower() for f in Folder]
 
 """
 Types, that are only used in this module
@@ -662,7 +662,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             >>> find_matching_folder(Folder.Flagged, encoded=False)
             b'"[Gmail]/Yıldızlı"' # Flagged in Turkish
         """
-        if requested_folder not in FOLDER_LIST:
+        if requested_folder.lower() not in FOLDER_LIST:
             raise IMAPManagerException(f"Invalid folder name: {requested_folder}. Please use one of the following: {FOLDER_LIST}")
 
         status, folders_as_bytes = self.list()
@@ -879,8 +879,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             return f' ({criteria} "{value}")'
 
         try:
-            included_flag_list = ["KEYWORD " + flag if flag not in MARK_LIST else flag for flag in search_criteria.included_flags]
-            excluded_flag_list = ["NOT KEYWORD " + flag if flag not in MARK_LIST else flag for flag in search_criteria.excluded_flags]
+            included_flag_list = ["KEYWORD " + flag if flag.lower() not in MARK_LIST else flag for flag in search_criteria.included_flags]
+            excluded_flag_list = ["NOT KEYWORD " + flag if flag.lower() not in MARK_LIST else flag for flag in search_criteria.excluded_flags]
 
             search_criteria_query = ''
             search_criteria_query += add_criterion(
@@ -1023,8 +1023,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         emails = []
         try:
             sequence_set = "{}:{}".format(
-                str(self._searched_emails.uids[offset_start].decode()),
-                str(self._searched_emails.uids[offset_end].decode())
+                str(self._searched_emails.uids[offset_end].decode()),
+                str(self._searched_emails.uids[offset_start].decode())
             )
             status, messages = self.uid(
                 'FETCH',
