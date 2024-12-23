@@ -110,23 +110,21 @@
     }
 </script>
 
-<section>
+<div class="card" style="width:45%;">
+    <h2>{SharedStore.selectedFolder}</h2>
+    <hr />
     <div>
-        <h2>{SharedStore.selectedFolder}</h2>
-        <hr />
-        <div>
-            <button id="prev-button" class = "bg-primary" onclick={getPreviousEmails} disabled={currentOffset <= 10}>
-                Previous
-            </button>
-            <small>
-                {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
-            </small>
-            <button id="next-button" class = "bg-primary" onclick={getNextEmails} disabled={currentOffset >= totalEmailCount}>
-                Next
-            </button>
-        </div>
-        <hr />
+        <button id="prev-button" class = "bg-primary" onclick={getPreviousEmails} disabled={currentOffset <= 10}>
+            Previous
+        </button>
+        <small>
+            {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
+        </small>
+        <button id="next-button" class = "bg-primary" onclick={getNextEmails} disabled={currentOffset >= totalEmailCount}>
+            Next
+        </button>
     </div>
+    <hr />
     <div>
         {#each SharedStore.mailboxes as account}
             {#each account.result.emails as email}
@@ -134,4 +132,4 @@
             {/each}
         {/each}
     </div>
-</section>
+</div>

@@ -1236,7 +1236,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 "In-Reply-To": message.get("In-Reply-To", ""),
                 "References": message.get("References", "")
             },
-            flags=self.get_emails_flags(uid)[0].flags or [],
+            flags=self.get_email_flags(uid)[0].flags or [],
             attachments=attachments
         )
 

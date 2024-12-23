@@ -37,6 +37,10 @@ pre {
     box-sizing: border-box;
 }
 
+main {
+    display: flex;
+}
+
 /* Colors */
 .bg-primary{
     background-color: #234483;
@@ -94,6 +98,18 @@ button{
     }
 }
 
+span {
+    &.tag {
+        background-color: #e0d594;
+        color: #000;
+        font-size: 0.8em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 5px;
+        margin-left: 0.2rem;
+        margin-right: 0.2rem;
+    }
+}
+
 /* Loader */
 .loader {
     border: 2px solid #2a2a2a;
@@ -115,4 +131,13 @@ button{
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Components */
+.card {
+    background-color: #2e2e2e;
+    border:1px solid #5a5a5a;
+    border-radius: 5px;
+    padding: 1rem;
+    margin-bottom: 1rem;
 }

@@ -6,9 +6,9 @@
     });
 </script>
 
-<section>
-    Folders
-</section>
+<div class = "card">
+    Sidebar
+</div>
 
 <style>
 

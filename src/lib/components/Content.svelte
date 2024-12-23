@@ -1,85 +1,24 @@
 <script lang="ts">
-    import type { Email, Response } from "$lib/types";
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import type { Attachment, EmailWithContent } from "$lib/types";
     import { onMount } from "svelte";
-    import {
-        currentEmail,
-        currentFolder,
-        currentOffset,
-        emails,
-        folders,
-        serverUrl,
-    } from "$lib/stores/shared.svelte";
-    import { get } from "svelte/store";
 
-    const markStatus: { [key: string]: string } = {
-        flagged: "Star",
-        seen: "Read",
-        unflagged: "Remove Star",
-        unseen: "Mark as Unread",
-    };
-
-    let owner: string = "";
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
-    let markButtons: NodeListOf<HTMLButtonElement>;
-    let defaultMarkButtons: NodeListOf<HTMLButtonElement>;
     onMount(() => {
-        markButtons = document.querySelectorAll(
-            ".flag-operations [data-mark-as]",
-        );
-        defaultMarkButtons = document.querySelectorAll(
-            ".flag-operations [data-default-mark]",
-        );
-
-        currentEmail.subscribe((value) => {
-            if (value && Object.keys(value).length > 0) {
-                console.log(value);
-                owner = (
-                    document.querySelector(
-                        `[data-email-uid="${get(currentEmail)!.uid}"]`,
-                    ) as HTMLElement
-                ).getAttribute("data-email-owner")!;
-                getEmailContent(value);
-            } else {
-                clearEmailContent();
-            }
-        });
-    });
-
-    function clearEmailContent() {
         contentBody = document.getElementById("body")!;
         attachments = document.getElementById("attachments")!;
-        (
-            document.querySelector(".email-operations") as HTMLElement
-        ).style.display = "none";
-        (
-            document.querySelector(".email-content") as HTMLElement
-        ).style.display = "none";
-        defaultMarkButtons.forEach((button) => {
-            const mark = button.getAttribute("data-default-mark")!;
-            button.innerText = markStatus[mark];
-            button.setAttribute("data-mark-as", mark);
-        });
-        (
-            document.querySelector(
-                'select[name="move_to_folder"]',
-            ) as HTMLSelectElement
-        ).selectedIndex = 0;
-        contentBody.querySelector("iframe")?.remove();
-        contentBody.innerHTML = "";
-        attachments.innerHTML = "";
-    }
+    })
 
-    async function getEmailContent(email: Email): Promise<void> {
-        clearEmailContent();
-        (
-            document.querySelector(".email-operations") as HTMLElement
-        ).style.display = "flex";
-        (
-            document.querySelector(".email-content") as HTMLElement
-        ).style.display = "block";
+    $effect(() => {
+        if(SharedStore.shownEmail) {
+            contentBody.innerHTML = "";
+            attachments.innerHTML = "";
+            printEmailContent(SharedStore.shownEmail);
+        }
+    })
 
-        // Body
+    function printEmailContent(email: EmailWithContent): void {
         if (!email.body) return;
 
         let iframe = document.createElement("iframe");
@@ -98,24 +37,9 @@
             iframeDoc.body.style.overflow = "hidden";
         }
 
-        // Flags
-        if (Object.hasOwn(email, "flags") && email["flags"].length > 0) {
-            email["flags"].forEach((flag) => {
-                flag = flag.toLowerCase();
-                if (Object.hasOwn(markStatus, flag)) {
-                    const markButton = document.querySelector(
-                        '[data-default-mark="' + flag + '"]',
-                    ) as HTMLButtonElement;
-                    flag = "un" + flag;
-                    markButton.innerText = markStatus[flag];
-                    markButton.setAttribute("data-mark-as", flag);
-                }
-            });
-        }
-
         // Attachment
         if (Object.hasOwn(email, "attachments")) {
-            email["attachments"]!.forEach((attachment) => {
+            email["attachments"]!.forEach((attachment: Attachment) => {
                 const decodedData = atob(attachment.data);
                 const byteNumbers = Array.from(decodedData, (char) =>
                     char.charCodeAt(0),
@@ -135,217 +59,29 @@
     }
 
     async function markEmail(event: Event): Promise<void> {
-        if (!get(currentEmail)) return;
-
-        const mark = (event.target as HTMLButtonElement).getAttribute(
-            "data-mark-as",
-        )!;
-        const response: Response = await fetch(`${get(serverUrl)}/mark-email`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                email: owner,
-                uid: get(currentEmail)!.uid,
-                mark: mark,
-                folder: get(currentFolder),
-            }),
-        }).then((res) => res.json());
-        if (response.success) {
-            currentEmail.update((value) => {
-                if (value && Object.keys(value).length > 0) {
-                    if (mark.startsWith("un"))
-                        value.flags = value.flags.filter(
-                            (flag) => flag.toLowerCase() != mark.slice(2),
-                        );
-                    else
-                        value.flags.push(
-                            mark.slice(0, 1).toUpperCase() +
-                                mark.slice(1).toLowerCase(),
-                        );
-                }
-                return value;
-            });
-        }
     }
 
     async function moveEmail(event: Event): Promise<void> {
-        if (!get(currentEmail)) return;
-
-        const folder = (event.target as HTMLSelectElement).value;
-        const response: Response = await fetch(`${get(serverUrl)}/move-email`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                email: owner,
-                uid: get(currentEmail)!.uid,
-                source: get(currentFolder),
-                destination: folder,
-            }),
-        }).then((res) => res.json());
-        if (response.success) {
-            emails.update((value) =>
-                value.filter((item) =>
-                    item.email == owner
-                        ? (item.emails = item.emails.filter(
-                              (email: Email) =>
-                                  email.uid != get(currentEmail)!.uid,
-                          ))
-                        : item,
-                ),
-            );
-            currentEmail.set({} as Email);
-            currentOffset.update((value) => value - 1);
-        }
     }
 
     async function deleteEmail(event: Event): Promise<void> {
-        if (!get(currentEmail)) return;
-
-        const folder = (event.target as HTMLSelectElement).value;
-        const response: Response = await fetch(
-            `${get(serverUrl)}/delete-email`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    email: owner,
-                    uid: get(currentEmail)!.uid,
-                    folder: get(currentFolder),
-                }),
-            },
-        ).then((res) => res.json());
-        if (response.success) {
-            emails.update((value) =>
-                value.filter((item) =>
-                    item.email == owner
-                        ? (item.emails = item.emails.filter(
-                              (email: Email) =>
-                                  email.uid != get(currentEmail)!.uid,
-                          ))
-                        : item,
-                ),
-            );
-            currentEmail.set({} as Email);
-            currentOffset.update((value) => value - 1);
-        }
     }
 </script>
 
-<section class="card">
-    <div class="email-header">
-        <h2>Email</h2>
-        <hr />
-        <div class="email-operations">
-            <div class="flag-operations">
-                <button
-                    data-mark-as="seen"
-                    data-default-mark="seen"
-                    on:click={markEmail}>Read</button
-                >
-                <button
-                    data-mark-as="flagged"
-                    data-default-mark="flagged"
-                    on:click={markEmail}>Star</button
-                >
-                <select name="move_to_folder" on:change={moveEmail}>
-                    <option value="">Move To Folder</option>
-                    {#each $folders as folder}
-                        {#if owner == folder.email}
-                            {#each folder.folders as item}
-                                <option value={item}>{item}</option>
-                            {/each}
-                        {/if}
-                    {/each}
-                </select>
-                <button on:click={deleteEmail}>Delete</button>
-            </div>
-            <div class="answer-operations">
-                <button>Reply</button>
-                <button>Forward</button>
-            </div>
+<div class = "card" style="width:55%;margin-left:5px;">
+    {#if SharedStore.shownEmail}
+        <div id="subject" style="margin-bottom: 5px;">
+            <h3>{SharedStore.shownEmail.subject || ""}</h3>
+            <p>From: {SharedStore.shownEmail.receiver || ""}</p>
+            <p>To: {SharedStore.shownEmail.sender || ""}</p>
+            <p>Date: {SharedStore.shownEmail.date || ""}</p>
+            {#if Object.hasOwn(SharedStore.shownEmail, "flags") && SharedStore.shownEmail.flags}
+                {#each SharedStore.shownEmail.flags as flag}
+                    <span class = "tag">{flag}</span>
+                {/each}
+            {/if}
         </div>
-    </div>
-    <div class="email-content">
-        {#if $currentEmail}
-            <div class="tags">
-                {#if $currentEmail.flags && $currentEmail.flags.length > 0}
-                    {#each $currentEmail.flags as flag}
-                        <span class="flag">{flag}</span>
-                    {/each}
-                {/if}
-            </div>
-            <div id="subject">
-                <h3>{$currentEmail.subject || ""}</h3>
-                <p>From: {$currentEmail.from || ""}</p>
-                <p>To: {$currentEmail.to || ""}</p>
-                <p>Date: {$currentEmail.date || ""}</p>
-            </div>
-        {/if}
         <div id="body"></div>
         <div id="attachments"></div>
-    </div>
-</section>
-
-<style>
-    .email-operations,
-    .email-content {
-        display: none;
-    }
-
-    .email-operations {
-        justify-content: space-between;
-        align-items: center;
-
-        & .flag-operations,
-        & .answer-operations {
-            display: flex;
-            align-items: center;
-        }
-    }
-
-    .email-content {
-        width: 100%;
-        border-top: 2px solid #3a3a3a;
-        margin-top: 0.5rem;
-
-        & iframe {
-            border: none;
-            width: 100%;
-            height: 100%;
-        }
-
-        & .tags {
-            display: flex;
-            margin-top: 10px;
-
-            & button {
-                display: none;
-            }
-        }
-
-        & #attachments {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-
-            & a.attachment {
-                padding: 0.5rem;
-                background-color: #f8f3c7;
-                color: #121212;
-                text-decoration: none;
-                border-radius: 0.5rem;
-                transition: background-color 0.2s;
-
-                &:hover {
-                    background-color: #f8f4d4;
-                }
-            }
-        }
-    }
-</style>
+    {/if}
+</div>

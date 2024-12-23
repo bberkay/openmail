@@ -51,12 +51,12 @@ export interface SearchCriteria {
 }
 
 export interface Attachment {
+    name: string;
+    data: string;
+    size: string;
+    type: string;
     path?: string;
-    name?: string;
-    data?: string;
-    size?: string;
-    type?: string;
-    cid?: string | null;
+    cid?: string;
 }
 
 export interface EmailToSend {

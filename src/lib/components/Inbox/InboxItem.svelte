@@ -27,5 +27,10 @@
 <div>
     <pre>{JSON.stringify(email, null, 2)}</pre>
     <button onclick={getEmailContent} class = "bg-primary">Show Content</button>
+    {#if Object.hasOwn(email, "flags") && email.flags}
+        {#each email.flags as flag}
+            <span class="tag">{flag}</span>
+        {/each}
+    {/if}
 </div>
 <br>
