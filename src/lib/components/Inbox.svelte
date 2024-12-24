@@ -12,6 +12,8 @@
     let emailSelection: string[] = $state([]);
 
     async function makeAnApiRequest(event: Event, callback: () => Promise<void>) {
+        folderSelection = "Move to";
+        emailSelection = [];
         const eventButton = event.target as HTMLButtonElement;
         eventButton.disabled = true;
         const temp = eventButton.innerText;
