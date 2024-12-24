@@ -52,7 +52,7 @@
         <section style="width:20%;margin-right:5px;">
             <Sidebar />
         </section>
-        <section style="width:80%;margin-right:5px;display:flex;">
+        <section style="width:80%;">
             <Inbox />
             {#if SharedStore.shownEmail}
                 <Content email={SharedStore.shownEmail} />

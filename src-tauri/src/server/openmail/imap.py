@@ -32,7 +32,7 @@ from enum import Enum
 from .parser import MessageParser
 from .utils import extract_domain, choose_positive
 from .utils import truncate_text, contains_non_ascii
-from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent, Flags
+from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent, Flags, Mark, Folder
 
 """
 Exceptions
@@ -44,52 +44,6 @@ class IMAPManagerLoggedOutException(IMAPManagerException):
     """Custom exception for when the IMAPManager is logged out
     while trying to perform an action that requires authentication."""
 
-"""
-Enums
-"""
-class Mark(str, Enum):
-    """
-    Standard email marks.
-
-    References:
-        - https://datatracker.ietf.org/doc/html/rfc9051#name-flags-message-attribute
-    """
-    Flagged = "\\Flagged"
-    Seen = "\\Seen"
-    Answered = "\\Answered"
-    Draft = "\\Draft"
-    Deleted = "\\Deleted"
-    Unflagged = "\\Unflagged"
-    Unseen = "\\Unseen"
-    Unanswered = "\\Unanswered"
-    Undraft = "\\Undraft"
-    Undeleted = "\\Undeleted"
-
-    def __str__(self):
-        return self.value
-
-MARK_LIST = [str(m).lower() for m in Mark]
-
-class Folder(str, Enum):
-    """
-    Standard email folders.
-
-    References:
-        - https://datatracker.ietf.org/doc/html/rfc6154#autoid-3
-    """
-    Inbox = 'Inbox'
-    All = 'All'
-    Archive = 'Archive'
-    Drafts = 'Drafts'
-    Flagged = 'Flagged'
-    Junk = 'Junk'
-    Sent = 'Sent'
-    Trash = 'Trash'
-
-    def __str__(self):
-        return self.value
-
-FOLDER_LIST = [str(f).lower() for f in Folder]
 
 """
 Types, that are only used in this module
@@ -113,6 +67,9 @@ CRLF = b'\r\n'
 INBOX = 'INBOX'
 ALL = 'ALL'
 
+MARK_LIST = [str(m).lower() for m in Mark]
+FOLDER_LIST = [str(f).lower() for f in Folder]
+
 """
 Custom consts
 """
@@ -125,7 +82,7 @@ UNKNOWN_PLACEHOLDERS = MappingProxyType({
 })
 GET_EMAILS_OFFSET_START = 0
 GET_EMAILS_OFFSET_END = 10
-BODY_SHORT_THRESHOLD = 250
+BODY_SHORT_THRESHOLD = 100
 MAX_FOLDER_NAME_LENGTH = 100
 CONN_TIMEOUT = 30 # 30 seconds
 IDLE_TIMEOUT = 30 * 60 # 30 minutes

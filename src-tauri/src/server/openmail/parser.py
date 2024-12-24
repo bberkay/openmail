@@ -130,7 +130,9 @@ class MessageParser:
         for line in message:
             line = line.strip()
             if line.startswith("=?UTF-8") or line.startswith("=?utf-8"):
-                decoded_message += decode_header(line)[0][0].decode('utf-8') + " "
+                decoded_lines = decode_header(line)
+                for decoded_line in decoded_lines:
+                    decoded_message += decoded_line[0].decode("utf-8") + " "
             else:
                 decoded_message += line + " "
 

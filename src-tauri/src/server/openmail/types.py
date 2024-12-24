@@ -2,6 +2,7 @@
 This module contains the types used in the OpenMail module.
 """
 from __future__ import annotations
+from enum import Enum
 from typing import Optional, Sequence, Tuple
 from dataclasses import dataclass, field
 
@@ -107,6 +108,50 @@ class Flags():
     uid: str
     flags: list[str]
 
+"""
+Enums
+"""
+class Mark(str, Enum):
+    """
+    Standard email marks.
+
+    References:
+        - https://datatracker.ietf.org/doc/html/rfc9051#name-flags-message-attribute
+    """
+    Flagged = "\\Flagged"
+    Seen = "\\Seen"
+    Answered = "\\Answered"
+    Draft = "\\Draft"
+    Deleted = "\\Deleted"
+    Unflagged = "\\Unflagged"
+    Unseen = "\\Unseen"
+    Unanswered = "\\Unanswered"
+    Undraft = "\\Undraft"
+    Undeleted = "\\Undeleted"
+
+    def __str__(self):
+        return self.value
+
+
+class Folder(str, Enum):
+    """
+    Standard email folders.
+
+    References:
+        - https://datatracker.ietf.org/doc/html/rfc6154#autoid-3
+    """
+    Inbox = 'Inbox'
+    All = 'All'
+    Archive = 'Archive'
+    Drafts = 'Drafts'
+    Flagged = 'Flagged'
+    Junk = 'Junk'
+    Sent = 'Sent'
+    Trash = 'Trash'
+
+    def __str__(self):
+        return self.value
+
 __all__ = [
     "SearchCriteria",
     "EmailSummary",
@@ -114,5 +159,7 @@ __all__ = [
     "EmailWithContent",
     "EmailToSend",
     "Mailbox",
-    "Flags"
+    "Flags",
+    "Folder",
+    "Mark"
 ]

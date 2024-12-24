@@ -91,3 +91,27 @@ export interface Flags {
     uid: string;
     flags: string[];
 }
+
+export enum Mark {
+    Flagged = "\\Flagged",
+    Seen = "\\Seen",
+    Answered = "\\Answered",
+    Draft = "\\Draft",
+    Deleted = "\\Deleted",
+    Unflagged = "\\Unflagged",
+    Unseen = "\\Unseen",
+    Unanswered = "\\Unanswered",
+    Undraft = "\\Undraft",
+    Undeleted = "\\Undeleted"
+}
+
+export enum Folder {
+    Inbox = "Inbox",
+    All = "All",
+    Archive = "Archive",
+    Drafts = "Drafts",
+    Flagged = "Flagged",
+    Junk = "Junk",
+    Sent = "Sent",
+    Trash = "Trash"
+}
