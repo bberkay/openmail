@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, mount, unmount } from "svelte";
+    import { mount, unmount } from "svelte";
     import Loader from "$lib/components/Loader.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import type { EmailSummary } from "$lib/types";
@@ -39,7 +39,7 @@
 
 <div>
     <pre>{JSON.stringify(email, null, 2)}</pre>
-    <button onclick={getEmailContent} class = "bg-primary">Show Content</button>
+    <button onclick={getEmailContent} class = "bg-primary" style="margin-top:10px;">Show Content</button>
     {#if Object.hasOwn(email, "flags") && email.flags}
         {#each email.flags as flag}
             <span class="tag">{flag}</span>
