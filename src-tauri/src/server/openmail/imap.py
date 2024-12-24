@@ -734,8 +734,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Failed to list folders with status: {status}.")
 
         folder_list = []
+        disallowed_keywords = [b'\\Noselect', b'\\NoSelect']
         for folder in folders:
-            if folder and folder.find(b'\\NoSelect') == -1:
+            if folder and not any(keyword in folder for keyword in disallowed_keywords):
                 decoded_folder = self._decode_folder(folder)
                 if not folder_name or (folder_name in decoded_folder and not decoded_folder.endswith(folder_name)):
                     folder_list.append(decoded_folder)
