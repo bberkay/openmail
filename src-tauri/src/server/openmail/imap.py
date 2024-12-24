@@ -18,6 +18,7 @@ License: MIT
 """
 import imaplib
 import email
+import re
 import threading
 import base64
 import time
@@ -1180,7 +1181,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 file_name = part.get_filename()
                 if file_name:
                     attachments.append(Attachment(
-                        cid=part.get("X-Attachment-Id"),
+                        cid=re.sub(r'^<|>$', '', part.get("X-Attachment-Id") or part.get("Content-ID")),
                         name=file_name,
                         data=base64.b64encode(
                             part.get_payload(decode=True)
@@ -1200,12 +1201,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if attachments:
                 inline_cids = MessageParser.inline_attachment_cids_from_message(body)
                 if inline_cids:
-                    for attachment in attachments:
-                        if attachment.cid in inline_cids or attachment.name in inline_cids:
+                    i = 0
+                    while i < len(attachments):
+                        if attachments[i].cid in inline_cids:
                             body = body.replace(
-                                f'cid:{attachment.cid}',
-                                f'data:{attachment.type};base64,{attachment.data}'
+                                f'cid:{attachments[i].cid}',
+                                f'data:{attachments[i].type};base64,{attachments[i].data}'
                             )
+                            del attachments[i]
+                        else:
+                            i += 1
                 else:
                     print(f"No inline attachments found for found attachments of email `{uid}`'s content in folder `{folder}`.")
         except Exception as e:

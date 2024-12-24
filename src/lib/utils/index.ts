@@ -1,4 +1,4 @@
-export function make_size_human_readable(bytes: number) {
+export function makeSizeHumanReadable(bytes: number) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     if (bytes === 0) return "n/a";
     const i = Math.floor(Math.log2(bytes) / 10);

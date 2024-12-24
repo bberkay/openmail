@@ -4,7 +4,7 @@
     import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
     import type { Attachment, EmailWithContent } from "$lib/types";
     import { onMount } from "svelte";
-    import { make_size_human_readable } from "$lib/utils";
+    import { makeSizeHumanReadable } from "$lib/utils";
 
     let { email }: { email: EmailWithContent } = $props();
 
@@ -23,39 +23,36 @@
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
 
-        if(email.body.includes("<html>")) {
-            let iframe = document.createElement("iframe");
-            contentBody.appendChild(iframe);
+        // Body
+        let iframe = document.createElement("iframe");
+        contentBody.appendChild(iframe);
 
-            let iframeDoc: Document | null;
-            iframeDoc = iframe.contentWindow
-                ? iframe.contentWindow.document
-                : iframe.contentDocument;
-            if (iframeDoc) {
-                iframeDoc.open();
-                iframeDoc.writeln(email.body!);
-                iframeDoc.close();
+        let iframeDoc: Document | null;
+        iframeDoc = iframe.contentWindow
+            ? iframe.contentWindow.document
+            : iframe.contentDocument;
+        if (iframeDoc) {
+            iframeDoc.open();
+            iframeDoc.writeln(email.body!);
+            iframeDoc.close();
 
-                contentBody.style.height = iframeDoc.body.scrollHeight + "px";
-                iframeDoc.body.style.overflow = "hidden";
-            }
-        } else {
-            contentBody.innerHTML = email.body!;
+            contentBody.style.height = iframeDoc.body.scrollHeight + "px";
         }
 
         // Attachment
         if (Object.hasOwn(email, "attachments")) {
-            email["attachments"]!.forEach((attachment: Attachment, index: number) => {
+            email.attachments!.forEach((attachment: Attachment, index: number) => {
                 const link = document.createElement("a");
                 link.classList.add("attachment");
                 link.id = "attachment-" + index;
                 link.href = "#";
                 link.onclick = async () => { downloadFile(link.id, attachment) }
                 link.download = attachment.name;
-                link.innerText = attachment.name + " (" + make_size_human_readable(parseInt(attachment.size)) + ")";
+                link.innerText = attachment.name + " (" + makeSizeHumanReadable(parseInt(attachment.size)) + ")";
                 attachments.appendChild(link);
             });
         }
+
     }
 
     async function downloadFile(linkId: string, attachment: Attachment): Promise<void> {
@@ -113,11 +110,5 @@
 
     #attachments {
         margin-top: 1.5rem;
-    }
-
-    :global(#attachments .attachment) {
-        color: #2da6d6;
-        margin-left: 5px;
-        margin-right: 5px;
     }
 </style>

@@ -21,6 +21,16 @@ iframe{
     border-radius: 5px;
 }
 
+a {
+    color: #2da6d6;
+    margin-left: 5px;
+    margin-right: 5px;
+
+    &:active {
+        color: #207da1;
+    }
+}
+
 hr{
     border: 1px solid #3a3a3a;
     margin-top: 0.5rem;
@@ -61,7 +71,6 @@ input, textarea{
     padding: 0.5rem;
     font-size: 1rem;
     margin-bottom: 0.5rem;
-    width: 100%;
     resize: vertical;
 }
 
@@ -94,8 +103,6 @@ button{
     border-radius: 5px;
     box-sizing: border-box;
     cursor: pointer;
-    margin-top: 0.5rem;
-    margin-bottom: 0.3rem;
 
     &[disabled]{
         cursor: not-allowed;
