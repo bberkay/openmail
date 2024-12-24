@@ -4,41 +4,67 @@
     import InboxItem from "./Inbox/InboxItem.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { ApiService, GetRoutes, PostRoutes } from "$lib/services/ApiService";
-    import type { EmailSummary } from "$lib/types";
+    import { Folder, Mark, type EmailSummary } from "$lib/types";
 
     let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
     let currentOffset = $state(1);
+    let folderSelection = $state("Move to");
     let emailSelection: string[] = $state([]);
 
-    async function paginateEmails(event: Event, offset_start: number, offset_end: number) {
-        const paginateButton = event.target as HTMLButtonElement;
-        paginateButton.disabled = true;
-        const temp = paginateButton.innerText;
-        paginateButton.innerText = '';
-        const loader = mount(Loader, {
-            target: paginateButton
-        });
+    async function makeAnApiRequest(event: Event, callback: () => Promise<void>) {
+        const eventButton = event.target as HTMLButtonElement;
+        eventButton.disabled = true;
+        const temp = eventButton.innerText;
+        eventButton.innerText = "";
+        const loader = mount(Loader, { target: eventButton })
 
-        const response = await ApiService.get(
-            SharedStore.server,
-            GetRoutes.PAGINATE_MAILBOXES,
-            {
-                pathParams: {
-                    accounts: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                    offset_start: offset_start,
-                    offset_end: offset_end,
-                }
-            }
-        );
+        await callback();
 
-        if (response.success && response.data) {
-            currentOffset = Math.min(0, offset_start);
-            SharedStore.mailboxes = response.data;
-        }
-
-        paginateButton.disabled = false;
+        eventButton.disabled = false;
+        eventButton.innerText = temp;
         unmount(loader);
-        paginateButton.innerText = temp;
+    }
+
+    async function refreshMailboxes(event: Event) {
+        makeAnApiRequest(event, async () => {
+            const response = await ApiService.get(
+                SharedStore.server,
+                GetRoutes.GET_MAILBOXES,
+                {
+                    pathParams: {
+                        accounts: SharedStore.accounts
+                            .map((account) => account.email_address)
+                            .join(",")
+                    }
+                }
+            );
+
+            if (response.success && response.data) {
+                SharedStore.mailboxes = response.data;
+                SharedStore.selectedFolder = response.data[0].result.folder;
+            }
+        })
+    }
+
+    async function paginateEmails(event: Event, offset_start: number, offset_end: number) {
+        makeAnApiRequest(event, async () => {
+            const response = await ApiService.get(
+                SharedStore.server,
+                GetRoutes.PAGINATE_MAILBOXES,
+                {
+                    pathParams: {
+                        accounts: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                        offset_start: offset_start,
+                        offset_end: offset_end,
+                    }
+                }
+            );
+
+            if (response.success && response.data) {
+                currentOffset = Math.min(0, offset_start);
+                SharedStore.mailboxes = response.data;
+            }
+        })
     }
 
     async function getPreviousEmails(event: Event) {
@@ -83,70 +109,109 @@
         }
     }
 
-    async function markEmailsAsRead(event: Event) {
-        const markAsReadButton = event.target as HTMLButtonElement;
-        markAsReadButton.disabled = true;
-        const temp = markAsReadButton.innerText;
-        markAsReadButton.innerText = "";
-        const loader = mount(Loader, {
-            target: markAsReadButton
-        })
+    async function markEmail(event: Event, mark: string | Mark, folder: string | Folder = Folder.Inbox) {
+        makeAnApiRequest(event, async () => {
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.MARK_EMAIL,
+                {
+                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                    mark: mark,
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
+                    folder: folder
+                }
+            );
 
-        const response = await ApiService.post(
-            SharedStore.server,
-            PostRoutes.MARK_EMAIL,
-            {
-                account: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                mark: "\\Seen",
-                sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
-                folder: "INBOX"
-            }
-        );
-
-        if (response.success) {
-            emailSelection.forEach((uid: string) => {
-                SharedStore.mailboxes[0].result.emails.forEach((email: EmailSummary) => {
-                    if (email.uid === uid && Object.hasOwn(email, "flags") && email.flags) {
-                        email.flags.push("Seen");
-                    }
+            if (response.success) {
+                emailSelection.forEach((uid: string) => {
+                    SharedStore.mailboxes[0].result.emails.forEach((email: EmailSummary) => {
+                        if (email.uid === uid && Object.hasOwn(email, "flags") && email.flags) {
+                            email.flags.push(mark);
+                        }
+                    })
                 })
-            })
-        }
-
-        markAsReadButton.disabled = false;
-        markAsReadButton.innerText = temp;
-        unmount(loader);
+            }
+        })
     }
 
-    async function refreshMailboxes(event: Event) {
-        const refreshButton = event.target as HTMLButtonElement;
-        refreshButton.disabled = true;
-        const temp = refreshButton.innerText;
-        refreshButton.innerText = "";
-        const loader = mount(Loader, {
-            target: refreshButton
-        })
-
-        const response = await ApiService.get(
-            SharedStore.server,
-            GetRoutes.GET_MAILBOXES,
-            {
-                pathParams: {
-                    accounts: SharedStore.accounts
-                        .map((account) => account.email_address)
-                        .join(",")
+    async function unmarkEmail(event: Event, mark: string | Mark, folder: string | Folder = Folder.Inbox) {
+        makeAnApiRequest(event, async () => {
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.UNMARK_EMAIL,
+                {
+                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                    mark: mark,
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
+                    folder: folder
                 }
+            );
+
+            if (response.success) {
+                emailSelection.forEach((uid: string) => {
+                    SharedStore.mailboxes[0].result.emails.forEach((email: EmailSummary) => {
+                        if (email.uid === uid && Object.hasOwn(email, "flags") && email.flags) {
+                            email.flags = email.flags.filter((flag: string) => flag !== mark);
+                        }
+                    })
+                })
             }
-        );
+        })
+    }
 
-        if (response.success && response.data) {
-            SharedStore.mailboxes = response.data;
-            SharedStore.selectedFolder = response.data[0].result.folder;
-        }
+    async function markEmailsAsRead(event: Event) {
+        markEmail(event, Mark.Seen, Folder.Inbox);
+    }
 
-        refreshButton.disabled = false;
-        refreshButton.innerText = temp;
-        unmount(loader);
+    async function markEmailsAsUnread(event: Event) {
+        unmarkEmail(event, Mark.Seen, Folder.Inbox);
+    }
+
+    async function markEmailsAsImportant(event: Event) {
+        markEmail(event, Mark.Flagged, Folder.Inbox);
+    }
+
+    async function markEmailsAsNotImportant(event: Event) {
+        unmarkEmail(event, Mark.Flagged, Folder.Inbox);
+    }
+
+    async function deleteEmails(event: Event) {
+        makeAnApiRequest(event, async () => {
+            confirm("Are you sure you want to delete these emails?");
+
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.DELETE_EMAIL,
+                {
+                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
+                    folder: Folder.Inbox
+                }
+            );
+
+            if (response.success) {
+                SharedStore.mailboxes[0].result.emails = SharedStore.mailboxes[0].result.emails.filter((email: EmailSummary) => !emailSelection.includes(email.uid));
+            }
+        })
+    }
+
+    async function moveEmail(event: Event) {
+        makeAnApiRequest(event, async () => {
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.MOVE_EMAIL,
+                {
+                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
+                    source_folder: Folder.Inbox,
+                    destination_folder: folderSelection
+                }
+            );
+
+            if (response.success) {
+                paginateEmails(event, currentOffset, currentOffset + 10);
+            }
+        })
     }
 </script>
 
@@ -169,12 +234,17 @@
                 <button onclick={selectAllEmails}>Select all {totalEmailCount} emails</button>
             </span>
             <br>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={() => {}}>Delete</button>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={() => {}}>Move</button>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={() => {}}>Mark as Important</button>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={() => {}}>Mark as Not Important</button>
+            <button class = "bg-primary" style="margin-right:5px;" onclick={deleteEmails}>Delete</button>
+            <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={folderSelection} onchange={moveEmail}>
+                <option disabled selected>Move to</option>
+                {#each SharedStore.folders[0].result as folder}
+                    <option value="{folder}">{folder}</option>
+                {/each}
+            </select>
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsNotImportant}>Mark as Not Important</button>
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsRead}>Mark as Read</button>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={() => {}}>Mark as Unread</button>
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
         {:else}
             <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailboxes}>Refresh</button>
         {/if}
