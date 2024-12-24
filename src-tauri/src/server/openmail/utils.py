@@ -75,28 +75,3 @@ def contains_non_ascii(string: str) -> bool:
         bool: True if string contains non-ASCII characters, False otherwise
     """
     return any(ord(char) > 127 for char in string)
-
-def make_size_human_readable(size: int | None) -> str:
-    """
-    Convert a file size in bytes to a human-readable format.
-
-    Args:
-        size (int | None): Size in bytes, or None
-
-    Returns:
-        str: Formatted file size with appropriate unit (B, KB, MB, or GB)
-
-    Example:
-        >>> make_size_human_readable(1536)
-        '1.50 KB'
-    """
-    if size is None:
-        return "0 B"
-    if size < 1024:
-        return f"{size} B"
-    elif size < 1024 * 1024:
-        return f"{size / 1024:.2f} KB"
-    elif size < 1024 * 1024 * 1024:
-        return f"{size / 1024 / 1024:.2f} MB"
-    else:
-        return f"{size / 1024 / 1024 / 1024:.2f} GB"

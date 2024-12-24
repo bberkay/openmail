@@ -110,7 +110,7 @@
     }
 </script>
 
-<div class="card" style="width:45%;">
+<div class="card" style="flex-grow:1;">
     <h2>{SharedStore.selectedFolder}</h2>
     <hr />
     <div>

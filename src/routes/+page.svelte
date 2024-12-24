@@ -54,7 +54,9 @@
         </section>
         <section style="width:80%;margin-right:5px;display:flex;">
             <Inbox />
-            <Content />
+            {#if SharedStore.shownEmail}
+                <Content email={SharedStore.shownEmail} />
+            {/if}
         </section>
     </main>
 {:else if isLoading}

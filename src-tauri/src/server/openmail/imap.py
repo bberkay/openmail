@@ -30,7 +30,7 @@ from enum import Enum
 
 from .parser import MessageParser
 from .utils import extract_domain, choose_positive
-from .utils import truncate_text, contains_non_ascii, make_size_human_readable
+from .utils import truncate_text, contains_non_ascii
 from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent, Flags
 
 """
@@ -1180,12 +1180,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 file_name = part.get_filename()
                 if file_name:
                     attachments.append(Attachment(
-                        id=part.get("X-Attachment-Id"),
+                        cid=part.get("X-Attachment-Id"),
                         name=file_name,
                         data=base64.b64encode(
                             part.get_payload(decode=True)
                         ).decode("utf-8", errors="ignore"),
-                        size=make_size_human_readable(len(part.get_payload(decode=True))),
+                        size=len(part.get_payload(decode=True)),
                         type=content_type
                     ))
                 elif content_type == "text/html" or (content_type == "text/plain" and not body):
@@ -1193,7 +1193,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     if body:
                         body = body.decode(part.get_content_charset())
         except Exception as e:
-            raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`") from e
+            raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from e
 
         try:
             # Replacing inline attachments
@@ -1215,7 +1215,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             pass
 
         try:
-            self.mark_email(Mark.SEEN, uid, folder)
+            self.mark_email(Mark.Seen, uid, folder)
         except Exception as e:
             # If there is a problem with marking the email as seen
             # just ignore it.

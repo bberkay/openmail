@@ -14,6 +14,11 @@ iframe{
     width: 100%;
     height: 100%;
     border: none;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color: #fff;
+    border:1px solid #a8a8a8;
+    border-radius: 5px;
 }
 
 hr{

@@ -30,7 +30,7 @@ from email.mime.multipart import MIMEMultipart
 from .parser import MessageParser
 from .encoder import FileBase64Encoder
 from .converter import AttachmentConverter
-from .utils import extract_domain, choose_positive, make_size_human_readable
+from .utils import extract_domain, choose_positive
 from .types import EmailToSend, Attachment
 
 """
@@ -274,7 +274,7 @@ class SMTPManager(smtplib.SMTP):
                         continue
 
                     if attachment.size > MAX_ATTACHMENT_SIZE:
-                        print(f"Attachment size `{make_size_human_readable(attachment.size)}` is too large. Max size is {make_size_human_readable(MAX_ATTACHMENT_SIZE)} - Skipping MIME attachment.")
+                        print(f"Attachment size `{attachment.size}` is too large. Max size is {MAX_ATTACHMENT_SIZE} - Skipping MIME attachment.")
                         continue
 
                     part = MIMEApplication(base64.b64decode(
