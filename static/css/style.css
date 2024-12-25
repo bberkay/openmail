@@ -111,6 +111,7 @@ button{
 
     &.inline{
         background-color: transparent;
+        text-align: left;
     }
 }
 

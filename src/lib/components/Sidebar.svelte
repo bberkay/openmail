@@ -2,9 +2,45 @@
     import { onMount } from 'svelte';
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder } from '$lib/types';
+    import { createDomObject } from '$lib/utils';
 
+    let folders: HTMLDivElement;
     onMount(() => {
+        folders = document.getElementById('folders') as HTMLDivElement;
+        createDynamicFolderOptions();
     });
+
+    function createDynamicFolderOptions() {
+        const folderTemplate = `
+        <div class="folder" style="padding-left:{tabsize}rem;">
+            <button class="inline" style="opacity:{toggle}">▸</button>
+            <button class="inline" style="flex-grow:1;">{folder}</button>
+            <button class="inline hover">⋮</button>
+        </div>
+        `;
+
+        let i = 0;
+        let tabsize = 0;
+        const folderLength = SharedStore.folders[0].result.length;
+        let folderNode = "";
+        while (i < folderLength) {
+            const currentFolder = SharedStore.folders[0].result[i];
+            folderNode = folderTemplate.replace('{folder}', currentFolder);
+            if(i < folderLength - 1) {
+                const nextFolder = SharedStore.folders[0].result[i + 1];
+                folderNode = folderNode.replace('{toggle}', nextFolder.startsWith(currentFolder + "/") ? `1` : `0`);
+            }
+            if (i > 0 && SharedStore.folders[0].result.slice(0, i + 1).includes(currentFolder)) {
+                tabsize = (currentFolder.split("/").length - 1) * 0.5;
+            } else {
+                tabsize = 0
+            }
+
+            folderNode = folderNode.replace('{tabsize}', tabsize.toString());
+            folders.innerHTML += folderNode;
+            i += 1;
+        }
+    }
 </script>
 
 <div class = "card">
@@ -28,6 +64,9 @@
             <span>Folders ▾</span>
             <button class = "bg-primary">+</button>
         </div>
+        <div id="folders">
+
+        </div>
         {#each SharedStore.folders[0].result as folder}
             <div class="folder">
                 <button class="inline">▸</button>
@@ -39,12 +78,11 @@
 </div>
 
 <style>
-    .folder{
+    :global(.folder){
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        width: 100%;
         border-radius: 0;
         background-color: rgb(36, 36, 36);
         border-bottom: 1px solid rgb(70, 70, 70);
