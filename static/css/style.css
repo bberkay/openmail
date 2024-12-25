@@ -158,3 +158,110 @@ span {
     padding: 1rem;
     margin-bottom: 1rem;
 }
+
+/* Folder */
+.folder{
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 0;
+    background-color: rgb(36, 36, 36);
+    border-bottom: 1px solid rgb(70, 70, 70);
+    position: relative;
+
+    & button.inline{
+        text-align: left;
+        padding:7px 8px;
+
+        &:hover{
+            background-color: rgb(50, 50, 50);
+        }
+
+        &:active{
+            background-color: rgb(70, 70, 70);
+
+            &.hover{
+                background-color: rgb(70, 70, 70);
+            }
+        }
+
+        &.hover{
+            padding-left:8px;
+            padding-right:8px;
+            margin-right: 5px;
+
+            &:hover{
+                background-color: #727272;
+            }
+
+            &:active{
+                background-color: #868686;
+            }
+        }
+    }
+
+    &:hover{
+        background-color: rgb(50, 50, 50);
+
+        & .hover{
+            opacity: 1;
+        }
+    }
+
+    & .hover{
+        opacity: 0;
+        transition: opacity 0.1s ease-in-out;
+    }
+
+    &:last-child{
+        border-bottom: none;
+    }
+}
+
+.folder-options {
+    position: absolute;
+    display: flex;
+    background-color: #f3f3f3;
+    color: #000;
+    flex-direction: column;
+    padding: 1px;
+    border: 1px solid #c2c2c2;
+    border-radius: 5px;
+    right: -80px;
+    top: 30px;
+    z-index: 99;
+    width: 100px;
+
+    & button {
+        text-align: left;
+        border-radius: 0;
+        border-bottom:1px solid #999999;
+        padding: 5px 10px;
+        background-color: transparent;
+        color: #000;
+        width: 100px;
+
+        &:hover{
+            background-color: #c2c2c2;
+        }
+
+        &:active{
+            background-color: #999999;
+        }
+
+        &:last-child{
+            border-bottom: none;
+        }
+    }
+
+    & select {
+        color: #000;
+        border: none;
+        border-bottom: 1px solid #999999;
+        border-radius: 0;
+        background-color: transparent;
+        color: #000;
+        width:100px;
+    }
+}

@@ -215,6 +215,9 @@
             }
         })
     }
+
+    function toggleSearchMenu() {
+    }
 </script>
 
 <div class="card" style="flex-grow:1;">
@@ -249,6 +252,7 @@
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
         {:else}
             <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailboxes}>Refresh</button>
+            <button class = "bg-primary" style="margin-right:5px;" onclick={toggleSearchMenu}>Search</button>
         {/if}
     </div>
     <hr />
