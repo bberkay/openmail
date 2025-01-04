@@ -277,9 +277,12 @@ class SMTPManager(smtplib.SMTP):
                         print(f"Attachment size `{attachment.size}` is too large. Max size is {MAX_ATTACHMENT_SIZE} - Skipping MIME attachment.")
                         continue
 
-                    part = MIMEApplication(base64.b64decode(
-                        attachment.data or FileBase64Encoder.read_file(attachment.path)[3]
-                    ))
+                    if attachment.data and isinstance(attachment.data, str):
+                        attachment.data = base64.b64decode(attachment.data)
+
+                    part = MIMEApplication(
+                        attachment.data or base64.b64decode(FileBase64Encoder.read_file(attachment.path)[3]),
+                    )
                     part.add_header('Content-Id', attachment.cid)
                     part.add_header('Content-Disposition', 'attachment', filename=attachment.name)
                     part.add_header('Content-Transfer-Encoding', 'base64')

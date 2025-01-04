@@ -30,12 +30,12 @@ def get_mime_type_from_base64(base64_data: str) -> str:
         return base64_data.split(";")[0].split(":")[1]
     return ""
 
-def generate_cid_from_data(data: str, length: int = 32) -> str:
+def generate_cid_from_data(data: str | bytes, length: int = 32) -> str:
     """
     Creates a content ID from the given data.
 
     Args:
-        data (str): The data to generate the content ID from.
+        data (str|bytes): The data to generate the content ID from.
 
     Returns:
         str: The generated content ID.
@@ -43,7 +43,9 @@ def generate_cid_from_data(data: str, length: int = 32) -> str:
     if length <= 0:
         raise ValueError("Content ID length must be greater than 0.")
 
-    return hashlib.sha256(data.encode("utf-8")).hexdigest()[:length]
+    return hashlib.sha256(
+        data.encode("utf-8") if isinstance(data, str) else data
+    ).hexdigest()[:length]
 
 
 class AttachmentConverter:
