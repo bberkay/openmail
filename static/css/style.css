@@ -219,7 +219,7 @@ span {
     }
 }
 
-.folder-options {
+.dropdown {
     position: absolute;
     display: flex;
     background-color: #f3f3f3;

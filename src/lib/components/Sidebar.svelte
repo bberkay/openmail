@@ -8,6 +8,18 @@
     onMount(() => {
         folders = document.getElementById('folders') as HTMLDivElement;
         createFolderMenu();
+
+        document.body.addEventListener("click", (e: MouseEvent) => {
+			const target = e.target as HTMLInputElement;
+            const dropdowns = document.querySelectorAll('.dropdown');
+            if (!dropdowns.length)
+                return;
+
+            dropdowns.forEach(dropdown => {
+				if (target !== dropdown && !target.classList.contains('dropdown-toggle'))
+                	dropdown.remove();
+            });
+        });
     });
 
     function createFolderMenu() {
@@ -15,12 +27,12 @@
             <div class="folder" style="padding-left:{tabsize}rem;">
                 <button class="inline subfolder-toggle {disabled}" style="opacity:{opacity}">▾</button>
                 <button class="inline" style="flex-grow:1;">{folder}</button>
-                <button class="inline hover options-toggle">⋮</button>
+                <button class="inline hover dropdown-toggle">⋮</button>
             </div>
         `;
 
         const optionsTemplate = `
-            <div class="folder-options">
+            <div class="dropdown">
                 <button class="bg-primary">Rename</button>
                 <button class="bg-primary">Delete</button>
                 <select class = "bg-primary" bind:value={folderSelection} onchange={moveEmail}>
@@ -159,11 +171,11 @@
                 }
             }
 
-            (folderNode.querySelector('.options-toggle') as HTMLButtonElement).onclick = (e: MouseEvent) => {
+            (folderNode.querySelector('.dropdown-toggle') as HTMLButtonElement).onclick = (e: MouseEvent) => {
                 const toggleButton = e.target as HTMLDivElement;
                 const folder = toggleButton.parentElement!;
-                if (folder.querySelector('.folder-options')) {
-                    folder.removeChild(folder.querySelector('.folder-options')!);
+                if (folder.querySelector('.dropdown')) {
+                    folder.removeChild(folder.querySelector('.dropdown')!);
                 } else {
                     const optionsNode = createDomObject(optionsTemplate);
                     folder.appendChild(optionsNode!);
