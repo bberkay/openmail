@@ -21,12 +21,11 @@ class SearchCriteria():
     subject: Optional[str] = ""
     since: Optional[str] = ""
     before: Optional[str] = ""
-    included_flags: Optional[list[str]] = field(default_factory=list)
-    excluded_flags: Optional[list[str]] = field(default_factory=list)
     smaller_than: Optional[int] = 0
     larger_than: Optional[int] = 0
     include: Optional[str] = ""
     exclude: Optional[str] = ""
+    included_flags: Optional[list[str]] = field(default_factory=list)
     has_attachments: Optional[bool] = False
 
     def __str__(self) -> str:

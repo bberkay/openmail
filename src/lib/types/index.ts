@@ -41,12 +41,11 @@ export interface SearchCriteria {
     subject?: string;
     since?: string;
     before?: string;
-    included_flags?: string[];
-    excluded_flags?: string[];
     smaller_than?: number;
     larger_than?: number;
     include?: string;
     exclude?: string;
+    included_flags?: string[];
     has_attachments?: boolean;
 }
 

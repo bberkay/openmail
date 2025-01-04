@@ -838,9 +838,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             return f' ({criteria} "{value}")'
 
         try:
-            included_flag_list = ["KEYWORD " + flag if flag.lower() not in MARK_LIST else flag for flag in search_criteria.included_flags]
-            excluded_flag_list = ["NOT KEYWORD " + flag if flag.lower() not in MARK_LIST else flag for flag in search_criteria.excluded_flags]
-
             search_criteria_query = ''
             search_criteria_query += add_criterion(
                 'FROM',
@@ -867,7 +864,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             search_criteria_query += add_criterion("BEFORE", search_criteria.before)
             search_criteria_query += add_criterion("TEXT", search_criteria.include)
             search_criteria_query += add_criterion("NOT TEXT", search_criteria.exclude)
-            search_criteria_query += add_criterion('', included_flag_list + excluded_flag_list)
+            included_flag_list = ["KEYWORD " + flag if flag.lower() not in MARK_LIST else flag for flag in search_criteria.included_flags]
+            search_criteria_query += add_criterion('', included_flag_list)
             search_criteria_query += add_criterion('BODY', search_criteria.has_attachments and 'ATTACHMENT' or '')
             search_criteria_query += add_criterion('LARGER', search_criteria.larger_than)
             search_criteria_query += add_criterion('SMALLER', search_criteria.smaller_than)
