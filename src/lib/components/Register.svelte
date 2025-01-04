@@ -12,6 +12,11 @@
             : null
     );
 
+    $effect(() => {
+        if (!currentEditingAccount && SharedStore.failedAccounts.length > 0)
+            currentEditingAccount = SharedStore.failedAccounts[0];
+    });
+
     async function addAccount(event: Event) {
         event.preventDefault();
         const form = event.target;
