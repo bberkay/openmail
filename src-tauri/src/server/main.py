@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from openmail import OpenMail
-from openmail.types import EmailToSend, Attachment, EmailWithContent, Mailbox
+from openmail.types import EmailToSend, Attachment, EmailWithContent
 from openmail.imap import Folder, Mark
 
 from classes.account_manager import AccountManager, Account, AccountWithPassword
@@ -284,7 +284,7 @@ def edit_account(
             ))
 
             openmail_clients[request.email_address] = openmail_client
-            failed_openmail_clients.pop(request.email_address)
+            failed_openmail_clients.remove(request.email_address)
 
         return Response(
             success=True,
@@ -455,7 +455,8 @@ def get_email_content(
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
 
 class SendEmailFormData(BaseModel):
-    sender: str | tuple[str, str]  # (sender_name, sender_email)
+    #sender: str | tuple[str, str]  # (sender_name, sender_email)
+    sender: str
     receiver: str  # mail addresses separated by comma
     subject: str
     body: str
@@ -504,21 +505,6 @@ async def send_email(
             )
         )
 
-        try:
-            if status:
-                flags = (
-                    openmail_clients[sender_email]
-                    .imap.get_email_flags(formData.uid, Folder.Inbox)
-                    .flags
-                )
-                if Mark.Seen not in flags:
-                    status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.Seen
-                    )
-                    msg += " " + f"And {com_msg}"
-        except Exception as e:
-            msg = err_msg(msg + " " + "And failed to mark email as seen.", str(e))
-
         return Response(success=status, message=msg)
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while sending email.", str(e)))
@@ -548,26 +534,6 @@ async def reply_email(
             )
         )
 
-        try:
-            if status:
-                flags = (
-                    openmail_clients[sender_email]
-                    .imap.get_email_flags(formData.uid, Folder.Inbox)
-                    .flags
-                )
-                if Mark.Answered not in flags:
-                    status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.Answered
-                    )
-                    msg += " " + f"And {com_msg}"
-                if Mark.Seen not in flags:
-                    status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.Seen
-                    )
-                    msg += " " + f"And {com_msg}"
-        except Exception as e:
-            msg = err_msg(msg + " " + "And failed to mark email as answered or seen.", str(e))
-
         return Response(success=status, message=msg)
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while replying email.", str(e)))
@@ -596,26 +562,6 @@ async def forward_email(
                 attachments=await convert_attachments(formData.attachments),
             )
         )
-
-        try:
-            if status:
-                flags = (
-                    openmail_clients[sender_email]
-                    .imap.get_email_flags(formData.uid, Folder.Inbox)
-                    .flags
-                )
-                if Mark.Answered not in flags:
-                    status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.Answered
-                    )
-                    msg += " " + f"And {com_msg}"
-                if Mark.Seen not in flags:
-                    status, com_msg = openmail_clients[sender_email].imap.mark_email(
-                        formData.uid, Mark.Seen
-                    )
-                    msg += " " + f"And {com_msg}"
-        except Exception as e:
-            msg = err_msg(msg + " " + "And failed to mark email as answered or seen.", str(e))
 
         return Response(success=status, message=msg)
     except Exception as e:
