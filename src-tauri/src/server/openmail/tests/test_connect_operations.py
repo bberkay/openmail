@@ -1,4 +1,5 @@
 import unittest
+import json
 
 from openmail import OpenMail
 
@@ -7,6 +8,9 @@ class TestConnectOperations(unittest.TestCase):
     def setUpClass(cls):
         print("Setting up test `TestFolderOperations`...")
         cls._openmail = OpenMail()
+        credentials = json.load(open("openmail/tests/credentials.json"))
+        if len(credentials) < 3:
+            raise ValueError("At least 3 credentials are required.")
 
     def test_login(self):
         print("test_login...")
@@ -42,7 +46,5 @@ class TestConnectOperations(unittest.TestCase):
     def test_logout(self):
         print("test_logout...")
         status, message = self.__class__._openmail.disconnect()
-        if status:
-            print(message)
-        else:
+        if not status:
             self.fail(f"Failed to logout with status: {status} and message: {message}")
