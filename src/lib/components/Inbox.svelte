@@ -12,7 +12,6 @@
     let emailSelection: string[] = $state([]);
 
     async function makeAnApiRequest(event: Event, callback: () => Promise<void>) {
-        folderSelection = "Move to";
         emailSelection = [];
         const eventButton = event.target as HTMLButtonElement;
         eventButton.disabled = true;
@@ -27,7 +26,7 @@
         unmount(loader);
     }
 
-    async function refreshMailboxes(event: Event) {
+    function refreshMailboxes(event: Event) {
         makeAnApiRequest(event, async () => {
             const response = await ApiService.get(
                 SharedStore.server,
@@ -50,7 +49,7 @@
         })
     }
 
-    async function paginateEmails(event: Event, offset_start: number, offset_end: number) {
+    function paginateEmails(event: Event, offset_start: number, offset_end: number) {
         makeAnApiRequest(event, async () => {
             const response = await ApiService.get(
                 SharedStore.server,
@@ -65,7 +64,7 @@
             );
 
             if (response.success && response.data) {
-                currentOffset = Math.min(0, offset_start);
+                currentOffset = Math.max(0, offset_start);
                 SharedStore.mailboxes = response.data;
             } else {
                 alert(response.message);
@@ -73,7 +72,7 @@
         })
     }
 
-    async function getPreviousEmails(event: Event) {
+    function getPreviousEmails(event: Event) {
         if (currentOffset <= 10)
             return;
 
@@ -84,7 +83,7 @@
         );
     }
 
-    async function getNextEmails(event: Event) {
+    function getNextEmails(event: Event) {
         if (currentOffset >= totalEmailCount)
             return;
 
@@ -115,7 +114,7 @@
         }
     }
 
-    async function markEmail(event: Event, mark: string | Mark, folder: string | Folder = Folder.Inbox) {
+    function markEmail(event: Event, mark: string | Mark, folder: string | Folder = Folder.Inbox) {
         makeAnApiRequest(event, async () => {
             const response = await ApiService.post(
                 SharedStore.server,
@@ -142,7 +141,7 @@
         })
     }
 
-    async function unmarkEmail(event: Event, mark: string | Mark, folder: string | Folder = Folder.Inbox) {
+    function unmarkEmail(event: Event, mark: string | Mark, folder: string | Folder = Folder.Inbox) {
         makeAnApiRequest(event, async () => {
             const response = await ApiService.post(
                 SharedStore.server,
@@ -169,23 +168,23 @@
         })
     }
 
-    async function markEmailsAsRead(event: Event) {
+    function markEmailsAsRead(event: Event) {
         markEmail(event, Mark.Seen, Folder.Inbox);
     }
 
-    async function markEmailsAsUnread(event: Event) {
+    function markEmailsAsUnread(event: Event) {
         unmarkEmail(event, Mark.Seen, Folder.Inbox);
     }
 
-    async function markEmailsAsImportant(event: Event) {
+    function markEmailsAsImportant(event: Event) {
         markEmail(event, Mark.Flagged, Folder.Inbox);
     }
 
-    async function markEmailsAsNotImportant(event: Event) {
+    function markEmailsAsNotImportant(event: Event) {
         unmarkEmail(event, Mark.Flagged, Folder.Inbox);
     }
 
-    async function deleteEmails(event: Event) {
+    function deleteEmails(event: Event) {
         makeAnApiRequest(event, async () => {
             confirm("Are you sure you want to delete these emails?");
 
@@ -207,7 +206,7 @@
         })
     }
 
-    async function moveEmail(event: Event) {
+    function moveEmail(event: Event) {
         makeAnApiRequest(event, async () => {
             const response = await ApiService.post(
                 SharedStore.server,
@@ -225,10 +224,9 @@
             } else {
                 alert(response.message);
             }
-        })
-    }
 
-    function toggleSearchMenu() {
+            folderSelection = "Move to";
+        })
     }
 </script>
 
@@ -264,7 +262,6 @@
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
         {:else}
             <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailboxes}>Refresh</button>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={toggleSearchMenu}>Search</button>
         {/if}
     </div>
     <hr />
