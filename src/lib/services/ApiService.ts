@@ -217,7 +217,9 @@ export class ApiService {
                 : { "Content-Type": "application/json" },
             body: body instanceof FormData
                 ? body
-                : JSON.stringify(body),
+                : JSON.stringify(
+                    this._removeUndefinedParams(body)
+                ),
         });
 
         return response.json();
