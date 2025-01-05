@@ -255,9 +255,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         Overrides the `select` method to handle the `Folder` enum type.
         """
-        if isinstance(folder, Folder):
-            folder = self.find_matching_folder(folder)
-
+        folder = self.find_matching_folder(folder)
         return self._parse_command_result(
             super().select(folder, readonly),
             success_message=f"Successfully selected {folder}",
@@ -621,7 +619,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             b'"[Gmail]/Yıldızlı"' # Flagged in Turkish
         """
         if requested_folder.lower() not in FOLDER_LIST:
-            raise IMAPManagerException(f"Invalid folder name: {requested_folder}. Please use one of the following: {FOLDER_LIST}")
+            return None
 
         status, folders_as_bytes = self.list()
         if status == "OK" and folders_as_bytes and isinstance(folders_as_bytes, list):
@@ -743,7 +741,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return folder_list
 
-    def build_search_criteria_query_string(self, search_criteria: SearchCriteria) -> str:
+    def build_search_criteria_query(self, search_criteria: SearchCriteria | str) -> str:
         """
         Builds an IMAP-compatible search criteria query string based on given search parameters.
 
@@ -766,10 +764,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
             ...                                  before="2023-12-31",
             ...                                  text="world",
             ...                                  flags=["Flagged", "Seen"])
-            >>> build_search_criteria_query_string(search_criteria)
+            >>> build_search_criteria_query(search_criteria)
             'OR (FROM "a@mail.com") (OR (TO "b@mail.com") (TO "c@mail.com")) (SUBJECT "Hello") (SINCE
             ... "2023-01-01") (BEFORE "2023-12-31") (TEXT "world") (OR (FLAGGED) (SEEN))'
 
+            >>> build_search_criteria_query("sender@mail.com")
+            'TEXT "sender@mail.com"'
+
+            >>> build_search_criteria_query("Some paragraph")
+            'TEXT "Some paragraph"'
         References:
             - https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
         """
@@ -838,6 +841,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             return f' ({criteria} "{value}")'
 
         try:
+            if isinstance(search_criteria, str):
+                return add_criterion('TEXT', search_criteria).strip()
+
             included_flag_list = []
             for flag in search_criteria.included_flags:
                 if flag.lower() not in MARK_LIST:
@@ -869,10 +875,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             search_criteria_query += add_criterion("SUBJECT", search_criteria.subject)
             search_criteria_query += add_criterion("SINCE", search_criteria.since)
             search_criteria_query += add_criterion("BEFORE", search_criteria.before)
-            search_criteria_query += add_criterion("TEXT", search_criteria.include)
-            search_criteria_query += add_criterion("NOT TEXT", search_criteria.exclude)
+            search_criteria_query += add_criterion("BODY", search_criteria.include)
+            search_criteria_query += add_criterion("NOT BODY", search_criteria.exclude)
             search_criteria_query += add_criterion('', included_flag_list)
-            search_criteria_query += add_criterion('BODY', search_criteria.has_attachments and 'ATTACHMENT' or '')
+            search_criteria_query += add_criterion('TEXT', search_criteria.has_attachments and 'ATTACHMENT' or '')
             search_criteria_query += add_criterion('LARGER', search_criteria.larger_than)
             search_criteria_query += add_criterion('SMALLER', search_criteria.smaller_than)
         except Exception as e:
@@ -881,15 +887,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
         return search_criteria_query.strip()
 
     def search_emails(self,
-        folder: str = Folder.Inbox,
-        search: str | SearchCriteria = ALL
+        folder: str = None,
+        search: str | SearchCriteria = None
     ) -> IMAPCommandResult:
         """
         Get email uids from a specified folder based on search criteria. Does not
         return search result but saves the uids for use them in `get_emails` method.
 
         Args:
-            folder (str, optional): Folder to search in. Defaults to "inbox".
+            folder (str, optional): Folder to search in. If not provided, selected folder
+            will be used. If there is no selected folder then `All` folder will be selected
+            if search is not None otherwise `Inbox` will be selected.
             search (str | SearchCriteria, optional): Search criteria. Defaults to "ALL".
 
         Example:
@@ -915,23 +923,23 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 search_query=search_query,
                 uids=uids
             )
+            print("Emails saved: ", self._searched_emails)
 
-        status, _ = self.select(folder, readonly=True)
-        if not status:
-            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
+        if folder or self.state != "SELECTED":
+            if self.state != "SELECTED":
+                folder = Folder.All if search else Folder.Inbox
+            status, _ = self.select(folder, readonly=True)
+            if not status:
+                raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
-        search_criteria_query = ''
-        if isinstance(search, SearchCriteria):
-            search_criteria_query = self.build_search_criteria_query_string(search) or ALL
-        else:
-            search_criteria_query = search or ALL
+        search_criteria_query = self.build_search_criteria_query(search).encode("utf-8") if search else ALL
 
         # Searching emails
         try:
             search_status, uids = self.uid(
                 'search',
                 None,
-                search_criteria_query.encode("utf-8") if search_criteria_query else ALL
+                search_criteria_query
             )
 
             if search_status != 'OK':
@@ -940,7 +948,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if not uids or not uids[0]:
                 return False, "No emails found."
 
-            uids = uids[0].split()[::-1]
+            uids = uids[0].decode().split()[::-1]
             save_emails(uids, folder, search_criteria_query)
             return True, "Search in folder `{}` was successful. Results are saved.".format(folder)
         except Exception as e:
@@ -970,9 +978,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         uids_len = len(self._searched_emails.uids)
         if offset_start < 0:
-            raise IMAPManagerException(f"Invalid `offset_start`: {offset_start}. `offset_start` must be greater than or equal to 0.")
+            raise ValueError(f"Invalid `offset_start`: {offset_start}. `offset_start` must be greater than or equal to 0.")
         if offset_end < 0:
-            raise IMAPManagerException(f"Invalid `offset_end`: {offset_end}. `offset_end` must be greater than or equal to 0.")
+            raise ValueError(f"Invalid `offset_end`: {offset_end}. `offset_end` must be greater than or equal to 0.")
         if offset_end >= uids_len:
             offset_end = uids_len - 1
         if offset_start >= uids_len:
@@ -985,10 +993,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         sequence_set = ""
         emails = []
         try:
-            sequence_set = "{}:{}".format(
-                str(self._searched_emails.uids[offset_end].decode()),
-                str(self._searched_emails.uids[offset_start].decode())
-            )
+            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_end:offset_start:-1]))
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
