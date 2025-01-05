@@ -219,17 +219,17 @@
         eventButton.innerText = "";
         const loader = mount(Loader, { target: eventButton });
 
-        let searchCriteria: SearchCriteria | string | null = null;
+        let searchCriteria: SearchCriteria | string | undefined = undefined;
         let folder: string = Folder.All;
         if(isAdvancedSearchMenuOpen) {
-            searchCriteria = getSearchCriteria();
+            searchCriteria = JSON.stringify(getSearchCriteria());
             folder = document.querySelector<HTMLSelectElement>(
                 "#advanced-search-menu #folder",
             )!.value;
         } else {
             searchCriteria = document.querySelector<HTMLInputElement>(
                 "#simple-search-input",
-            )?.value || null;
+            )?.value;
         }
 
         const response = await ApiService.get(
@@ -243,7 +243,7 @@
                 },
                 queryParams: {
                     folder: folder,
-                    search: JSON.stringify(searchCriteria),
+                    search: searchCriteria,
                 },
             },
         );
@@ -274,7 +274,7 @@
             <label for="folder">Folder</label>
             <div class="input-group">
                 <select name="folder" id="folder">
-                    <option value="" selected>All</option>
+                    <option value="{Folder.All}" selected>All</option>
                     {#each SharedStore.folders[0].result as folder}
                         <option value={folder}>{folder}</option>
                     {/each}
