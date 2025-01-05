@@ -64,6 +64,10 @@
         alert(response.message);
         (e.target as HTMLFormElement).reset();
 
+        if(response.success){
+            SharedStore.folders[0].result.push(`${parentFolder}/${folderName}`);
+        }
+
         eventButton.disabled = false;
         eventButton.innerText = temp;
         unmount(loader);
@@ -321,7 +325,7 @@
             style="border-bottom:1px solid dimgrey;display:flex;align-items:center;justify-content:space-between;padding:10px 0;"
         >
             <span>Folders ▾</span>
-            <button onclick={toggleCreatingFolder} class="bg-primary">+</button>
+            <button onclick={() => { isCreatingFolder = true; }} class="bg-primary">+</button>
         </div>
         <div id="folders"></div>
     </div>
