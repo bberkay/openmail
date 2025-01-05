@@ -40,26 +40,22 @@ async function connectToLocalServer(): Promise<void> {
     }
 
     const checkUrlAndLoadAccounts = async (url: string) => {
-        try {
-            const response: GetResponse<GetRoutes.HELLO> = await ApiService.get(url, GetRoutes.HELLO);
-            if (response.success) {
-                SharedStore.server = url;
-                await loadAccounts();
-            } else {
-                error(500, response.message);
-            }
-            return;
-        } catch {
-            setTimeout(async () => {
-                await checkUrlAndLoadAccounts(url);
-            }, SERVER_CONNECTION_TRY_SLEEP);
+        const response = await ApiService.get<GetRoutes.HELLO>(url, GetRoutes.HELLO);
+        if (response.success) {
+            SharedStore.server = url;
+            await loadAccounts();
+        } else {
+            error(500, response.message);
         }
+        return;
     }
 
-    await invoke(TauriCommand.GET_SERVER_URL).then(async (url) => {
-        await checkUrlAndLoadAccounts(url as string);
-    }).catch(async () => {
-        error(500, "Error while getting server url!");
+    await invoke<string>(TauriCommand.GET_SERVER_URL).then(async (url) => {
+        await checkUrlAndLoadAccounts(url);
+    }).catch(() => {
+        setTimeout(async () => {
+            await connectToLocalServer();
+        }, SERVER_CONNECTION_TRY_SLEEP);
     })
 }
 
