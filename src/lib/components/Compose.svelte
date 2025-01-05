@@ -83,7 +83,8 @@
     async function handleSendEmail(e: Event) {
         e.preventDefault();
 
-        const eventButton = (e.target as HTMLButtonElement).querySelector('button[type="submit"]') as HTMLButtonElement;
+        const target = e.target as HTMLFormElement;
+        const eventButton = target.querySelector('button[type="submit"]') as HTMLButtonElement;
         eventButton.disabled = true;
         const temp = eventButton.innerText;
         eventButton.innerText = "";
@@ -131,22 +132,22 @@
         </div>
         <div class="form-group">
             <label for="receiver">Receiver(s)</label>
-            <input type="email" name="receiver" id="receiver" onkeyup={handleTagEnter} required>
+            <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={handleTagEnter} required>
             <div class="tags" id = "saved-receivers"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
-            <input type="text" name="subject" id="subject" required>
+            <input type="text" name="subject" id="subject" placeholder="Subject" required>
             <div class="tags"></div>
         </div>
         <div class="form-group">
             <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" onkeyup={handleTagEnter}>
+            <input type="email" name="cc" id="cc" placeholder="someone@domain.xyz" onkeyup={handleTagEnter}>
             <div class="tags" id = "saved-cc"></div>
         </div>
         <div class="form-group">
             <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" onkeyup={handleTagEnter}>
+            <input type="email" name="bcc" id="bcc" placeholder="someone@domain.xyz" onkeyup={handleTagEnter}>
             <div class="tags" id = "saved-bcc"></div>
         </div>
         <div class="form-group">

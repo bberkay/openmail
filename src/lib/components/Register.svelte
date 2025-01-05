@@ -208,7 +208,7 @@
     <form onsubmit={editAccount}>
         <div>
             <label for="email_address">Email Address</label><br>
-            <input type="email" name="email_address" id="email_address" autocomplete="off" value="{currentEditingAccount.email_address}" readonly required>
+            <input type="email" name="email_address" id="email_address" autocomplete="off" placeholder="someone@domain.xyz" value="{currentEditingAccount.email_address}" readonly required>
         </div>
         <div>
             <label for="password">Password</label><br>
@@ -217,7 +217,7 @@
         </div>
         <div>
             <label for="fullname">Fullname (Optional)</label><br>
-            <input type="text" name="fullname" id="fullname" autocomplete="off" value="{currentEditingAccount.fullname}"><br>
+            <input type="text" name="fullname" id="fullname" autocomplete="off" placeholder="Fullname" value="{currentEditingAccount.fullname}"><br>
             <small style="font-style:italic;margin-top:5px;">Enter your fullname to be displayed in the email.</small>
         </div>
         <button type="submit" id="edit-account-btn">Edit Account</button>

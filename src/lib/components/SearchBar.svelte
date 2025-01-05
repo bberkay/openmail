@@ -284,27 +284,27 @@
         </div>
         <div class="form-group">
             <label for="senders">Sender(s)</label>
-            <input type="email" name="senders" onkeyup={handleTagEnter} />
+            <input type="email" name="senders" onkeyup={handleTagEnter} placeholder="someone@domain.xyz" />
             <div class="tags" id="saved-senders"></div>
         </div>
         <div class="form-group">
             <label for="receivers">Receiver(s)</label>
-            <input type="email" name="receivers" onkeyup={handleTagEnter} />
+            <input type="email" name="receivers" onkeyup={handleTagEnter} placeholder="someone@domain.xyz" />
             <div class="tags" id="saved-receivers"></div>
         </div>
         <div class="form-group">
             <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" onkeyup={handleTagEnter} />
+            <input type="email" name="cc" id="cc" onkeyup={handleTagEnter} placeholder="someone@domain.xyz" />
             <div class="tags" id="saved-cc"></div>
         </div>
         <div class="form-group">
             <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" onkeyup={handleTagEnter} />
+            <input type="email" name="bcc" id="bcc" onkeyup={handleTagEnter} placeholder="someone@domain.xyz" />
             <div class="tags" id="saved-bcc"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
-            <input type="text" name="subject" />
+            <input type="text" name="subject" placeholder="Subject" />
             <div class="tags"></div>
         </div>
         <div class="row">
@@ -383,11 +383,11 @@
         </div>
         <div class="form-group">
             <label for="include">Includes</label>
-            <input type="text" name="include" />
+            <input type="text" name="include" placeholder="What should be included" />
         </div>
         <div class="form-group">
             <label for="exclude">Excludes</label>
-            <input type="text" name="exclude" />
+            <input type="text" name="exclude" placeholder="What should be excluded" />
         </div>
         <div class="form-group">
             <label for="includes-flags">Include Flag</label>
