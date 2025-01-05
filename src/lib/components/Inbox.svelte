@@ -44,6 +44,8 @@
             if (response.success && response.data) {
                 SharedStore.mailboxes = response.data;
                 SharedStore.selectedFolder = response.data[0].result.folder;
+            } else {
+                alert(response.message);
             }
         })
     }
@@ -65,6 +67,8 @@
             if (response.success && response.data) {
                 currentOffset = Math.min(0, offset_start);
                 SharedStore.mailboxes = response.data;
+            } else {
+                alert(response.message);
             }
         })
     }
@@ -132,6 +136,8 @@
                         }
                     })
                 })
+            } else {
+                alert(response.message);
             }
         })
     }
@@ -157,6 +163,8 @@
                         }
                     })
                 })
+            } else {
+                alert(response.message);
             }
         })
     }
@@ -193,6 +201,8 @@
 
             if (response.success) {
                 SharedStore.mailboxes[0].result.emails = SharedStore.mailboxes[0].result.emails.filter((email: EmailSummary) => !emailSelection.includes(email.uid));
+            } else {
+                alert(response.message);
             }
         })
     }
@@ -212,6 +222,8 @@
 
             if (response.success) {
                 paginateEmails(event, currentOffset, currentOffset + 10);
+            } else {
+                alert(response.message);
             }
         })
     }

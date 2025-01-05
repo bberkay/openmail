@@ -46,7 +46,7 @@
                 fullname: formData.get('fullname') as string
             });
         } else {
-            // Show alert
+            alert(response.message);
         }
 
         addAccountBtn.disabled = false;
@@ -91,6 +91,7 @@
                 currentEditingAccount = SharedStore.failedAccounts[0];
             }
         } else {
+            alert(response.message);
             if (SharedStore.failedAccounts.find((item) => item.email_address !== currentEditingAccount!.email_address)) {
                 SharedStore.failedAccounts.push({
                     email_address: currentEditingAccount.email_address,
@@ -123,6 +124,7 @@
         if (response.success) {
             SharedStore.accounts = SharedStore.accounts.filter((item) => item.email_address !== account);
         } else {
+            alert(response.message);
             button.disabled = false;
             button.textContent = 'Delete Account';
         }
@@ -144,6 +146,8 @@
         if (response.success && response.data) {
             SharedStore.mailboxes = response.data;
             SharedStore.selectedFolder = response.data[0].result.folder;
+        } else {
+            alert(response.message);
         }
     }
 
@@ -162,6 +166,8 @@
 
         if (response.success && response.data) {
             SharedStore.folders = response.data;
+        } else {
+            alert(response.message);
         }
     }
 

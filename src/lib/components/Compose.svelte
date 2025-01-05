@@ -108,11 +108,9 @@
             formData
         );
 
-        if (response.success) {
-            alert("Email sent successfully: " + response.message);
-            (e.target as HTMLFormElement).reset();
-            body.clear();
-        }
+        alert(response.message);
+        (e.target as HTMLFormElement).reset();
+        body.clear();
 
         eventButton.disabled = false;
         eventButton.innerText = temp;

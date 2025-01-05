@@ -20,6 +20,8 @@
 
         if (response.success) {
             SharedStore.reset(SharedStoreKeys.accounts);
+        } else {
+            alert(response.message);
         }
     }
 
@@ -32,6 +34,8 @@
 
         if (response.success) {
             SharedStore.reset();
+        } else {
+            alert(response.message);
         }
     }
 
@@ -42,9 +46,7 @@
             {}
         );
 
-        if (response.success) {
-            // Show an alert.
-        }
+        alert(response.message);
     }
 </script>
 

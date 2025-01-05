@@ -251,6 +251,8 @@
         if (response.success && response.data) {
             SharedStore.mailboxes = response.data;
             SharedStore.selectedFolder = response.data[0].result.folder;
+        } else {
+            alert(response.message);
         }
 
         eventButton.disabled = false;

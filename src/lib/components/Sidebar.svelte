@@ -1,8 +1,12 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { mount, unmount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder } from '$lib/types';
     import { countCharacter, createDomObject } from '$lib/utils';
+    import Loader from "$lib/components/Loader.svelte";
+    import { ApiService } from '$lib/services/ApiService';
+    import { PostRoutes } from '$lib/services/ApiService';
 
     let folders: HTMLDivElement;
     onMount(() => {
@@ -21,6 +25,40 @@
             });
         });
     });
+
+    async function createNewFolder(e: Event) {
+        e.preventDefault();
+
+        const eventButton = e.target as HTMLButtonElement;
+        eventButton.disabled = true;
+        const temp = eventButton.innerText;
+        eventButton.innerText = "";
+        const loader = mount(Loader, { target: eventButton });
+
+        const folderName = prompt("Enter folder name");
+        if (!folderName) {
+            alert("Folder name is required");
+            eventButton.disabled = false;
+            eventButton.innerText = temp;
+            unmount(loader);
+            return;
+        }
+
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.CREATE_FOLDER,
+            {
+                account: SharedStore.accounts[0].email_address,
+                folder_name: folderName,
+                parent_folder: Folder.All
+            }
+        );
+
+        alert(response.message);
+        eventButton.disabled = false;
+        eventButton.innerText = temp;
+        unmount(loader);
+    }
 
     function createFolderMenu() {
         const folderTemplate = `
@@ -208,7 +246,7 @@
     <div style="margin-top:20px;">
         <div style="border-bottom:1px solid dimgrey;display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
             <span>Folders ▾</span>
-            <button class = "bg-primary">+</button>
+            <button onclick={createNewFolder} class = "bg-primary">+</button>
         </div>
         <div id="folders"></div>
     </div>

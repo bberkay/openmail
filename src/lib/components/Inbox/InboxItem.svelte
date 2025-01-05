@@ -29,6 +29,8 @@
 
         if (response.success && response.data) {
             SharedStore.shownEmail = response.data;
+        } else {
+            alert(response.message);
         }
 
         getEmailContentBtn.disabled = false;

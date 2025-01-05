@@ -21,6 +21,8 @@ async function loadAccounts() {
     const response = await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS)
     if (response.success && response.data) {
         SharedStore.accounts = response.data;
+    } else {
+        error(500, response.message);
     }
 }
 
