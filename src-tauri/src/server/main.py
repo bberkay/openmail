@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from openmail import OpenMail
-from openmail.types import EmailToSend, Attachment, EmailWithContent
+from openmail.types import EmailToSend, Attachment, EmailWithContent, SearchCriteria
 from openmail.imap import Folder, Mark
 
 from classes.account_manager import AccountManager, Account, AccountWithPassword
@@ -361,8 +361,8 @@ def check_if_email_client_is_exists(accounts: str) -> Response | bool:
 @app.get("/get-mailboxes/{accounts}")
 async def get_mailboxes(
     accounts: str,
-    folder: Optional[str] = "INBOX",
-    search: Optional[str] = "ALL",
+    folder: Optional[str] = None,
+    search: Optional[str] = None,
     offset_start: Optional[int] = 0,
     offset_end: Optional[int] = 10,
 ) -> Response[list[OpenMailTaskResult]]:
@@ -375,7 +375,7 @@ async def get_mailboxes(
             accounts.split(","),
             lambda client, **params: client.imap.search_emails(**params),
             folder=folder,
-            search=search,
+            search=SearchCriteria.parse_raw(search),
         )
 
         return Response[list[OpenMailTaskResult]](
