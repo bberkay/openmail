@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional, Sequence, Tuple
 from dataclasses import dataclass, field
+import json
 
 @dataclass
 class SearchCriteria():
@@ -31,6 +32,20 @@ class SearchCriteria():
     def __str__(self) -> str:
         """Returns a string representation of the SearchCriteria object."""
         return str(self.__dict__)
+
+    @classmethod
+    def parse_raw(self, raw: str) -> SearchCriteria | str:
+        """Parses a string representation of a SearchCriteria object."""
+        if not raw:
+            return ""
+
+        try:
+            data = json.loads(raw)
+            if not isinstance(data, dict):
+                return raw
+            return SearchCriteria(**data)
+        except json.JSONDecodeError:
+            return raw
 
 @dataclass
 class EmailSummary():
