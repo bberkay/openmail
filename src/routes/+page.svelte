@@ -5,6 +5,7 @@
     import Sidebar from "$lib/components/Sidebar.svelte";
     import Content from "$lib/components/Content.svelte";
     import Compose from "$lib/components/Compose.svelte";
+    import SearchBar from "$lib/components/SearchBar.svelte";
     import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
     import { ApiService, PostRoutes, type PostResponse } from "$lib/services/ApiService";
 
@@ -54,11 +55,17 @@
             <Sidebar />
         </section>
         <section style="width:80%;">
-            <Compose />
-            <!--<Inbox />
-            {#if SharedStore.shownEmail}
-                <Content email={SharedStore.shownEmail} />
-            {/if}-->
+            <div>
+                <SearchBar />
+            </div>
+            <div>
+                <!--<Compose />-->
+                <Inbox />
+                {#if SharedStore.shownEmail}
+                    <Content email={SharedStore.shownEmail} />
+                {/if}
+            </div>
+
         </section>
     </main>
 {:else if isLoading}

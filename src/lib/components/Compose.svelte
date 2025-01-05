@@ -125,7 +125,7 @@
     <form onsubmit={handleSendEmail}>
         <div class="form-group">
             <label for="sender">Sender</label>
-            <select name="sender" id="sender">
+            <select name="sender" id="sender" required>
                 {#each SharedStore.accounts as account}
                     <option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</option>
                 {/each}
@@ -133,12 +133,12 @@
         </div>
         <div class="form-group">
             <label for="receiver">Receiver(s)</label>
-            <input type="email" name="receiver" id="receiver" onkeyup={handleTagEnter}>
+            <input type="email" name="receiver" id="receiver" onkeyup={handleTagEnter} required>
             <div class="tags" id = "saved-receivers"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
-            <input type="text" name="subject" id="subject">
+            <input type="text" name="subject" id="subject" required>
             <div class="tags"></div>
         </div>
         <div class="form-group">
@@ -166,22 +166,3 @@
         <button type="submit" id="send-email" style="margin-top:10px;">Send</button>
     </form>
 </div>
-
-<style>
-    .form-group {
-        display:flex;
-        flex-direction: column;
-        margin-bottom: 10px;
-        width: 100%;
-    }
-
-    .input-group {
-        display:flex;
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .tags {
-        display: flex;
-    }
-</style>

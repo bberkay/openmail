@@ -265,3 +265,20 @@ span {
         width:100px;
     }
 }
+
+.form-group {
+    display:flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.input-group {
+    display:flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.tags {
+    display: flex;
+}

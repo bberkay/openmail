@@ -8,7 +8,7 @@ export function makeSizeHumanReadable(bytes: number): string {
 export function createDomObject(html: string): HTMLElement | null {
     const template = document.createElement("template");
     template.innerHTML = html.trim();
-    return template.content.firstElementChild as HTMLElement
+    return template.content.firstElementChild as HTMLElement;
 }
 
 export function countCharacter(str: string, char: string): number {
@@ -19,4 +19,20 @@ export function countCharacter(str: string, char: string): number {
         }
     }
     return count;
+}
+
+export function debounce(func: Function, delay: number) {
+    let timer = -1;
+    return (...args: any) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            func(...args);
+        }, delay);
+    };
+}
+
+export function addDays(dateString: string, days: number): string {
+    const date = new Date(dateString);
+    date.setDate(date.getDate() + days);
+    return date.toISOString().split("T")[0];
 }

@@ -13,7 +13,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@bberkay/wysiwygeditor": "^2.0.0",
+    "@bberkay/wysiwygeditor": "^2.1.0",
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-shell": "^2.0.1",
