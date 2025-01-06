@@ -954,6 +954,27 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}` and error is `{str(e)}.`")
 
+    def is_email_exists(self,
+        folder: str,
+        uid: str
+    ) -> bool:
+        """
+        Check is given uid exists in given folder.
+
+        Args:
+            folder (str): Folder to search in.
+            uid (str): Uid to check.
+
+        Returns:
+            bool: True if email exists, False otherwise.
+        """
+        status, _ = self.select(folder, readonly=True)
+        if not status:
+            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
+
+        search_status, _ = self.uid('search', f"UID {uid}")
+        return self._parse_command_result(search_status)[0]
+
     def get_emails(
         self,
         offset_start: int = GET_EMAILS_OFFSET_START,
