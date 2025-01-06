@@ -11,10 +11,14 @@ class TestEmailOperations(unittest.TestCase):
     def setUpClass(cls):
         print("Setting up test `TestEmailOperations`...")
         cls._openmail = OpenMail()
-        credentials = json.load(open("openmail/tests/credentials.json"))
+        with open("openmail/tests/credentials.json") as credentials:
+            credentials = json.load(credentials)
         cls._email = credentials[0]["email"]
         cls._openmail.connect(cls._email, credentials[0]["password"])
         print(f"Connected to {cls._email}...")
+
+        cls._created_test_folders = []
+        cls._sent_test_email_uids = []
 
     def test_mark_as_seen_operation(self):
         print("test_mark_as_seen_operation...")
@@ -24,6 +28,12 @@ class TestEmailOperations(unittest.TestCase):
 
         status, _ = self.__class__._openmail.imap.mark_email(Mark.Seen, uid)
         self.assertTrue(status)
+        self.assertIn(
+            Mark.Seen,
+            self.__class__._openmail.imap.get_email_flags(uid)
+        )
+
+        self.__class__._sent_test_email_uids.append(uid)
 
     def test_unmark_as_seen_operation(self):
         print("test_unmark_as_seen_operation...")
@@ -36,6 +46,12 @@ class TestEmailOperations(unittest.TestCase):
 
         status, _ = self.__class__._openmail.imap.unmark_email(Mark.Seen, uid)
         self.assetTrue(status)
+        self.assertNotIn(
+            Mark.Seen,
+            self.__class__._openmail.imap.get_email_flags(uid)
+        )
+
+        self.__class__._sent_test_email_uids.append(uid)
 
     def test_move_email_operation(self):
         print("test_move_email_operation...")
@@ -49,6 +65,10 @@ class TestEmailOperations(unittest.TestCase):
         print(f"Moving email {uid} to {new_folder_name}...")
         status, _ = self.__class__._openmail.imap.move_email(Folder.Inbox, new_folder_name, uid)
         self.assertTrue(status)
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, uid))
+        self.assertFalse(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+
+        self.__class__._created_test_folders.append(new_folder_name)
 
     def test_copy_email_operation(self):
         print("test_copy_email_operation...")
@@ -62,6 +82,11 @@ class TestEmailOperations(unittest.TestCase):
         print(f"Copying email {uid} to {new_folder_name}...")
         status, _ = self.__class__._openmail.imap.copy_email(Folder.Inbox, new_folder_name, uid)
         self.assertTrue(status)
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, uid))
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+
+        self.__class__._created_test_folders.append(new_folder_name)
+        self.__class__._sent_test_email_uids.append(uid)
 
     def test_delete_email_operation(self):
         print("test_delete_email_operation...")
@@ -73,8 +98,12 @@ class TestEmailOperations(unittest.TestCase):
         status, _ = self.__class__._openmail.imap.delete_email(Folder.Inbox, uid)
         self.assertTrue(status)
 
+        self.__class__._sent_test_email_uids.append(uid)
+
     @classmethod
     def tearDownClass(cls):
-        # TODO: Cleanup
         print("Cleaning up test `TestEmailOperations`...")
+        for folder_name in cls._created_test_folders:
+            cls._openmail.imap.delete_folder(folder_name, True)
+        cls._openmail.imap.delete_email(Folder.Inbox, ",".join(cls._sent_test_email_uids))
         cls._openmail.disconnect()
