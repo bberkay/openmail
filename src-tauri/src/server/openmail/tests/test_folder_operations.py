@@ -161,6 +161,8 @@ class TestFolderOperations(unittest.TestCase):
             self.__class__._openmail.imap.get_folders()
         )
 
+        self.__class__._created_test_folders.append(folder_name)
+
     def test_delete_folder_with_subfolders_operation(self):
         print("test_delete_folder_with_subfolders_operation...")
         _, parent_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, create_parent=True)
@@ -171,6 +173,8 @@ class TestFolderOperations(unittest.TestCase):
             parent_folder_name,
             self.__class__._openmail.imap.get_folders()
         )
+
+        self.__class__._created_test_folders.append(parent_folder_name)
 
     def test_rename_folder_operation(self):
         print("test_rename_folder_operation...")
@@ -235,4 +239,4 @@ class TestFolderOperations(unittest.TestCase):
         print("Cleaning up test `TestFolderOperations`...")
         for folder_name in cls._created_test_folders:
             cls._openmail.imap.delete_folder(folder_name, True)
-        cls._openmail.imap.logout()
+        cls._openmail.disconnect()
