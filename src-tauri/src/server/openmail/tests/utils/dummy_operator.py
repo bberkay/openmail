@@ -4,7 +4,7 @@ from openmail import OpenMail
 from openmail.smtp import SMTPManagerException
 from openmail.imap import IMAPManagerException
 from openmail.types import EmailToSend, SearchCriteria
-from ..utils import NameGenerator
+from openmail.tests.utils.name_generator import NameGenerator
 
 class DummyOperator:
     """Dummy operator for testing purposes."""
@@ -12,18 +12,20 @@ class DummyOperator:
     @staticmethod
     def create_test_folder_and_get_name(
         openmail: OpenMail,
-        folder_name: str | None = None,
+        folder_name_suffix: str | None = None,
         create_parent: bool = False,
-        parent_folder_name: str | None = None
+        parent_folder_name_suffix: str | None = None,
     ) -> str | tuple[str, str]:
         """
         Creates a test folder and returns its name.
 
         Args:
             openmail (OpenMail): An instance of the OpenMail class.
-            folder_name (str, optional): The name of the folder to create. If not provided, a random name will be generated.
+            folder_name_suffix (str, optional): The beginning of name of the folder to create.
+            If not provided, a random name will be generated.
             create_parent (bool, optional): Whether to create a parent folder. Default is False.
-            parent_folder_name (str, optional): The name of the parent folder to create. If not provided and create_parent is True, a random name will be generated.
+            parent_folder_name_suffix (str, optional): The beginning of name of the parent folder
+            to create. If not provided and create_parent is True, a random name will be generated.
 
         Returns:
             str: The name of the created folder.
@@ -38,18 +40,22 @@ class DummyOperator:
             ...     create_parent=True,
             ...     parent_folder_name="already-exists-or-going-to-be-created"
             ... )
-            ('openmail-folder-test-uuid', 'already-exists-or-going-to-be-created') # (Child folder, parent_folder_name)
+            ('openmail-folder-test-uuid', 'already-exists-or-going-to-be-created--uid') # (Child folder, parent_folder_name)
         """
-        print(f"Creating new folder...")
-        if not folder_name:
-            folder_name = NameGenerator.random_folder_name_with_uuid()
-        if create_parent and not parent_folder_name:
-            parent_folder_name = NameGenerator.random_folder_name_with_uuid()
-        if not create_parent and parent_folder_name:
-            parent_folder_name = None
+        print("Creating test folder...")
+        if not folder_name_suffix:
+            folder_name_suffix = ""
+        if not parent_folder_name_suffix:
+            parent_folder_name_suffix = ""
+
+        folder_name = folder_name_suffix + NameGenerator.random_folder_name_with_uuid()
+
+        parent_folder_name = None
+        if create_parent:
+            parent_folder_name = parent_folder_name_suffix + NameGenerator.random_folder_name_with_uuid()
 
         openmail.imap.create_folder(folder_name, parent_folder_name)
-        return folder_name, parent_folder_name if parent_folder_name else folder_name
+        return (folder_name, parent_folder_name) if parent_folder_name else folder_name
 
     @staticmethod
     def send_test_email_to_self_and_get_uid(
