@@ -4,12 +4,18 @@
     import InboxItem from "./Inbox/InboxItem.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { ApiService, GetRoutes, PostRoutes } from "$lib/services/ApiService";
-    import { Folder, Mark, type EmailSummary } from "$lib/types";
+    import { Folder, Mark, type EmailSummary, type EmailWithContent } from "$lib/types";
 
     let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
     let currentOffset = $state(1);
     let folderSelection = $state("Move to");
     let emailSelection: string[] = $state([]);
+
+    interface Props {
+        showContent: (email: EmailWithContent) => void;
+    }
+
+    let { showContent }: Props = $props();
 
     async function makeAnApiRequest(event: Event, callback: () => Promise<void>) {
         emailSelection = [];
@@ -271,7 +277,7 @@
                 <div style="display:flex;">
                     <input type="checkbox" style="margin-right:10px;" bind:group={emailSelection} value={email.uid}>
                     <div style="flex-grow:1">
-                        <InboxItem owner={account.email_address} email={email} />
+                        <InboxItem owner={account.email_address} {email} {showContent}  />
                     </div>
                 </div>
             {/each}

@@ -9,7 +9,6 @@ export enum SharedStoreKeys {
     folders="folders",
     selectedAccounts="selectedAccounts",
     selectedFolder="selectedFolder",
-    shownEmail="shownEmail",
 }
 
 interface ISharedStore {
@@ -20,7 +19,6 @@ interface ISharedStore {
     [SharedStoreKeys.folders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.selectedAccounts]: Account[];
     [SharedStoreKeys.selectedFolder]: string;
-    [SharedStoreKeys.shownEmail]: EmailWithContent | null;
 }
 
 export const DefaultSharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = {
@@ -31,7 +29,6 @@ export const DefaultSharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = {
     [SharedStoreKeys.folders]: [],
     [SharedStoreKeys.selectedAccounts]: [],
     [SharedStoreKeys.selectedFolder]: "Inbox",
-    [SharedStoreKeys.shownEmail]: null,
 }
 
 let nonSharedState = $state(DefaultSharedStore);
@@ -49,7 +46,6 @@ export class SharedStore {
     public static get folders(): OpenMailTaskResults<string[]> { return nonSharedState[SharedStoreKeys.folders] }
     public static get selectedAccounts(): Account[] { return nonSharedState[SharedStoreKeys.selectedAccounts] }
     public static get selectedFolder(): string { return nonSharedState[SharedStoreKeys.selectedFolder] }
-    public static get shownEmail(): EmailWithContent | null { return nonSharedState[SharedStoreKeys.shownEmail] }
 
     /**
      * Setters
@@ -87,10 +83,6 @@ export class SharedStore {
 
     public static set selectedFolder(folder: string) {
         nonSharedState[SharedStoreKeys.selectedFolder] = folder;
-    }
-
-    public static set shownEmail(email: EmailWithContent | null) {
-        nonSharedState[SharedStoreKeys.shownEmail] = email;
     }
 
     /* Custom Methods */

@@ -9,7 +9,12 @@
     import { PostRoutes } from "$lib/services/ApiService";
 
     let folders: HTMLDivElement;
-    let isCreatingFolder = false;
+    let isCreatingFolder = $state(false);
+    interface Props {
+        showCompose: () => void
+    }
+
+    let { showCompose }: Props = $props();
     onMount(() => {
         folders = document.getElementById("folders") as HTMLDivElement;
         createFolderMenu();
@@ -308,7 +313,7 @@
             <button
                 class="bg-primary"
                 style="width:100%;padding:7x;margin:10px 0;"
-                >New Message +</button
+                onclick={showCompose}>New Message +</button
             >
         </div>
         <div style="border-bottom:1px solid dimgrey;">

@@ -2,10 +2,16 @@
     import { mount, unmount } from "svelte";
     import Loader from "$lib/components/Loader.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import type { EmailSummary } from "$lib/types";
+    import type { EmailSummary, EmailWithContent } from "$lib/types";
     import { ApiService, GetRoutes } from "$lib/services/ApiService";
 
-    let { owner, email }: { owner: string; email: EmailSummary } = $props();
+    interface Props {
+        owner: string;
+        email: EmailSummary;
+        showContent: (email: EmailWithContent) => void;
+    }
+
+    let { owner, email, showContent }: Props = $props();
 
     async function getEmailContent(event: Event){
         const getEmailContentBtn = event.target as HTMLButtonElement;
@@ -28,7 +34,7 @@
         );
 
         if (response.success && response.data) {
-            SharedStore.shownEmail = response.data;
+            showContent(response.data);
         } else {
             alert(response.message);
         }

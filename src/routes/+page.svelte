@@ -8,8 +8,19 @@
     import SearchBar from "$lib/components/SearchBar.svelte";
     import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
     import { ApiService, PostRoutes, type PostResponse } from "$lib/services/ApiService";
+    import { mount, onMount, unmount } from "svelte";
+    import type { EmailWithContent } from "$lib/types";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
+    let mountedInbox: Record<string, any>;
+    let mountedCompose: Record<string, any>;
+    let mountedContent: Record<string, any>;
+
+    $effect(() => {
+        if (SharedStore.mailboxes.length > 0) {
+            showInbox();
+        }
+    })
 
     async function removeAllAccounts() {
         const response: PostResponse = await ApiService.post(
@@ -48,26 +59,40 @@
 
         alert(response.message);
     }
+
+    function showCompose() {
+        unmount(mountedInbox);
+        unmount(mountedContent);
+        mountedCompose = mount(Compose, { target: document.getElementById("content")! });
+    }
+
+    function showContent(email: EmailWithContent) {
+        unmount(mountedInbox);
+        unmount(mountedCompose);
+        mountedContent = mount(Content, {
+            target: document.getElementById("content")!,
+            props: { email }
+        });
+    }
+
+    function showInbox(){
+        unmount(mountedContent);
+        unmount(mountedCompose);
+        mountedInbox = mount(Inbox, {
+            target: document.getElementById("content")!,
+            props: { showContent }
+        });
+    }
 </script>
 
-<!--<Alert message="This is a success message" type="success" />-->
 {#if SharedStore.mailboxes.length > 0}
     <main>
         <section style="width:20%;margin-right:5px;">
-            <Sidebar />
+            <Sidebar {showCompose} />
         </section>
         <section style="width:80%;">
-            <div>
-                <SearchBar />
-            </div>
-            <div>
-                <!--<Compose />-->
-                <Inbox />
-                {#if SharedStore.shownEmail}
-                    <Content email={SharedStore.shownEmail} />
-                {/if}
-            </div>
-
+            <SearchBar />
+            <div id="content"></div>
         </section>
     </main>
 {:else if isLoading}
