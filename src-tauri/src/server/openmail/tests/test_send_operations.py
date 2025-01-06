@@ -10,7 +10,8 @@ class TestSendOperations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print("Setting up test `TestSendOperations`...")
-        credentials = json.load(open("openmail/tests/credentials.json"))
+        with open("openmail/tests/credentials.json") as credentials:
+            credentials = json.load(credentials)
         cls._email = credentials[0]["email"]
         cls._smtp = SMTPManager(cls._email, credentials[0]["password"])
 
