@@ -923,7 +923,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 search_query=search_query,
                 uids=uids
             )
-            print("Emails saved: ", self._searched_emails)
 
         if folder or self.state != "SELECTED":
             if self.state != "SELECTED":
