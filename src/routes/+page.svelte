@@ -12,9 +12,9 @@
     import type { EmailWithContent } from "$lib/types";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
-    let mountedInbox: Record<string, any>;
-    let mountedCompose: Record<string, any>;
-    let mountedContent: Record<string, any>;
+    let mountedInbox: Record<string, any> | null = null;
+    let mountedCompose: Record<string, any> | null = null;
+    let mountedContent: Record<string, any> | null = null;
 
     $effect(() => {
         if (SharedStore.mailboxes.length > 0) {
@@ -61,14 +61,21 @@
     }
 
     function showCompose() {
-        unmount(mountedInbox);
-        unmount(mountedContent);
-        mountedCompose = mount(Compose, { target: document.getElementById("content")! });
+        if (mountedCompose)
+            return;
+
+        clearContent();
+        mountedCompose = mount(Compose, {
+            target: document.getElementById("content")!,
+            props: { showInbox }
+        });
     }
 
     function showContent(email: EmailWithContent) {
-        unmount(mountedInbox);
-        unmount(mountedCompose);
+        if (mountedContent)
+            return;
+
+        clearContent();
         mountedContent = mount(Content, {
             target: document.getElementById("content")!,
             props: { email }
@@ -76,12 +83,29 @@
     }
 
     function showInbox(){
-        unmount(mountedContent);
-        unmount(mountedCompose);
+        if (mountedInbox)
+            return;
+
+        clearContent();
         mountedInbox = mount(Inbox, {
             target: document.getElementById("content")!,
             props: { showContent }
         });
+    }
+
+    function clearContent() {
+        if(mountedContent) {
+             unmount(mountedContent);
+             mountedContent = null
+        }
+        if(mountedCompose) {
+            unmount(mountedCompose);
+            mountedCompose = null;
+        }
+        if(mountedInbox) {
+            unmount(mountedInbox);
+            mountedInbox = null;
+        }
     }
 </script>
 

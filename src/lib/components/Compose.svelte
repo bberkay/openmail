@@ -16,6 +16,12 @@
             <button type="button" style="margin-left:5px;">X</button>
         </span>
     `;
+
+    interface Props {
+        showInbox: () => void
+    }
+
+    let { showInbox }: Props = $props();
     onMount(() => {
         body = new WYSIWYGEditor('body');
         body.init();
@@ -120,7 +126,10 @@
 </script>
 
 <div class = "card">
-    <h2>Compose</h2>
+    <div class="header">
+        <h2>Compose</h2>
+        <button onclick={showInbox}>X</button>
+    </div>
     <form onsubmit={handleSendEmail}>
         <div class="form-group">
             <label for="sender">Sender</label>
@@ -165,3 +174,15 @@
         <button type="submit" id="send-email" style="margin-top:10px;">Send</button>
     </form>
 </div>
+
+<style>
+    .header{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .header :first-child{
+        flex-grow:1;
+    }
+</style>
