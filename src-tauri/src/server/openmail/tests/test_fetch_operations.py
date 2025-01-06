@@ -14,7 +14,10 @@ class TestFetchOperations(unittest.TestCase):
     def setUpClass(cls):
         print("Setting up test `TestFetchOperations`...")
         cls._openmail = OpenMail()
-        credentials = json.load(open("openmail/tests/credentials.json"))
+
+        with open("openmail/tests/credentials.json") as credentials:
+            credentials = json.load(credentials)
+
         if len(credentials) < 3:
             raise ValueError("At least 3 credentials are required.")
 
