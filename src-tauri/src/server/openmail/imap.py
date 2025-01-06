@@ -83,7 +83,7 @@ UNKNOWN_PLACEHOLDERS = MappingProxyType({
 GET_EMAILS_OFFSET_START = 0
 GET_EMAILS_OFFSET_END = 10
 BODY_SHORT_THRESHOLD = 100
-MAX_FOLDER_NAME_LENGTH = 100
+MAX_FOLDER_NAME_LENGTH = 1024
 CONN_TIMEOUT = 30 # 30 seconds
 IDLE_TIMEOUT = 30 * 60 # 30 minutes
 JOIN_TIMEOUT = 3 # 3 seconds
@@ -732,9 +732,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Failed to list folders with status: {status}.")
 
         folder_list = []
-        disallowed_keywords = [b'\\Noselect', b'\\NoSelect']
+        disallowed_keywords = [b'\\Noselect']
+        disallowed_keywords = [keyword.lower() for keyword in disallowed_keywords]
         for folder in folders:
-            if folder and not any(keyword in folder for keyword in disallowed_keywords):
+            if not any(keyword in folder.lower() for keyword in disallowed_keywords):
                 decoded_folder = self._decode_folder(folder)
                 if not folder_name or (folder_name in decoded_folder and not decoded_folder.endswith(folder_name)):
                     folder_list.append(decoded_folder)
@@ -1673,7 +1674,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message or an error message.
 
         Example:
-            >>> delete_folder("RED")
+            >>> delete_folder("RED") # RED/LIGHTRED, RED/DARKRED wont be deleted.
+            (True, "Folder `RED` deleted successfully.")
+            >>> delete_folder("RED", true) # RED/LIGHTRED, RED/DARKRED will be deleted.
             (True, "Folder `RED` deleted successfully.")
         """
         self._check_folder_names(folder_name)
@@ -1704,15 +1707,27 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message or an error message.
 
         Example:
-            >>> move_folder("RED", "COLORS") # RED will be moved under COLORS like `COLORS/RED`
-            (True, "Folder `RED` moved to `COLORS` successfully.")
+            >>> move_folder("RED", "COLORS")
+            (True, "Folder `RED` moved to `COLORS` successfully. New location is `COLORS/RED`")
+            >>> move_folder("RED", "COLORS/DARK") # Subfolders of `RED` will be also moved under `COLORS/DARK`.
+            (True, "Folder `RED` moved to `COLORS/DARK` successfully. New location is `COLORS/DARK/RED`")
+            >>> move_folder("RED/DARKRED", "COLORS")
+            (True, "Folder `RED/DARKRED` moved to `COLORS` successfully. New location is `COLORS/DARKRED`")
+            >>> move_folder("RED/DARKRED", "COLORS/DARK")
+            (True, "Folder `RED/DARKRED` moved to `COLORS/DARK` successfully. New location is `COLORS/DARK/DARKRED`")
         """
         self._check_folder_names([folder_name, destination_folder])
+
+        *folder_name_parent, folder_name_target = folder_name.split("/")
+        if "/".join(folder_name_parent) in self.get_folders():
+            destination_folder = f"{destination_folder}/{folder_name_target}"
+        else:
+            destination_folder = f"{destination_folder}/{folder_name}"
 
         return self._parse_command_result(
             self.rename(
                 self._encode_folder(folder_name),
-                self._encode_folder(f"{destination_folder}/{folder_name}")
+                self._encode_folder(destination_folder)
             ),
             f"Folder `{folder_name}` moved to `{destination_folder}` successfully.",
             f"There was an error while moving folder `{folder_name}` to `{destination_folder}`."
@@ -1734,8 +1749,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Example:
             >>> rename_folder("RED", "BLUE")
             (True, "Folder `RED` renamed to `BLUE` successfully.")
+            >>> rename_folder("BLUE/DARKBLUE", "LIGHTBLUE")
+            (True, "Folder `BLUE/DARKBLUE` renamed to `BLUE/LIGHTBLUE` successfully.")
         """
         self._check_folder_names([folder_name, new_folder_name])
+
+        *folder_name_parent, _ = folder_name.split("/")
+        folder_name_parent = "/".join(folder_name_parent)
+        if folder_name_parent in self.get_folders():
+            new_folder_name = f"{folder_name_parent}/{new_folder_name}"
 
         return self._parse_command_result(
             self.rename(
