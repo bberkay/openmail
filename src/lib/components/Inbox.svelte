@@ -128,7 +128,7 @@
                 {
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
                     mark: mark,
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
                     folder: folder
                 }
             );
@@ -155,7 +155,7 @@
                 {
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
                     mark: mark,
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
                     folder: folder
                 }
             );
@@ -199,7 +199,7 @@
                 PostRoutes.DELETE_EMAIL,
                 {
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
                     folder: Folder.Inbox
                 }
             );
@@ -219,7 +219,7 @@
                 PostRoutes.MOVE_EMAIL,
                 {
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection[emailSelection.length - 1] + ":" + emailSelection[0],
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
                     source_folder: Folder.Inbox,
                     destination_folder: folderSelection
                 }
