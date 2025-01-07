@@ -7,9 +7,12 @@
     import Loader from "$lib/components/Loader.svelte";
     import { ApiService } from "$lib/services/ApiService";
     import { PostRoutes } from "$lib/services/ApiService";
+    import CreateFolderForm from "./Sidebar/CreateFolderForm.svelte";
+    import RenameFolderForm from "./Sidebar/RenameFolderForm.svelte";
+    import DeleteFolderForm from "./Sidebar/DeleteFolderForm.svelte";
+    import MoveFolderForm from "./Sidebar/MoveFolderForm.svelte";
 
     let folders: HTMLDivElement;
-    let isCreatingFolder = $state(false);
     interface Props {
         showCompose: () => void
     }
@@ -18,27 +21,20 @@
     onMount(() => {
         folders = document.getElementById("folders") as HTMLDivElement;
         createFolderMenu();
-
-        document.body.addEventListener("click", (e: MouseEvent) => {
-            const target = e.target as HTMLInputElement;
-            const dropdowns = document.querySelectorAll(".dropdown");
-            if (!dropdowns.length) return;
-
-            dropdowns.forEach((dropdown) => {
-                if (
-                    target !== dropdown &&
-                    !target.classList.contains("dropdown-toggle")
-                )
-                    dropdown.remove();
-            });
-        });
     });
 
-    function toggleCreatingFolder() {
-        isCreatingFolder = !isCreatingFolder;
-    }
+    document.body.addEventListener("click", (e: MouseEvent) => {
+        const target = e.target as HTMLInputElement;
+        const dropdowns = document.querySelectorAll(".dropdown");
+        if (!dropdowns.length)
+            return;
 
-    async function handleCreateFolder(e: Event) {
+        if (!target.closest('.dropdown, .dropdown-toggle')) {
+            dropdowns.forEach(dropdown => dropdown.remove());
+        }
+    });
+
+    async function makeAnApiRequest(e: Event, callback: () => Promise<void>) {
         e.preventDefault();
 
         const target = e.target as HTMLFormElement;
@@ -50,32 +46,144 @@
         eventButton.innerText = "";
         const loader = mount(Loader, { target: eventButton });
 
-        const folderName = target.querySelector<HTMLInputElement>(
-            'input[name="folder_name"]',
-        )!.value;
-        const parentFolder = target.querySelector<HTMLSelectElement>(
-            'select[name="parent_folder"]',
-        )?.value;
-        const response = await ApiService.post(
-            SharedStore.server,
-            PostRoutes.CREATE_FOLDER,
-            {
-                account: SharedStore.accounts[0].email_address,
-                folder_name: folderName,
-                parent_folder: parentFolder,
-            },
-        );
-
-        alert(response.message);
-        (e.target as HTMLFormElement).reset();
-
-        if(response.success){
-            SharedStore.folders[0].result.push(`${parentFolder}/${folderName}`);
-        }
+        await callback();
 
         eventButton.disabled = false;
         eventButton.innerText = temp;
         unmount(loader);
+    }
+
+    function handleCreateFolderForm(e: Event) {
+        makeAnApiRequest(e, async () => {
+            const target = e.target as HTMLFormElement;
+            const folderName = target.querySelector<HTMLInputElement>(
+                'input[name="folder_name"]',
+            )!.value;
+            const parentFolder = target.querySelector<HTMLSelectElement>(
+                'select[name="parent_folder"]',
+            )?.value;
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.CREATE_FOLDER,
+                {
+                    account: SharedStore.accounts[0].email_address,
+                    folder_name: folderName,
+                    parent_folder: parentFolder,
+                },
+            );
+
+            alert(response.message);
+            (e.target as HTMLFormElement).reset();
+
+            if(response.success){
+                SharedStore.folders[0].result.push(`${parentFolder}/${folderName}`);
+            }
+        })
+    }
+
+    function handleDeleteFolderForm(e: Event) {
+        makeAnApiRequest(e, async () => {
+            const target = e.target as HTMLFormElement;
+            const folderName = target.querySelector<HTMLInputElement>(
+                'input[name="folder_name"]',
+            )!.value;
+            const subfolders = target.querySelector<HTMLInputElement>(
+                'input[name="subfolders"]',
+            )!.checked;
+
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.DELETE_FOLDER,
+                {
+                    account: SharedStore.accounts[0].email_address,
+                    folder_name: folderName,
+                    subfolders
+                },
+            );
+
+            alert(response.message);
+            (e.target as HTMLFormElement).reset();
+
+            if(response.success){
+                SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName);
+            }
+        })
+    }
+
+    function handleRenameFolderForm(e: Event) {
+        makeAnApiRequest(e, async () => {
+            const target = e.target as HTMLFormElement;
+            const folderName = target.querySelector<HTMLInputElement>(
+                'input[name="folder_name"]',
+            )!.value;
+            let newFolderName = target.querySelector<HTMLSelectElement>(
+                'input[name="new_folder_name"]',
+            )!.value;
+
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.RENAME_FOLDER,
+                {
+                    account: SharedStore.accounts[0].email_address,
+                    folder_name: folderName,
+                    new_folder_name: newFolderName,
+                },
+            );
+
+            if(response.success){
+                SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName);
+
+                if (folderName.includes("/")) {
+                    const parentFolder = folderName.slice(0, folderName.lastIndexOf("/"));
+                    if (SharedStore.folders[0].result.includes(parentFolder))
+                        newFolderName = `${parentFolder}/${newFolderName}`
+                }
+
+                SharedStore.folders[0].result.push(newFolderName);
+            }
+
+            alert(response.message);
+            (e.target as HTMLFormElement).reset();
+        })
+    }
+
+    function handleMoveFolderForm(e: Event) {
+        makeAnApiRequest(e, async () => {
+            const target = e.target as HTMLFormElement;
+            const folderName = target.querySelector<HTMLInputElement>(
+                'input[name="folder_name"]',
+            )!.value;
+            const destinationFolder = target.querySelector<HTMLSelectElement>(
+                'select[name="destination_folder"]',
+            )!.value;
+
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.MOVE_FOLDER,
+                {
+                    account: SharedStore.accounts[0].email_address,
+                    folder_name: folderName,
+                    destination_folder: destinationFolder,
+                },
+            );
+
+            alert(response.message);
+            (e.target as HTMLFormElement).reset();
+
+            if(response.success){
+                SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName);
+
+                let newFolderPath = `${destinationFolder}/${folderName}`;
+                if (folderName.includes("/")) {
+                    const tempLastIndex = folderName.lastIndexOf("/");
+                    const parentFolder = folderName.slice(0, tempLastIndex);
+                    if (SharedStore.folders[0].result.includes(parentFolder)) {
+                        newFolderPath = `${parentFolder}/${folderName.slice(tempLastIndex+1)}`;
+                    }
+                }
+                SharedStore.folders[0].result.push(newFolderPath);
+            }
+        })
     }
 
     function clearInput(e: Event) {
@@ -102,16 +210,16 @@
         const folderTemplate = `
             <div class="folder" style="padding-left:{tabsize}rem;">
                 <button class="inline subfolder-toggle {disabled}" style="opacity:{opacity}">▾</button>
-                <button class="inline" style="flex-grow:1;">{folder}</button>
+                <button class="inline folder-name" style="flex-grow:1;">{folder}</button>
                 <button class="inline hover dropdown-toggle">⋮</button>
             </div>
         `;
 
         const optionsTemplate = `
             <div class="dropdown">
-                <button class="bg-primary">Rename</button>
-                <button class="bg-primary">Delete</button>
-                <select class = "bg-primary" bind:value={folderSelection} onchange={moveEmail}>
+                <button class="bg-primary" id="rename-folder">Rename</button>
+                <button class="bg-primary" id="delete-folder">Delete</button>
+                <select class = "bg-primary" id="move-folder">
                     <option disabled selected>Move to</option>
                     ${SharedStore.folders[0].result.map((folder) => `<option value="${folder}">${folder}</option>`).join("")}
                 </select>
@@ -282,25 +390,77 @@
                 }
             };
 
-            (
-                folderNode.querySelector(
-                    ".dropdown-toggle",
-                ) as HTMLButtonElement
-            ).onclick = (e: MouseEvent) => {
+            folderNode.querySelector<HTMLButtonElement>(
+                ".dropdown-toggle"
+            )!.onclick = (e: MouseEvent) => {
                 const toggleButton = e.target as HTMLDivElement;
                 const folder = toggleButton.parentElement!;
-                if (folder.querySelector(".dropdown")) {
-                    folder.removeChild(folder.querySelector(".dropdown")!);
-                } else {
+                const openDropdowns = document.querySelectorAll(".dropdown");
+
+                let isTargetDropdown = false;
+                openDropdowns.forEach(dropdown => {
+                    isTargetDropdown = dropdown.parentElement == folder;
+                    dropdown.remove();
+                });
+
+                if (!isTargetDropdown){
                     const optionsNode = createDomObject(optionsTemplate);
-                    folder.appendChild(optionsNode!);
+                    folder.appendChild(optionsNode);
+                    addOptionFunctions(optionsNode);
                 }
             };
+
+            const addOptionFunctions = (optionsNode: HTMLElement) => {
+                optionsNode.querySelector<HTMLButtonElement>("#rename-folder")!.onclick = () => {
+                    const folderName = optionsNode.closest(".folder")!.querySelector(".folder-name")!.textContent!;
+                    const mountedRenameFolderForm = mount(RenameFolderForm, {
+                        target: document.getElementById("rename-folder-form-container")!,
+                        props: {
+                            folderName,
+                            handleRenameFolderForm,
+                            closeRenameFolderForm: () => { unmount(mountedRenameFolderForm); }
+                        }
+                    });
+                };
+
+                optionsNode.querySelector<HTMLButtonElement>("#delete-folder")!.onclick = () => {
+                    const folderName = optionsNode.closest(".folder")!.querySelector(".folder-name")!.textContent!;
+                    const mountedDeleteFolderForm = mount(DeleteFolderForm, {
+                        target: document.getElementById("delete-folder-form-container")!,
+                        props: {
+                            folderName,
+                            handleDeleteFolderForm,
+                            closeDeleteFolderForm: () => { unmount(mountedDeleteFolderForm); }
+                        }
+                    });
+                };
+
+                optionsNode.querySelector<HTMLButtonElement>("#move-folder")!.onclick = () => {
+                    const mountedMoveFolderForm = mount(MoveFolderForm, {
+                        target: document.getElementById("move-folder-form-container")!,
+                        props: {
+                            handleMoveFolderForm,
+                            closeMoveFolderForm: () => { unmount(mountedMoveFolderForm); }
+                        }
+                    });
+                };
+            }
 
             folders.appendChild(folderNode);
             traversedFolders.push(currentFolder);
             i += 1;
         }
+    }
+
+    function showCreateFolder() {
+        const mountedCreateFolderForm = mount(CreateFolderForm, {
+            target: document.getElementById("create-folder-form-container")!,
+            props: {
+                handleCreateFolderForm,
+                clearInput,
+                closeCreateFolderForm: () => { unmount(mountedCreateFolderForm); }
+            }
+        });
     }
 </script>
 
@@ -330,48 +490,13 @@
             style="border-bottom:1px solid dimgrey;display:flex;align-items:center;justify-content:space-between;padding:10px 0;"
         >
             <span>Folders ▾</span>
-            <button onclick={() => { isCreatingFolder = true; }} class="bg-primary">+</button>
+            <button onclick={showCreateFolder} class="bg-primary">+</button>
         </div>
         <div id="folders"></div>
     </div>
 </div>
 
-{#if isCreatingFolder}
-    <div class="card absolute">
-        <form onsubmit={handleCreateFolder}>
-            <div class="form-group">
-                <label for="folder-name">Folder Name</label>
-                <input
-                    type="text"
-                    name="folder_name"
-                    id="folder-name"
-                    placeholder="My New Folder"
-                    required
-                />
-            </div>
-            <div class="form-group">
-                <label for="parent-folder">Parent Folder</label>
-                <div class="input-group">
-                    <select name="parent_folder" id="parent-folder">
-                        <option value="" selected>Select Parent Folder</option>
-                        {#each SharedStore.folders[0].result as folder}
-                            <option value={folder}>{folder}</option>
-                        {/each}
-                    </select>
-                    <button type="button" onclick={clearInput}>X</button>
-                </div>
-            </div>
-            <button type="submit" class="bg-primary">Create</button>
-            <button type="button" onclick={toggleCreatingFolder}>Close</button>
-        </form>
-    </div>
-{/if}
-
-<style>
-    .card.absolute {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-</style>
+<div id="create-folder-form-container"></div>
+<div id="rename-folder-form-container"></div>
+<div id="delete-folder-form-container"></div>
+<div id="move-folder-form-container"></div>
