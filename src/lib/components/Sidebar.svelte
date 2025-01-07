@@ -18,6 +18,18 @@
     }
 
     let { showCompose }: Props = $props();
+    interface SidebarMounts {
+        mountedCreateFolderForm: Record<string, any> | null,
+        mountedRenameFolderForm: Record<string, any> | null
+        mountedMoveFolderForm: Record<string, any> | null
+        mountedDeleteFolderForm: Record<string, any> | null
+    }
+    let sidebarMounts: SidebarMounts = {
+        mountedCreateFolderForm: null,
+        mountedRenameFolderForm: null,
+        mountedMoveFolderForm: null,
+        mountedDeleteFolderForm: null,
+    };
     onMount(() => {
         folders = document.getElementById("folders") as HTMLDivElement;
         createFolderMenu();
@@ -219,10 +231,7 @@
             <div class="dropdown">
                 <button class="bg-primary" id="rename-folder">Rename</button>
                 <button class="bg-primary" id="delete-folder">Delete</button>
-                <select class = "bg-primary" id="move-folder">
-                    <option disabled selected>Move to</option>
-                    ${SharedStore.folders[0].result.map((folder) => `<option value="${folder}">${folder}</option>`).join("")}
-                </select>
+                <button class="bg-primary" id="move-folder">Move</button>
             </div>
         `;
 
@@ -412,35 +421,58 @@
 
             const addOptionFunctions = (optionsNode: HTMLElement) => {
                 optionsNode.querySelector<HTMLButtonElement>("#rename-folder")!.onclick = () => {
+                    if (sidebarMounts.mountedRenameFolderForm)
+                        return;
+
+                    clearContent();
                     const folderName = optionsNode.closest(".folder")!.querySelector(".folder-name")!.textContent!;
-                    const mountedRenameFolderForm = mount(RenameFolderForm, {
+                    sidebarMounts.mountedRenameFolderForm = mount(RenameFolderForm, {
                         target: document.getElementById("rename-folder-form-container")!,
                         props: {
                             folderName,
                             handleRenameFolderForm,
-                            closeRenameFolderForm: () => { unmount(mountedRenameFolderForm); }
+                            closeRenameFolderForm: () => {
+                                unmount(sidebarMounts.mountedRenameFolderForm!);
+                                sidebarMounts.mountedRenameFolderForm = null;
+                            }
                         }
                     });
                 };
 
                 optionsNode.querySelector<HTMLButtonElement>("#delete-folder")!.onclick = () => {
+                    if (sidebarMounts.mountedDeleteFolderForm)
+                        return;
+
+                    clearContent();
                     const folderName = optionsNode.closest(".folder")!.querySelector(".folder-name")!.textContent!;
-                    const mountedDeleteFolderForm = mount(DeleteFolderForm, {
+                    sidebarMounts.mountedDeleteFolderForm = mount(DeleteFolderForm, {
                         target: document.getElementById("delete-folder-form-container")!,
                         props: {
                             folderName,
                             handleDeleteFolderForm,
-                            closeDeleteFolderForm: () => { unmount(mountedDeleteFolderForm); }
+                            closeDeleteFolderForm: () => {
+                                unmount(sidebarMounts.mountedDeleteFolderForm!);
+                                sidebarMounts.mountedDeleteFolderForm = null;
+                            }
                         }
                     });
                 };
 
                 optionsNode.querySelector<HTMLButtonElement>("#move-folder")!.onclick = () => {
-                    const mountedMoveFolderForm = mount(MoveFolderForm, {
+                    if (sidebarMounts.mountedMoveFolderForm)
+                        return;
+
+                    clearContent();
+                    const folderName = optionsNode.closest(".folder")!.querySelector(".folder-name")!.textContent!;
+                    sidebarMounts.mountedMoveFolderForm = mount(MoveFolderForm, {
                         target: document.getElementById("move-folder-form-container")!,
                         props: {
+                            folderName,
                             handleMoveFolderForm,
-                            closeMoveFolderForm: () => { unmount(mountedMoveFolderForm); }
+                            closeMoveFolderForm: () => {
+                                unmount(sidebarMounts.mountedMoveFolderForm!);
+                                sidebarMounts.mountedMoveFolderForm = null;
+                            }
                         }
                     });
                 };
@@ -453,14 +485,40 @@
     }
 
     function showCreateFolder() {
-        const mountedCreateFolderForm = mount(CreateFolderForm, {
+        if (sidebarMounts.mountedCreateFolderForm)
+            return;
+
+        clearContent();
+        sidebarMounts.mountedCreateFolderForm = mount(CreateFolderForm, {
             target: document.getElementById("create-folder-form-container")!,
             props: {
                 handleCreateFolderForm,
                 clearInput,
-                closeCreateFolderForm: () => { unmount(mountedCreateFolderForm); }
+                closeCreateFolderForm: () => {
+                    unmount(sidebarMounts.mountedCreateFolderForm!);
+                    sidebarMounts.mountedCreateFolderForm = null;
+                }
             }
         });
+    }
+
+    function clearContent() {
+        if(sidebarMounts.mountedCreateFolderForm) {
+            unmount(sidebarMounts.mountedCreateFolderForm);
+            sidebarMounts.mountedCreateFolderForm = null
+        }
+        if(sidebarMounts.mountedRenameFolderForm) {
+            unmount(sidebarMounts.mountedRenameFolderForm);
+            sidebarMounts.mountedRenameFolderForm = null
+        }
+        if(sidebarMounts.mountedMoveFolderForm) {
+            unmount(sidebarMounts.mountedMoveFolderForm);
+            sidebarMounts.mountedMoveFolderForm = null
+        }
+        if(sidebarMounts.mountedDeleteFolderForm) {
+            unmount(sidebarMounts.mountedDeleteFolderForm);
+            sidebarMounts.mountedDeleteFolderForm = null
+        }
     }
 </script>
 

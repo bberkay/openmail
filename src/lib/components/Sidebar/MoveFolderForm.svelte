@@ -3,11 +3,12 @@
 
     interface Props {
         handleMoveFolderForm: (e: Event) => void,
-        closeMoveFolderForm: () => void
+        closeMoveFolderForm: () => void,
+        folderName: string
     }
 
-    let { handleMoveFolderForm, closeMoveFolderForm }: Props = $props();
-    let selectedFolder: string = $state("");
+    let { handleMoveFolderForm, closeMoveFolderForm, folderName }: Props = $props();
+    let selectedFolder: string = $state(folderName);
 </script>
 
 <div class="card absolute">

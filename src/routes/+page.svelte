@@ -12,9 +12,9 @@
     import type { EmailWithContent } from "$lib/types";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
-    let mountedInbox: Record<string, any> | null = null;
-    let mountedCompose: Record<string, any> | null = null;
-    let mountedContent: Record<string, any> | null = null;
+    let mountedInbox: Record<string, any> | null = $state(null);
+    let mountedCompose: Record<string, any> | null = $state(null);
+    let mountedContent: Record<string, any> | null = $state(null);
 
     $effect(() => {
         if (SharedStore.mailboxes.length > 0) {

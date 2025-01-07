@@ -4,6 +4,27 @@ body{
     color: #dddddd;
 }
 
+.alert-bg{
+    display:none
+}
+
+body:has(.card.absolute){
+    overflow:hidden;
+
+    & .alert-bg{
+        display: block;
+        position: absolute;
+        overflow:hidden;
+        width:100%;
+        height:100%;
+        background-color: #000;
+        opacity:0.5;
+        z-index:99;
+        pointer-events: none;
+        user-select:none;
+    }
+}
+
 *{
     scrollbar-width: thin;
     scrollbar-color: #888 transparent;
@@ -163,6 +184,7 @@ span {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        z-index:99999;
     }
 }
 
