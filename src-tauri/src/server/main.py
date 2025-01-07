@@ -130,32 +130,6 @@ async def catch_request_for_logging(request: Request, call_next):
 async def hello() -> Response:
     return Response(success=True, message="Hello, Server is ready for you!")
 
-#################################################
-
-
-################ FOR TESTS ONLY #################
-
-@app.post("/recreate-whole-universe")
-def recreate_whole_universe() -> Response:
-    try:
-        FileSystem().reset()
-        account_manager.remove_all()
-        return Response(success=True, message="You asked and the whole universe completely recreated!")
-    except Exception as e:
-        return Response(success=False, message=err_msg("Some forces prevented you from doing this.", str(e)))
-
-
-@app.post("/reset-file-system")
-def reset_file_system() -> Response:
-    try:
-        FileSystem().reset()
-        return Response(success=True, message="Files are recreated successfully")
-    except Exception as e:
-        return Response(success=False, message=err_msg("There was an error while recreating files.", str(e)))
-
-#####################################################
-
-
 ################ ACCOUNT OPERATIONS #################
 class GetPublicKeyData(BaseModel):
     public_key: str

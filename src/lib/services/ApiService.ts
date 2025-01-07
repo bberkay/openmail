@@ -26,9 +26,7 @@ export enum PostRoutes {
     CREATE_FOLDER = "/create-folder",
     RENAME_FOLDER = "/rename-folder",
     MOVE_FOLDER = "/move-folder",
-    DELETE_FOLDER = "/delete-folder",
-    RESET_FILE_SYSTEM = "/reset-file-system",
-    RECREATE_WHOLE_UNIVERSE = "/recreate-whole-universe",
+    DELETE_FOLDER = "/delete-folder"
 }
 
 interface PostBody {
@@ -107,8 +105,6 @@ interface PostBody {
         folder_name: string
         subfolders: boolean
     };
-    [PostRoutes.RESET_FILE_SYSTEM]: {};
-    [PostRoutes.RECREATE_WHOLE_UNIVERSE]: {};
 }
 
 interface GetQueryParams {
