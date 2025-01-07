@@ -258,16 +258,9 @@
             }
 
             if (i > 0) {
-                const parentFolder = currentFolder.substring(
-                    0,
-                    currentFolder.lastIndexOf("/"),
-                );
+                const parentFolder = currentFolder.substring(0, currentFolder.lastIndexOf("/"));
                 if (parentFolder) {
-                    if (
-                        traversedFolders.some(
-                            (folder) => folder === parentFolder,
-                        )
-                    ) {
+                    if (traversedFolders.some(folder => folder === parentFolder)) {
                         folderName = currentFolder.substring(
                             parentFolder.length + 1,
                         );
@@ -295,11 +288,7 @@
                         // and new hierarchy should be like this:
                         // myfolderhas/initsname
                         //  subfolder[0.5rem tabsize]
-                        tabsize =
-                            (currentFolder.split("/").length -
-                                1 -
-                                countCharacter(prevFolderName, "/")) *
-                            tabsizeMultiplier;
+                        tabsize = (currentFolder.split("/").length - 1 - countCharacter(prevFolderName, "/")) * tabsizeMultiplier;
                     }
                 }
             }
@@ -312,14 +301,11 @@
                     .replace("{disabled}", opacity === 0 ? "disabled" : ""),
             )!;
 
-            (
-                folderNode.querySelector(
-                    ".subfolder-toggle",
-                ) as HTMLButtonElement
-            ).onclick = (e: MouseEvent) => {
+            folderNode.querySelector<HTMLButtonElement>(
+                ".subfolder-toggle",
+            )!.onclick = (e: MouseEvent) => {
                 const toggleButton = e.target as HTMLButtonElement;
-                toggleButton.innerText =
-                    toggleButton.innerText === "▸" ? "▾" : "▸";
+                toggleButton.innerText = toggleButton.innerText === "▸" ? "▾" : "▸";
                 const isClosing = toggleButton.innerText === "▸";
 
                 let folder = toggleButton.parentElement!;
@@ -365,31 +351,14 @@
                             //     subsubfolder1
                             //     subsubfolder2
                             //
-                            if (
-                                nextElementTabSize - currentTabsize >
-                                tabsizeMultiplier
-                            ) {
-                                const prevSibling =
-                                    folder.previousElementSibling as HTMLDivElement;
-                                const prevSiblingToggle =
-                                    prevSibling.querySelector(
-                                        ".subfolder-toggle",
-                                    ) as HTMLButtonElement;
-                                if (
-                                    !prevSiblingToggle.classList.contains(
-                                        "disabled",
-                                    )
-                                ) {
-                                    if (
-                                        prevSiblingToggle.innerText.includes(
-                                            "▾",
-                                        )
-                                    )
-                                        folder.style.display =
-                                            prevSibling.style.display;
+                            if (nextElementTabSize - currentTabsize > tabsizeMultiplier) {
+                                const prevSibling = folder.previousElementSibling as HTMLDivElement;
+                                const prevSiblingToggle = prevSibling.querySelector(".subfolder-toggle") as HTMLButtonElement;
+                                if (!prevSiblingToggle.classList.contains("disabled")) {
+                                    if (prevSiblingToggle.innerText.includes("▾"))
+                                        folder.style.display = prevSibling.style.display;
                                 } else {
-                                    folder.style.display =
-                                        prevSibling.style.display;
+                                    folder.style.display = prevSibling.style.display;
                                 }
                             } else {
                                 folder.style.display = "flex";
@@ -399,9 +368,7 @@
                 }
             };
 
-            folderNode.querySelector<HTMLButtonElement>(
-                ".dropdown-toggle"
-            )!.onclick = (e: MouseEvent) => {
+            folderNode.querySelector<HTMLButtonElement>(".dropdown-toggle")!.onclick = (e: MouseEvent) => {
                 const toggleButton = e.target as HTMLDivElement;
                 const folder = toggleButton.parentElement!;
                 const openDropdowns = document.querySelectorAll(".dropdown");
@@ -537,8 +504,7 @@
         <div style="border-bottom:1px solid dimgrey;">
             {#each Object.values(Folder) as folder}
                 <div class="folder">
-                    <button class="inline" style="flex-grow:1;">{folder}</button
-                    >
+                    <button class="inline" style="flex-grow:1;">{folder}</button>
                 </div>
             {/each}
         </div>

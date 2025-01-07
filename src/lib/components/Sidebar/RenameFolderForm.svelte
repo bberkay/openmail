@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { onMount } from "svelte";
+
     interface Props {
         handleRenameFolderForm: (e: Event) => void,
         closeRenameFolderForm: () => void,
@@ -6,6 +8,11 @@
     }
 
     let { handleRenameFolderForm, closeRenameFolderForm, folderName }: Props = $props();
+
+    onMount(() => {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    });
 </script>
 
 <div class="card absolute">

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
 
     interface Props {
@@ -9,6 +10,11 @@
 
     let { handleMoveFolderForm, closeMoveFolderForm, folderName }: Props = $props();
     let selectedFolder: string = $state(folderName);
+
+    onMount(() => {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    });
 </script>
 
 <div class="card absolute">
