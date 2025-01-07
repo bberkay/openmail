@@ -74,6 +74,7 @@
             const parentFolder = target.querySelector<HTMLSelectElement>(
                 'select[name="parent_folder"]',
             )?.value;
+
             const response = await ApiService.post(
                 SharedStore.server,
                 PostRoutes.CREATE_FOLDER,
@@ -84,12 +85,15 @@
                 },
             );
 
-            alert(response.message);
-            (e.target as HTMLFormElement).reset();
-
             if(response.success){
-                SharedStore.folders[0].result.push(`${parentFolder}/${folderName}`);
+                SharedStore.folders[0].result.push(parentFolder ? `${parentFolder}/${folderName}` : folderName);
             }
+
+
+            alert(response.message);
+            target.reset();
+            clearContent();
+            createFolderMenu();
         })
     }
 
@@ -99,26 +103,24 @@
             const folderName = target.querySelector<HTMLInputElement>(
                 'input[name="folder_name"]',
             )!.value;
-            const subfolders = target.querySelector<HTMLInputElement>(
-                'input[name="subfolders"]',
-            )!.checked;
 
             const response = await ApiService.post(
                 SharedStore.server,
                 PostRoutes.DELETE_FOLDER,
                 {
                     account: SharedStore.accounts[0].email_address,
-                    folder_name: folderName,
-                    subfolders
+                    folder_name: folderName
                 },
             );
-
-            alert(response.message);
-            (e.target as HTMLFormElement).reset();
 
             if(response.success){
                 SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName);
             }
+
+            alert(response.message);
+            target.reset();
+            clearContent();
+            createFolderMenu();
         })
     }
 
@@ -155,7 +157,9 @@
             }
 
             alert(response.message);
-            (e.target as HTMLFormElement).reset();
+            target.reset();
+            clearContent();
+            createFolderMenu();
         })
     }
 
@@ -179,9 +183,6 @@
                 },
             );
 
-            alert(response.message);
-            (e.target as HTMLFormElement).reset();
-
             if(response.success){
                 SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName);
 
@@ -195,6 +196,11 @@
                 }
                 SharedStore.folders[0].result.push(newFolderPath);
             }
+
+            alert(response.message);
+            target.reset();
+            clearContent();
+            createFolderMenu();
         })
     }
 
@@ -219,6 +225,8 @@
     }
 
     function createFolderMenu() {
+        folders.innerHTML = "";
+
         const folderTemplate = `
             <div class="folder" style="padding-left:{tabsize}rem;">
                 <button class="inline subfolder-toggle {disabled}" style="opacity:{opacity}">▾</button>
@@ -321,9 +329,7 @@
                     //  subfolder[0.5rem tabsize] <- current tabsize
                     //     subsubfolder[1rem tabsize] <- will be a subfolder because `currentTabsize(0.5) < nextElementTabSize(1)`
                     // nextfolder[0rem tabsize] <- will not be a subfolder because `currentTabsize(0.5) >= nextElementTabSize(0)`
-                    const nextElementTabSize = parseFloat(
-                        folder.style.paddingLeft,
-                    );
+                    const nextElementTabSize = parseFloat(folder.style.paddingLeft);
                     if (currentTabsize >= nextElementTabSize) break;
 
                     if (folder.classList.contains("folder")) {
@@ -386,13 +392,31 @@
                 }
             };
 
+            const getFullFolderPath = (optionsNode: HTMLElement): string => {
+                const folder = optionsNode.closest(".folder") as HTMLButtonElement;
+                const folderName = folder.querySelector(".folder-name")!.textContent!;
+
+                const parent = optionsNode.previousElementSibling as HTMLButtonElement;
+                if(!parent.classList.contains("folder"))
+                    return folderName;
+
+                if (parent && parseFloat(parent.style.paddingLeft) < parseFloat(folder.style.paddingLeft)) {
+                    if (!parent.querySelector(".subfolder-toggle")!.classList.contains("disabled")) {
+                        const parentFolderName = parent!.querySelector(".folder-name")!.textContent!;
+                        return getFullFolderPath(parent) + `/${folderName}`
+                    }
+                }
+
+                return folderName;
+            }
+
             const addOptionFunctions = (optionsNode: HTMLElement) => {
                 optionsNode.querySelector<HTMLButtonElement>("#rename-folder")!.onclick = () => {
                     if (sidebarMounts.mountedRenameFolderForm)
                         return;
 
                     clearContent();
-                    const folderName = optionsNode.closest(".folder")!.querySelector(".folder-name")!.textContent!;
+                    const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
                     sidebarMounts.mountedRenameFolderForm = mount(RenameFolderForm, {
                         target: document.getElementById("rename-folder-form-container")!,
                         props: {
@@ -411,7 +435,7 @@
                         return;
 
                     clearContent();
-                    const folderName = optionsNode.closest(".folder")!.querySelector(".folder-name")!.textContent!;
+                    const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
                     sidebarMounts.mountedDeleteFolderForm = mount(DeleteFolderForm, {
                         target: document.getElementById("delete-folder-form-container")!,
                         props: {
@@ -430,7 +454,7 @@
                         return;
 
                     clearContent();
-                    const folderName = optionsNode.closest(".folder")!.querySelector(".folder-name")!.textContent!;
+                    const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
                     sidebarMounts.mountedMoveFolderForm = mount(MoveFolderForm, {
                         target: document.getElementById("move-folder-form-container")!,
                         props: {
