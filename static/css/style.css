@@ -157,6 +157,13 @@ span {
     border-radius: 5px;
     padding: 1rem;
     margin-bottom: 5px;
+
+    &.absolute {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
 }
 
 /* Folder */
