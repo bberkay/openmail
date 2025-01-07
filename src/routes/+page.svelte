@@ -6,56 +6,13 @@
     import Content from "$lib/components/Content.svelte";
     import Compose from "$lib/components/Compose.svelte";
     import SearchBar from "$lib/components/SearchBar.svelte";
-    import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
-    import {
-        ApiService,
-        PostRoutes,
-        type PostResponse,
-    } from "$lib/services/ApiService";
+    import { SharedStore } from "$lib/stores/shared.svelte";
     import type { EmailWithContent } from "$lib/types";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
     let isInboxShown: boolean = $state(true);
     let isComposeShown: boolean = $state(false);
     let shownEmail: EmailWithContent | null = $state(null);
-
-    async function removeAllAccounts() {
-        const response: PostResponse = await ApiService.post(
-            SharedStore.server,
-            PostRoutes.REMOVE_ACCOUNTS,
-            {},
-        );
-
-        if (response.success) {
-            SharedStore.reset(SharedStoreKeys.accounts);
-        } else {
-            alert(response.message);
-        }
-    }
-
-    async function recreateWholeUniverse() {
-        const response = await ApiService.post(
-            SharedStore.server,
-            PostRoutes.RECREATE_WHOLE_UNIVERSE,
-            {},
-        );
-
-        if (response.success) {
-            SharedStore.reset();
-        } else {
-            alert(response.message);
-        }
-    }
-
-    async function resetFileSystem() {
-        const response = await ApiService.post(
-            SharedStore.server,
-            PostRoutes.RESET_FILE_SYSTEM,
-            {},
-        );
-
-        alert(response.message);
-    }
 
     function showCompose() {
         clearContent();
@@ -106,10 +63,3 @@
 
 <hr />
 <pre>{SharedStore.toString()}</pre>
-
-<hr />
-<div style="text-align: center;">
-    <button onclick={removeAllAccounts}>Delete All Accounts</button>
-    <button onclick={resetFileSystem}>Reset File System</button>
-    <button onclick={recreateWholeUniverse}>Recreate whole universe</button>
-</div>

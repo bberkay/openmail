@@ -1,9 +1,9 @@
 <script lang="ts">
     import { onMount, mount, unmount } from "svelte";
     import Loader from "$lib/components/Loader.svelte";
-    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
-    import { ApiService, GetRoutes, PostRoutes } from "$lib/services/ApiService";
+    import { ApiService, GetRoutes, PostRoutes, type PostResponse } from "$lib/services/ApiService";
     import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 
     let currentEditingAccount: Account | null = $state(
@@ -145,9 +145,25 @@
 
         if (response.success && response.data) {
             SharedStore.mailboxes = response.data;
-            SharedStore.selectedFolder = response.data[0].result.folder;
+            SharedStore.currentFolder = response.data[0].result.folder;
         } else {
             alert(response.message);
+        }
+    }
+
+    async function removeAllAccounts() {
+        if(confirm("Are you certain?")){
+            const response: PostResponse = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.REMOVE_ACCOUNTS,
+                {},
+            );
+
+            if (response.success) {
+                SharedStore.reset(SharedStoreKeys.accounts);
+            } else {
+                alert(response.message);
+            }
         }
     }
 
@@ -245,7 +261,7 @@
 {/if}
 
 {#if SharedStore.accounts && SharedStore.accounts.length > 0}
-    <h3>Current Accounts</h3>
+    <h3>Current Accounts <button onclick={removeAllAccounts}>Remove All</button></h3>
     <ul>
         {#each SharedStore.accounts as account}
             <li>

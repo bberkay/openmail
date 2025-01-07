@@ -1,5 +1,5 @@
 import type { GetRoutes, GetQueryResponse } from "$lib/services/ApiService";
-import type { Account, EmailWithContent, Mailbox, OpenMailTaskResults } from "../types";
+import { Folder, type Account, type EmailWithContent, type Mailbox, type OpenMailTaskResults } from "../types";
 
 export enum SharedStoreKeys {
     server="server",
@@ -7,8 +7,7 @@ export enum SharedStoreKeys {
     failedAccounts="failedAccounts",
     mailboxes="mailboxes",
     folders="folders",
-    selectedAccounts="selectedAccounts",
-    selectedFolder="selectedFolder",
+    currentFolder="currentFolder",
 }
 
 interface ISharedStore {
@@ -17,8 +16,7 @@ interface ISharedStore {
     [SharedStoreKeys.failedAccounts]: Account[];
     [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
     [SharedStoreKeys.folders]: OpenMailTaskResults<string[]>;
-    [SharedStoreKeys.selectedAccounts]: Account[];
-    [SharedStoreKeys.selectedFolder]: string;
+    [SharedStoreKeys.currentFolder]: string;
 }
 
 export const DefaultSharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = {
@@ -27,8 +25,7 @@ export const DefaultSharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = {
     [SharedStoreKeys.failedAccounts]: [],
     [SharedStoreKeys.mailboxes]: [],
     [SharedStoreKeys.folders]: [],
-    [SharedStoreKeys.selectedAccounts]: [],
-    [SharedStoreKeys.selectedFolder]: "Inbox",
+    [SharedStoreKeys.currentFolder]: Folder.Inbox,
 }
 
 let nonSharedState = $state(DefaultSharedStore);
@@ -44,8 +41,7 @@ export class SharedStore {
     public static get failedAccounts(): Account[] { return nonSharedState[SharedStoreKeys.failedAccounts] }
     public static get mailboxes(): OpenMailTaskResults<Mailbox> { return nonSharedState[SharedStoreKeys.mailboxes] }
     public static get folders(): OpenMailTaskResults<string[]> { return nonSharedState[SharedStoreKeys.folders] }
-    public static get selectedAccounts(): Account[] { return nonSharedState[SharedStoreKeys.selectedAccounts] }
-    public static get selectedFolder(): string { return nonSharedState[SharedStoreKeys.selectedFolder] }
+    public static get currentFolder(): string { return nonSharedState[SharedStoreKeys.currentFolder] }
 
     /**
      * Setters
@@ -77,12 +73,8 @@ export class SharedStore {
         nonSharedState[SharedStoreKeys.folders] = data;
     }
 
-    public static set selectedAccounts(accounts: Account[]) {
-        nonSharedState[SharedStoreKeys.selectedAccounts] = accounts;
-    }
-
-    public static set selectedFolder(folder: string) {
-        nonSharedState[SharedStoreKeys.selectedFolder] = folder;
+    public static set currentFolder(folder: string) {
+        nonSharedState[SharedStoreKeys.currentFolder] = folder;
     }
 
     /* Custom Methods */

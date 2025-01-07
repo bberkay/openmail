@@ -27,7 +27,7 @@
             {
                 pathParams: {
                     accounts: owner,
-                    folder: encodeURIComponent(SharedStore.selectedFolder),
+                    folder: encodeURIComponent(SharedStore.currentFolder),
                     uid: email.uid
                 }
             }
