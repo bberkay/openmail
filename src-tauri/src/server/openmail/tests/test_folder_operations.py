@@ -167,7 +167,7 @@ class TestFolderOperations(unittest.TestCase):
         print("test_delete_folder_with_subfolders_operation...")
         _, parent_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, create_parent=True)
 
-        status, msg = self.__class__._openmail.imap.delete_folder(parent_folder_name, True)
+        status, msg = self.__class__._openmail.imap.delete_folder(parent_folder_name)
         self.assertTrue(status, msg)
         self.assertNotIn(
             parent_folder_name,

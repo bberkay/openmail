@@ -105,7 +105,6 @@ interface PostBody {
     [PostRoutes.DELETE_FOLDER]: {
         account: string
         folder_name: string
-        subfolders: boolean
     };
     [PostRoutes.RESET_FILE_SYSTEM]: {};
     [PostRoutes.RECREATE_WHOLE_UNIVERSE]: {};

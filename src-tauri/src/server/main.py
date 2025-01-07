@@ -755,7 +755,6 @@ async def move_folder(request_body: MoveFolderRequest) -> Response:
 class DeleteFolderRequest(BaseModel):
     account: str
     folder_name: str
-    subfolders: bool
 
 @app.post("/delete-folder")
 async def delete_folder(request_body: DeleteFolderRequest) -> Response:
@@ -766,10 +765,7 @@ async def delete_folder(request_body: DeleteFolderRequest) -> Response:
 
         status, msg = openmail_clients[
             request_body.account
-        ].imap.delete_folder(
-            request_body.folder_name,
-            request_body.subfolders
-        )
+        ].imap.delete_folder(request_body.folder_name)
         return Response(success=status, message=msg)
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while deleting folder.", str(e)))

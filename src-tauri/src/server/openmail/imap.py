@@ -1680,14 +1680,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
             f"There was an error while creating folder `{folder_name}`."
         )
 
-    def delete_folder(self, folder_name: str, subfolders: bool = False) -> IMAPCommandResult:
+    def delete_folder(self, folder_name: str) -> IMAPCommandResult:
         """
         Delete an existing email folder.
 
         Args:
             folder_name (str): Name of the folder to delete.
-            subfolders (bool, optional): Whether to also delete subfolders.
-                                        Defaults to False.
 
         Returns:
             IMAPCommandResult: A tuple containing:
@@ -1701,10 +1699,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             (True, "Folder `RED` deleted successfully.")
         """
         self._check_folder_names(folder_name)
-
-        if subfolders:
-            for subfolder in self.get_folders(folder_name):
-                self.delete_folder(subfolder, True)
 
         return self._parse_command_result(
             self.delete(
