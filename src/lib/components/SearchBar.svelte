@@ -194,7 +194,7 @@
             has_attachments:
                 advancedSearchMenu.querySelector<HTMLInputElement>(
                     'input[name="has_attachments"]:checked',
-                )!.value === "true",
+                )!.checked
         };
 
         const isSearchCriteriaEmpty = Object.values(searchCriteria).every(
@@ -364,21 +364,14 @@
         <div class="form-group">
             <span style="margin-bottom:5px;">Has Attachment(s)</span>
             <div class="input-group">
-                <input type="radio" name="has_attachments" value="Yes" />
-                <label for="has_attachments__yes">Yes</label>
-            </div>
-            <div class="input-group">
-                <input type="radio" name="has_attachments" value="No" />
-                <label for="has_attachments__no">No</label>
-            </div>
-            <div class="input-group">
                 <input
-                    type="radio"
+                    type="checkbox"
                     name="has_attachments"
-                    value="Any"
+                    value="Yes"
+                    id="has-attachments"
                     checked
                 />
-                <label for="has_attachments__any">Any</label>
+                <label for="has-attachments">Yes</label>
             </div>
         </div>
         <div class="form-group">
@@ -442,7 +435,7 @@
         }
     }
 
-    .input-group :first-child:not([type="radio"]) {
+    .input-group :first-child:not([type="checkbox"]) {
         flex-grow: 1;
     }
 
