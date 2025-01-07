@@ -29,7 +29,7 @@
         if (!dropdowns.length)
             return;
 
-        if (!target.closest('.dropdown, .dropdown-toggle')) {
+        if (!target.closest('.dropdown, .dropdown-toggle') || (target.closest('.dropdown') && !target.closest('select'))) {
             dropdowns.forEach(dropdown => dropdown.remove());
         }
     });
