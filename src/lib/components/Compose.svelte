@@ -125,55 +125,53 @@
     }
 </script>
 
-<div class = "card">
-    <div class="header">
-        <h2>Compose</h2>
-        <button onclick={showInbox}>X</button>
-    </div>
-    <form onsubmit={handleSendEmail}>
-        <div class="form-group">
-            <label for="sender">Sender</label>
-            <select name="sender" id="sender" required>
-                {#each SharedStore.accounts as account}
-                    <option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</option>
-                {/each}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="receiver">Receiver(s)</label>
-            <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={handleTagEnter} required>
-            <div class="tags" id = "saved-receivers"></div>
-        </div>
-        <div class="form-group">
-            <label for="subject">Subject</label>
-            <input type="text" name="subject" id="subject" placeholder="Subject" required>
-            <div class="tags"></div>
-        </div>
-        <div class="form-group">
-            <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" placeholder="someone@domain.xyz" onkeyup={handleTagEnter}>
-            <div class="tags" id = "saved-cc"></div>
-        </div>
-        <div class="form-group">
-            <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" placeholder="someone@domain.xyz" onkeyup={handleTagEnter}>
-            <div class="tags" id = "saved-bcc"></div>
-        </div>
-        <div class="form-group">
-            <label for="body">Body</label>
-            <div id="body"></div>
-        </div>
-        <div class="form-group">
-            <label for="attachments">Attachment(s)</label>
-            <div class="input-group">
-                <input type="file" name="attachments" id="attachments" onchange={handleFileUpload} multiple>
-                <button type="button" onclick={clearAllFiles}>Clear</button>
-            </div>
-            <div class="tags"></div>
-        </div>
-        <button type="submit" id="send-email" style="margin-top:10px;">Send</button>
-    </form>
+<div class="header">
+    <h2>Compose</h2>
+    <button onclick={showInbox}>X</button>
 </div>
+<form onsubmit={handleSendEmail}>
+    <div class="form-group">
+        <label for="sender">Sender</label>
+        <select name="sender" id="sender" required>
+            {#each SharedStore.accounts as account}
+                <option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</option>
+            {/each}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="receiver">Receiver(s)</label>
+        <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={handleTagEnter} required>
+        <div class="tags" id = "saved-receivers"></div>
+    </div>
+    <div class="form-group">
+        <label for="subject">Subject</label>
+        <input type="text" name="subject" id="subject" placeholder="Subject" required>
+        <div class="tags"></div>
+    </div>
+    <div class="form-group">
+        <label for="cc">Cc</label>
+        <input type="email" name="cc" id="cc" placeholder="someone@domain.xyz" onkeyup={handleTagEnter}>
+        <div class="tags" id = "saved-cc"></div>
+    </div>
+    <div class="form-group">
+        <label for="bcc">Bcc</label>
+        <input type="email" name="bcc" id="bcc" placeholder="someone@domain.xyz" onkeyup={handleTagEnter}>
+        <div class="tags" id = "saved-bcc"></div>
+    </div>
+    <div class="form-group">
+        <label for="body">Body</label>
+        <div id="body"></div>
+    </div>
+    <div class="form-group">
+        <label for="attachments">Attachment(s)</label>
+        <div class="input-group">
+            <input type="file" name="attachments" id="attachments" onchange={handleFileUpload} multiple>
+            <button type="button" onclick={clearAllFiles}>Clear</button>
+        </div>
+        <div class="tags"></div>
+    </div>
+    <button type="submit" id="send-email" style="margin-top:10px;">Send</button>
+</form>
 
 <style>
     .header{

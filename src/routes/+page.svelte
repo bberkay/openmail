@@ -7,26 +7,23 @@
     import Compose from "$lib/components/Compose.svelte";
     import SearchBar from "$lib/components/SearchBar.svelte";
     import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
-    import { ApiService, PostRoutes, type PostResponse } from "$lib/services/ApiService";
-    import { mount, onMount, unmount } from "svelte";
+    import {
+        ApiService,
+        PostRoutes,
+        type PostResponse,
+    } from "$lib/services/ApiService";
     import type { EmailWithContent } from "$lib/types";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
-    let mountedInbox: Record<string, any> | null = $state(null);
-    let mountedCompose: Record<string, any> | null = $state(null);
-    let mountedContent: Record<string, any> | null = $state(null);
-
-    $effect(() => {
-        if (SharedStore.mailboxes.length > 0) {
-            showInbox();
-        }
-    })
+    let isInboxShown: boolean = $state(true);
+    let isComposeShown: boolean = $state(false);
+    let shownEmail: EmailWithContent | null = $state(null);
 
     async function removeAllAccounts() {
         const response: PostResponse = await ApiService.post(
             SharedStore.server,
             PostRoutes.REMOVE_ACCOUNTS,
-			{}
+            {},
         );
 
         if (response.success) {
@@ -36,11 +33,11 @@
         }
     }
 
-	async function recreateWholeUniverse() {
+    async function recreateWholeUniverse() {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.RECREATE_WHOLE_UNIVERSE,
-            {}
+            {},
         );
 
         if (response.success) {
@@ -54,58 +51,31 @@
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.RESET_FILE_SYSTEM,
-            {}
+            {},
         );
 
         alert(response.message);
     }
 
     function showCompose() {
-        if (mountedCompose)
-            return;
-
         clearContent();
-        mountedCompose = mount(Compose, {
-            target: document.getElementById("content")!,
-            props: { showInbox }
-        });
+        isComposeShown = true;
     }
 
     function showContent(email: EmailWithContent) {
-        if (mountedContent)
-            return;
-
         clearContent();
-        mountedContent = mount(Content, {
-            target: document.getElementById("content")!,
-            props: { email }
-        });
+        shownEmail = email;
     }
 
-    function showInbox(){
-        if (mountedInbox)
-            return;
-
+    function showInbox() {
         clearContent();
-        mountedInbox = mount(Inbox, {
-            target: document.getElementById("content")!,
-            props: { showContent }
-        });
+        isInboxShown = true;
     }
 
     function clearContent() {
-        if(mountedContent) {
-             unmount(mountedContent);
-             mountedContent = null
-        }
-        if(mountedCompose) {
-            unmount(mountedCompose);
-            mountedCompose = null;
-        }
-        if(mountedInbox) {
-            unmount(mountedInbox);
-            mountedInbox = null;
-        }
+        if (isInboxShown) isInboxShown = false;
+        if (isComposeShown) isComposeShown = false;
+        if (shownEmail) shownEmail = null;
     }
 </script>
 
@@ -116,19 +86,28 @@
         </section>
         <section style="width:80%;">
             <SearchBar />
-            <div id="content"></div>
+            <div class="card">
+                {#if isInboxShown}
+                    <Inbox {showContent} />
+                {:else if isComposeShown}
+                    <Compose {showInbox} />
+                {:else if shownEmail}
+                    <button onclick={showInbox}>Back</button>
+                    <Content email={shownEmail} />
+                {/if}
+            </div>
         </section>
     </main>
 {:else if isLoading}
     <Loader />
 {:else}
-    <Register/>
+    <Register />
 {/if}
 
-<hr>
+<hr />
 <pre>{SharedStore.toString()}</pre>
 
-<hr>
+<hr />
 <div style="text-align: center;">
     <button onclick={removeAllAccounts}>Delete All Accounts</button>
     <button onclick={resetFileSystem}>Reset File System</button>

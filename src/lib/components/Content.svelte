@@ -79,21 +79,19 @@
     }
 </script>
 
-<div class = "card" style="width:55%;margin-left:5px;">
-    <div id="subject" style="margin-bottom: 5px;">
-        <h3>{email.subject || ""}</h3>
-        <p>From: {email.receiver || ""}</p>
-        <p>To: {email.sender || ""}</p>
-        <p>Date: {email.date || ""}</p>
-        {#if Object.hasOwn(email, "flags") && email.flags}
-            {#each email.flags as flag}
-                <span class = "tag">{flag}</span>
-            {/each}
-        {/if}
-    </div>
-    <div id="body"></div>
-    <div id="attachments"></div>
+<div id="subject" style="margin-bottom: 5px;">
+    <h3>{email.subject || ""}</h3>
+    <p>From: {email.receiver || ""}</p>
+    <p>To: {email.sender || ""}</p>
+    <p>Date: {email.date || ""}</p>
+    {#if Object.hasOwn(email, "flags") && email.flags}
+        {#each email.flags as flag}
+            <span class = "tag">{flag}</span>
+        {/each}
+    {/if}
 </div>
+<div id="body"></div>
+<div id="attachments"></div>
 
 <style>
     #body:not(:has(iframe)) {

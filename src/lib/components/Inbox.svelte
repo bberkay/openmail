@@ -236,51 +236,50 @@
     }
 </script>
 
-<div class="card" style="flex-grow:1;">
-    <h2>{SharedStore.selectedFolder}</h2>
-    <hr />
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-        <button class = "bg-primary" onclick={getPreviousEmails} disabled={currentOffset <= 10}>Previous</button>
-        <small>
-            {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
-        </small>
-        <button class = "bg-primary" onclick={getNextEmails} disabled={currentOffset >= totalEmailCount}>Next</button>
-    </div>
-    <hr />
-    <div style="display:flex;">
-        <input type="checkbox" id="select-all" style="margin-right:10px;" onclick={selectAllShownEmails}>
-        {#if emailSelection.length > 0}
-            <span style="margin-right:10px;background-color:darkslategray;padding:5px;border-radius:5px;">
-                {emailSelection.includes("*") ? totalEmailCount : emailSelection.length} selected.
-                <button onclick={selectAllEmails}>Select all {totalEmailCount} emails</button>
-            </span>
-            <br>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={deleteEmails}>Delete</button>
-            <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={folderSelection} onchange={moveEmail}>
-                <option disabled selected>Move to</option>
-                {#each SharedStore.folders[0].result as folder}
-                    <option value="{folder}">{folder}</option>
-                {/each}
-            </select>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsNotImportant}>Mark as Not Important</button>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsRead}>Mark as Read</button>
-            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
-        {:else}
-            <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailboxes}>Refresh</button>
-        {/if}
-    </div>
-    <hr />
-    <div>
-        {#each SharedStore.mailboxes as account}
-            {#each account.result.emails as email}
-                <div style="display:flex;">
-                    <input type="checkbox" style="margin-right:10px;" bind:group={emailSelection} value={email.uid}>
-                    <div style="flex-grow:1">
-                        <InboxItem owner={account.email_address} {email} {showContent}  />
-                    </div>
-                </div>
+
+<h2>{SharedStore.selectedFolder}</h2>
+<hr />
+<div style="display:flex;justify-content:space-between;align-items:center;">
+    <button class = "bg-primary" onclick={getPreviousEmails} disabled={currentOffset <= 10}>Previous</button>
+    <small>
+        {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
+    </small>
+    <button class = "bg-primary" onclick={getNextEmails} disabled={currentOffset >= totalEmailCount}>Next</button>
+</div>
+<hr />
+<div style="display:flex;">
+    <input type="checkbox" id="select-all" style="margin-right:10px;" onclick={selectAllShownEmails}>
+    {#if emailSelection.length > 0}
+        <span style="margin-right:10px;background-color:darkslategray;padding:5px;border-radius:5px;">
+            {emailSelection.includes("*") ? totalEmailCount : emailSelection.length} selected.
+            <button onclick={selectAllEmails}>Select all {totalEmailCount} emails</button>
+        </span>
+        <br>
+        <button class = "bg-primary" style="margin-right:5px;" onclick={deleteEmails}>Delete</button>
+        <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={folderSelection} onchange={moveEmail}>
+            <option disabled selected>Move to</option>
+            {#each SharedStore.folders[0].result as folder}
+                <option value="{folder}">{folder}</option>
             {/each}
+        </select>
+        <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
+        <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsNotImportant}>Mark as Not Important</button>
+        <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsRead}>Mark as Read</button>
+        <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
+    {:else}
+        <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailboxes}>Refresh</button>
+    {/if}
+</div>
+<hr />
+<div>
+    {#each SharedStore.mailboxes as account}
+        {#each account.result.emails as email}
+            <div style="display:flex;">
+                <input type="checkbox" style="margin-right:10px;" bind:group={emailSelection} value={email.uid}>
+                <div style="flex-grow:1">
+                    <InboxItem owner={account.email_address} {email} {showContent}  />
+                </div>
+            </div>
         {/each}
-    </div>
+    {/each}
 </div>
