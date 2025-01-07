@@ -5,7 +5,7 @@ export function makeSizeHumanReadable(bytes: number): string {
     return Math.round(bytes / Math.pow(2, i * 10)) + " " + sizes[i];
 }
 
-export function createDomObject(html: string): HTMLElement | null {
+export function createDomObject(html: string): HTMLElement {
     const template = document.createElement("template");
     template.innerHTML = html.trim();
     return template.content.firstElementChild as HTMLElement;
