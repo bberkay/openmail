@@ -9,7 +9,6 @@
     }
 
     let { handleMoveFolderForm, closeMoveFolderForm, folderName }: Props = $props();
-    let selectedFolder: string = $state(folderName);
 
     onMount(() => {
         document.documentElement.scrollTop = 0;
@@ -22,12 +21,7 @@
         <div class="form-group">
             <label for="folder-name">Select Folder</label>
             <div class="input-group">
-                <select name="folder_name" id="folder-name" bind:value={selectedFolder}>
-                    <option value="" selected>Select Folder</option>
-                    {#each SharedStore.folders[0].result as folder}
-                        <option value={folder}>{folder}</option>
-                    {/each}
-                </select>
+                <input type="text" name="folder_name" id="folder-name" value={folderName} disabled>
             </div>
         </div>
         <div class="form-group">
@@ -35,7 +29,7 @@
             <div class="input-group">
                 <select name="destination_folder" id="destination-folder">
                     <option value="" selected>Select Destination Folder</option>
-                    {#each SharedStore.folders[0].result.filter((folder) => folder !== selectedFolder) as folder}
+                    {#each SharedStore.folders[0].result.filter((folder) => folder !== folderName) as folder}
                         <option value={folder}>{folder}</option>
                     {/each}
                 </select>
