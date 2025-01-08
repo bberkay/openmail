@@ -5,7 +5,7 @@
     import { Folder } from "$lib/types";
     import { countCharacter, createDomObject } from "$lib/utils";
     import Loader from "$lib/components/Loader.svelte";
-    import { ApiService } from "$lib/services/ApiService";
+    import { ApiService, GetRoutes } from "$lib/services/ApiService";
     import { PostRoutes } from "$lib/services/ApiService";
     import CreateFolderForm from "./Sidebar/CreateFolderForm.svelte";
     import RenameFolderForm from "./Sidebar/RenameFolderForm.svelte";
@@ -87,10 +87,10 @@
 
             if(response.success){
                 SharedStore.folders[0].result.push(parentFolder ? `${parentFolder}/${folderName}` : folderName);
+            } else {
+                alert(response.message);
             }
 
-
-            alert(response.message);
             target.reset();
             clearContent();
             createFolderMenu();
@@ -103,21 +103,26 @@
             const folderName = target.querySelector<HTMLInputElement>(
                 'input[name="folder_name"]',
             )!.value;
+            const subfolders = target.querySelector<HTMLInputElement>(
+                'input[name="subfolders"]',
+            )!.checked;
 
             const response = await ApiService.post(
                 SharedStore.server,
                 PostRoutes.DELETE_FOLDER,
                 {
                     account: SharedStore.accounts[0].email_address,
-                    folder_name: folderName
+                    folder_name: folderName,
+                    subfolders: subfolders
                 },
             );
 
             if(response.success){
-                SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName);
+                SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName && !subfolders || !e.includes(folderName));
+            } else {
+                alert(response.message);
             }
 
-            alert(response.message);
             target.reset();
             clearContent();
             createFolderMenu();
@@ -127,7 +132,7 @@
     function handleRenameFolderForm(e: Event) {
         makeAnApiRequest(e, async () => {
             const target = e.target as HTMLFormElement;
-            const folderName = target.querySelector<HTMLInputElement>(
+            const fullFolderName = target.querySelector<HTMLInputElement>(
                 'input[name="folder_name"]',
             )!.value;
             let newFolderName = target.querySelector<HTMLSelectElement>(
@@ -139,24 +144,22 @@
                 PostRoutes.RENAME_FOLDER,
                 {
                     account: SharedStore.accounts[0].email_address,
-                    folder_name: folderName,
+                    folder_name: fullFolderName,
                     new_folder_name: newFolderName,
                 },
             );
 
             if(response.success){
-                SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName);
-
-                if (folderName.includes("/")) {
-                    const parentFolder = folderName.slice(0, folderName.lastIndexOf("/"));
-                    if (SharedStore.folders[0].result.includes(parentFolder))
-                        newFolderName = `${parentFolder}/${newFolderName}`
-                }
-
-                SharedStore.folders[0].result.push(newFolderName);
+                SharedStore.folders[0].result = SharedStore.folders[0].result.map((currentFolderName) => {
+                    return currentFolderName.replace(
+                        fullFolderName.includes("/") ? fullFolderName.slice(fullFolderName.lastIndexOf("/") + 1) : fullFolderName,
+                        newFolderName
+                    )
+                });
+            } else {
+                alert(response.message);
             }
 
-            alert(response.message);
             target.reset();
             clearContent();
             createFolderMenu();
@@ -191,13 +194,14 @@
                     const tempLastIndex = folderName.lastIndexOf("/");
                     const parentFolder = folderName.slice(0, tempLastIndex);
                     if (SharedStore.folders[0].result.includes(parentFolder)) {
-                        newFolderPath = `${parentFolder}/${folderName.slice(tempLastIndex+1)}`;
+                        newFolderPath = `${destinationFolder}/${folderName.slice(tempLastIndex+1)}`;
                     }
                 }
                 SharedStore.folders[0].result.push(newFolderPath);
+            } else {
+                alert(response.message);
             }
 
-            alert(response.message);
             target.reset();
             clearContent();
             createFolderMenu();
@@ -224,7 +228,25 @@
         });
     }
 
+    function sortFolders() {
+      return SharedStore.folders[0].result.sort((a, b) => {
+        const aParts = a.split("/");
+        const bParts = b.split("/");
+
+        for (let i = 0; i < Math.min(aParts.length, bParts.length); i++) {
+          if (aParts[i] < bParts[i]) {
+            return -1;
+          } else if (aParts[i] > bParts[i]) {
+            return 1;
+          }
+        }
+
+        return aParts.length - bParts.length;
+      });
+    }
+
     function createFolderMenu() {
+        sortFolders();
         folders.innerHTML = "";
 
         const folderTemplate = `
@@ -242,6 +264,83 @@
                 <button class="bg-primary" id="move-folder">Move</button>
             </div>
         `;
+
+        const getFullFolderPath = (optionsNode: HTMLElement): string => {
+            const folder = optionsNode.closest(".folder") as HTMLButtonElement;
+            const folderName = folder.querySelector(".folder-name")!.textContent!;
+
+            const parent = optionsNode.previousElementSibling as HTMLButtonElement;
+            if(!parent.classList.contains("folder"))
+                return folderName;
+
+            if (parent && parseFloat(parent.style.paddingLeft) < parseFloat(folder.style.paddingLeft)) {
+                if (!parent.querySelector(".subfolder-toggle")!.classList.contains("disabled")) {
+                    const parentFolderName = parent!.querySelector(".folder-name")!.textContent!;
+                    return getFullFolderPath(parent) + `/${folderName}`
+                }
+            }
+
+            return folderName;
+        }
+
+        const addOptionFunctions = (optionsNode: HTMLElement) => {
+            optionsNode.querySelector<HTMLButtonElement>("#rename-folder")!.onclick = () => {
+                if (sidebarMounts.mountedRenameFolderForm)
+                    return;
+
+                clearContent();
+                const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
+                sidebarMounts.mountedRenameFolderForm = mount(RenameFolderForm, {
+                    target: document.getElementById("rename-folder-form-container")!,
+                    props: {
+                        folderName,
+                        handleRenameFolderForm,
+                        closeRenameFolderForm: () => {
+                            unmount(sidebarMounts.mountedRenameFolderForm!);
+                            sidebarMounts.mountedRenameFolderForm = null;
+                        }
+                    }
+                });
+            };
+
+            optionsNode.querySelector<HTMLButtonElement>("#delete-folder")!.onclick = () => {
+                if (sidebarMounts.mountedDeleteFolderForm)
+                    return;
+
+                clearContent();
+                const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
+                sidebarMounts.mountedDeleteFolderForm = mount(DeleteFolderForm, {
+                    target: document.getElementById("delete-folder-form-container")!,
+                    props: {
+                        folderName,
+                        handleDeleteFolderForm,
+                        closeDeleteFolderForm: () => {
+                            unmount(sidebarMounts.mountedDeleteFolderForm!);
+                            sidebarMounts.mountedDeleteFolderForm = null;
+                        }
+                    }
+                });
+            };
+
+            optionsNode.querySelector<HTMLButtonElement>("#move-folder")!.onclick = () => {
+                if (sidebarMounts.mountedMoveFolderForm)
+                    return;
+
+                clearContent();
+                const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
+                sidebarMounts.mountedMoveFolderForm = mount(MoveFolderForm, {
+                    target: document.getElementById("move-folder-form-container")!,
+                    props: {
+                        folderName,
+                        handleMoveFolderForm,
+                        closeMoveFolderForm: () => {
+                            unmount(sidebarMounts.mountedMoveFolderForm!);
+                            sidebarMounts.mountedMoveFolderForm = null;
+                        }
+                    }
+                });
+            };
+        }
 
         let i = 0;
         let tabsize = 0;
@@ -266,37 +365,21 @@
             }
 
             if (i > 0) {
-                const parentFolder = currentFolder.substring(0, currentFolder.lastIndexOf("/"));
+                let parentFolder = currentFolder.substring(0, currentFolder.lastIndexOf("/"));
                 if (parentFolder) {
-                    if (traversedFolders.some(folder => folder === parentFolder)) {
-                        folderName = currentFolder.substring(
-                            parentFolder.length + 1,
-                        );
-                        // if prevFolderName has a slash that does not exists for hierarchy but is a folder name,
-                        // then do not add a tabsize for that slash for example if the `tabsizeMultiplier` is `0.5`:
-                        //
-                        // folders = ['myfolderhas/initsname', 'myfolderhas/initsname/subfolder']
-                        // oldTabsizeFormula = (currentFolder.split('/').length - 1) * 0.5
-                        // and hiearchy should be like this:
-                        // myfolderhas/initsname
-                        //  subfolder[0.5rem tabsize]
-                        // but instead it is:
-                        // myfolderhas/initsname
-                        //    subfolder[1rem tabsize]
-                        //
-                        // because parent folder has a slash does not indicate a hierarchy but rather a folder name.
-                        // so we should not add any tabsize for that slash and for that we need to store `prevFolderName`
-                        // in this case it will be `myfolderhas/initsname` and check if it has a slash or not.
-                        //
-                        // New Formula with `prevFolderName`:
-                        // currentFolder = 'myfolderhas/initsname/subfolder'
-                        // prevFolderName = 'myfolderhas/initsname'
-                        // tabsize = (currentFolder.split('/').length - 1 - countCharacter(prevFolderName, '/')) * 0.5
-                        // means `tabsize = (2 - 1 - 1) * 0.5 = 0.5` as it should be.
-                        // and new hierarchy should be like this:
-                        // myfolderhas/initsname
-                        //  subfolder[0.5rem tabsize]
-                        tabsize = (currentFolder.split("/").length - 1 - countCharacter(prevFolderName, "/")) * tabsizeMultiplier;
+                    // if folderName has a slash that does not exists for hierarchy but is a folder name,
+                    // then do not add a tabsize for that slash for example:
+                    // folders = ['folderthathas/initsname', 'folderthathas/initsname/subfolder']
+                    while (!traversedFolders.some(folder => folder === parentFolder)) {
+                        parentFolder = parentFolder.substring(0, parentFolder.lastIndexOf("/"));
+                        if (!parentFolder)
+                            break;
+                    }
+                    if (parentFolder) {
+                        folderName = currentFolder.substring(parentFolder.length + 1);
+                        const currentFolderDepth = countCharacter(currentFolder, "/");
+                        const previousFolderDepth = countCharacter(prevFolderName, "/")
+                        tabsize = (currentFolderDepth - previousFolderDepth) * tabsizeMultiplier;
                     }
                 }
             }
@@ -308,6 +391,35 @@
                     .replace("{tabsize}", tabsize.toString())
                     .replace("{disabled}", opacity === 0 ? "disabled" : ""),
             )!;
+
+            folderNode.querySelector<HTMLButtonElement>(".folder-name")!.onclick = (e: MouseEvent) => {
+                makeAnApiRequest(e, async () => {
+                    const target = e.target as HTMLFormElement;
+                    const folderName = getFullFolderPath(folderNode);
+
+                    const response = await ApiService.get(
+                        SharedStore.server,
+                        GetRoutes.GET_MAILBOXES,
+                        {
+                            pathParams: {
+                                accounts: SharedStore.accounts
+                                    .map((account) => account.email_address)
+                                    .join(",")
+                            },
+                            queryParams: {
+                                folder: folderName
+                            }
+                        },
+                    );
+
+                    if (response.success && response.data) {
+                        SharedStore.mailboxes = response.data;
+                        SharedStore.currentFolder = response.data[0].result.folder;
+                    } else {
+                        alert(response.message);
+                    }
+                })
+            }
 
             folderNode.querySelector<HTMLButtonElement>(
                 ".subfolder-toggle",
@@ -323,12 +435,6 @@
 
                     // Determine if the next folder is a subfolder
                     // by checking its padding-left/tabsize value.
-                    // for example if the `tabsizeMultiplier` is `0.5`:
-                    //
-                    // parentfolder[0rem tabsize]
-                    //  subfolder[0.5rem tabsize] <- current tabsize
-                    //     subsubfolder[1rem tabsize] <- will be a subfolder because `currentTabsize(0.5) < nextElementTabSize(1)`
-                    // nextfolder[0rem tabsize] <- will not be a subfolder because `currentTabsize(0.5) >= nextElementTabSize(0)`
                     const nextElementTabSize = parseFloat(folder.style.paddingLeft);
                     if (currentTabsize >= nextElementTabSize) break;
 
@@ -336,27 +442,8 @@
                         if (isClosing) {
                             folder.style.display = "none";
                         } else {
-                            // While opening the subfolders check their current open/close state.
-                            // Do not open subfolder if the parent folder is closed. For example:
-                            //
-                            // ▾ parentfolder <- this one closed after "subfolder"
-                            //  ▾ subfolder <- this one closed before "parentfolder"
-                            //     subsubfolder1
-                            //     subsubfolder2
-                            //
-                            // After close:
-                            // ▸ parentfolder
-                            //
-                            // After open the "parentfolder" the hierarchy should be like this:
-                            // ▾ parentfolder
-                            //  ▸ subfolder
-                            //
-                            // Not like this:
-                            // ▾ parentfolder
-                            //  ▾ subfolder
-                            //     subsubfolder1
-                            //     subsubfolder2
-                            //
+                            // Open the subfolders without changing their current open/close state.
+                            // If the subfolder was closed, do not open it while opening the parent folder.
                             if (nextElementTabSize - currentTabsize > tabsizeMultiplier) {
                                 const prevSibling = folder.previousElementSibling as HTMLDivElement;
                                 const prevSiblingToggle = prevSibling.querySelector(".subfolder-toggle") as HTMLButtonElement;
@@ -391,83 +478,6 @@
                     addOptionFunctions(optionsNode);
                 }
             };
-
-            const getFullFolderPath = (optionsNode: HTMLElement): string => {
-                const folder = optionsNode.closest(".folder") as HTMLButtonElement;
-                const folderName = folder.querySelector(".folder-name")!.textContent!;
-
-                const parent = optionsNode.previousElementSibling as HTMLButtonElement;
-                if(!parent.classList.contains("folder"))
-                    return folderName;
-
-                if (parent && parseFloat(parent.style.paddingLeft) < parseFloat(folder.style.paddingLeft)) {
-                    if (!parent.querySelector(".subfolder-toggle")!.classList.contains("disabled")) {
-                        const parentFolderName = parent!.querySelector(".folder-name")!.textContent!;
-                        return getFullFolderPath(parent) + `/${folderName}`
-                    }
-                }
-
-                return folderName;
-            }
-
-            const addOptionFunctions = (optionsNode: HTMLElement) => {
-                optionsNode.querySelector<HTMLButtonElement>("#rename-folder")!.onclick = () => {
-                    if (sidebarMounts.mountedRenameFolderForm)
-                        return;
-
-                    clearContent();
-                    const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
-                    sidebarMounts.mountedRenameFolderForm = mount(RenameFolderForm, {
-                        target: document.getElementById("rename-folder-form-container")!,
-                        props: {
-                            folderName,
-                            handleRenameFolderForm,
-                            closeRenameFolderForm: () => {
-                                unmount(sidebarMounts.mountedRenameFolderForm!);
-                                sidebarMounts.mountedRenameFolderForm = null;
-                            }
-                        }
-                    });
-                };
-
-                optionsNode.querySelector<HTMLButtonElement>("#delete-folder")!.onclick = () => {
-                    if (sidebarMounts.mountedDeleteFolderForm)
-                        return;
-
-                    clearContent();
-                    const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
-                    sidebarMounts.mountedDeleteFolderForm = mount(DeleteFolderForm, {
-                        target: document.getElementById("delete-folder-form-container")!,
-                        props: {
-                            folderName,
-                            handleDeleteFolderForm,
-                            closeDeleteFolderForm: () => {
-                                unmount(sidebarMounts.mountedDeleteFolderForm!);
-                                sidebarMounts.mountedDeleteFolderForm = null;
-                            }
-                        }
-                    });
-                };
-
-                optionsNode.querySelector<HTMLButtonElement>("#move-folder")!.onclick = () => {
-                    if (sidebarMounts.mountedMoveFolderForm)
-                        return;
-
-                    clearContent();
-                    const folderName = getFullFolderPath(optionsNode.closest(".folder")!);
-                    sidebarMounts.mountedMoveFolderForm = mount(MoveFolderForm, {
-                        target: document.getElementById("move-folder-form-container")!,
-                        props: {
-                            folderName,
-                            handleMoveFolderForm,
-                            closeMoveFolderForm: () => {
-                                unmount(sidebarMounts.mountedMoveFolderForm!);
-                                sidebarMounts.mountedMoveFolderForm = null;
-                            }
-                        }
-                    });
-                };
-            }
 
             folders.appendChild(folderNode);
             traversedFolders.push(currentFolder);
