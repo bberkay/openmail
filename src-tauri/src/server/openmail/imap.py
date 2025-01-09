@@ -136,13 +136,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._host = host or self._find_imap_server(email_address)
         self._port = port or IMAP_PORT
 
-        self._searched_emails: IMAPManager.SearchedEmails = None
+        self._searched_emails: IMAPManager.SearchedEmails | None = None
 
         # IDLE and READLINE variables
         self._is_idle = False
         self._current_idle_start_time = None
-        self._current_idle_tag: str = None
-        self._wait_for_response: IMAPManager.WaitResponse = None
+        self._current_idle_tag: str | None = None
+        self._wait_for_response: IMAPManager.WaitResponse | None = None
 
         self._idle_thread_event = None
         self._idle_thread = None
@@ -188,8 +188,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         try:
             return IMAP_SERVERS[extract_domain(email_address)]
-        except KeyError as e:
-            raise IMAPManagerException(f"Unsupported email domain") from e
+        except KeyError:
+            raise IMAPManagerException("Unsupported email domain") from None
 
     @override
     def login(self, user: str, password: str) -> IMAPCommandResult:
@@ -602,7 +602,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             print("Joining readline thread...")
             self._readline_thread.join(timeout=JOIN_TIMEOUT)
 
-    def find_matching_folder(self, requested_folder: Folder, encoded: bool = True) -> bytes | None:
+    def find_matching_folder(self, requested_folder: str | Folder, encoded: bool = True) -> bytes | None:
         """
         Retrieve the IMAP folder name matching a specific byte string.
 
@@ -610,7 +610,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         are localized in a different language.
 
         Args:
-            requested_folder (str): The IMAP folder name (e.g., 'Inbox' or 'Trash').
+            requested_folder (str | Folder): The IMAP folder name (e.g., 'Inbox' or 'Trash').
 
         Returns:
             bytes | None: The folder name in bytes if a match is found; otherwise, None.
@@ -689,8 +689,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             # So we're replacing "|" with "/" to make it consistent
             folder = folder.replace(' "|" ', ' "/" ', 1)
 
-            folder_tag, folder_name = folder.split(' "/" ', 1)
-            folder_name = folder_name.replace('"', '')
+            folder_parts = folder.split(' "/" ', 1)
+            folder_name = folder_parts[-1].replace('"', '')
+            folder_tag = folder_parts[0] if len(folder_parts) > 1 else None
 
             if filtered:
                 for filter in FOLDER_NAME_FILTER[self.host]:
@@ -973,8 +974,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 folder (str): The folder to save the emails to.
                 search_query (str): The search query used to fetch the emails.
             """
+            folder = self._extract_folder_name(
+                self.find_matching_folder(str(folder), encoded=False) or folder,
+                filtered=True
+            )
             self._searched_emails = IMAPManager.SearchedEmails(
-                folder=self.find_matching_folder(str(folder), encoded=False) or folder,
+                folder=folder,
                 search_query=search_query,
                 uids=uids
             )
