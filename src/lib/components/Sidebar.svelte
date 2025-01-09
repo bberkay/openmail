@@ -291,21 +291,23 @@
         });
 
         const standardFolderTemplate = `
-            <div class="folder">
+            <div class="folder" data-tag-name="{tagName}">
                 <button class="inline folder-name" style="flex-grow:1;">{folder}</button>
             </div>
         `;
 
         for (const standardFolder of standardFolders) {
+            const [folderTag, folderName] = standardFolder.trim().split(":");
             const folderNode = createDomObject(
                 standardFolderTemplate
-                    .replace("{folder}", standardFolder.trim().split(":")[1])
+                    .replace("{tagName}", folderTag)
+                    .replace("{folder}", folderName)
             );
 
             standardFoldersContainer.appendChild(folderNode);
 
             folderNode.querySelector<HTMLButtonElement>(".folder-name")!.onclick = (e: MouseEvent) => {
-                getEmailsOfFolder(e, getFullFolderPath(folderNode))
+                getEmailsOfFolder(e, (e.target as HTMLButtonElement).closest(".folder")!.getAttribute("data-tag-name")!);
             }
         }
     }

@@ -403,7 +403,7 @@ async def get_folders(
             message="Folders fetched successfully.",
             data=execute_openmail_task_concurrently(
                 accounts.split(","),
-                lambda client: client.imap.get_folders(tagged=True),
+                lambda client: client.imap.get_folders(tagged=True, filtered=True),
             ),
         )
     except Exception as e:
