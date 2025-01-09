@@ -29,7 +29,7 @@
             <div class="input-group">
                 <select name="destination_folder" id="destination-folder">
                     <option value="" selected>Select Destination Folder</option>
-                    {#each SharedStore.folders[0].result.filter((folder) => folder !== folderName) as folder}
+                    {#each SharedStore.customFolders[0].result.filter((folder) => folder !== folderName) as folder}
                         <option value={folder}>{folder}</option>
                     {/each}
                 </select>

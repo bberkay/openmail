@@ -93,7 +93,7 @@
             );
 
             if(response.success){
-                SharedStore.folders[0].result.push(parentFolder ? `${parentFolder}/${folderName}` : folderName);
+                SharedStore.customFolders[0].result.push(parentFolder ? `${parentFolder}/${folderName}` : folderName);
             } else {
                 alert(response.message);
             }
@@ -125,7 +125,7 @@
             );
 
             if(response.success){
-                SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName && !subfolders || !e.includes(folderName));
+                SharedStore.customFolders[0].result = SharedStore.customFolders[0].result.filter(e => e !== folderName && !subfolders || !e.includes(folderName));
             } else {
                 alert(response.message);
             }
@@ -157,7 +157,7 @@
             );
 
             if(response.success){
-                SharedStore.folders[0].result = SharedStore.folders[0].result.map((currentFolderName) => {
+                SharedStore.customFolders[0].result = SharedStore.customFolders[0].result.map((currentFolderName) => {
                     return currentFolderName.replace(
                         fullFolderName.includes("/") ? fullFolderName.slice(fullFolderName.lastIndexOf("/") + 1) : fullFolderName,
                         newFolderName
@@ -194,17 +194,17 @@
             );
 
             if(response.success){
-                SharedStore.folders[0].result = SharedStore.folders[0].result.filter(e => e !== folderName);
+                SharedStore.customFolders[0].result = SharedStore.customFolders[0].result.filter(e => e !== folderName);
 
                 let newFolderPath = `${destinationFolder}/${folderName}`;
                 if (folderName.includes("/")) {
                     const tempLastIndex = folderName.lastIndexOf("/");
                     const parentFolder = folderName.slice(0, tempLastIndex);
-                    if (SharedStore.folders[0].result.includes(parentFolder)) {
+                    if (SharedStore.customFolders[0].result.includes(parentFolder)) {
                         newFolderPath = `${destinationFolder}/${folderName.slice(tempLastIndex+1)}`;
                     }
                 }
-                SharedStore.folders[0].result.push(newFolderPath);
+                SharedStore.customFolders[0].result.push(newFolderPath);
             } else {
                 alert(response.message);
             }
@@ -281,14 +281,7 @@
 
     function createStandardFolderMenu() {
         // Find standard folders
-        const standardFolderList = Object.values(Folder).map(folder => folder.trim().toLowerCase() + ":");
-        standardFolderList.forEach(standardFolder => {
-            const matchedFolder = SharedStore.folders[0].result.find(
-                currentFolder => currentFolder.trim().toLowerCase().startsWith(standardFolder)
-            );
-            if (matchedFolder)
-                standardFolders.push(matchedFolder);
-        });
+        const standardFolders = SharedStore.standardFolders[0].result;
 
         const standardFolderTemplate = `
             <div class="folder" data-tag-name="{tagName}">
@@ -313,7 +306,7 @@
     }
 
     function createCustomFolderMenu() {
-        customFolders = SharedStore.folders[0].result.filter(currentFolder => standardFolders.includes(currentFolder) !== true);
+        customFolders = SharedStore.customFolders[0].result;
 
         const sortCustomFolders = () => {
           return customFolders.sort((a, b) => {

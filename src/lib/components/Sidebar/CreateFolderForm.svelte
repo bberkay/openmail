@@ -33,7 +33,7 @@
             <div class="input-group">
                 <select name="parent_folder" id="parent-folder">
                     <option value="" selected>Select Parent Folder</option>
-                    {#each SharedStore.folders[0].result as folder}
+                    {#each SharedStore.customFolders[0].result as folder}
                         <option value={folder}>{folder}</option>
                     {/each}
                 </select>

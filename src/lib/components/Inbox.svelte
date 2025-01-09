@@ -258,7 +258,7 @@
         <button class = "bg-primary" style="margin-right:5px;" onclick={deleteEmails}>Delete</button>
         <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={folderSelection} onchange={moveEmail}>
             <option disabled selected>Move to</option>
-            {#each SharedStore.folders[0].result as folder}
+            {#each SharedStore.customFolders[0].result as folder}
                 <option value="{folder}">{folder}</option>
             {/each}
         </select>

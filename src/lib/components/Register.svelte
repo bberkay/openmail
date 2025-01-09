@@ -3,6 +3,7 @@
     import Loader from "$lib/components/Loader.svelte";
     import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
+    import { Folder } from "$lib/types";
     import { ApiService, GetRoutes, PostRoutes, type PostResponse } from "$lib/services/ApiService";
     import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 
@@ -182,7 +183,30 @@
         );
 
         if (response.success && response.data) {
-            SharedStore.folders = response.data;
+            const standardFolderList = Object.values(Folder).map(folder => folder.trim().toLowerCase() + ":");
+            response.data.forEach((account, i) => {
+                // Standard folders
+                SharedStore.standardFolders[i] = {
+                    email_address: account.email_address,
+                    result: []
+                };
+                standardFolderList.forEach((standardFolder) => {
+                    const matchedFolder = account.result.find(
+                        currentFolder => currentFolder.trim().toLowerCase().startsWith(standardFolder)
+                    );
+                    if (matchedFolder)
+                        SharedStore.standardFolders[i].result.push(matchedFolder);
+                });
+
+                // Custom folders
+                SharedStore.customFolders[i] = {
+                    email_address: account.email_address,
+                    result: []
+                };
+                SharedStore.customFolders[i].result = account.result.filter((currentFolder) => {
+                    return SharedStore.standardFolders[i].result.includes(currentFolder) !== true
+                });
+            })
         } else {
             alert(response.message);
         }

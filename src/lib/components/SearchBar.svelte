@@ -8,8 +8,7 @@
     import { Folder, Mark, type SearchCriteria } from "$lib/types";
     import { addDays, debounce } from "$lib/utils";
 
-    let isAdvancedSearchMenuOpen = false;
-    onMount(() => {});
+    let isAdvancedSearchMenuOpen = $state(false);
 
     function toggleAdvancedSearchMenu() {
         isAdvancedSearchMenuOpen = !isAdvancedSearchMenuOpen;
@@ -275,8 +274,12 @@
             <div class="input-group">
                 <select name="folder" id="folder">
                     <option value="{Folder.All}" selected>All</option>
-                    {#each SharedStore.folders[0].result as folder}
-                        <option value={folder}>{folder}</option>
+                    {#each SharedStore.standardFolders[0].result as standardFolder}
+                        {@const [folderTag, folderName] = standardFolder.split(":")}
+                        <option value={folderTag}>{folderName}</option>
+                    {/each}
+                    {#each SharedStore.customFolders[0].result as customFolder}
+                        <option value={customFolder}>{customFolder}</option>
                     {/each}
                 </select>
                 <button type="button" onclick={clearInput}>X</button>

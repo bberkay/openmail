@@ -6,7 +6,8 @@ export enum SharedStoreKeys {
     accounts="accounts",
     failedAccounts="failedAccounts",
     mailboxes="mailboxes",
-    folders="folders",
+    standardFolders="standardFolders",
+    customFolders="customFolders",
     currentFolder="currentFolder",
 }
 
@@ -15,7 +16,8 @@ interface ISharedStore {
     [SharedStoreKeys.accounts]: Account[];
     [SharedStoreKeys.failedAccounts]: Account[];
     [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
-    [SharedStoreKeys.folders]: OpenMailTaskResults<string[]>;
+    [SharedStoreKeys.standardFolders]: OpenMailTaskResults<string[]>;
+    [SharedStoreKeys.customFolders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.currentFolder]: string;
 }
 
@@ -24,7 +26,8 @@ export const DefaultSharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = {
     [SharedStoreKeys.accounts]: [],
     [SharedStoreKeys.failedAccounts]: [],
     [SharedStoreKeys.mailboxes]: [],
-    [SharedStoreKeys.folders]: [],
+    [SharedStoreKeys.standardFolders]: [],
+    [SharedStoreKeys.customFolders]: [],
     [SharedStoreKeys.currentFolder]: Folder.Inbox,
 }
 
@@ -36,12 +39,33 @@ export class SharedStore {
      * Getters
      */
 
-    public static get server(): string { return nonSharedState[SharedStoreKeys.server] }
-    public static get accounts(): Account[] { return nonSharedState[SharedStoreKeys.accounts] }
-    public static get failedAccounts(): Account[] { return nonSharedState[SharedStoreKeys.failedAccounts] }
-    public static get mailboxes(): OpenMailTaskResults<Mailbox> { return nonSharedState[SharedStoreKeys.mailboxes] }
-    public static get folders(): OpenMailTaskResults<string[]> { return nonSharedState[SharedStoreKeys.folders] }
-    public static get currentFolder(): string { return nonSharedState[SharedStoreKeys.currentFolder] }
+    public static get server(): ISharedStore[SharedStoreKeys.server] {
+        return nonSharedState[SharedStoreKeys.server]
+    }
+
+    public static get accounts(): ISharedStore[SharedStoreKeys.accounts] {
+        return nonSharedState[SharedStoreKeys.accounts]
+    }
+
+    public static get failedAccounts(): ISharedStore[SharedStoreKeys.failedAccounts] {
+        return nonSharedState[SharedStoreKeys.failedAccounts]
+    }
+
+    public static get mailboxes(): ISharedStore[SharedStoreKeys.mailboxes] {
+        return nonSharedState[SharedStoreKeys.mailboxes]
+    }
+
+    public static get standardFolders(): ISharedStore[SharedStoreKeys.standardFolders] {
+        return nonSharedState[SharedStoreKeys.standardFolders]
+    }
+
+    public static get customFolders(): ISharedStore[SharedStoreKeys.customFolders] {
+        return nonSharedState[SharedStoreKeys.customFolders]
+    }
+
+    public static get currentFolder(): ISharedStore[SharedStoreKeys.currentFolder] {
+        return nonSharedState[SharedStoreKeys.currentFolder]
+    }
 
     /**
      * Setters
@@ -69,8 +93,12 @@ export class SharedStore {
         nonSharedState[SharedStoreKeys.mailboxes] = data;
     }
 
-    public static set folders(data: GetQueryResponse[GetRoutes.GET_FOLDERS]) {
-        nonSharedState[SharedStoreKeys.folders] = data;
+    public static set standardFolders(data: GetQueryResponse[GetRoutes.GET_FOLDERS]) {
+        nonSharedState[SharedStoreKeys.standardFolders] = data;
+    }
+
+    public static set customFolders(data: GetQueryResponse[GetRoutes.GET_FOLDERS]) {
+        nonSharedState[SharedStoreKeys.customFolders] = data;
     }
 
     public static set currentFolder(folder: string) {
