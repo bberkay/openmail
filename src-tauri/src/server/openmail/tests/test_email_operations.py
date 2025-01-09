@@ -1,4 +1,5 @@
 import json
+import time
 import unittest
 
 from openmail import OpenMail
@@ -23,7 +24,7 @@ class TestEmailOperations(unittest.TestCase):
     def test_mark_as_seen_operation(self):
         print("test_mark_as_seen_operation...")
 
-        print(f"Creating new email to mark as seen...")
+        print(f"Sending new email to mark as seen...")
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
 
         status, _ = self.__class__._openmail.imap.mark_email(Mark.Seen, uid)
@@ -35,24 +36,63 @@ class TestEmailOperations(unittest.TestCase):
 
         self.__class__._sent_test_email_uids.append(uid)
 
-    def test_unmark_as_seen_operation(self):
-        print("test_unmark_as_seen_operation...")
+    def test_mark_as_seen_multiple_email_operation(self):
+        print("test_mark_as_seen_multiple_email_operation...")
 
-        print(f"Creating new email to mark as seen...")
-        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+        print(f"Sending new email to mark as seen...")
+        uids = []
+        for i in range(1, 4):
+            uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+            uids.append(uid)
 
-        status, _ = self.__class__._openmail.imap.mark_email(Mark.Seen, uid)
+        sequence_set = ",".join(uids)
+        status, _ = self.__class__._openmail.imap.mark_email(Mark.Seen, sequence_set)
         self.assertTrue(status)
 
-        status, _ = self.__class__._openmail.imap.unmark_email(Mark.Seen, uid)
-        self.assetTrue(status)
+        email_flags = self.__class__._openmail.imap.get_email_flags(sequence_set)
+        for email_flag in email_flags:
+            self.assertIn(Mark.Seen, email_flag.flags)
+
+        self.__class__._sent_test_email_uids.extend(uids)
+
+    def test_unmark_as_flagged_operation(self):
+        print("test_unmark_as_flagged_operation...")
+
+        print(f"Sending new email to unmark as flagged...")
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+
+        status, _ = self.__class__._openmail.imap.mark_email(Mark.Flagged, uid)
+        self.assertTrue(status)
+
+        status, _ = self.__class__._openmail.imap.unmark_email(Mark.Flagged, uid)
+        self.assertTrue(status)
         self.assertNotIn(
-            Mark.Seen,
+            Mark.Flagged,
             self.__class__._openmail.imap.get_email_flags(uid)[0].flags
         )
-        print("uid eklenecek: ", uid)
         self.__class__._sent_test_email_uids.append(uid)
-        print("aasdasdazxc: ", self.__class__._sent_test_email_uids)
+
+    def test_unmark_as_flagged_multiple_email_operation(self):
+        print("test_unmark_as_flagged_multiple_email_operation...")
+
+        print(f"Sending new email to unmark as flagged...")
+        uids = []
+        for i in range(1, 4):
+            uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+            uids.append(uid)
+
+        sequence_set = ",".join(uids)
+        status, _ = self.__class__._openmail.imap.mark_email(Mark.Flagged, sequence_set)
+        self.assertTrue(status)
+
+        status, _ = self.__class__._openmail.imap.unmark_email(Mark.Flagged, sequence_set)
+        self.assertTrue(status)
+
+        email_flags = self.__class__._openmail.imap.get_email_flags(sequence_set)
+        for email_flag in email_flags:
+            self.assertNotIn(Mark.Flagged, email_flag.flags)
+
+        self.__class__._sent_test_email_uids.extend(uids)
 
     def test_move_email_operation(self):
         print("test_move_email_operation...")
@@ -60,7 +100,31 @@ class TestEmailOperations(unittest.TestCase):
         print("Creating new folder to move email to...")
         new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
 
-        print(f"Creating new email to move to {new_folder_name}...")
+        print(f"Sending new email to move to {new_folder_name}...")
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+
+        print(f"Moving email {uid} to {new_folder_name}...")
+        status, _ = self.__class__._openmail.imap.move_email(Folder.Inbox, new_folder_name, uid)
+        self.assertTrue(status)
+
+        print("Waiting 2 seconds after move operation")
+        time.sleep(2)
+
+        # Find moved email
+        self.__class__._openmail.imap.search_emails(new_folder_name)
+        uid_after_move = self.__class__._openmail.imap.get_emails().emails[0].uid
+        self.assertFalse(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, uid_after_move))
+
+        self.__class__._created_test_folders.append(new_folder_name)
+
+    def test_move_multiple_email_operation(self):
+        print("test_move_multiple_email_operation...")
+
+        print("Creating new folder to move email to...")
+        new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+
+        print(f"Sending new email to move to {new_folder_name}...")
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
 
         print(f"Moving email {uid} to {new_folder_name}...")
@@ -77,7 +141,7 @@ class TestEmailOperations(unittest.TestCase):
         print("Creating new folder to copy email to...")
         new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
 
-        print(f"Creating new email to copy to {new_folder_name}...")
+        print(f"Sending new email to copy to {new_folder_name}...")
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
 
         print(f"Copying email {uid} to {new_folder_name}...")
@@ -92,7 +156,7 @@ class TestEmailOperations(unittest.TestCase):
     def test_delete_email_operation(self):
         print("test_delete_email_operation...")
 
-        print(f"Creating new email to delete...")
+        print(f"Sending new email to delete...")
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
 
         print(f"Deleting email {uid}...")
@@ -106,6 +170,6 @@ class TestEmailOperations(unittest.TestCase):
         print("Cleaning up test `TestEmailOperations`...")
         for folder_name in cls._created_test_folders:
             cls._openmail.imap.delete_folder(folder_name, True)
-        print("uid list:", ",".join(cls._sent_test_email_uids))
-        cls._openmail.imap.delete_email(Folder.Inbox, ",".join(cls._sent_test_email_uids))
+        if cls._sent_test_email_uids:
+            cls._openmail.imap.delete_email(Folder.Inbox, ",".join(cls._sent_test_email_uids))
         cls._openmail.disconnect()
