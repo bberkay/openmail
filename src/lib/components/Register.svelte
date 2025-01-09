@@ -125,9 +125,10 @@
             SharedStore.accounts = SharedStore.accounts.filter((item) => item.email_address !== account);
         } else {
             alert(response.message);
-            button.disabled = false;
-            button.textContent = 'Delete Account';
         }
+
+        button.disabled = false;
+        button.textContent = 'Delete Account';
     }
 
     async function getMailboxesOfAllAccounts() {
@@ -208,7 +209,7 @@
 </script>
 
 {#if currentEditingAccount}
-    <h3>Updating accounts</h3>
+    <h3>Updating Accounts <button onclick={removeAllAccounts}>Remove All</button></h3>
     <small>There were {SharedStore.failedAccounts.length} accounts that failed to connect.</small>
     <ul>
         {#each SharedStore.failedAccounts as account}
