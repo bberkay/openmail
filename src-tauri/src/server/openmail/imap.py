@@ -65,7 +65,6 @@ IMAP_PORT = 993
 # Typo prevention
 CRLF = b'\r\n'
 INBOX = 'INBOX'
-ALL = 'ALL'
 
 MARK_LIST = [str(m).lower() for m in Mark]
 FOLDER_LIST = [str(f).lower() for f in Folder]
@@ -261,7 +260,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         Overrides the `select` method to handle the `Folder` enum type.
         """
-        folder = self.find_matching_folder(folder)
+        folder = self.find_matching_folder(folder) or folder
         return self._parse_command_result(
             super().select(folder, readonly),
             success_message=f"Successfully selected {folder}",
@@ -968,7 +967,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 search_query (str): The search query used to fetch the emails.
             """
             self._searched_emails = IMAPManager.SearchedEmails(
-                folder=self.find_matching_folder(str(folder), encoded=False),
+                folder=self.find_matching_folder(str(folder), encoded=False) or folder,
                 search_query=search_query,
                 uids=uids
             )
@@ -980,7 +979,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if not status:
                 raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
-        search_criteria_query = self.build_search_criteria_query(search).encode("utf-8") if search else ALL
+        if search:
+            search_criteria_query = self.build_search_criteria_query(search).encode("utf-8")
+        else:
+            search_criteria_query = 'ALL'
 
         # Searching emails
         try:
@@ -1062,7 +1064,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         sequence_set = ""
         emails = []
         try:
-            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_end:offset_start:-1]))
+            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_end:offset_start:-1])) or "1:" + str(GET_EMAILS_OFFSET_END)
+
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
