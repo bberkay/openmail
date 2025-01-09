@@ -36,3 +36,21 @@ export function addDays(dateString: string, days: number): string {
     date.setDate(date.getDate() + days);
     return date.toISOString().split("T")[0];
 }
+
+export function capitalize(s: string): string {
+    return s && String(s[0]).toUpperCase() + String(s).slice(1).toLowerCase();
+}
+
+export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: number): T[] {
+     if (
+        fromIndex < 0 ||
+        fromIndex >= arr.length ||
+        toIndex < 0 ||
+        toIndex >= arr.length
+    ) {
+        throw new Error("Index out of bounds");
+    }
+
+    [arr[fromIndex], arr[toIndex]] = [arr[toIndex], arr[fromIndex]];
+    return arr;
+}
