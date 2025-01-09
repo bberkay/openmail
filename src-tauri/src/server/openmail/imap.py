@@ -69,6 +69,9 @@ ALL = 'ALL'
 
 MARK_LIST = [str(m).lower() for m in Mark]
 FOLDER_LIST = [str(f).lower() for f in Folder]
+FOLDER_NAME_FILTER = {
+    IMAP_SERVERS["gmail"]: ["[Gmail]/"]
+}
 
 """
 Custom consts
@@ -131,9 +134,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
         ssl_context: any = None,
         timeout: int = CONN_TIMEOUT
     ):
+        self._host = host or self._find_imap_server(email_address)
+        self._port = port or IMAP_PORT
+
         self._searched_emails: IMAPManager.SearchedEmails = None
 
-        # IDLE and READLINE vars
+        # IDLE and READLINE variables
         self._is_idle = False
         self._current_idle_start_time = None
         self._current_idle_tag: str = None
@@ -150,8 +156,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # and `_simple_command` is overridden in this class to handle
         # IDLE and READLINE operations and uses these vars.
         super().__init__(
-            host or self._find_imap_server(email_address),
-            port or IMAP_PORT,
+            self._host,
+            self._port,
             ssl_context=ssl_context,
             timeout=choose_positive(timeout, CONN_TIMEOUT)
         )
@@ -624,55 +630,86 @@ class IMAPManager(imaplib.IMAP4_SSL):
         status, folders_as_bytes = self.list()
         if status == "OK" and folders_as_bytes and isinstance(folders_as_bytes, list):
             for folder_as_bytes in folders_as_bytes:
-                if requested_folder.upper() in folder_as_bytes.decode("utf-8").upper():
+                if requested_folder.upper() in self._decode_folder(folder_as_bytes).upper():
                     if encoded:
-                        return self._encode_folder(self._decode_folder(folder_as_bytes))
+                        return self._encode_folder(self._extract_folder_name(folder_as_bytes))
                     else:
-                        return self._decode_folder(folder_as_bytes)
+                        return self._extract_folder_name(folder_as_bytes)
         return None
 
     def _encode_folder(self, folder: str) -> bytes:
-        """
-        Encode a folder name into a byte string suitable for IMAP operations.
-
-        Args:
-            folder (str): The name of the folder to encode.
-
-        Returns:
-            bytes: The encoded folder name in UTF-8 format.
-
-        Example:
-            >>> __encode_folder("INBOX")
-            b'\\Inbox'
-        """
+        """Encode a folder name into a byte string suitable for IMAP operations."""
         try:
             return ('"' + folder + '"').encode("utf-8")
         except Exception as e:
             raise IMAPManagerException(f"Error while encoding folder name: {str(e)}") from None
 
     def _decode_folder(self, folder: bytes) -> str:
+        """Decode a folder name from a byte string returned by an IMAP server."""
+        try:
+            return folder.decode("utf-8")
+        except Exception as e:
+            raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
+
+    def _extract_folder_name(self, folder: str | bytes, /, tagged: bool = False) -> str:
         """
-        Decode a folder name from a byte string returned by an IMAP server.
+        Extract a folder name from a byte string returned by an IMAP server.
 
         Args:
-            folder (bytes): The byte string containing the folder name.
+            folder (str | bytes): The byte or string containing the folder name.
+            tagged (boolean): Tag folders with their original name. Inbox will
+            also be tagged either has a special tag or not.
 
         Returns:
             str: The decoded and cleaned folder name.
 
         Example:
-            >>> __decode_folder(b'\\Inbox')
+            >>> _extract_folder_name(b'(\\HasNoChildren) "/" "INBOX"')
             'INBOX'
-            >>> __decode_folder(b'(\\HasNoChildren) "/" "INBOX"')
-            'INBOX'
-            >>> __decode_folder(b'(\\HasNoChildren) "|" "INBOX"')
-            'INBOX'
+            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Spam"')
+            'Spam'
+            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Spam"', tagged=True)
+            '[Folder.Junk]:Spam'
+            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Inbox"', tagged=True)
+            '[Folder.Inbox]:Inbox'
+            >>> _extract_folder_name(b'(\\HasNoChildren) "|" "MyCustomFolder"', tagged=False)
+            'MyCustomFolder'
+
+        References:
+            https://datatracker.ietf.org/doc/html/rfc9051#name-list-response
         """
         try:
+            if isinstance(folder, bytes):
+                folder = self._decode_folder(folder)
+
             # Most of the servers return folder name as b'(\\HasNoChildren) "/" "INBOX"'
             # But some servers like yandex return folder name as b'(\\HasNoChildren) "|" "INBOX"'
             # So we're replacing "|" with "/" to make it consistent
-            return folder.decode().replace(' "|" ', ' "/" ', 1).split(' "/" ', 1)[1].replace('"', '')
+            folder = folder.replace(' "|" ', ' "/" ', 1)
+
+            folder_tag, folder_name = folder.split(' "/" ', 1)
+            folder_name = folder_name.replace('"', '')
+
+            for filter in FOLDER_NAME_FILTER[self.host]:
+                folder_name = folder_name.replace(filter, "")
+
+            if tagged:
+                folder_tag = folder_tag.lower()
+                if folder_name.lower() == Folder.Inbox.lower():
+                    folder_tag = Folder.Inbox
+                    folder_name = folder_name.capitalize()
+
+                # Add folder tag to beginning of the folder name like if
+                # folder includes any. For example if folder is something like
+                # this: "(\HasNoChildren \Trash) | Trash Bin" convert it to
+                # "Trash:Trash Bin". This is important to ensure that the client
+                # can recognize the folder in a way that is not affected by any
+                # language or different spelling.
+                for standard_folder in FOLDER_LIST:
+                    if standard_folder.lower() in folder_tag.lower():
+                        folder_name = f"{standard_folder.capitalize()}:{folder_name}"
+
+            return folder_name
         except Exception as e:
             raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
 
@@ -716,16 +753,27 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return True
 
-    def get_folders(self, folder_name: str | None = None) -> list[str]:
+    def get_folders(self, folder_name: str | None = None, /, tagged: bool = False) -> list[str]:
         """
         Retrieve a list of all email folders.
 
         Args:
             folder_name (str, optional): Subfolders of the specified folder.
             Defaults to None. If None, returns all folders.
+            tagged (boolean): Tag folders with their original name. Inbox will
+            also be tagged either has a special tag or not.
 
         Returns:
             list[str]: List of folder names in the email account
+
+        Example:
+            >>> get_folders()
+            ['Inbox', 'Spam', 'Trash Bin', 'My Custom Folder']
+            >>> get_folders(tagged=True)
+            ['[Folder.Inbox]:Inbox', '[Folder.Junk]:Spam', '[Folder.Trash]:Trash Bin', 'My Custom Folder']
+
+        References:
+            https://datatracker.ietf.org/doc/html/rfc9051#name-list-response
         """
         status, folders = self.list()
         if not status == "OK":
@@ -736,7 +784,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         disallowed_keywords = [keyword.lower() for keyword in disallowed_keywords]
         for folder in folders:
             if not any(keyword in folder.lower() for keyword in disallowed_keywords):
-                decoded_folder = self._decode_folder(folder)
+                decoded_folder = self._extract_folder_name(folder, tagged=tagged)
                 if not folder_name or (folder_name in decoded_folder and not decoded_folder.endswith(folder_name)):
                     folder_list.append(decoded_folder)
 

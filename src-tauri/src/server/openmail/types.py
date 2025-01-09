@@ -162,6 +162,7 @@ class Folder(str, Enum):
     Junk = 'Junk'
     Sent = 'Sent'
     Trash = 'Trash'
+    Important = 'Important'
 
     def __str__(self):
         return self.value
