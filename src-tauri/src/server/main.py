@@ -284,7 +284,7 @@ def remove_email_account(request_body: RemoveAccountRequest) -> Response:
 def remove_accounts() -> Response:
     try:
         account_manager.remove_all()
-        return Response(success=True, message="Accounts removed successfully")
+        return Response(success=True, message="All accounts removed successfully")
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while removing accounts.", str(e)))
 
