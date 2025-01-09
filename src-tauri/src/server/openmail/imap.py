@@ -1041,8 +1041,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if not status:
             raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
-        search_status, _ = self.uid('search', f"UID {uid}")
-        return self._parse_command_result(search_status)[0]
+        status, data = self.uid('search', f"UID {uid}")
+        if not status:
+            raise IMAPManagerException(f"Error while checking email `{uid}`: `{status}`")
+
+        return bool(data[0].decode())
 
     def get_emails(
         self,
@@ -1358,7 +1361,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
         if not mark:
-            raise IMAPManagerException(f"`mark` cannot be empty.")
+            raise IMAPManagerException("`mark` cannot be empty.")
 
         mark_result = self._parse_command_result(
             self.uid(
