@@ -106,11 +106,12 @@ export enum Mark {
 
 export enum Folder {
     Inbox = "Inbox",
+    Flagged = "Flagged",
+    Important = "Important",
+    Sent = "Sent",
+    Drafts = "Drafts",
     All = "All",
     Archive = "Archive",
-    Drafts = "Drafts",
-    Flagged = "Flagged",
     Junk = "Junk",
-    Sent = "Sent",
-    Trash = "Trash"
+    Trash = "Trash",
 }
