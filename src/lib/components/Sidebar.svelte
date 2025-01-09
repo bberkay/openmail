@@ -100,7 +100,7 @@
 
             target.reset();
             clearContent();
-            createFolderMenu();
+            createCustomFolderMenu();
         })
     }
 
@@ -132,7 +132,7 @@
 
             target.reset();
             clearContent();
-            createFolderMenu();
+            createCustomFolderMenu();
         })
     }
 
@@ -169,7 +169,7 @@
 
             target.reset();
             clearContent();
-            createFolderMenu();
+            createCustomFolderMenu();
         })
     }
 
@@ -211,7 +211,7 @@
 
             target.reset();
             clearContent();
-            createFolderMenu();
+            createCustomFolderMenu();
         })
     }
 
@@ -258,7 +258,7 @@
             } else {
                 alert(response.message);
             }
-        })
+        });
     }
 
     function getFullFolderPath(optionsNode: HTMLElement): string {
@@ -461,7 +461,7 @@
             );
 
             folderNode.querySelector<HTMLButtonElement>(".folder-name")!.onclick = (e: MouseEvent) => {
-                getEmailsOfFolder(e, getFullFolderPath(folderNode))
+                getEmailsOfFolder(e, getFullFolderPath((e.target as HTMLButtonElement).closest(".folder")!))
             }
 
             folderNode.querySelector<HTMLButtonElement>(
