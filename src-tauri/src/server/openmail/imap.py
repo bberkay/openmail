@@ -260,7 +260,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         Overrides the `select` method to handle the `Folder` enum type.
         """
-        folder = self.find_matching_folder(folder) or self._encode_folder(folder)
+        folder = (
+            self.find_matching_folder(folder)
+            or
+            (self._encode_folder(folder) if isinstance(folder, str) else folder)
+        )
         return self._parse_command_result(
             super().select(folder, readonly),
             success_message=f"Successfully selected {folder}",
@@ -984,12 +988,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 uids=uids
             )
 
-        if folder or self.state != "SELECTED":
-            if self.state != "SELECTED":
-                folder = Folder.All if search else Folder.Inbox
-            status, _ = self.select(folder, readonly=True)
-            if not status:
-                raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
+        folder_select_status = None
+        if folder:
+            folder_select_status, _ = self.select(folder, readonly=True)
+        elif self.state != "SELECTED":
+            folder = Folder.All if search else Folder.Inbox
+            folder_select_status, _ = self.select(folder, readonly=True)
+
+        if not folder_select_status:
+            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{folder_select_status}`")
 
         if search:
             search_criteria_query = self.build_search_criteria_query(search).encode("utf-8")
@@ -1076,7 +1083,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         sequence_set = ""
         emails = []
         try:
-            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_end:offset_start:-1])) or "1:" + str(GET_EMAILS_OFFSET_END)
+            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_end:offset_start:-1] or self._searched_emails.uids))
 
             status, messages = self.uid(
                 'FETCH',

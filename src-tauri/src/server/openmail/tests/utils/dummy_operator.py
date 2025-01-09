@@ -3,7 +3,7 @@ import time
 from openmail import OpenMail
 from openmail.smtp import SMTPManagerException
 from openmail.imap import IMAPManagerException
-from openmail.types import EmailToSend, SearchCriteria
+from openmail.types import EmailToSend, SearchCriteria, Folder
 from openmail.tests.utils.name_generator import NameGenerator
 
 class DummyOperator:
@@ -112,6 +112,7 @@ class DummyOperator:
             time.sleep(2)
 
         status, message = openmail.imap.search_emails(
+            folder=Folder.Inbox,
             search=SearchCriteria(
                 subject=subject,
                 senders=[sender_email],
@@ -127,10 +128,7 @@ class DummyOperator:
         if len(mailbox.emails) == 0:
             raise IMAPManagerException("Mailbox is empty, failed to test email operations")
 
-        for email in mailbox.emails:
-            uid = email.uid
-            break
-
+        uid = mailbox.emails[0].uid
         if not uid:
             raise IMAPManagerException("Test email not found, failed to test email operations")
 

@@ -30,7 +30,7 @@ class TestEmailOperations(unittest.TestCase):
         self.assertTrue(status)
         self.assertIn(
             Mark.Seen,
-            self.__class__._openmail.imap.get_email_flags(uid)
+            self.__class__._openmail.imap.get_email_flags(uid)[0].flags
         )
 
         self.__class__._sent_test_email_uids.append(uid)
@@ -48,10 +48,11 @@ class TestEmailOperations(unittest.TestCase):
         self.assetTrue(status)
         self.assertNotIn(
             Mark.Seen,
-            self.__class__._openmail.imap.get_email_flags(uid)
+            self.__class__._openmail.imap.get_email_flags(uid)[0].flags
         )
-
+        print("uid eklenecek: ", uid)
         self.__class__._sent_test_email_uids.append(uid)
+        print("aasdasdazxc: ", self.__class__._sent_test_email_uids)
 
     def test_move_email_operation(self):
         print("test_move_email_operation...")
@@ -105,5 +106,6 @@ class TestEmailOperations(unittest.TestCase):
         print("Cleaning up test `TestEmailOperations`...")
         for folder_name in cls._created_test_folders:
             cls._openmail.imap.delete_folder(folder_name, True)
+        print("uid list:", ",".join(cls._sent_test_email_uids))
         cls._openmail.imap.delete_email(Folder.Inbox, ",".join(cls._sent_test_email_uids))
         cls._openmail.disconnect()
