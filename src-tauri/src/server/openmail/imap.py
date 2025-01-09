@@ -260,7 +260,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         Overrides the `select` method to handle the `Folder` enum type.
         """
-        folder = self.find_matching_folder(folder) or folder
+        folder = self.find_matching_folder(folder) or self._encode_folder(folder)
         return self._parse_command_result(
             super().select(folder, readonly),
             success_message=f"Successfully selected {folder}",
@@ -756,7 +756,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return True
 
-    def get_folders(self, folder_name: str | None = None, /, tagged: bool = False, filtered: bool = True) -> list[str]:
+    def get_folders(self, folder_name: str | None = None, /, tagged: bool = False, filtered: bool = False) -> list[str]:
         """
         Retrieve a list of all email folders.
 
@@ -790,7 +790,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         disallowed_keywords = [keyword.lower() for keyword in disallowed_keywords]
         for folder in folders:
             if not any(keyword in folder.lower() for keyword in disallowed_keywords):
-                decoded_folder = self._extract_folder_name(folder, tagged=tagged)
+                decoded_folder = self._extract_folder_name(folder, tagged=tagged, filtered=filtered)
                 if not folder_name or (folder_name in decoded_folder and not decoded_folder.endswith(folder_name)):
                     folder_list.append(decoded_folder)
 
