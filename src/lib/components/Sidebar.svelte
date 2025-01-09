@@ -3,7 +3,7 @@
     import { mount, unmount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder } from "$lib/types";
-    import { countCharacter, createDomObject } from "$lib/utils";
+    import { countCharacter, createDomObject, swap, capitalize } from "$lib/utils";
     import Loader from "$lib/components/Loader.svelte";
     import { ApiService, GetRoutes } from "$lib/services/ApiService";
     import { PostRoutes } from "$lib/services/ApiService";
@@ -12,7 +12,10 @@
     import DeleteFolderForm from "./Sidebar/DeleteFolderForm.svelte";
     import MoveFolderForm from "./Sidebar/MoveFolderForm.svelte";
 
-    let folders: HTMLDivElement;
+    let standardFoldersContainer: HTMLDivElement;
+    let customFoldersContainer: HTMLDivElement;
+    let standardFolders: string[] = [];
+    let customFolders: string[] = [];
     interface Props {
         showCompose: () => void
     }
@@ -30,9 +33,12 @@
         mountedMoveFolderForm: null,
         mountedDeleteFolderForm: null,
     };
+
     onMount(() => {
-        folders = document.getElementById("folders") as HTMLDivElement;
-        createFolderMenu();
+        standardFoldersContainer = document.getElementById("standard-folders") as HTMLDivElement;
+        customFoldersContainer = document.getElementById("custom-folders") as HTMLDivElement;
+        createStandardFolderMenu();
+        createCustomFolderMenu();
     });
 
     document.body.addEventListener("click", (e: MouseEvent) => {
@@ -50,9 +56,10 @@
         e.preventDefault();
 
         const target = e.target as HTMLFormElement;
-        const eventButton = target.querySelector(
+        let eventButton = target.querySelector(
             'button[type="submit"]',
         ) as HTMLButtonElement;
+        if (!eventButton) eventButton = e.target as HTMLButtonElement;
         eventButton.disabled = true;
         const temp = eventButton.innerText;
         eventButton.innerText = "";
@@ -228,28 +235,105 @@
         });
     }
 
-    function sortFolders() {
-      return SharedStore.folders[0].result.sort((a, b) => {
-        const aParts = a.split("/");
-        const bParts = b.split("/");
+    function getEmailsOfFolder(e: Event, folderName: string) {
+        makeAnApiRequest(e, async () => {
+            const response = await ApiService.get(
+                SharedStore.server,
+                GetRoutes.GET_MAILBOXES,
+                {
+                    pathParams: {
+                        accounts: SharedStore.accounts
+                            .map((account) => account.email_address)
+                            .join(",")
+                    },
+                    queryParams: {
+                        folder: folderName
+                    }
+                },
+            );
 
-        for (let i = 0; i < Math.min(aParts.length, bParts.length); i++) {
-          if (aParts[i] < bParts[i]) {
-            return -1;
-          } else if (aParts[i] > bParts[i]) {
-            return 1;
-          }
-        }
-
-        return aParts.length - bParts.length;
-      });
+            if (response.success && response.data) {
+                SharedStore.mailboxes = response.data;
+                SharedStore.currentFolder = response.data[0].result.folder;
+            } else {
+                alert(response.message);
+            }
+        })
     }
 
-    function createFolderMenu() {
-        sortFolders();
-        folders.innerHTML = "";
+    function getFullFolderPath(optionsNode: HTMLElement): string {
+        const folder = optionsNode.closest(".folder") as HTMLButtonElement;
+        const folderName = folder.querySelector(".folder-name")!.textContent!;
 
-        const folderTemplate = `
+        const parent = optionsNode.previousElementSibling as HTMLButtonElement;
+        if(!parent || !parent.classList.contains("folder"))
+            return folderName;
+
+        if (parent && parseFloat(parent.style.paddingLeft) < parseFloat(folder.style.paddingLeft)) {
+            if (!parent.querySelector(".subfolder-toggle")!.classList.contains("disabled")) {
+                const parentFolderName = parent!.querySelector(".folder-name")!.textContent!;
+                return getFullFolderPath(parent) + `/${folderName}`
+            }
+        }
+
+        return folderName;
+    }
+
+    function createStandardFolderMenu() {
+        // Find standard folders
+        const standardFolderList = Object.values(Folder).map(folder => folder.trim().toLowerCase() + ":");
+        standardFolderList.forEach(standardFolder => {
+            const matchedFolder = SharedStore.folders[0].result.find(
+                currentFolder => currentFolder.trim().toLowerCase().startsWith(standardFolder)
+            );
+            if (matchedFolder)
+                standardFolders.push(matchedFolder);
+        });
+
+        const standardFolderTemplate = `
+            <div class="folder">
+                <button class="inline folder-name" style="flex-grow:1;">{folder}</button>
+            </div>
+        `;
+
+        for (const standardFolder of standardFolders) {
+            const folderNode = createDomObject(
+                standardFolderTemplate
+                    .replace("{folder}", standardFolder.trim().split(":")[1])
+            );
+
+            standardFoldersContainer.appendChild(folderNode);
+
+            folderNode.querySelector<HTMLButtonElement>(".folder-name")!.onclick = (e: MouseEvent) => {
+                getEmailsOfFolder(e, getFullFolderPath(folderNode))
+            }
+        }
+    }
+
+    function createCustomFolderMenu() {
+        customFolders = SharedStore.folders[0].result.filter(currentFolder => standardFolders.includes(currentFolder) !== true);
+
+        const sortCustomFolders = () => {
+          return customFolders.sort((a, b) => {
+            const aParts = a.split("/");
+            const bParts = b.split("/");
+
+            for (let i = 0; i < Math.min(aParts.length, bParts.length); i++) {
+              if (aParts[i] < bParts[i]) {
+                return -1;
+              } else if (aParts[i] > bParts[i]) {
+                return 1;
+              }
+            }
+
+            return aParts.length - bParts.length;
+          });
+        }
+
+        customFolders = sortCustomFolders();
+        customFoldersContainer.innerHTML = "";
+
+        const customFolderTemplate = `
             <div class="folder" style="padding-left:{tabsize}rem;">
                 <button class="inline subfolder-toggle {disabled}" style="opacity:{opacity}">▾</button>
                 <button class="inline folder-name" style="flex-grow:1;">{folder}</button>
@@ -264,24 +348,6 @@
                 <button class="bg-primary" id="move-folder">Move</button>
             </div>
         `;
-
-        const getFullFolderPath = (optionsNode: HTMLElement): string => {
-            const folder = optionsNode.closest(".folder") as HTMLButtonElement;
-            const folderName = folder.querySelector(".folder-name")!.textContent!;
-
-            const parent = optionsNode.previousElementSibling as HTMLButtonElement;
-            if(!parent.classList.contains("folder"))
-                return folderName;
-
-            if (parent && parseFloat(parent.style.paddingLeft) < parseFloat(folder.style.paddingLeft)) {
-                if (!parent.querySelector(".subfolder-toggle")!.classList.contains("disabled")) {
-                    const parentFolderName = parent!.querySelector(".folder-name")!.textContent!;
-                    return getFullFolderPath(parent) + `/${folderName}`
-                }
-            }
-
-            return folderName;
-        }
 
         const addOptionFunctions = (optionsNode: HTMLElement) => {
             optionsNode.querySelector<HTMLButtonElement>("#rename-folder")!.onclick = () => {
@@ -350,17 +416,17 @@
         let folderNode: HTMLElement;
         let traversedFolders: string[] = [];
         const tabsizeMultiplier = 0.5;
-        const folderLength = SharedStore.folders[0].result.length;
+        const folderLength = customFolders.length;
         while (i < folderLength) {
             opacity = 0;
             tabsize = 0;
 
-            const currentFolder = SharedStore.folders[0].result[i];
+            const currentFolder = customFolders[i];
             prevFolderName = folderName;
             folderName = currentFolder;
 
             if (i < folderLength - 1) {
-                const nextFolder = SharedStore.folders[0].result[i + 1];
+                const nextFolder = customFolders[i + 1];
                 if (nextFolder.startsWith(currentFolder + "/")) opacity = 1;
             }
 
@@ -385,40 +451,15 @@
             }
 
             folderNode = createDomObject(
-                folderTemplate
+                customFolderTemplate
                     .replace("{opacity}", opacity.toString())
                     .replace("{folder}", folderName)
                     .replace("{tabsize}", tabsize.toString())
                     .replace("{disabled}", opacity === 0 ? "disabled" : ""),
-            )!;
+            );
 
             folderNode.querySelector<HTMLButtonElement>(".folder-name")!.onclick = (e: MouseEvent) => {
-                makeAnApiRequest(e, async () => {
-                    const target = e.target as HTMLFormElement;
-                    const folderName = getFullFolderPath(folderNode);
-
-                    const response = await ApiService.get(
-                        SharedStore.server,
-                        GetRoutes.GET_MAILBOXES,
-                        {
-                            pathParams: {
-                                accounts: SharedStore.accounts
-                                    .map((account) => account.email_address)
-                                    .join(",")
-                            },
-                            queryParams: {
-                                folder: folderName
-                            }
-                        },
-                    );
-
-                    if (response.success && response.data) {
-                        SharedStore.mailboxes = response.data;
-                        SharedStore.currentFolder = response.data[0].result.folder;
-                    } else {
-                        alert(response.message);
-                    }
-                })
+                getEmailsOfFolder(e, getFullFolderPath(folderNode))
             }
 
             folderNode.querySelector<HTMLButtonElement>(
@@ -479,7 +520,7 @@
                 }
             };
 
-            folders.appendChild(folderNode);
+            customFoldersContainer.appendChild(folderNode);
             traversedFolders.push(currentFolder);
             i += 1;
         }
@@ -536,21 +577,17 @@
             >
         </div>
         <div style="border-bottom:1px solid dimgrey;">
-            {#each Object.values(Folder) as folder}
-                <div class="folder">
-                    <button class="inline" style="flex-grow:1;">{folder}</button>
-                </div>
-            {/each}
+            <div id="standard-folders"></div>
         </div>
     </div>
     <div style="margin-top:20px;">
         <div
             style="border-bottom:1px solid dimgrey;display:flex;align-items:center;justify-content:space-between;padding:10px 0;"
         >
-            <span>Folders ▾</span>
+            <span>Tags</span>
             <button onclick={showCreateFolder} class="bg-primary">+</button>
         </div>
-        <div id="folders"></div>
+        <div id="custom-folders"></div>
     </div>
 </div>
 
