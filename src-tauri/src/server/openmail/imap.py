@@ -833,6 +833,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             >>> build_search_criteria_query("Some paragraph")
             'TEXT "Some paragraph"'
+
         References:
             - https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
         """
@@ -1025,27 +1026,48 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def is_email_exists(self,
         folder: str,
-        uid: str
+        sequence_set: str
     ) -> bool:
         """
         Check is given uid exists in given folder.
 
         Args:
             folder (str): Folder to search in.
-            uid (str): Uid to check.
+            sequence_set (str): Sequence set of uids to check.
 
         Returns:
             bool: True if email exists, False otherwise.
+
+        Example:
+            >>> is_email_exists("1") # Returns True if the email with UID 1 is found.
+            >>> is_email_exists("1,2,3") # Return True if all of the emails with with UID 1,2,3 are found.
+            >>> is_email_exists("1:3") # Return True if all of the emails with with UID 1,2,3 are found.
+            >>> is_email_exists("1,3:5") # Return True if all of the emails with with UID 1 and 3,4,5 are found.
+
+        Raises:
+            IMAPManagerException: If the `sequence_set` contains "*".
+
+        References:
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
+        if "*" in sequence_set:
+            raise IMAPManagerException(f"Error sequence_set can not contain `*` while checking emails `{sequence_set}`")
+
         status, _ = self.select(folder, readonly=True)
         if not status:
             raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
-        status, data = self.uid('search', f"UID {uid}")
+        status, data = self.uid('search', f"UID {sequence_set}")
         if not status:
-            raise IMAPManagerException(f"Error while checking email `{uid}`: `{status}`")
+            raise IMAPManagerException(f"Error while checking emails `{sequence_set}`: `{status}`")
 
-        return bool(data[0].decode())
+        sequence_set = sequence_set.split(",") # TODO: Create _parse_sequence_set method.
+        uids = data[0].decode().split(" ")
+        for uid in sequence_set:
+            if uid not in uids:
+                return False
+
+        return True
 
     def get_emails(
         self,
@@ -1074,10 +1096,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise ValueError(f"Invalid `offset_start`: {offset_start}. `offset_start` must be greater than or equal to 0.")
         if offset_end < 0:
             raise ValueError(f"Invalid `offset_end`: {offset_end}. `offset_end` must be greater than or equal to 0.")
-        if offset_end >= uids_len:
-            offset_end = uids_len - 1
-        if offset_start >= uids_len:
-            offset_start = uids_len - 1
+        if offset_start > offset_end:
+            raise ValueError(f"Invalid `offset_start`: `offset_start` must be less then `offset_end`.")
 
         if uids_len == 0:
             return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
@@ -1086,13 +1106,18 @@ class IMAPManager(imaplib.IMAP4_SSL):
         sequence_set = ""
         emails = []
         try:
-            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_end:offset_start:-1] or self._searched_emails.uids))
+            if offset_start >= uids_len:
+                offset_start = uids_len - 1
+            if offset_end >= uids_len:
+                offset_end = uids_len
 
+            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_start:offset_end]))
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
                 '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.500> FLAGS BODYSTRUCTURE)'
             )
+
             if status != 'OK':
                 raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{len(emails)}`: `{status}`")
 
@@ -1163,6 +1188,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Example:
             >>> get_email_flags("1")
             [Flags(uid="1", flags=["\\Seen", "\\Answered"])]
+            >>> get_email_flags("1,2,3")
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
             >>> get_email_flags("1:3")
             [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
             >>> get_email_flags("1,3:4")
@@ -1172,6 +1199,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             >>> get_email_flags("1,3:*") # In this case, mailbox has 4 emails
             [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="3", flags=["\\Flagged"]), Flags(uid="4", flags=["\\Flagged"])]
 
+        References:
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         if self.state != "SELECTED":
             # Since uid's are unique within each mailbox, we can't just select INBOX
@@ -1321,8 +1350,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Args:
             mark (str): Flag to apply to the email.
             sequence_set (str): Sequence set of emails to mark.
-            command (str): IMAP command to apply the flag like
-            `+FLAGS` or `-FLAGS`.
+            command (str): IMAP command to apply the flag like `+FLAGS` or `-FLAGS`.
             folder (str): Folder containing the email.
             success_msg (str): Success message to display.
             err_msg (str): Error message to display.
@@ -1331,30 +1359,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             IMAPCommandResult: A tuple containing:
                 - A bool indicating whether the email was marked successfully.
                 - A string containing a success message or an error message.
-
-        Example:
-            >>> __mark_email(Mark.Seen, "1", "+FLAGS", "INBOX", "Email marked as seen", "Error while marking email as seen")
-            True, "Email(s) `1` marked with `seen` successfully."
-            >>> __mark_email(Mark.Flagged, "1:3", "+FLAGS", "INBOX", "Email marked as flagged", "Error while marking email as flagged")
-            True, "Email(s) `1:3` marked with `flagged` successfully."
-            >>> __mark_email(Mark.Seen, "1,3:5", "+FLAGS", "INBOX", "Email marked as seen", "Error while marking email as seen")
-            True, "Email(s) `1,3:5` marked with `seen` successfully."
-            >>> __mark_email(Mark.Answered, "1:*", "+FLAGS", "INBOX", "Email marked as seen", "Error while marking email as seen")
-            True, "Email(s) `1:*` marked with `answered` successfully."
-            >>> __mark_email(Mark.Flagged, "1,3:*", "+FLAGS", "INBOX", "Email marked as flagged", "Error while marking email as flagged")
-            True, "Email(s) `1,3:*` marked with `flagged` successfully."
-
-        References:
-            uid_range is a sequence set as defined in RFC 9051:
-            sequence-set = Example: a message sequence number set of
-                        2,4:7,9,12:* for a mailbox with 15 messages is
-                        equivalent to 2,4,5,6,7,9,12,13,14,15
-                        Example: a message sequence number set of
-                        *:4,5:7 for a mailbox with 10 messages is
-                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
-                        be reordered and overlap coalesced to be
-                        4,5,6,7,8,9,10.
-            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
         """
         status, _ = self.select(folder)
         if not status:
@@ -1405,27 +1409,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Example:
             >>> mark_email(Mark.Seen, "1") # Marks email with UID 1 from INBOX
-            True, "Email(s) `1` marked with `seen` successfully."
+            >>> mark_email(Mark.Seen, "1,2,3") # Marks emails with UID 1,2,3 from INBOX
             >>> mark_email(Mark.Seen, "1:3") # Marks email with UID 1,2,3 from INBOX
-            True, "Email(s) `1:3` marked with `seen` successfully."
             >>> mark_email(Mark.Seen, "1,3:5") # Marks email with UID 1 and 3,4,5 from INBOX
-            True, "Email(s) `1,3:5` marked with `seen` successfully."
             >>> mark_email(Mark.Seen, "1:*") # Marks all emails in the INBOX
-            True, "Email(s) `1:*` marked with `seen` successfully."
             >>> mark_email(Mark.Seen, "1,3:*") # Marks all emails in the INBOX, except email with UID 2
-            True, "Email(s) `1,3:*` marked with `seen` successfully."
 
         References:
-            uid_range is a sequence set as defined in RFC 9051:
-            sequence-set = Example: a message sequence number set of
-                        2,4:7,9,12:* for a mailbox with 15 messages is
-                        equivalent to 2,4,5,6,7,9,12,13,14,15
-                        Example: a message sequence number set of
-                        *:4,5:7 for a mailbox with 10 messages is
-                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
-                        be reordered and overlap coalesced to be
-                        4,5,6,7,8,9,10.
-            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         return self._mark_email(
             mark,
@@ -1457,27 +1448,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Example:
             >>> unmark_email(Mark.Seen, "1") # Removes Seen flag from email with UID 1
-            True, "Seen removed from email(s) 1 in `INBOX` successfully."
-            >>> unmark_email(Mark.Seen, "1:3") # Removes Seen flag from email with UID 1,2,3
-            True, "Seen removed from email(s) 1:3 in `INBOX` successfully."
-            >>> unmark_email(Mark.Seen, "1,3:5") # Removes Seen flag from email with UID 1 and 3,4,5
-            True, "Seen removed from email(s) 1,3:5 in `INBOX` successfully."
+            >>> unmark_email(Mark.Seen, "1,2,3") # Removes Seen flag from emails with UID 1,2,3
+            >>> unmark_email(Mark.Seen, "1:3") # Removes Seen flag from emails with UID 1,2,3
+            >>> unmark_email(Mark.Seen, "1,3:5") # Removes Seen flag from emails with UID 1 and 3,4,5
             >>> unmark_email(Mark.Seen, "1:*") # Removes Seen flag from all emails
-            True, "Seen removed from email(s) 1:* in `INBOX` successfully."
             >>> unmark_email(Mark.Seen, "1,3:*") Removes Seen flag from all emails, except email with UID 2
-            True, "Seen removed from email(s) 1,3:* in `INBOX` successfully."
 
         References:
-            uid_range is a sequence set as defined in RFC 9051:
-            sequence-set = Example: a message sequence number set of
-                        2,4:7,9,12:* for a mailbox with 15 messages is
-                        equivalent to 2,4,5,6,7,9,12,13,14,15
-                        Example: a message sequence number set of
-                        *:4,5:7 for a mailbox with 10 messages is
-                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
-                        be reordered and overlap coalesced to be
-                        4,5,6,7,8,9,10.
-            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         return self._mark_email(
             mark,
@@ -1508,27 +1486,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Example:
             >>> move_email("INBOX", "ARCHIVE", "1") # Moves email with UID 1 from INBOX to SENT
-            True, "Email(s) `1` moved successfully from `INBOX` to `ARCHIVE`."
-            >>> move_email("INBOX", "ARCHIVE", "1:3") # Moves email with UID 1,2,3 from INBOX to SENT
-            True, "Email(s) `1:3` moved successfully from `INBOX` to `ARCHIVE`."
-            >>> move_email("INBOX", "ARCHIVE", "1,3:5") # Moves email with UID 1 and 3,4,5 from INBOX to SENT
-            True, "Email(s) `1,3:5` moved successfully from `INBOX` to `ARCHIVE`."
+            >>> move_email("INBOX", "ARCHIVE", "1,2,3") # Moves emails with UID 1,2,3 from INBOX to SENT
+            >>> move_email("INBOX", "ARCHIVE", "1:3") # Moves emails with UID 1,2,3 from INBOX to SENT
+            >>> move_email("INBOX", "ARCHIVE", "1,3:5") # Moves emails with UID 1 and 3,4,5 from INBOX to SENT
             >>> move_email("INBOX", "ARCHIVE", "1:*") # Moves all emails in the INBOX to ARCHIVE folder
-            True, "Email(s) `1:*` moved successfully from `INBOX` to `ARCHIVE`."
             >>> move_email("INBOX", "ARCHIVE", "1,3:*") # Moves all emails in the INBOX to ARCHIVE folder, except email with UID 2
-            True, "Email(s) `1,3:*` moved successfully from `INBOX` to `ARCHIVE`."
 
         References:
-            uid_range is a sequence set as defined in RFC 9051:
-            sequence-set = Example: a message sequence number set of
-                        2,4:7,9,12:* for a mailbox with 15 messages is
-                        equivalent to 2,4,5,6,7,9,12,13,14,15
-                        Example: a message sequence number set of
-                        *:4,5:7 for a mailbox with 10 messages is
-                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
-                        be reordered and overlap coalesced to be
-                        4,5,6,7,8,9,10.
-            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         self._check_folder_names([source_folder, destination_folder])
 
@@ -1580,28 +1545,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A string containing a success message or an error message.
 
         Example:
-            >>> copy_email("INBOX", "ARCHIVE", "1") # Copies emails with UID 1 to ARCHIVE from INBOX.
-            True, "Email(s) `1` copied successfully from `INBOX` to `ARCHIVE`."
+            >>> copy_email("INBOX", "ARCHIVE", "1") # Copies email with UID 1 to ARCHIVE from INBOX.
+            >>> copy_email("INBOX", "ARCHIVE", "1,2,3") # Copies emails with UID 1, 2, 3 to ARCHIVE from INBOX.
             >>> copy_email("INBOX", "ARCHIVE", "1:3") # Copies emails with UID 1,2,3 to ARCHIVE from INBOX.
-            True, "Email(s) `1:3` copied successfully from `INBOX` to `ARCHIVE`."
             >>> copy_email("INBOX", "ARCHIVE", "1,3:5") # Copies email with UID 1 and 3,4,5 to ARCHIVE from INBOX.
-            True, "Email(s) `1,3:5` copied successfully from `INBOX` to `ARCHIVE`."
             >>> copy_email("INBOX", "ARCHIVE", "1:*") # Copies all emails in the INBOX to ARCHIVE folder
-            True, "Email(s) `1:*` copied successfully from `INBOX` to `ARCHIVE`."
             >>> copy_email("INBOX", "ARCHIVE", "1,3:*") # Copies all emails in the INBOX to ARCHIVE folder, except email with UID 2
-            True, "Email(s) `1,3:*` copied successfully from `INBOX` to `ARCHIVE`."
 
         References:
-            uid_range is a sequence set as defined in RFC 9051:
-            sequence-set = Example: a message sequence number set of
-                        2,4:7,9,12:* for a mailbox with 15 messages is
-                        equivalent to 2,4,5,6,7,9,12,13,14,15
-                        Example: a message sequence number set of
-                        *:4,5:7 for a mailbox with 10 messages is
-                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
-                        be reordered and overlap coalesced to be
-                        4,5,6,7,8,9,10.
-            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         self._check_folder_names([source_folder, destination_folder])
 
@@ -1646,27 +1598,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Example:
             >>> delete_email("INBOX", "1") # Deletes email with UID 1
-            True, "Email(s) `1` deleted from `INBOX` successfully."
-            >>> delete_email("INBOX", "1:3") # Deletes email with UID 1,2,3
-            True, "Email(s) `1:3` deleted from `INBOX` successfully."
-            >>> delete_email("INBOX", "1,3:5") # Deletes email with UID 1 and 3,4,5
-            True, "Email(s) `1,3:5` deleted from `INBOX` successfully."
+            >>> delete_email("INBOX", "1,2,3") # Deletes emails with UID 1,2, 3
+            >>> delete_email("INBOX", "1:3") # Deletes emails with UID 1,2,3
+            >>> delete_email("INBOX", "1,3:5") # Deletes emails with UID 1 and 3,4,5
             >>> delete_email("INBOX", "1:*") # Deletes all emails in the folder
-            True, "Email(s) `1:*` deleted from `INBOX` successfully."
             >>> delete_email("INBOX", "1,3:*") # Deletes all emails in the folder except email with UID 2
-            True, "Email(s) `1,3:*` deleted from `INBOX` successfully."
 
         References:
-            uid_range is a sequence set as defined in RFC 9051:
-            sequence-set = Example: a message sequence number set of
-                        2,4:7,9,12:* for a mailbox with 15 messages is
-                        equivalent to 2,4,5,6,7,9,12,13,14,15
-                        Example: a message sequence number set of
-                        *:4,5:7 for a mailbox with 10 messages is
-                        equivalent to 10,9,8,7,6,5,4,5,6,7 and MAY
-                        be reordered and overlap coalesced to be
-                        4,5,6,7,8,9,10.
-            - https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         self._check_folder_names(folder)
 
