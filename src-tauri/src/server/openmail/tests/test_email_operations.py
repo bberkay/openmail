@@ -119,7 +119,7 @@ class TestEmailOperations(unittest.TestCase):
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, uid_after_move))
 
         self.__class__._created_test_folders.append(new_folder_name)
-        self.__class__._created_test_folders.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
 
     def test_move_multiple_email_operation(self):
         print("test_move_multiple_email_operation...")
@@ -151,7 +151,7 @@ class TestEmailOperations(unittest.TestCase):
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, sequence_set_after_move))
 
         self.__class__._created_test_folders.append(new_folder_name)
-        self.__class__._created_test_folders.extend(uids)
+        self.__class__._sent_test_email_uids.extend(uids)
 
     def test_copy_email_operation(self):
         print("test_copy_email_operation...")
