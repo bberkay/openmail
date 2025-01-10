@@ -33,23 +33,23 @@
         unmount(loader);
     }
 
-    function refreshMailboxes(event: Event) {
+    function refreshMailbox(event: Event) {
         makeAnApiRequest(event, async () => {
             const response = await ApiService.get(
                 SharedStore.server,
                 GetRoutes.GET_MAILBOXES,
                 {
                     pathParams: {
-                        accounts: SharedStore.accounts
-                            .map((account) => account.email_address)
-                            .join(",")
+                        accounts: SharedStore.accounts[0].email_address
+                    },
+                    queryParams: {
+                        folder: SharedStore.currentFolder
                     }
                 }
             );
 
             if (response.success && response.data) {
                 SharedStore.mailboxes = response.data;
-                SharedStore.currentFolder = response.data[0].result.folder;
             } else {
                 alert(response.message);
             }
@@ -206,7 +206,7 @@
             );
 
             if (response.success) {
-                paginateEmails(event, currentOffset, currentOffset + 10);
+                refreshMailbox(event);
             } else {
                 alert(response.message);
             }
@@ -227,7 +227,7 @@
             );
 
             if (response.success) {
-                paginateEmails(event, currentOffset, currentOffset + 10);
+                refreshMailbox(event);
             } else {
                 alert(response.message);
             }
@@ -345,7 +345,7 @@
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
         {/if}
     {:else}
-        <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailboxes}>Refresh</button>
+        <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailbox}>Refresh</button>
     {/if}
 </div>
 <hr />
