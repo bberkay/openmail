@@ -62,6 +62,15 @@ IMAP_SERVERS = MappingProxyType({
 })
 IMAP_PORT = 993
 
+# Regex Patterns
+SEQUENCE_SET_PATTERN = re.compile(r"""
+    ^(
+        (\d+(,|:))*\d+$ |
+        \*:((\d+(,|:))*\d+)?$ |
+        ((\d+(,|:))*\d+:)?\*$
+    )$
+""", re.VERBOSE)
+
 # Typo prevention
 CRLF = b'\r\n'
 INBOX = 'INBOX'
@@ -406,19 +415,37 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"There was an error while parsing command `{result}` result: {str(e)}") from None
 
-    def _is_sequence_set_valid(self, sequence_set: str, uids: list[int]) -> bool:
+    def _is_sequence_set_valid(self, sequence_set: str, uids: list[str]) -> bool:
         """
-        Parse the sequence set string and expand it into a sorted, comma-separated string of message sequence numbers.
-        """
-        pattern = r"""
-        ^(
-            (\d+(,|:))*\d+$ |
-            \*:((\d+(,|:))*\d+)?$ |
-            ((\d+(,|:))*\d+:)?\*$
-        )$
+        Validates whether the given `sequence_set` correctly represents a subset of the provided `uids`.
+
+        Args:
+            sequence_set (str): A string representing a set of sequences as defined in RFC 9051.
+            uids (list[int]): A sorted list of integer UIDs to validate against.
+
+        Returns:
+            bool: `True` if all UIDs derived from the `sequence_set` are present in the `uids` list.
+            `False` otherwise.
+
+        Raises:
+            ValueError: If the `sequence_set` does not match the expected pattern or contains invalid syntax.
+
+        Example:
+            >>> uids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            >>> _is_sequence_set_valid("1,3:6,9", uids)
+            True
+            >>> _is_sequence_set_valid("1:5,8:*", uids)
+            True
+            >>> _is_sequence_set_valid("1,3,20", uids)
+            False
+            >>> _is_sequence_set_valid("1:*:*", uids)
+            ValueError: Given sequence set `1:*:*` is not valid to be parsed.
+
+        References:
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
 
-        if not re.match(pattern, sequence_set, re.VERBOSE):
+        if not SEQUENCE_SET_PATTERN.match(sequence_set):
             raise ValueError(f"Given sequence set `${sequence_set}` is not valid to be parsed.")
 
         max_uid = uids[-1]
