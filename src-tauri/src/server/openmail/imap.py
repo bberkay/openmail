@@ -444,7 +444,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         References:
             https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
-
         if not SEQUENCE_SET_PATTERN.match(sequence_set):
             raise ValueError(f"Given sequence set `${sequence_set}` is not valid to be parsed.")
 
@@ -470,13 +469,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 if segment == '*':
                     expanded.add(max_uid)
                 else:
-                    expanded.add(int(segment))
+                    expanded.add(segment)
 
-        for sequence_set_uid in expanded:
+        for sequence_set_uid in map(str, expanded):
             if sequence_set_uid not in uids:
                 return False
 
-        return False
+        return True
 
     def idle(self):
         """
@@ -1117,13 +1116,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
             >>> is_email_exists("1,3:5") # Return True if all of the emails with with UID 1 and 3,4,5 are found.
 
         Raises:
-            IMAPManagerException: If the `sequence_set` contains "*".
+            ValueError: If the `sequence_set` contains "*".
 
         References:
             https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         if "*" in sequence_set:
-            raise IMAPManagerException(f"Error sequence_set can not contain `*` while checking emails `{sequence_set}`")
+            raise ValueError(f"Error sequence_set can not contain `*` while checking emails `{sequence_set}`")
 
         status, _ = self.select(folder, readonly=True)
         if not status:
@@ -1133,13 +1132,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if not status:
             raise IMAPManagerException(f"Error while checking emails `{sequence_set}`: `{status}`")
 
-        uids = data[0].decode().split(" ")
-        sequence_set = self._parse_sequence_set(sequence_set, uids)
-        for uid in sequence_set:
-            if uid not in uids:
-                return False
-
-        return True
+        return self._is_sequence_set_valid(
+            sequence_set,
+            data[0].decode().split(" ")
+        )
 
     def get_emails(
         self,
