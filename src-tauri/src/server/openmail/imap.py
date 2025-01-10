@@ -427,9 +427,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             bool: `True` if all UIDs derived from the `sequence_set` are present in the `uids` list.
             `False` otherwise.
 
-        Raises:
-            ValueError: If the `sequence_set` does not match the expected pattern or contains invalid syntax.
-
         Example:
             >>> uids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
             >>> _is_sequence_set_valid("1,3:6,9", uids)
@@ -445,7 +442,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         if not SEQUENCE_SET_PATTERN.match(sequence_set):
-            raise ValueError(f"Given sequence set `${sequence_set}` is not valid to be parsed.")
+            return False
 
         max_uid = uids[-1]
         expanded = set()
