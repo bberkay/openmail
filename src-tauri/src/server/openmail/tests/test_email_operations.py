@@ -110,13 +110,16 @@ class TestEmailOperations(unittest.TestCase):
         print("Waiting 2 seconds after move operation")
         time.sleep(2)
 
-        # Find moved email
+        # Check the moved email, it should not be in Inbox anymore.
+        self.assertFalse(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+
+        # Since the UID changes from folder to folder, find new UID and then check the target folder.
         self.__class__._openmail.imap.search_emails(new_folder_name)
         uid_after_move = self.__class__._openmail.imap.get_emails().emails[0].uid
-        self.assertFalse(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, uid_after_move))
 
         self.__class__._created_test_folders.append(new_folder_name)
+        self.__class__._created_test_folders.append(uid)
 
     def test_move_multiple_email_operation(self):
         print("test_move_multiple_email_operation...")
@@ -124,16 +127,31 @@ class TestEmailOperations(unittest.TestCase):
         print("Creating new folder to move email to...")
         new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
 
-        print(f"Sending new email to move to {new_folder_name}...")
-        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+        print(f"Sending new emails to move to {new_folder_name}...")
+        uids = []
+        for i in range(1, 4):
+            uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+            uids.append(uid)
 
-        print(f"Moving email {uid} to {new_folder_name}...")
-        status, _ = self.__class__._openmail.imap.move_email(Folder.Inbox, new_folder_name, uid)
+        print(f"Moving email {uids} to {new_folder_name}...")
+        sequence_set = ",".join(uids)
+        status, _ = self.__class__._openmail.imap.move_email(Folder.Inbox, new_folder_name, sequence_set)
         self.assertTrue(status)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, uid))
-        self.assertFalse(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+
+        print("Waiting 2 seconds after move operation")
+        time.sleep(2)
+
+        # Check the moved emails, they should not be in Inbox anymore.
+        self.assertFalse(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, sequence_set))
+
+        # Since the UIDs changes from folder to folder, find new UIDs and then check the target folder.
+        self.__class__._openmail.imap.search_emails(new_folder_name)
+        emails = [email.uid for email in self.__class__._openmail.imap.get_emails().emails]
+        sequence_set_after_move = ",".join(emails)
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, sequence_set_after_move))
 
         self.__class__._created_test_folders.append(new_folder_name)
+        self.__class__._created_test_folders.extend(uids)
 
     def test_copy_email_operation(self):
         print("test_copy_email_operation...")
@@ -147,11 +165,52 @@ class TestEmailOperations(unittest.TestCase):
         print(f"Copying email {uid} to {new_folder_name}...")
         status, _ = self.__class__._openmail.imap.copy_email(Folder.Inbox, new_folder_name, uid)
         self.assertTrue(status)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, uid))
+
+        print("Waiting 2 seconds after copy operation")
+        time.sleep(2)
+
+        # Check the copied email, it should not be moved from Inbox.
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+
+        # Since the UID changes from folder to folder, find new UID and then check the target folder.
+        self.__class__._openmail.imap.search_emails(new_folder_name)
+        uid_after_copy = self.__class__._openmail.imap.get_emails().emails[0].uid
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, uid_after_copy))
 
         self.__class__._created_test_folders.append(new_folder_name)
         self.__class__._sent_test_email_uids.append(uid)
+
+    def test_copy_multiple_email_operation(self):
+        print("test_copy_multiple_email_operation...")
+
+        print("Creating new folder to copy email to...")
+        new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+
+        print(f"Sending new emails to copy to {new_folder_name}...")
+        uids = []
+        for i in range(1, 4):
+            uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+            uids.append(uid)
+
+        print(f"Copying email {uids} to {new_folder_name}...")
+        sequence_set = ",".join(uids)
+        status, _ = self.__class__._openmail.imap.copy_email(Folder.Inbox, new_folder_name, sequence_set)
+        self.assertTrue(status)
+
+        print("Waiting 2 seconds after copy operation")
+        time.sleep(2)
+
+        # Check the copied emails, they should not be moved from Inbox.
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, sequence_set))
+
+        # Since the UIDs changes from folder to folder, find new UIDs and then check the target folder.
+        self.__class__._openmail.imap.search_emails(new_folder_name)
+        emails = [email.uid for email in self.__class__._openmail.imap.get_emails().emails]
+        sequence_set_after_move = ",".join(emails)
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(new_folder_name, sequence_set_after_move))
+
+        self.__class__._created_test_folders.append(new_folder_name)
+        self.__class__._sent_test_email_uids.extend(uids)
 
     def test_delete_email_operation(self):
         print("test_delete_email_operation...")
@@ -163,7 +222,33 @@ class TestEmailOperations(unittest.TestCase):
         status, _ = self.__class__._openmail.imap.delete_email(Folder.Inbox, uid)
         self.assertTrue(status)
 
+        print("Waiting 2 seconds after delete operation")
+        time.sleep(2)
+
+        # Check the deleted email, it should not be in Inbox anymore.
+        self.assertFalse(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
         self.__class__._sent_test_email_uids.append(uid)
+
+    def test_delete_multiple_email_operation(self):
+        print("test_delete_multiple_email_operation...")
+
+        print(f"Sending new emails to delete...")
+        uids = []
+        for i in range(1, 4):
+            uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+            uids.append(uid)
+
+        print(f"Deleting email {uids}...")
+        sequence_set = ",".join(uids)
+        status, _ = self.__class__._openmail.imap.delete_email(Folder.Inbox, sequence_set)
+        self.assertTrue(status)
+
+        print("Waiting 2 seconds after delete operation")
+        time.sleep(2)
+
+        # Check the deleted emails, they should not be in Inbox anymore.
+        self.assertFalse(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, sequence_set))
+        self.__class__._sent_test_email_uids.extend(uids)
 
     @classmethod
     def tearDownClass(cls):
