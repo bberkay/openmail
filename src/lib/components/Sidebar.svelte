@@ -338,6 +338,7 @@
 
         const optionsTemplate = `
             <div class="dropdown">
+                <button class="bg-primary" id="create-sub-folder">Add Sub Tag</button>
                 <button class="bg-primary" id="rename-folder">Rename</button>
                 <button class="bg-primary" id="delete-folder">Delete</button>
                 <button class="bg-primary" id="move-folder">Move</button>
@@ -345,6 +346,10 @@
         `;
 
         const addOptionFunctions = (optionsNode: HTMLElement) => {
+            optionsNode.querySelector<HTMLButtonElement>("#create-sub-folder")!.onclick = (e: MouseEvent) => {
+                showCreateFolder(e);
+            };
+
             optionsNode.querySelector<HTMLButtonElement>("#rename-folder")!.onclick = () => {
                 if (sidebarMounts.mountedRenameFolderForm)
                     return;
@@ -521,14 +526,16 @@
         }
     }
 
-    function showCreateFolder() {
+    function showCreateFolder(e: MouseEvent) {
         if (sidebarMounts.mountedCreateFolderForm)
             return;
 
         clearContent();
+        const parentFolderName = getFullFolderPath((e.target as HTMLElement).closest(".folder")!);
         sidebarMounts.mountedCreateFolderForm = mount(CreateFolderForm, {
             target: document.getElementById("create-folder-form-container")!,
             props: {
+                parentFolderName,
                 handleCreateFolderForm,
                 clearInput,
                 closeCreateFolderForm: () => {

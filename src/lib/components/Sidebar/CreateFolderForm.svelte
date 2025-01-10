@@ -3,16 +3,20 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
 
     interface Props {
+        parentFolderName: string | null,
         handleCreateFolderForm: (e: Event) => void,
         closeCreateFolderForm: () => void,
         clearInput: (e: Event) => void
     }
 
-    let { handleCreateFolderForm, closeCreateFolderForm, clearInput }: Props = $props();
+    let { parentFolderName, handleCreateFolderForm, closeCreateFolderForm, clearInput }: Props = $props();
 
     onMount(() => {
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
+        if (parentFolderName) {
+            document.getElementById("parent-folder")!.setAttribute("disabled", "true");
+        }
     });
 </script>
 
@@ -32,10 +36,14 @@
             <label for="parent-folder">Parent Folder</label>
             <div class="input-group">
                 <select name="parent_folder" id="parent-folder">
-                    <option value="" selected>Select Parent Folder</option>
-                    {#each SharedStore.customFolders[0].result as folder}
-                        <option value={folder}>{folder}</option>
-                    {/each}
+                    {#if parentFolderName}
+                        <option value={parentFolderName} selected>{parentFolderName}</option>
+                    {:else}
+                        <option value="" selected>Select Parent Folder</option>
+                        {#each SharedStore.customFolders[0].result as folder}
+                            <option value={folder}>{folder}</option>
+                        {/each}
+                    {/if}
                 </select>
                 <button type="button" onclick={clearInput}>X</button>
             </div>
