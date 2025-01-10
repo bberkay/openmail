@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { mount, unmount } from "svelte";
+    import { mount, onMount, unmount } from "svelte";
     import Loader from "$lib/components/Loader.svelte";
     import InboxItem from "./Inbox/InboxItem.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
@@ -19,7 +19,6 @@
     let { showContent }: Props = $props();
 
     async function makeAnApiRequest(event: Event, callback: () => Promise<void>) {
-        emailSelection = [];
         const eventButton = event.target as HTMLButtonElement;
         eventButton.disabled = true;
         const temp = eventButton.innerText;
@@ -28,6 +27,7 @@
 
         await callback();
 
+        emailSelection = [];
         eventButton.disabled = false;
         eventButton.innerText = temp;
         unmount(loader);
@@ -121,7 +121,7 @@
         }
     }
 
-    function markEmail(event: Event, mark: string | Mark, folder: string | Folder = Folder.Inbox) {
+    function markEmail(event: Event, mark: string | Mark) {
         makeAnApiRequest(event, async () => {
             const response = await ApiService.post(
                 SharedStore.server,
@@ -130,7 +130,7 @@
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
                     mark: mark,
                     sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    folder: folder
+                    folder: SharedStore.currentFolder
                 }
             );
 
@@ -148,7 +148,7 @@
         })
     }
 
-    function unmarkEmail(event: Event, mark: string | Mark, folder: string | Folder = Folder.Inbox) {
+    function unmarkEmail(event: Event, mark: string | Mark) {
         makeAnApiRequest(event, async () => {
             const response = await ApiService.post(
                 SharedStore.server,
@@ -157,7 +157,7 @@
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
                     mark: mark,
                     sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    folder: folder
+                    folder: SharedStore.currentFolder
                 }
             );
 
@@ -176,19 +176,19 @@
     }
 
     function markEmailsAsRead(event: Event) {
-        markEmail(event, Mark.Seen, Folder.Inbox);
+        markEmail(event, Mark.Seen);
     }
 
     function markEmailsAsUnread(event: Event) {
-        unmarkEmail(event, Mark.Seen, Folder.Inbox);
+        unmarkEmail(event, Mark.Seen);
     }
 
     function markEmailsAsImportant(event: Event) {
-        markEmail(event, Mark.Flagged, Folder.Inbox);
+        markEmail(event, Mark.Flagged);
     }
 
     function markEmailsAsNotImportant(event: Event) {
-        unmarkEmail(event, Mark.Flagged, Folder.Inbox);
+        unmarkEmail(event, Mark.Flagged);
     }
 
     function deleteEmails(event: Event) {
@@ -201,12 +201,12 @@
                 {
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
                     sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    folder: Folder.Inbox
+                    folder: SharedStore.currentFolder
                 }
             );
 
             if (response.success) {
-                SharedStore.mailboxes[0].result.emails = SharedStore.mailboxes[0].result.emails.filter((email: EmailSummary) => !emailSelection.includes(email.uid));
+                paginateEmails(event, currentOffset, currentOffset + 10);
             } else {
                 alert(response.message);
             }
@@ -221,7 +221,7 @@
                 {
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
                     sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    source_folder: Folder.Inbox,
+                    source_folder: SharedStore.currentFolder,
                     destination_folder: moveFolderSelection
                 }
             );
@@ -244,7 +244,7 @@
                 {
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
                     sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    source_folder: Folder.Inbox,
+                    source_folder: SharedStore.currentFolder,
                     destination_folder: copyFolderSelection
                 }
             );
@@ -256,17 +256,55 @@
             copyFolderSelection = "Copy to";
         })
     }
+
+    function isAllSelectedEmailsAreMarked(mark: Mark): boolean {
+        return emailSelection.every((uid) => {
+            return SharedStore.mailboxes[0].result.emails.find(email => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && email.flags.includes(mark));
+        });
+    }
+
+    function isAllSelectedEmailsAreUnmarked(mark: Mark, unmark: Mark): boolean {
+        return emailSelection.every((uid) => {
+            return SharedStore.mailboxes[0].result.emails.find(email => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && (!email.flags.includes(mark) || email.flags.includes(unmark)));
+        });
+    }
+
+    function isAllSelectedEmailsAreMarkedAsFlagged(): boolean {
+        return isAllSelectedEmailsAreMarked(Mark.Flagged);
+    }
+
+    function isAllSelectedEmailsAreMarkedAsSeen(): boolean {
+        return isAllSelectedEmailsAreMarked(Mark.Seen);
+    }
+
+    function isAllSelectedEmailsAreMarkedAsNotFlagged(): boolean {
+        return isAllSelectedEmailsAreUnmarked(Mark.Flagged, Mark.Unflagged);
+    }
+
+    function isAllSelectedEmailsAreMarkedAsNotSeen(): boolean {
+        return isAllSelectedEmailsAreUnmarked(Mark.Seen, Mark.Unseen);
+    }
 </script>
 
 
 <h2>{SharedStore.currentFolder}</h2>
 <hr />
 <div style="display:flex;justify-content:space-between;align-items:center;">
-    <button class = "bg-primary" onclick={getPreviousEmails} disabled={currentOffset <= 10}>Previous</button>
+    {#if currentOffset < 10}
+        <button class = "bg-primary" disabled>Previous</button>
+    {:else}
+        <button class = "bg-primary" onclick={getPreviousEmails}>Previous</button>
+    {/if}
+
     <small>
         {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
     </small>
-    <button class = "bg-primary" onclick={getNextEmails} disabled={currentOffset >= totalEmailCount}>Next</button>
+
+    {#if currentOffset >= totalEmailCount}
+        <button class = "bg-primary" disabled>Next</button>
+    {:else}
+        <button class = "bg-primary" onclick={getNextEmails}>Next</button>
+    {/if}
 </div>
 <hr />
 <div style="display:flex;">
@@ -290,10 +328,22 @@
                 <option value="{folder}">{folder}</option>
             {/each}
         </select>
-        <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
-        <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsNotImportant}>Mark as Not Important</button>
-        <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsRead}>Mark as Read</button>
-        <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
+        {#if isAllSelectedEmailsAreMarkedAsFlagged()}
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsNotImportant}>Mark as Not Important</button>
+        {:else if isAllSelectedEmailsAreMarkedAsNotFlagged()}
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
+        {:else}
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsNotImportant}>Mark as Not Important</button>
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
+        {/if}
+        {#if isAllSelectedEmailsAreMarkedAsSeen()}
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
+        {:else if isAllSelectedEmailsAreMarkedAsNotSeen()}
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsRead}>Mark as Read</button>
+        {:else}
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsRead}>Mark as Read</button>
+            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
+        {/if}
     {:else}
         <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailboxes}>Refresh</button>
     {/if}
