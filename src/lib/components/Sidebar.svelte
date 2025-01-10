@@ -531,7 +531,10 @@
             return;
 
         clearContent();
-        const parentFolderName = getFullFolderPath((e.target as HTMLElement).closest(".folder")!);
+        let parentFolderName = null;
+        const parentFolderNode = (e.target as HTMLElement).closest(".folder") as HTMLElement;
+        if (parentFolderNode) parentFolderName = getFullFolderPath(parentFolderNode);
+
         sidebarMounts.mountedCreateFolderForm = mount(CreateFolderForm, {
             target: document.getElementById("create-folder-form-container")!,
             props: {
@@ -564,6 +567,49 @@
             sidebarMounts.mountedDeleteFolderForm = null
         }
     }
+
+    function refreshFolders(e: Event) {
+        makeAnApiRequest(e, async () => {
+            const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_FOLDERS,
+            {
+                pathParams: {
+                    accounts: SharedStore.accounts[0].email_address
+                }
+            }
+        );
+
+        if (response.success && response.data) {
+            const standardFolderList = Object.values(Folder).map(folder => folder.trim().toLowerCase() + ":");
+            response.data.forEach((account, i) => {
+                // Standard folders
+                SharedStore.standardFolders[i] = {
+                    email_address: account.email_address,
+                    result: []
+                };
+                standardFolderList.forEach((standardFolder) => {
+                    const matchedFolder = account.result.find(
+                        currentFolder => currentFolder.trim().toLowerCase().startsWith(standardFolder)
+                    );
+                    if (matchedFolder)
+                        SharedStore.standardFolders[i].result.push(matchedFolder);
+                });
+
+                // Custom folders
+                SharedStore.customFolders[i] = {
+                    email_address: account.email_address,
+                    result: []
+                };
+                SharedStore.customFolders[i].result = account.result.filter((currentFolder) => {
+                    return SharedStore.standardFolders[i].result.includes(currentFolder) !== true
+                });
+            })
+        } else {
+            alert(response.message);
+        }
+        });
+    }
 </script>
 
 <div class="card">
@@ -586,7 +632,10 @@
         <div
             style="border-bottom:1px solid dimgrey;display:flex;align-items:center;justify-content:space-between;padding:10px 0;"
         >
-            <span>Tags</span>
+            <div>
+                <span>Tags</span>
+                <button onclick={refreshFolders} class="bg-primary">&#x21bb;</button>
+            </div>
             <button onclick={showCreateFolder} class="bg-primary">+</button>
         </div>
         <div id="custom-folders"></div>
