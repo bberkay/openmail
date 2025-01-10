@@ -122,18 +122,18 @@ class FileSystem:
 
         return cls._instance
 
-    def _create_structure(self, obj: FileObject | DirObject, parent_path: str = ""):
+    def _create_structure(self, obj: FileObject | DirObject, parent_path: str = "", remove_exist: bool = False):
         """Recursive function to create the file system structure."""
         fullpath = os.path.join(parent_path, obj.name)
 
         if isinstance(obj, DirObject):
-            obj.create(fullpath, overwrite=True)
+            obj.create(fullpath, overwrite=remove_exist)
 
             for child in obj.children:
                 self._create_structure(child, fullpath)
 
         elif isinstance(obj, FileObject):
-            obj.create(fullpath, overwrite=True)
+            obj.create(fullpath, overwrite=remove_exist)
 
     @property
     def root(self) -> DirObject:
@@ -157,4 +157,4 @@ class FileSystem:
                 )
             ],
         )
-        self._create_structure(self._root)
+        self._create_structure(self._root, remove_exist=True)
