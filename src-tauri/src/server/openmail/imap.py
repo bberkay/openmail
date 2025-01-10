@@ -406,6 +406,51 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"There was an error while parsing command `{result}` result: {str(e)}") from None
 
+    def _is_sequence_set_valid(self, sequence_set: str, uids: list[int]) -> bool:
+        """
+        Parse the sequence set string and expand it into a sorted, comma-separated string of message sequence numbers.
+        """
+        pattern = r"""
+        ^(
+            (\d+(,|:))*\d+$ |
+            \*:((\d+(,|:))*\d+)?$ |
+            ((\d+(,|:))*\d+:)?\*$
+        )$
+        """
+
+        if not re.match(pattern, sequence_set, re.VERBOSE):
+            raise ValueError(f"Given sequence set `${sequence_set}` is not valid to be parsed.")
+
+        max_uid = uids[-1]
+        expanded = set()
+        segments = sequence_set.split(',')
+
+        for segment in segments:
+            if ':' in segment:
+                parts = segment.split(':')
+                if parts[0] == '*':
+                    start = max_uid
+                else:
+                    start = int(parts[0])
+
+                if parts[-1] == '*':
+                    end = max_uid
+                else:
+                    end = int(parts[-1])
+
+                expanded.update(list(range(start, end + 1)), max(start, end))
+            else:
+                if segment == '*':
+                    expanded.add(max_uid)
+                else:
+                    expanded.add(int(segment))
+
+        for sequence_set_uid in expanded:
+            if sequence_set_uid not in uids:
+                return False
+
+        return False
+
     def idle(self):
         """
         Initiates the IMAP IDLE command to start monitoring changes
@@ -1061,8 +1106,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if not status:
             raise IMAPManagerException(f"Error while checking emails `{sequence_set}`: `{status}`")
 
-        sequence_set = sequence_set.split(",") # TODO: Create _parse_sequence_set method.
         uids = data[0].decode().split(" ")
+        sequence_set = self._parse_sequence_set(sequence_set, uids)
         for uid in sequence_set:
             if uid not in uids:
                 return False
