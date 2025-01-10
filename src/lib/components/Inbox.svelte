@@ -8,7 +8,8 @@
 
     let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
     let currentOffset = $state(1);
-    let folderSelection = $state("Move to");
+    let moveFolderSelection = $state("Move to");
+    let copyFolderSelection = $state("Copy to");
     let emailSelection: string[] = $state([]);
 
     interface Props {
@@ -221,7 +222,7 @@
                     account: SharedStore.accounts.map((account) => account.email_address).join(", "),
                     sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
                     source_folder: Folder.Inbox,
-                    destination_folder: folderSelection
+                    destination_folder: moveFolderSelection
                 }
             );
 
@@ -231,7 +232,28 @@
                 alert(response.message);
             }
 
-            folderSelection = "Move to";
+            moveFolderSelection = "Move to";
+        })
+    }
+
+    function copyEmail(event: Event) {
+        makeAnApiRequest(event, async () => {
+            const response = await ApiService.post(
+                SharedStore.server,
+                PostRoutes.MOVE_EMAIL,
+                {
+                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
+                    source_folder: Folder.Inbox,
+                    destination_folder: copyFolderSelection
+                }
+            );
+
+            if (!response.success) {
+                alert(response.message);
+            }
+
+            copyFolderSelection = "Copy to";
         })
     }
 </script>
@@ -256,8 +278,14 @@
         </span>
         <br>
         <button class = "bg-primary" style="margin-right:5px;" onclick={deleteEmails}>Delete</button>
-        <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={folderSelection} onchange={moveEmail}>
+        <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={moveFolderSelection} onchange={moveEmail}>
             <option disabled selected>Move to</option>
+            {#each SharedStore.customFolders[0].result as folder}
+                <option value="{folder}">{folder}</option>
+            {/each}
+        </select>
+        <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={copyFolderSelection} onchange={copyEmail}>
+            <option disabled selected>Copy to</option>
             {#each SharedStore.customFolders[0].result as folder}
                 <option value="{folder}">{folder}</option>
             {/each}
