@@ -1055,17 +1055,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 uids=uids
             )
 
-        folder_select_status = None
-        if folder:
-            folder_select_status, _ = self.select(folder, readonly=True)
-        elif self.state != "SELECTED":
+        if not folder:
             folder = Folder.All if search else Folder.Inbox
-            folder_select_status, _ = self.select(folder, readonly=True)
-        else:
-            folder_select_status = True
 
-        if not folder_select_status:
-            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{folder_select_status}`")
+        status, _ = self.select(folder, readonly=True)
+        if not status:
+            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
 
         if search:
             search_criteria_query = self.build_search_criteria_query(search).encode("utf-8")
