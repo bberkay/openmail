@@ -3,10 +3,11 @@ import unittest
 
 from openmail import OpenMail
 from openmail.imap import Mark, Folder
-from openmail.types import EmailToSend
+from openmail.types import EmailToSend, SearchCriteria
 
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
+from .utils.sample_file_generator import SampleDocumentGenerator
 
 class TestFetchOperations(unittest.TestCase):
 
@@ -22,53 +23,38 @@ class TestFetchOperations(unittest.TestCase):
             raise ValueError("At least 3 credentials are required.")
 
         cls._sender_email = credentials[0]["email"]
-        cls._receiver_emails = [credential["email"] for credential in credentials[1:]]
+        cls._receiver_emails = [credential["email"] for credential in credentials]
         cls._openmail.connect(cls._sender_email, credentials[0]["password"])
         print(f"Connected to {cls._sender_email}...")
 
-        cls._sent_emails: list[EmailToSend] = [
+        cls._sent_test_email_uids = []
+        cls._created_test_folders = []
 
-        ]
-
-        cls._simple_email = EmailToSend(
-            sender=cls._sender_email,
-            receiver=cls._receiver_emails,
-            subject=NameGenerator.random_subject_with_uuid(),
-            body=NameGenerator.random_body_with_uuid(),
-            cc=cls._email,
-            bcc=cls._email,
-        )
-        cls._simple_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
-            cls._openmail,
-            cls._sent_simple_mail
-        )
-
-        cls._attachment_email = EmailToSend(
-            sender=cls._sender_email,
-            receiver=cls._receiver_emails,
-            subject=NameGenerator.random_subject_with_uuid(),
-            body=NameGenerator.random_body_with_uuid(),
-            cc=cls._email,
-            bcc=cls._email,
-        )
-        cls._attachment_email_uid = DummyOperator.send_test_email_to_self_and_get_uid(
-            cls._openmail,
-            cls._sent_attachment_mail
-        )
-
-        cls._sent_email_uids.append(single_receiver_uid, multiple_receivers_uid)
-
-        cls._custom_test_folder_name = DummyOperator.create_test_folder_and_get_name(
-            cls._openmail
-        )
+        # Send Test Emails
+        """cls._sent_test_emails: dict[str, EmailToSend] = {
+            "multiple_receiver_single_file_attachment": EmailToSend(
+                sender=cls._sender_email,
+                receiver=cls._receiver_emails,
+                subject=NameGenerator.random_subject_with_uuid(),
+                body=NameGenerator.random_body_with_uuid(),
+                attachments=[SampleDocumentGenerator().as_filepath()]
+            ),
+            "single_receiver_multi_file_attachment": EmailToSend(
+                sender=cls._sender_email,
+                receiver=cls._receiver_emails[0],
+                subject=NameGenerator.random_subject_with_uuid(),
+                body=NameGenerator.random_body_with_uuid(),
+                attachments=SampleDocumentGenerator().as_filepath(count=2, all_different=True)
+            )
+        }"""
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
 
-        fake_uids = list(range(1, 21))
+        fake_uids = list(map(str, range(1, 21)))
+
         valid_inputs = [
            "1,2,3",
-           "1,2,21,22,23",
            "1,2,3,4,5,6,7",
            "1:6:7:9",
            "1,3,4:6:7:9",
@@ -77,8 +63,11 @@ class TestFetchOperations(unittest.TestCase):
            "2,4:7,9,12:*",
            "*:4,5:7"
         ]
+        for valid_input in valid_inputs:
+            self.assertTrue(self.__class__._openmail.imap._is_sequence_set_valid(valid_input, fake_uids))
 
         invalid_inputs = [
+            "1,2,21,22,23", # There is no 21, 22 and 23 in fake_uids list
             "1,2:*:4,5",
             "1:*:*",
             "1,*",
@@ -89,28 +78,45 @@ class TestFetchOperations(unittest.TestCase):
             "1,3,,5:10",
             "1.2.3:5"
         ]
-
-        for valid_input in valid_inputs:
-            self.assertTrue(self.__class__._openmail.imap._is_sequence_set_valid(
-                valid_input,
-                fake_uids
-            ))
-
         for invalid_input in invalid_inputs:
-            self.assertFalse(self.__class__._openmail.imap._is_sequence_set_valid(
-                invalid_input,
-                fake_uids
-            ))
+            self.assertFalse(self.__class__._openmail.imap._is_sequence_set_valid(invalid_input, fake_uids))
 
-    def test_search_and_fetch_simple(self):
-        print("test_fetch_simple...")
+    def test_is_email_exists(self):
+        print("test_is_email_exists...")
 
-        print(f"Searching emails from {Folder.Inbox}...")
-        self.__class__._openmail.imap.search_emails()
+        new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail)
 
-        print(f"Fetching emails from {Folder.Inbox}...")
-        mailbox = self.__class__._openmail.imap.get_emails(0, 2)
-        self.assertEqual(len(mailbox.emails), 3)
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.assertFalse(self.__class__._openmail.imap.is_email_exists(new_created_empty_test_folder, uid))
+
+        self.__class__._created_test_folders.append(new_created_empty_test_folder)
+        self.__class__._sent_test_email_uids.append(uid)
+
+    def test_fetch_basic_email(self):
+        print("test_fetch_basic_email...")
+
+        # single_receiver_cc_bcc
+        basic_email = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._receiver_emails[0],
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=NameGenerator.random_body_with_uuid(),
+            cc=self.__class__._receiver_emails[1],
+            bcc=self.__class__._receiver_emails[2],
+        )
+        basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, basic_email)
+
+        self.__class__._openmail.imap.search_emails(
+            search=SearchCriteria(
+                subject=basic_email.subject
+            )
+        )
+
+        mailbox = self.__class__._openmail.imap.get_emails()
+        self.assertEqual(len(mailbox.emails), 1)
+
+        self.__class__._sent_test_email_uids.append(basic_email.uid)
 
     def test_fetch_offset_less_than_zero(self):
         print("test_fetch_simple...")
@@ -159,3 +165,9 @@ class TestFetchOperations(unittest.TestCase):
         print(f"Fetching emails from {Folder.Inbox}...")
         mailbox = self.__class__._openmail.imap.get_emails(0, 3)
         self.assertGreater(len(mailbox.emails), 0)"""
+
+    @classmethod
+    def tearDownClass(cls):
+        print("Cleaning up test `TestFolderOperations`...")
+        # TODO: Cleanup
+        cls._openmail.disconnect()
