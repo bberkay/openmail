@@ -428,15 +428,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
             `False` otherwise.
 
         Example:
-            >>> uids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            >>> uids = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
             >>> _is_sequence_set_valid("1,3:6,9", uids)
             True
             >>> _is_sequence_set_valid("1:5,8:*", uids)
             True
             >>> _is_sequence_set_valid("1,3,20", uids)
             False
-            >>> _is_sequence_set_valid("1:*:*", uids)
-            ValueError: Given sequence set `1:*:*` is not valid to be parsed.
 
         References:
             https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
@@ -452,16 +450,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if ':' in segment:
                 parts = segment.split(':')
                 if parts[0] == '*':
-                    start = max_uid
+                    start = int(max_uid)
                 else:
                     start = int(parts[0])
 
                 if parts[-1] == '*':
-                    end = max_uid
+                    end = int(max_uid)
                 else:
                     end = int(parts[-1])
 
-                expanded.update(list(range(start, end + 1)), max(start, end))
+                expanded.update(list(range(start, end + 1)), [max(start, end)])
             else:
                 if segment == '*':
                     expanded.add(max_uid)
