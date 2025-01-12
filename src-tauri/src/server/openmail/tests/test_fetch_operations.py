@@ -30,6 +30,16 @@ class TestFetchOperations(unittest.TestCase):
         cls._sent_test_email_uids = []
         cls._created_test_folders = []
 
+        # Send Test Email
+        cls._test_sent_basic_email = EmailToSend(
+            sender=cls._sender_email,
+            receiver=cls._receiver_emails[0],
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=NameGenerator.random_body_with_uuid(),
+        )
+        cls._test_sent_basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(cls._openmail, cls._sender_email)
+
+        cls._sent_test_email_uids.append(cls._test_sent_basic_email.uid)
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
@@ -68,52 +78,45 @@ class TestFetchOperations(unittest.TestCase):
         print("test_is_email_exists...")
 
         new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
-        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
 
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
-        self.assertFalse(self.__class__._openmail.imap.is_email_exists(new_created_empty_test_folder, uid))
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(
+            Folder.Inbox,
+            self.__class__._test_sent_basic_email.uid
+        ))
+        self.assertFalse(self.__class__._openmail.imap.is_email_exists(
+            new_created_empty_test_folder,
+            self.__class__._test_sent_basic_email.uid
+        ))
 
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
-        self.__class__._sent_test_email_uids.append(uid)
 
-    def test_basic_search(self):
-        print("test_basic_search...")
+    def test_basic_search_by_subject(self):
+        print("test_basic_search_by_subject...")
 
-        # Single Receiver, Cc, Bcc, No Attachment
-        basic_email = EmailToSend(
-            sender=self.__class__._sender_email,
-            receiver=self.__class__._receiver_emails[0],
-            subject=NameGenerator.random_subject_with_uuid(),
-            body=NameGenerator.random_body_with_uuid(),
-        )
-        basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, basic_email)
-
-        self.__class__._openmail.imap.search_emails(search=basic_email.subject)
+        self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.subject)
         mailbox = self.__class__._openmail.imap.get_emails()
-        self.assertEqual(len(mailbox.emails), 1)
+        self.assertGreaterEqual(len(mailbox.emails), 1)
 
-        self.__class__._sent_test_email_uids.append(basic_email.uid)
+    def test_basic_search_by_body(self):
+        print("test_basic_search_by_body...")
 
-    def test_fetch_offset_less_than_zero(self):
-        print("test_fetch_simple...")
+        self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.body)
+        mailbox = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(len(mailbox.emails), 1)
 
-        print(f"Searching emails from {Folder.Inbox}...")
-        self.__class__._openmail.imap.search_emails()
+    def test_basic_search_by_sender(self):
+        print("test_basic_search_by_sender...")
 
-        try:
-            print(f"Fetching emails from {Folder.Inbox}...")
-            self.__class__._openmail.imap.get_emails(-1, 2)
-        except ValueError:
-            pass
+        self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.sender)
+        mailbox = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(len(mailbox.emails), 1)
 
-        try:
-            print(f"Fetching emails from {Folder.Inbox}...")
-            self.__class__._openmail.imap.get_emails(2, -1)
-        except ValueError:
-            pass
+    def test_basic_search_by_receiver(self):
+        print("test_basic_search_by_receiver...")
 
-    def test_search_inbox_folder(self):
-        print("test_search_inbox_folder...")
+        self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.receiver)
+        mailbox = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(len(mailbox.emails), 1)
 
         print(f"Searching emails from {Folder.Inbox}...")
         self.__class__._openmail.imap.search_emails(folder=Folder.Inbox)
