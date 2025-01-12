@@ -76,26 +76,19 @@ class TestFetchOperations(unittest.TestCase):
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
         self.__class__._sent_test_email_uids.append(uid)
 
-    def test_fetch_basic_email(self):
-        print("test_fetch_basic_email...")
+    def test_basic_search(self):
+        print("test_basic_search...")
 
-        # single_receiver_cc_bcc
+        # Single Receiver, Cc, Bcc, No Attachment
         basic_email = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._receiver_emails[0],
             subject=NameGenerator.random_subject_with_uuid(),
             body=NameGenerator.random_body_with_uuid(),
-            cc=self.__class__._receiver_emails[1],
-            bcc=self.__class__._receiver_emails[2],
         )
         basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, basic_email)
 
-        self.__class__._openmail.imap.search_emails(
-            search=SearchCriteria(
-                subject=basic_email.subject
-            )
-        )
-
+        self.__class__._openmail.imap.search_emails(search=basic_email.subject)
         mailbox = self.__class__._openmail.imap.get_emails()
         self.assertEqual(len(mailbox.emails), 1)
 
