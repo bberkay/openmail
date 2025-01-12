@@ -133,15 +133,16 @@ class TestFetchOperations(unittest.TestCase):
 
         self.__class__._sent_test_email_uids.append(uid)
 
-    """def test_fetch_basic(self):
-        print("test_fetch_standard...")
+    def test_fetch_with_pagination(self):
+        print("test_fetch_with_pagination...")
 
-        print(f"Searching emails from {Folder.Inbox}...")
-        self.__class__._openmail.imap.search_emails()
+        for i in range(1, 4):
+            self.__class__._sent_test_email_uids.append(
+                DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
+            )
 
-        print(f"Fetching emails from {Folder.Inbox}...")
-        mailbox = self.__class__._openmail.imap.get_emails(0, 3)
-        self.assertGreater(len(mailbox.emails), 0)"""
+        self.__class__._openmail.imap.search_emails(folder=Folder.Inbox)
+        self.assertEqual(len(self.__class__._openmail.imap.get_emails(0, 2).emails), 2)
 
     @classmethod
     def tearDownClass(cls):
