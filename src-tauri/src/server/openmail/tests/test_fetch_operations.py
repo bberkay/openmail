@@ -125,25 +125,74 @@ class TestFetchOperations(unittest.TestCase):
         mailbox = self.__class__._openmail.imap.get_emails(0, 2)
         self.assertGreater(len(mailbox.emails), 0)
 
-    def test_search_in_folder_other_than_inbox(self):
-        print("test_search_in_folder_other_than_inbox...")
+        # Exclude
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            subject=complex_email.subject,
+            exclude=complex_email.body,
+        ))
+        self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 0)
 
-        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
-        self.__class__._openmail.imap.search_emails(folder=Folder.Sent)
+        # Has attachment
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            senders=complex_email.sender,
+            receivers=complex_email.receiver,
+            has_attachments=True
+        ))
         self.assertGreaterEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)
 
-        self.__class__._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(complex_email.uid)
+
+    def test_search_in_custom_folder(self):
+        print("test_search_in_custom_folder...")
+
+        new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
+        self.__class__._openmail.imap.move_email(Folder.Inbox, new_created_empty_test_folder, uid)
+
+        print("Waiting 2 seconds after move operation")
+        time.sleep(2)
+
+        self.__class__._openmail.imap.search_emails(folder=new_created_empty_test_folder)
+        found_emails = self.__class__._openmail.imap.get_emails()
+        self.assertEqual(found_emails.total, 1)
+
+        self.__class__._created_test_folders.append(new_created_empty_test_folder)
+        self.__class__._sent_test_email_uids.extend([email.uid for email in found_emails.emails])
 
     def test_fetch_with_pagination(self):
         print("test_fetch_with_pagination...")
 
-        for i in range(1, 4):
-            self.__class__._sent_test_email_uids.append(
+        new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+
+        uids_list = []
+        count = 3
+        for i in range(1, count + 1):
+            uids_list.append(
                 DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
             )
 
-        self.__class__._openmail.imap.search_emails(folder=Folder.Inbox)
-        self.assertEqual(len(self.__class__._openmail.imap.get_emails(0, 2).emails), 2)
+        self.__class__._openmail.imap.move_email(Folder.Inbox, new_created_empty_test_folder, ",".join(uids_list))
+
+        print("Waiting 2 seconds after move operation")
+        time.sleep(2)
+
+        self.__class__._openmail.imap.search_emails(folder=new_created_empty_test_folder)
+
+        half = math.floor(count / 2)
+
+        one_part_of_emails = self.__class__._openmail.imap.get_emails(0, half)
+        one_part_of_emails_uid_list = [email.uid for email in one_part_of_emails.emails]
+        self.assertEqual(one_part_of_emails.total, half - 0)
+        self.assertEqual([email.uid for email in one_part_of_emails.emails], one_part_of_emails_uid_list[:half])
+
+        other_part_of_emails = self.__class__._openmail.imap.get_emails(half, count).emails
+        other_part_of_emails_uid_list = [email.uid for email in other_part_of_emails.emails]
+        self.assertEqual(other_part_of_emails.total, count - half)
+        self.assertEqual([email.uid for email in other_part_of_emails.emails], other_part_of_emails_uid_list[half:count])
+
+        self.__class__._created_test_folders.append(new_created_empty_test_folder)
+        self.__class__._sent_test_email_uids.extend(one_part_of_emails_uid_list + other_part_of_emails_uid_list)
 
     @classmethod
     def tearDownClass(cls):
