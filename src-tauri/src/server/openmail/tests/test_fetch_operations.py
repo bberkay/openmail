@@ -122,8 +122,6 @@ class TestFetchOperations(unittest.TestCase):
         mailbox = self.__class__._openmail.imap.get_emails(0, 2)
         self.assertGreater(len(mailbox.emails), 0)
 
-    def test_search_custom_folder(self):
-        print("test_search_custom_folder...")
     def test_search_in_folder_other_than_inbox(self):
         print("test_search_in_folder_other_than_inbox...")
 
