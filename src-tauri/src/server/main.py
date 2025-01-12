@@ -337,8 +337,8 @@ async def get_mailboxes(
     accounts: str,
     folder: Optional[str] = None,
     search: Optional[str] = None,
-    offset_start: Optional[int] = 0,
-    offset_end: Optional[int] = 10,
+    offset_start: Optional[int] = None,
+    offset_end: Optional[int] = None,
 ) -> Response[list[OpenMailTaskResult]]:
     try:
         response = check_if_email_client_is_exists(accounts)

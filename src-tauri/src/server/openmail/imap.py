@@ -91,7 +91,7 @@ UNKNOWN_PLACEHOLDERS = MappingProxyType({
     "body": "No Body",
     "date": "Unknown Date",
 })
-GET_EMAILS_OFFSET_START = 0
+GET_EMAILS_OFFSET_START = 1
 GET_EMAILS_OFFSET_END = 10
 BODY_SHORT_THRESHOLD = 100
 MAX_FOLDER_NAME_LENGTH = 1024
@@ -1138,26 +1138,33 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Fetch emails from a list of uids.
 
         Args:
-            offset_start (int, optional): Starting index of the emails to fetch. Defaults to 0.
+            offset_start (int, optional): Starting index of the emails to fetch. Defaults to 1.
             offset_end (int, optional): Ending index of the emails to fetch. Defaults to 10.
 
         Returns:
             Mailbox: Dataclass containing the fetched emails, folder, and total number of emails.
 
         Example:
-            >>> get_emails(0, 2)
+            >>> get_emails(1, 2)
             Mailbox(folder='INBOX', emails=[EmailSummary(uid="1", sender="a@gmail.com", ...), EmailSummary(uid="2", sender="b@gmail.com", ...)], total=2)
         """
         if not self._searched_emails or not self._searched_emails.uids or not self._searched_emails.uids[0]:
             raise IMAPManagerException("No emails have been searched yet. Call `search_emails` first.")
 
         uids_len = len(self._searched_emails.uids)
-        if offset_start < 0:
-            raise ValueError(f"Invalid `offset_start`: {offset_start}. `offset_start` must be greater than or equal to 0.")
-        if offset_end < 0:
-            raise ValueError(f"Invalid `offset_end`: {offset_end}. `offset_end` must be greater than or equal to 0.")
-        if offset_start > offset_end:
+
+        if offset_start and offset_end and offset_start > offset_end:
             raise ValueError(f"Invalid `offset_start`: `offset_start` must be less then `offset_end`.")
+
+        if not offset_start:
+            offset_start = GET_EMAILS_OFFSET_START
+        elif offset_start < 1:
+            raise ValueError(f"Invalid `offset_start`: {offset_start}. `offset_start` must be greater than or equal to 1.")
+
+        if not offset_end:
+            offset_end = GET_EMAILS_OFFSET_END
+        elif offset_end < 1:
+            raise ValueError(f"Invalid `offset_end`: {offset_end}. `offset_end` must be greater than or equal to 1.")
 
         if uids_len == 0:
             return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
@@ -1166,10 +1173,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         sequence_set = ""
         emails = []
         try:
-            if offset_start >= uids_len:
-                offset_start = uids_len - 1
-            if offset_end >= uids_len:
-                offset_end = uids_len
+            offset_start = (uids_len - 1 if offset_start >= uids_len else offset_start) - 1
+            offset_end = (uids_len if offset_end >= uids_len else offset_end) + 1
 
             sequence_set = ",".join(map(str, self._searched_emails.uids[offset_start:offset_end]))
             status, messages = self.uid(
