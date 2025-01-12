@@ -124,13 +124,14 @@ class TestFetchOperations(unittest.TestCase):
 
     def test_search_custom_folder(self):
         print("test_search_custom_folder...")
+    def test_search_in_folder_other_than_inbox(self):
+        print("test_search_in_folder_other_than_inbox...")
 
-        print(f"Searching emails from {Folder.Inbox}...")
-        self.__class__._openmail.imap.search_emails(folder=self.__class__._custom_folder)
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
+        self.__class__._openmail.imap.search_emails(folder=Folder.Sent)
+        self.assertGreaterEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)
 
-        print(f"Fetching emails from {Folder.Sent}...")
-        mailbox = self.__class__._openmail.imap.get_emails(0, 2)
-        self.assertGreater(len(mailbox.emails), 0)
+        self.__class__._sent_test_email_uids.append(uid)
 
     """def test_fetch_basic(self):
         print("test_fetch_standard...")
