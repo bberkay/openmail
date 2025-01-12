@@ -220,12 +220,11 @@ class TestFetchOperations(unittest.TestCase):
         self.__class__._openmail.imap.search_emails(folder=new_created_empty_test_folder)
 
         half = math.floor(count / 2)
-
-        one_part_of_emails = self.__class__._openmail.imap.get_emails(0, half)
+        one_part_of_emails = self.__class__._openmail.imap.get_emails(1, half)
         self.assertEqual(one_part_of_emails.total, half - 0)
         self.assertEqual([email.subject for email in one_part_of_emails.emails], random_subject_list[:half])
 
-        other_part_of_emails = self.__class__._openmail.imap.get_emails(half, count)
+        other_part_of_emails = self.__class__._openmail.imap.get_emails(half + 1, count)
         self.assertEqual(other_part_of_emails.total, count - half)
         self.assertEqual([email.subject for email in other_part_of_emails.emails], random_subject_list[half:count])
 
