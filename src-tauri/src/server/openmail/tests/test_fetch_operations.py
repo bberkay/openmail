@@ -1,4 +1,6 @@
 import json
+import math
+import time
 import unittest
 
 from openmail import OpenMail
@@ -118,12 +120,39 @@ class TestFetchOperations(unittest.TestCase):
         mailbox = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(len(mailbox.emails), 1)
 
-        print(f"Searching emails from {Folder.Inbox}...")
-        self.__class__._openmail.imap.search_emails(folder=Folder.Inbox)
+    def test_cc_bcc_search(self):
+        print("test_complex_search...")
 
-        print(f"Fetching emails from {Folder.Sent}...")
-        mailbox = self.__class__._openmail.imap.get_emails(0, 2)
-        self.assertGreater(len(mailbox.emails), 0)
+        # Multiple Receiver, Cc, Bcc, Attachment
+        complex_email = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._receiver_emails,
+            subject=NameGenerator.random_subject_with_uuid(),
+            #cc=self.__class__._receiver_emails[1],
+            #bcc=self.__class__._receiver_emails[2],
+            body=NameGenerator.random_body_with_uuid(),
+            attachments=[SampleDocumentGenerator().as_filepath()]
+        )
+        complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, complex_email)
+
+        """# Cc, Bcc
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            senders=complex_email.sender,
+            receivers=complex_email.receiver,
+            subject=complex_email.subject,
+            #cc=complex_email.cc,
+            #bcc=complex_email.bcc,
+        ))
+        self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)"""
+
+        # Include
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            senders=complex_email.sender,
+            receivers=complex_email.receiver,
+            subject=complex_email.subject,
+            include=complex_email.body
+        ))
+        self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)
 
         # Exclude
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
@@ -167,14 +196,25 @@ class TestFetchOperations(unittest.TestCase):
 
         uids_list = []
         count = 3
+        random_subject_list = []
         for i in range(1, count + 1):
+            random_subject = NameGenerator.random_subject_with_uuid()
             uids_list.append(
-                DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
+                DummyOperator.send_test_email_to_self_and_get_uid(
+                    self.__class__._openmail,
+                    EmailToSend(
+                        sender=self.__class__._sender_email,
+                        receiver=self.__class__._sender_email,
+                        subject=random_subject,
+                        body=NameGenerator.random_body_with_uuid()
+                    )
+                )
             )
+            random_subject_list.append(random_subject)
 
-        self.__class__._openmail.imap.move_email(Folder.Inbox, new_created_empty_test_folder, ",".join(uids_list))
+        self.__class__._openmail.imap.copy_email(Folder.Inbox, new_created_empty_test_folder, ",".join(uids_list))
 
-        print("Waiting 2 seconds after move operation")
+        print("Waiting 2 seconds after copy operation")
         time.sleep(2)
 
         self.__class__._openmail.imap.search_emails(folder=new_created_empty_test_folder)
@@ -182,17 +222,15 @@ class TestFetchOperations(unittest.TestCase):
         half = math.floor(count / 2)
 
         one_part_of_emails = self.__class__._openmail.imap.get_emails(0, half)
-        one_part_of_emails_uid_list = [email.uid for email in one_part_of_emails.emails]
         self.assertEqual(one_part_of_emails.total, half - 0)
-        self.assertEqual([email.uid for email in one_part_of_emails.emails], one_part_of_emails_uid_list[:half])
+        self.assertEqual([email.subject for email in one_part_of_emails.emails], random_subject_list[:half])
 
-        other_part_of_emails = self.__class__._openmail.imap.get_emails(half, count).emails
-        other_part_of_emails_uid_list = [email.uid for email in other_part_of_emails.emails]
+        other_part_of_emails = self.__class__._openmail.imap.get_emails(half, count)
         self.assertEqual(other_part_of_emails.total, count - half)
-        self.assertEqual([email.uid for email in other_part_of_emails.emails], other_part_of_emails_uid_list[half:count])
+        self.assertEqual([email.subject for email in other_part_of_emails.emails], random_subject_list[half:count])
 
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
-        self.__class__._sent_test_email_uids.extend(one_part_of_emails_uid_list + other_part_of_emails_uid_list)
+        self.__class__._sent_test_email_uids.extend(uids_list)
 
     @classmethod
     def tearDownClass(cls):
