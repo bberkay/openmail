@@ -30,23 +30,6 @@ class TestFetchOperations(unittest.TestCase):
         cls._sent_test_email_uids = []
         cls._created_test_folders = []
 
-        # Send Test Emails
-        """cls._sent_test_emails: dict[str, EmailToSend] = {
-            "multiple_receiver_single_file_attachment": EmailToSend(
-                sender=cls._sender_email,
-                receiver=cls._receiver_emails,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=NameGenerator.random_body_with_uuid(),
-                attachments=[SampleDocumentGenerator().as_filepath()]
-            ),
-            "single_receiver_multi_file_attachment": EmailToSend(
-                sender=cls._sender_email,
-                receiver=cls._receiver_emails[0],
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=NameGenerator.random_body_with_uuid(),
-                attachments=SampleDocumentGenerator().as_filepath(count=2, all_different=True)
-            )
-        }"""
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
