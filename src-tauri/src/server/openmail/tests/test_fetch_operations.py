@@ -68,7 +68,7 @@ class TestFetchOperations(unittest.TestCase):
         print("test_is_email_exists...")
 
         new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
-        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail)
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
 
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
         self.assertFalse(self.__class__._openmail.imap.is_email_exists(new_created_empty_test_folder, uid))
