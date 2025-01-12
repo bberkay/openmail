@@ -32,16 +32,37 @@ class TestFetchOperations(unittest.TestCase):
         cls._sent_test_email_uids = []
         cls._created_test_folders = []
 
-        # Send Test Email
+        # Send Basic Test Email
         cls._test_sent_basic_email = EmailToSend(
             sender=cls._sender_email,
             receiver=cls._receiver_emails[0],
             subject=NameGenerator.random_subject_with_uuid(),
             body=NameGenerator.random_body_with_uuid(),
         )
-        cls._test_sent_basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(cls._openmail, cls._sender_email)
+        cls._test_sent_basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
+            cls._openmail,
+            cls._test_sent_basic_email
+        )
 
-        cls._sent_test_email_uids.append(cls._test_sent_basic_email.uid)
+        # Send Complex Text Email
+        cls._test_sent_complex_email = EmailToSend(
+            sender=cls._sender_email,
+            receiver=cls._receiver_emails,
+            subject=NameGenerator.random_subject_with_uuid(),
+            cc=cls._receiver_emails[1:],
+            bcc=cls._receiver_emails[2:],
+            body=NameGenerator.random_body_with_uuid(),
+            attachments=[SampleDocumentGenerator().as_filepath()]
+        )
+        cls._test_sent_complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
+            cls._openmail,
+            cls._test_sent_complex_email
+        )
+
+        cls._sent_test_email_uids.append(
+            cls._test_sent_basic_email.uid,
+            cls._test_sent_complex_email
+        )
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
@@ -96,61 +117,30 @@ class TestFetchOperations(unittest.TestCase):
         print("test_basic_search_by_subject...")
 
         self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.subject)
-        mailbox = self.__class__._openmail.imap.get_emails()
-        self.assertGreaterEqual(len(mailbox.emails), 1)
+        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
 
     def test_basic_search_by_body(self):
         print("test_basic_search_by_body...")
 
         self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.body)
-        mailbox = self.__class__._openmail.imap.get_emails()
-        self.assertGreaterEqual(len(mailbox.emails), 1)
+        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
 
     def test_basic_search_by_sender(self):
         print("test_basic_search_by_sender...")
 
         self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.sender)
-        mailbox = self.__class__._openmail.imap.get_emails()
-        self.assertGreaterEqual(len(mailbox.emails), 1)
+        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
 
     def test_basic_search_by_receiver(self):
         print("test_basic_search_by_receiver...")
 
         self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.receiver)
-        mailbox = self.__class__._openmail.imap.get_emails()
-        self.assertGreaterEqual(len(mailbox.emails), 1)
+        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
 
-    def test_cc_bcc_search(self):
-        print("test_complex_search...")
-
-        # Multiple Receiver, Cc, Bcc, Attachment
-        complex_email = EmailToSend(
-            sender=self.__class__._sender_email,
-            receiver=self.__class__._receiver_emails,
-            subject=NameGenerator.random_subject_with_uuid(),
-            #cc=self.__class__._receiver_emails[1],
-            #bcc=self.__class__._receiver_emails[2],
-            body=NameGenerator.random_body_with_uuid(),
-            attachments=[SampleDocumentGenerator().as_filepath()]
-        )
-        complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, complex_email)
-
-        """# Cc, Bcc
+    def test_complex_search_by_subject(self):
+        print("test_complex_search_by_subject...")
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            senders=complex_email.sender,
-            receivers=complex_email.receiver,
-            subject=complex_email.subject,
-            #cc=complex_email.cc,
-            #bcc=complex_email.bcc,
-        ))
-        self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)"""
-
-        # Include
-        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            senders=complex_email.sender,
-            receivers=complex_email.receiver,
-            subject=complex_email.subject,
-            include=complex_email.body
+            subject=self.__class__._test_sent_complex_email.subject,
         ))
         self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)
 
@@ -161,15 +151,20 @@ class TestFetchOperations(unittest.TestCase):
         ))
         self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 0)
 
-        # Has attachment
+    def test_complex_search_by_exclude(self):
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            senders=complex_email.sender,
-            receivers=complex_email.receiver,
+            senders=self.__class__._test_sent_complex_email.sender,
+            subject=self.__class__._test_sent_complex_email.subject,
+            exclude=self.__class__._test_sent_complex_email.body
+        ))
+        self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 0)
+
+    def test_complex_search_by_attachments(self):
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            senders=self.__class__._test_sent_complex_email.sender,
             has_attachments=True
         ))
         self.assertGreaterEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)
-
-        self.__class__._sent_test_email_uids.append(complex_email.uid)
 
     def test_search_in_custom_folder(self):
         print("test_search_in_custom_folder...")
