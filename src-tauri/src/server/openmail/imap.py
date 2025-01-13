@@ -30,7 +30,7 @@ from datetime import datetime
 from enum import Enum
 
 from .parser import MessageParser
-from .utils import extract_domain, choose_positive
+from .utils import add_quotes_if_str, extract_domain, choose_positive
 from .utils import truncate_text, contains_non_ascii
 from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent, Flags, Mark, Folder
 
@@ -888,11 +888,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
             ...                                  subject="Hello",
             ...                                  since="2023-01-01",
             ...                                  before="2023-12-31",
-            ...                                  text="world",
-            ...                                  flags=["Flagged", "Seen"])
+            ...                                  body="world",
+            ...                                  included_flags=[Mark.Flagged, Mark.Seen, "customflag"])
             >>> build_search_criteria_query(search_criteria)
-            'OR (FROM "a@mail.com") (OR (TO "b@mail.com") (TO "c@mail.com")) (SUBJECT "Hello") (SINCE
-            ... "2023-01-01") (BEFORE "2023-12-31") (TEXT "world") (OR (FLAGGED) (SEEN))'
+            '(FROM "a@mail.com") (OR (TO "b@mail.com") (TO "c@mail.com")) (SUBJECT "Hello") (SINCE
+            ... "2023-01-01") (BEFORE "2023-12-31") (BODY "world") FLAGGED SEEN KEYWORD "customflag"'
 
             >>> build_search_criteria_query("sender@mail.com")
             'TEXT "sender@mail.com"'
@@ -956,16 +956,19 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if isinstance(value, list):
                 if criteria == '':
                     # value=["Flagged", "Seen", "Answered"]
-                    return ' '.join([i.upper() for i in value])
+                    return f" {' '.join([i.strip().upper() for i in value])}"
 
                 if len(value) <= 1:
-                    return f' ({criteria} "{value[0]}")'
+                    return f' ({criteria.strip()} "{value[0].strip()}")'
 
             if seperate_with_or and len(value) > 1:
-                criteria = ''
                 value = recursive_or_query(criteria, value)
+                criteria = ''
 
-            return f' ({criteria} "{value}")'
+            if criteria:
+                return f' ({criteria.strip()} {add_quotes_if_str(value)})'
+            else:
+                return f' ({value.strip()})'
 
         try:
             if isinstance(search_criteria, str):
@@ -976,7 +979,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 if flag.lower() not in MARK_LIST:
                     included_flag_list.append(f'KEYWORD {flag}')
                 else:
-                    included_flag_list.append(flag)
+                    included_flag_list.append(flag.replace("\\", ""))
 
             search_criteria_query = ''
             search_criteria_query += add_criterion(

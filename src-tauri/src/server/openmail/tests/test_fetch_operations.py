@@ -27,14 +27,14 @@ class TestFetchOperations(unittest.TestCase):
 
         cls._sender_email = credentials[0]["email"]
         cls._receiver_emails = [credential["email"] for credential in credentials]
-        cls._openmail.connect(cls._sender_email, credentials[0]["password"])
-        print(f"Connected to {cls._sender_email}...")
-
         cls._sent_test_email_uids = []
         cls._created_test_folders = []
 
+        cls._openmail.connect(cls._sender_email, credentials[0]["password"])
+        print(f"Connected to {cls._sender_email}...")
+
         # Send Basic Test Email
-        cls._test_sent_basic_email = EmailToSend(
+        """cls._test_sent_basic_email = EmailToSend(
             sender=cls._sender_email,
             receiver=cls._receiver_emails[0],
             subject=NameGenerator.random_subject_with_uuid(),
@@ -46,7 +46,7 @@ class TestFetchOperations(unittest.TestCase):
         )
 
         # Send Complex Text Email
-        """cls._test_sent_complex_email = EmailToSend(
+        cls._test_sent_complex_email = EmailToSend(
             sender=cls._sender_email,
             receiver=cls._receiver_emails,
             subject=NameGenerator.random_subject_with_uuid(),
@@ -60,12 +60,12 @@ class TestFetchOperations(unittest.TestCase):
             cls._test_sent_complex_email
         )
         cls._openmail._imap.mark_email(Mark.Seen, cls._test_sent_complex_email.uid, Folder.Inbox)
-        cls._openmail._imap.mark_email(Mark.Flagged, cls._test_sent_complex_email.uid, Folder.Inbox)"""
+        cls._openmail._imap.mark_email(Mark.Flagged, cls._test_sent_complex_email.uid, Folder.Inbox)
 
         cls._sent_test_email_uids.extend([
             cls._test_sent_basic_email.uid,
             #cls._test_sent_complex_email.uid
-        ])
+        ])"""
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
@@ -116,7 +116,56 @@ class TestFetchOperations(unittest.TestCase):
 
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
 
-    # TODO: build_search_criteria_query tests
+    def test_build_search_criteria_query(self):
+        # test multiple OR with even length lists(receivers)
+        self.assertEqual(
+            self.__class__._openmail.imap.build_search_criteria_query(
+                SearchCriteria(
+                    senders=["sender@mail.com"],
+                    receivers=["receiver1@mail.com", "receiver2@mail.com"],
+                )
+            ),
+            '(FROM "sender@mail.com") (OR (TO "receiver1@mail.com") (TO "receiver2@mail.com"))'
+        )
+
+        # test multiple OR with odd length lists(receivers)
+        self.assertEqual(
+            self.__class__._openmail.imap.build_search_criteria_query(
+                SearchCriteria(
+                    senders=["sender@mail.com"],
+                    receivers=["receiver1@mail.com", "receiver2@mail.com", "receiver3@mail.com"]
+                )
+            ),
+            '(FROM "sender@mail.com") (OR (TO "receiver1@mail.com") (OR (TO "receiver2@mail.com") (TO "receiver3@mail.com")))'
+        )
+
+        # test every criteria at once.
+        self.assertEqual(
+            self.__class__._openmail.imap.build_search_criteria_query(
+                SearchCriteria(
+                    senders=["sender@mail.com"],
+                    receivers=["receiver1@mail.com", "receiver2@mail.com"],
+                    cc=["cc1@mail.com", "cc2@mail.com"],
+                    bcc=["bcc1@mail.com", "bcc2@mail.com", "bcc3@mail.com"],
+                    subject="Hello",
+                    include="word",
+                    exclude="good bye",
+                    larger_than=150, # 150 bytes
+                    smaller_than=300, # 300 bytes
+                    since="2023-01-01",
+                    before="2023-12-31",
+                    included_flags=[Mark.Flagged, Mark.Seen, "customflag"],
+                    has_attachments=True
+                )
+            ),
+            '(FROM "sender@mail.com") (OR (TO "receiver1@mail.com") (TO "receiver2@mail.com")) ' \
+            '(OR (CC "cc1@mail.com") (CC "cc2@mail.com")) (OR (BCC "bcc1@mail.com") ' \
+            '(OR (BCC "bcc2@mail.com") (BCC "bcc3@mail.com"))) (SUBJECT "Hello") (SINCE "2023-01-01") ' \
+            '(BEFORE "2023-12-31") (BODY "word") (NOT BODY "good bye") FLAGGED SEEN KEYWORD CUSTOMFLAG ' \
+            '(TEXT "ATTACHMENT") (LARGER 150) (SMALLER 300)'
+        )
+
+    # TODO: Mevcut sıkıntı hem yukarıdaki hem de folder name filtering problemi var.
 
     def test_basic_search_by_sender(self):
         print("test_basic_search_by_sender...")
@@ -151,7 +200,6 @@ class TestFetchOperations(unittest.TestCase):
 
         email_content = self.__class__._openmail.imap.get_email_content(found_emails.emails[0].uid, found_emails.folder)
         self.assertIn(self.__class__._test_sent_basic_email.body, email_content.body)
-
 
     def test_complex_search_by_multiple_receiver(self):
         print("test_complex_search_by_multiple_receiver...")
