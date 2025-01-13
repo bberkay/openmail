@@ -1367,7 +1367,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         else:
                             i += 1
                 else:
-                    print(f"No inline attachments found for found attachments of email `{uid}`'s content in folder `{folder}`.")
+                    print(f"No inline attachments found in found attachments of email `{uid}`'s content in folder `{folder}`.")
         except Exception as e:
             # If there is a problem with inline attachments
             # just ignore them.
