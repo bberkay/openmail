@@ -1386,6 +1386,30 @@ class IMAPManager(imaplib.IMAP4_SSL):
             attachments=attachments
         )
 
+    def get_email_size(self, uid: str, folder: str) -> int | None:
+        """
+        Get email size of the given `uid`.
+
+        Args:
+            uid (str): Unique identifier of the email.
+            folder (str): Folder containing the email.
+
+        Returns:
+            int: Size of the email as bytes.
+
+        Example:
+            >>> get_email_size("1", "INBOX")
+            24300
+        """
+        status, messages = self.uid('FETCH', uid, '(RFC822.SIZE)')
+        if status != 'OK':
+            raise IMAPManagerException(f"Error while getting size of the `{uid}` email in folder `{folder}`: `{status}`")
+
+        if not messages or not messages[0]:
+            return None
+
+        return MessageParser.size_from_message(str(messages))
+
     def _mark_email(
         self,
         mark:  str | Mark,
