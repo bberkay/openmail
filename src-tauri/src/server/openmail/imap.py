@@ -77,9 +77,6 @@ INBOX = 'INBOX'
 
 MARK_LIST = [str(m).lower() for m in Mark]
 FOLDER_LIST = [str(f).lower() for f in Folder]
-FOLDER_NAME_FILTER = {
-    IMAP_SERVERS["gmail"]: ["[Gmail]/"]
-}
 
 """
 Custom consts
@@ -720,7 +717,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
 
-    def _extract_folder_name(self, folder: str | bytes, /, tagged: bool = False, filtered: bool = False) -> str:
+    def _extract_folder_name(self, folder: str | bytes, /, tagged: bool = False) -> str:
         """
         Extract a folder name from a byte string returned by an IMAP server.
 
@@ -728,7 +725,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             folder (str | bytes): The byte or string containing the folder name.
             tagged (boolean): Tag folders with their original name. Inbox will
             also be tagged either has a special tag or not.
-            filtered (boolean): Filter keywords like [Gmail] or [Yandex] etc.
 
         Returns:
             str: The decoded and cleaned folder name.
@@ -736,15 +732,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Example:
             >>> _extract_folder_name(b'(\\HasNoChildren) "/" "INBOX"')
             'INBOX'
-            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Spam"')
+            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Spam"', tagged=False)
             'Spam'
-            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Inbox"', tagged=True)
-            '[Folder.Inbox]:Inbox'
-            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Spam"', tagged=True, filtered=False)
-            '[Folder.Junk]:[Gmail]/Spam'
-            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Spam"', tagged=True, filtered=True)
+            >>> _extract_folder_name(b'(\\Junk \\HasNoChildren) "|" "[Gmail]/Spam"', tagged=True)
             '[Folder.Junk]:Spam'
-            >>> _extract_folder_name(b'(\\HasNoChildren) "|" "MyCustomFolder"', tagged=False)
+            >>> _extract_folder_name(b'(\\HasNoChildren) "|" "MyCustomFolder"')
             'MyCustomFolder'
 
         References:
@@ -762,10 +754,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             folder_parts = folder.split(' "/" ', 1)
             folder_name = folder_parts[-1].replace('"', '')
             folder_tag = folder_parts[0] if len(folder_parts) > 1 else None
-
-            if filtered:
-                for filter in FOLDER_NAME_FILTER[self.host]:
-                    folder_name = folder_name.replace(filter, "")
 
             if tagged:
                 folder_tag = folder_tag.lower()
@@ -827,7 +815,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return True
 
-    def get_folders(self, folder_name: str | None = None, /, tagged: bool = False, filtered: bool = False) -> list[str]:
+    def get_folders(self, folder_name: str | None = None, /, tagged: bool = False) -> list[str]:
         """
         Retrieve a list of all email folders.
 
@@ -836,18 +824,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
             Defaults to None. If None, returns all folders.
             tagged (boolean): Tag folders with their original name. Inbox will
             also be tagged either has a special tag or not.
-            filtered (boolean): Filter keywords like [Gmail] or [Yandex] etc.
 
         Returns:
             list[str]: List of folder names in the email account
 
         Example:
-            >>> get_folders()
-            ['Inbox', 'Spam', 'Trash Bin', 'My Custom Folder']
+            >>> get_folders(tagged=False)
+            ['Inbox', '[Gmail]/Spam', '[Gmail]/Trash Bin', 'My Custom Folder']
             >>> get_folders(tagged=True)
-            ['[Folder.Inbox]:[Gmail]/Inbox', '[Folder.Junk]:[Gmail]/Spam', '[Folder.Trash]:[Gmail]/Trash Bin', 'My Custom Folder']
-            >>> get_folders(tagged=True, filtered=True)
-            ['[Folder.Inbox]:Inbox', '[Folder.Junk]:Spam', '[Folder.Trash]:Trash Bin', 'My Custom Folder']
+            ['[Folder.Inbox]:Inbox', '[Folder.Junk]:[Gmail]/Spam', '[Folder.Trash]:[Gmail]/Trash Bin', 'My Custom Folder']
 
         References:
             https://datatracker.ietf.org/doc/html/rfc9051#name-list-response
@@ -861,7 +846,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         disallowed_keywords = [keyword.lower() for keyword in disallowed_keywords]
         for folder in folders:
             if not any(keyword in folder.lower() for keyword in disallowed_keywords):
-                decoded_folder = self._extract_folder_name(folder, tagged=tagged, filtered=filtered)
+                decoded_folder = self._extract_folder_name(folder, tagged=tagged)
                 if not folder_name or (folder_name in decoded_folder and not decoded_folder.endswith(folder_name)):
                     folder_list.append(decoded_folder)
 
@@ -1048,12 +1033,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 folder (str): The folder to save the emails to.
                 search_query (str): The search query used to fetch the emails.
             """
-            folder = self._extract_folder_name(
-                self.find_matching_folder(str(folder), encoded=False) or folder,
-                filtered=True
-            )
             self._searched_emails = IMAPManager.SearchedEmails(
-                folder=folder,
+                folder=self._extract_folder_name(
+                    self.find_matching_folder(str(folder), encoded=False) or folder
+                ),
                 search_query=search_query,
                 uids=uids
             )
