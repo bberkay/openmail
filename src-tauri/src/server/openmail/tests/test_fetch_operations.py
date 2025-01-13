@@ -1,3 +1,4 @@
+import os
 import json
 import math
 import time
@@ -59,10 +60,10 @@ class TestFetchOperations(unittest.TestCase):
             cls._test_sent_complex_email
         )
 
-        cls._sent_test_email_uids.append(
+        cls._sent_test_email_uids.extend([
             cls._test_sent_basic_email.uid,
-            cls._test_sent_complex_email
-        )
+            cls._test_sent_complex_email.uid
+        ])
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
@@ -117,13 +118,17 @@ class TestFetchOperations(unittest.TestCase):
         print("test_basic_search_by_subject...")
 
         self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.subject)
-        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
+        found_emails = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(found_emails.total, 1)
+        self.assertIn(self.__class__._test_sent_basic_email.subject, found_emails.emails[0].subject)
 
     def test_basic_search_by_body(self):
         print("test_basic_search_by_body...")
 
         self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.body)
-        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
+        found_emails = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(found_emails.total, 1)
+        self.assertIn(self.__class__._test_sent_basic_email.body, found_emails.emails[0].body_short)
 
     def test_basic_search_by_sender(self):
         print("test_basic_search_by_sender...")
@@ -137,34 +142,128 @@ class TestFetchOperations(unittest.TestCase):
         self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.receiver)
         self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
 
-    def test_complex_search_by_subject(self):
-        print("test_complex_search_by_subject...")
-        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            subject=self.__class__._test_sent_complex_email.subject,
-        ))
-        self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)
+    def test_complex_search_by_multiple_receiver(self):
+        print("test_complex_search_by_multiple_receiver...")
 
-        # Exclude
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            subject=complex_email.subject,
-            exclude=complex_email.body,
+            receivers=self.__class__._test_sent_complex_email.receiver,
         ))
-        self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 0)
+        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
 
-    def test_complex_search_by_exclude(self):
+    def test_complex_search_by_cc_and_bcc(self):
+        print("test_complex_search_by_cc_and_bcc...")
+
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            cc=self.__class__._test_sent_complex_email.cc,
+            bcc=self.__class__._test_sent_complex_email.bcc,
+        ))
+        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
+
+    def test_complex_search_by_include(self):
+        print("test_complex_search_by_include...")
+
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
             senders=self.__class__._test_sent_complex_email.sender,
+            include=self.__class__._test_sent_complex_email.body
+        ))
+        self.assertEqual(self.__class__._openmail.imap.get_emails().total, 1)
+
+    def test_complex_search_by_exclude(self):
+        print("test_complex_search_by_exclude...")
+
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
             subject=self.__class__._test_sent_complex_email.subject,
             exclude=self.__class__._test_sent_complex_email.body
         ))
-        self.assertEqual(len(self.__class__._openmail.imap.get_emails().emails), 0)
+        self.assertEqual(self.__class__._openmail.imap.get_emails().total, 0)
 
     def test_complex_search_by_attachments(self):
+        print("test_complex_search_by_attachments...")
+
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
             senders=self.__class__._test_sent_complex_email.sender,
             has_attachments=True
         ))
-        self.assertGreaterEqual(len(self.__class__._openmail.imap.get_emails().emails), 1)
+        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
+
+    def test_complex_search_by_smaller_than_and_larger_than(self):
+        print("test_complex_search_by_smaller_than_and_larger_than...")
+
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            smaller_than=self.__class__._receiver_emails,
+            larger_than=self.__class__._receiver_emails
+        ))
+        self.assertGreaterEqual(self.__class__._openmail.imap.get_emails().total, 1)
+
+    def test_get_email_content(self):
+        print("test_get_email_content...")
+
+        email_content = self.__class__._openmail.imap.get_email_content(
+            self.__class__._test_sent_complex_email.uid,
+            Folder.Inbox
+        )
+
+        # Sender
+        self.assertCountEqual(
+            [email.strip() for email in email_content.sender.split(",")],
+            (
+                [email.strip() for email in self.__class__._test_sent_complex_email.sender.split(",")]
+                if isinstance(self.__class__._test_sent_complex_email.sender, str)
+                else self.__class__._test_sent_complex_email.sender
+            )
+        )
+
+        # Receiver
+        self.assertCountEqual(
+            [email.strip() for email in email_content.receiver.split(",")],
+            (
+                [email.strip() for email in self.__class__._test_sent_complex_email.receiver.split(",")]
+                if isinstance(self.__class__._test_sent_complex_email.receiver, str)
+                else self.__class__._test_sent_complex_email.receiver
+            )
+        )
+
+        # Cc
+        self.assertCountEqual(
+            [email.strip() for email in email_content.cc.split(",")],
+            (
+                [email.strip() for email in self.__class__._test_sent_complex_email.cc.split(",")]
+                if isinstance(self.__class__._test_sent_complex_email.cc, str)
+                else self.__class__._test_sent_complex_email.cc
+            )
+        )
+
+        # Subject
+        self.assertEqual(
+            email_content.subject,
+            self.__class__._test_sent_complex_email.subject
+        )
+
+        # Body
+        self.assertEqual(
+            email_content.body,
+            self.__class__._test_sent_complex_email.body
+        )
+
+        # Attachment
+        self.assertCountEqual(
+            [os.path.basename(attachment) for attachment in self.__class__._test_sent_complex_email.attachments],
+            [attachment.name for attachment in email_content.attachments]
+        )
+
+    def test_get_email_flags(self):
+        print("test_get_email_flags...")
+
+        self.__class__._openmail._imap.mark_email(
+            Mark.Flagged,
+            self.__class__._test_sent_basic_email.uid
+        )
+        self.assertIn(
+            Mark.Flagged,
+            self.__class__._openmail._imap.get_email_flags(
+                self.__class__._test_sent_basic_email.uid
+            )[0].flags
+        )
 
     def test_search_in_custom_folder(self):
         print("test_search_in_custom_folder...")
