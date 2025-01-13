@@ -29,6 +29,7 @@ class MessageHeaders(TypedDict):
 Regular expressions, avoid changing
 """
 MESSAGE_PATTERN = re.compile(r'\(UID \d+.*?(?=b\'\d+ \(UID|\Z)')
+SIZE_PATTERN = re.compile(r"RFC822\.SIZE (\d+)")
 UID_PATTERN = re.compile(r"UID\s+(\d+)")
 HEADERS_PATTERN = re.compile(r"BODY\[HEADER\.FIELDS.*?\\r\\n\\r\\n", re.DOTALL)
 SENDER_PATTERN = re.compile(r'From:\s+(.+?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.DOTALL)
@@ -105,7 +106,6 @@ class MessageParser:
             WsgacOnaW4gdXlndWxh")
             'Hello, World'
         """
-
         return base64.b64decode(message[:-(len(message) % 4)]).decode("utf-8")
 
     @staticmethod
@@ -175,6 +175,24 @@ class MessageParser:
             ['b\'2394 (UID 2651 FLAGS ... ), b\'', 'b\'2395 (UID 2652 FLAGS ... ), b\'']
         """
         return re.findall(MESSAGE_PATTERN, message)
+
+    @staticmethod
+    def size_from_message(message: str) -> int | None:
+        """
+        Get size from raw message string.
+
+        Args:
+            message (str): Raw message string.
+
+        Returns:
+            int: Size as bytes.
+
+        Example:
+            >>> messages("[b'1430 (UID 1534 RFC822.SIZE 42742)']")
+            42742
+        """
+        match = SIZE_PATTERN.search(message)
+        return int(match.group(1)) if match else None
 
     @staticmethod
     def uid_from_message(message: str) -> str:
