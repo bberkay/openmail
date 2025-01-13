@@ -4,7 +4,7 @@ This module contains the types used in the OpenMail module.
 from __future__ import annotations
 from enum import Enum
 from typing import Optional, Sequence, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 import json
 
 @dataclass
@@ -85,6 +85,14 @@ class EmailWithContent():
     message_id: Optional[str] = ""
     metadata: Optional[dict] = field(default_factory=dict)
 
+    def __getitem__(self, item):
+        """Allows dictionary-like access to dataclass attributes."""
+        return getattr(self, item)
+
+    def keys(self):
+        """Returns a list of all field names in the dataclass instance."""
+        return [field.name for field in fields(self)]
+
 @dataclass
 class EmailToSend():
     """
@@ -105,9 +113,13 @@ class EmailToSend():
     mail_options: Optional[Sequence[str]] = field(default_factory=list)
     rcpt_options: Optional[Sequence[str]] = field(default_factory=list)
 
-    def __str__(self) -> str:
-        """Returns a string representation of the EmailToSend object."""
-        return str(self.__dict__)
+    def __getitem__(self, item):
+        """Allows dictionary-like access to dataclass attributes."""
+        return getattr(self, item)
+
+    def keys(self):
+        """Returns a list of all field names in the dataclass instance."""
+        return [field.name for field in fields(self)]
 
 @dataclass
 class Mailbox():
