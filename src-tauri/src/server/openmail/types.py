@@ -101,13 +101,13 @@ class EmailToSend():
     `uid` field must be provided.
     """
     sender: str | Tuple[str, str]
-    receiver: str
+    receiver: str | list[str]
     #date: str
     subject: str
     body: str
     uid: Optional[str] = ""
-    cc: Optional[str] = ""
-    bcc: Optional[str] = ""
+    cc: Optional[str | list[str]] = ""
+    bcc: Optional[str | list[str]] = ""
     metadata: Optional[dict] = field(default_factory=dict)
     attachments: Optional[list[Attachment]] = field(default_factory=list)
     mail_options: Optional[Sequence[str]] = field(default_factory=list)
