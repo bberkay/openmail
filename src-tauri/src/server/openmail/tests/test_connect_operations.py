@@ -49,3 +49,4 @@ class TestConnectOperations(unittest.TestCase):
         status, message = self.__class__._openmail.disconnect()
         if not status:
             self.fail(f"Failed to logout with status: {status} and message: {message}")
+            
