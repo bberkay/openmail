@@ -1,5 +1,7 @@
+import { type Size } from "./types";
+
 export function makeSizeHumanReadable(bytes: number): string {
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    const sizes: Size[] = ["Bytes", "KB", "MB", "GB"];
     if (bytes === 0) return "n/a";
     const i = Math.floor(Math.log2(bytes) / 10);
     return Math.round(bytes / Math.pow(2, i * 10)) + " " + sizes[i];
@@ -42,7 +44,7 @@ export function capitalize(s: string): string {
 }
 
 export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: number): T[] {
-     if (
+    if (
         fromIndex < 0 ||
         fromIndex >= arr.length ||
         toIndex < 0 ||
@@ -53,4 +55,32 @@ export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: nu
 
     [arr[fromIndex], arr[toIndex]] = [arr[toIndex], arr[fromIndex]];
     return arr;
+}
+
+export function convertHumanSizeToBytes(humanSize: string): number {
+    const sizeMultiplier: Record<Size, number> = {
+        "Bytes": 1,
+        "KB": 1024,
+        "MB": 1024 ** 2,
+        "GB": 100 ** 3
+    };
+
+    const [humanSizeValue, humanSizeType] = humanSize.split(" ");
+    if (!humanSizeValue || !humanSizeType) {
+        throw new Error("Invalid human-readable size format");
+    }
+
+    const multiplier = sizeMultiplier[humanSizeType as Size];
+    if (!multiplier) {
+        throw new Error(`Unsupported size type: ${humanSizeType}`);
+    }
+
+    return Math.round(multiplier * parseFloat(humanSizeValue));
+}
+
+export function convertToIMAPDate(dateStringOrDate: string | Date): string {
+    const date = typeof dateStringOrDate == "string" ? new Date(dateStringOrDate) : dateStringOrDate;
+    return date
+        .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        .replace(',', '');
 }
