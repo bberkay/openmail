@@ -250,7 +250,7 @@ class TestFetchOperations(unittest.TestCase):
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(found_emails.total, 1)
 
-        email_content = self.__class__._openmail._imap.get_email_content(
+        email_content = self.__class__._openmail.imap.get_email_content(
             found_emails.emails[0].uid,
             found_emails.folder
         )
