@@ -70,11 +70,6 @@
         }
     };
 
-    $effect(() => {
-        displayedMonth;
-        displayedYear;
-    });
-
     function renderCalendar() {
         const firstDay = new Date(displayedYear, displayedMonth, 1);
         const lastDay = new Date(displayedYear, displayedMonth + 1, 0);
