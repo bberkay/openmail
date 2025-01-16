@@ -13,14 +13,14 @@ body{
     color: #dddddd;
 }
 
-.alert-bg{
+.overlay{
     display:none
 }
 
 body:has(.card.absolute){
     overflow:hidden;
 
-    & .alert-bg{
+    & .overlay{
         display: block;
         position: absolute;
         overflow:hidden;

@@ -2,5 +2,5 @@
 	let { children } = $props();
 </script>
 
-<div class="alert-bg"></div>
+<div class="overlay"></div>
 {@render children()}
