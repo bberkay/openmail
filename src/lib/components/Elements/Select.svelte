@@ -4,19 +4,20 @@
     interface Props {
         id: string;
         options: string[];
+        enableSearch: boolean;
     }
 
-    let { id, options }: Props = $props();
+    let { id, options, enableSearch }: Props = $props();
 
     let isOpen = $state(false);
     let showClass = $derived(isOpen ? "open" : "");
     let filteredOptions: string[] = $state(options);
     let selectedOption: string | null = $state(null);
-    let searchInput: HTMLInputElement;
+    let searchInput: HTMLInputElement | null = null;
 
     onMount(() => {
         const selectWrapper = document.getElementById(id) as HTMLDivElement;
-        searchInput = selectWrapper.querySelector(".search-input") as HTMLInputElement;
+        searchInput = enableSearch ? selectWrapper.querySelector(".search-input") as HTMLInputElement : null;
 
         document.addEventListener("click", (e) => {
             if (!selectWrapper.contains(e.target as HTMLElement)) {
@@ -41,7 +42,7 @@
 
     const openSelect = () => {
         isOpen = true;
-        searchInput.focus();
+        if(enableSearch) searchInput!.focus();
     };
 
     const closeSelect = () => {
@@ -49,7 +50,7 @@
             return;
 
         isOpen = false;
-        searchInput.value = "";
+        if(enableSearch) searchInput!.value = "";
         renderOptions();
     };
 
@@ -87,9 +88,11 @@
         </div>
     </div>
     <div class="options-container {showClass}">
-        <div class="search-box">
-            <input type="text" class="search-input" placeholder="Search..." onclick={(e) => { e.stopPropagation() }} oninput={handleSearch}/>
-        </div>
+        {#if enableSearch}
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search..." onclick={(e) => { e.stopPropagation() }} oninput={handleSearch}/>
+            </div>
+        {/if}
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <div class="options-list" onclick={selectOption}>
             {#each filteredOptions as option}
