@@ -33,12 +33,12 @@ interface PostBody {
     [PostRoutes.ADD_ACCOUNT]: {
         email_address: string
         encrypted_password: string
-        fullname: string
+        fullname?: string
     };
     [PostRoutes.EDIT_ACCOUNT]: {
         email_address: string
         encrypted_password: string
-        fullname: string
+        fullname?: string
     };
     [PostRoutes.REMOVE_ACCOUNT]: {
         account: string
