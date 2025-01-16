@@ -1,3 +1,12 @@
+*{
+    scrollbar-width: thin;
+    scrollbar-color: #888 transparent;
+    user-select: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 body{
     font-family: 'Roboto', sans-serif;
     background-color: rgb(22, 22, 22);
@@ -23,12 +32,6 @@ body:has(.card.absolute){
         pointer-events: none;
         user-select:none;
     }
-}
-
-*{
-    scrollbar-width: thin;
-    scrollbar-color: #888 transparent;
-    user-select: none;
 }
 
 iframe{
