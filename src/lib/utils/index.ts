@@ -84,3 +84,27 @@ export function convertToIMAPDate(dateStringOrDate: string | Date): string {
         .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
         .replace(',', '');
 }
+
+export function range(start: number, stop: number, step: number): number[] {
+    return Array.from(
+        { length: Math.ceil((stop - start) / step) },
+        (_, i) => start + i * step,
+    );
+}
+
+export function getMonths(): string[] {
+    return [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+}
