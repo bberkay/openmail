@@ -1,11 +1,10 @@
 <script lang="ts">
     import { onMount, mount, unmount } from "svelte";
     import Loader from "$lib/components/Loader.svelte";
-    import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
+    import { SharedStore } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
     import { Folder } from "$lib/types";
-    import { ApiService, GetRoutes, PostRoutes, type PostResponse } from "$lib/services/ApiService";
-    import { RSAEncryptor } from "$lib/services/RSAEncryptor";
+    import { ApiService, GetRoutes } from "$lib/services/ApiService";
     import { AccountController } from "$lib/controllers/AccountController";
 
     const accountController = new AccountController();
@@ -95,6 +94,16 @@
         button.textContent = 'Delete Account';
     }
 
+    async function removeAllAccounts() {
+        if(confirm("Are you certain?")){
+            const response = await accountController.removeAll();
+
+            if (!response.success) {
+                alert(response.message);
+            }
+        }
+    }
+
     async function getMailboxesOfAllAccounts() {
         const response = await ApiService.get(
             SharedStore.server,
@@ -113,16 +122,6 @@
             SharedStore.currentFolder = response.data[0].result.folder;
         } else {
             alert(response.message);
-        }
-    }
-
-    async function removeAllAccounts() {
-        if(confirm("Are you certain?")){
-            const response = await accountController.removeAll();
-
-            if (!response.success) {
-                alert(response.message);
-            }
         }
     }
 

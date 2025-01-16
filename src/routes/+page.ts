@@ -1,9 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { TauriCommand } from "$lib/types";
-import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
+import { SharedStore } from "$lib/stores/shared.svelte";
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from './$types';
-import { ApiService, GetRoutes, type GetResponse } from "$lib/services/ApiService";
+import { ApiService, GetRoutes } from "$lib/services/ApiService";
+import { AccountController } from "$lib/controllers/AccountController";
 
 /**
  * Constants
@@ -18,7 +19,8 @@ async function loadAccounts() {
     if(!SharedStore.server)
         return;
 
-    const response = await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS)
+    const accountController = new AccountController();
+    const response = await accountController.list();
     if (response.success && response.data) {
         SharedStore.accounts = response.data;
     } else {
