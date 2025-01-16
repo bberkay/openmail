@@ -158,16 +158,16 @@ export interface GetQueryResponse {
     }
 }
 
-export type GetResponse<T extends GetRoutes> = {
+export interface BaseResponse {
     success: boolean;
     message: string;
+}
+
+export interface GetResponse<T extends GetRoutes> extends BaseResponse {
     data?: GetQueryResponse[T];
 }
 
-export type PostResponse = {
-    success: boolean;
-    message: string;
-}
+export interface PostResponse extends BaseResponse {}
 
 export class ApiService {
     static _removeUndefinedParams(

@@ -20,10 +20,8 @@ async function loadAccounts() {
         return;
 
     const accountController = new AccountController();
-    const response = await accountController.list();
-    if (response.success && response.data) {
-        SharedStore.accounts = response.data;
-    } else {
+    const response = await accountController.update();
+    if (!response.success) {
         error(500, response.message);
     }
 }

@@ -1,10 +1,22 @@
 import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
-import { ApiService, GetRoutes, PostRoutes, type GetResponse, type PostResponse } from "$lib/services/ApiService";
+import { ApiService, GetRoutes, PostRoutes, type GetResponse, type PostResponse, type BaseResponse } from "$lib/services/ApiService";
 import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 
 export class AccountController {
     public async list(): Promise<GetResponse<GetRoutes.GET_ACCOUNTS>> {
         return await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS);
+    }
+
+    public async update(): Promise<BaseResponse> {
+        const response = await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS);
+        if (response.success && response.data) {
+            SharedStore.accounts = response.data;
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
     }
 
     public async add(email_address: string, plain_password: string, fullname: string | null = null): Promise<PostResponse> {
