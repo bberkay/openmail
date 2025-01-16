@@ -8,18 +8,15 @@
 
     let { id, options }: Props = $props();
 
-    let selectWrapper: HTMLDivElement;
-    let searchInput: HTMLInputElement;
-    let optionsList: HTMLDivElement;
-
     let isOpen = $state(false);
     let showClass = $derived(isOpen ? "open" : "");
+    let filteredOptions: string[] = $state(options);
     let selectedOption: string | null = $state(null);
+    let searchInput: HTMLInputElement;
 
     onMount(() => {
-        selectWrapper = document.getElementById(id) as HTMLDivElement;
+        const selectWrapper = document.getElementById(id) as HTMLDivElement;
         searchInput = selectWrapper.querySelector(".search-input") as HTMLInputElement;
-        optionsList = selectWrapper.querySelector(".options-list") as HTMLDivElement;
 
         document.addEventListener("click", (e) => {
             if (!selectWrapper.contains(e.target as HTMLElement)) {
@@ -38,28 +35,9 @@
         }
     })
 
-    function renderOptions(filteredOptions: string[] | null = null) {
-        const newOptions = filteredOptions || options;
-
-        if (newOptions.length === 0) {
-            optionsList.innerHTML = `
-                    <div class="no-results">No matching options found</div>
-                `;
-            return;
-        }
-
-        optionsList.innerHTML = options
-            .map(
-                (option) => `
-                    <div class="option ${selectedOption === option ? "selected" : ""}"
-                         data-value="${option}">
-                        ${option}
-                    </div>
-                `,
-            )
-            .join("");
+    function renderOptions(newOptions: string[] | null = null) {
+        filteredOptions = newOptions || options;
     }
-
 
     const openSelect = () => {
         isOpen = true;
@@ -114,7 +92,13 @@
         </div>
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <div class="options-list" onclick={selectOption}>
-            <!-- Options will be dynamically added here -->
+            {#each filteredOptions as option}
+                <div class="option ${selectedOption === option ? "selected" : ""}" data-value="${option}">
+                    ${option}
+                </div>
+            {:else}
+                <div class="no-results">No matching options found</div>
+            {/each}
         </div>
     </div>
 </div>
