@@ -6,6 +6,9 @@
     import { Folder } from "$lib/types";
     import { ApiService, GetRoutes, PostRoutes, type PostResponse } from "$lib/services/ApiService";
     import { RSAEncryptor } from "$lib/services/RSAEncryptor";
+    import { AccountController } from "$lib/controllers/AccountController";
+
+    const accountController = new AccountController();
 
     let currentEditingAccount: Account | null = $state(
         SharedStore.failedAccounts
@@ -29,24 +32,13 @@
         addAccountBtn.textContent = 'Adding Account...';
 
         const formData = new FormData(form);
-        const encryptor = new RSAEncryptor();
-        const encryptedPassword = await encryptor.encryptPassword(formData.get("password") as string);
-        const response = await ApiService.post(
-            SharedStore.server,
-            PostRoutes.ADD_ACCOUNT,
-            {
-                email_address: formData.get('email_address') as string,
-                fullname: formData.get('fullname') as string,
-                encrypted_password: encryptedPassword
-            }
+        const response = await accountController.add(
+            formData.get('email_address') as string,
+            formData.get('fullname') as string,
+            formData.get("password") as string
         );
 
-        if(response.success){
-            SharedStore.accounts.push({
-                email_address: formData.get('email_address') as string,
-                fullname: formData.get('fullname') as string
-            });
-        } else {
+        if(!response.success){
             alert(response.message);
         }
 
@@ -66,39 +58,18 @@
         editAccountBtn.textContent = 'Editing Account...';
 
         const formData = new FormData(form);
-        const encryptor = new RSAEncryptor();
-        const encryptedPassword = await encryptor.encryptPassword(formData.get("password") as string);
-        const response = await ApiService.post(
-            SharedStore.server,
-            PostRoutes.EDIT_ACCOUNT,
-            {
-                email_address: formData.get('email_address') as string,
-                fullname: formData.get('fullname') as string,
-                encrypted_password: encryptedPassword
-            }
+        const response = await accountController.edit(
+            formData.get('email_address') as string,
+            formData.get('fullname') as string,
+            formData.get("password") as string
         );
 
         if(response.success){
-            SharedStore.accounts.push({
-                email_address: currentEditingAccount.email_address,
-                fullname: formData.get('fullname') as string
-            });
-
-            SharedStore.failedAccounts = SharedStore.failedAccounts.filter(
-                (item) => item.email_address !== currentEditingAccount!.email_address
-            );
-
             if(SharedStore.failedAccounts.length > 0){
                 currentEditingAccount = SharedStore.failedAccounts[0];
             }
         } else {
             alert(response.message);
-            if (SharedStore.failedAccounts.find((item) => item.email_address !== currentEditingAccount!.email_address)) {
-                SharedStore.failedAccounts.push({
-                    email_address: currentEditingAccount.email_address,
-                    fullname: formData.get('fullname') as string
-                });
-            }
         }
 
         editAccountBtn.disabled = false;
@@ -114,17 +85,9 @@
         button.disabled = true;
 
         const account = button.getAttribute('data-email-address')!
-        const response = await ApiService.post(
-            SharedStore.server,
-            PostRoutes.REMOVE_ACCOUNT,
-            {
-                account: account
-            }
-        );
+        const response = await accountController.remove(account);
 
-        if (response.success) {
-            SharedStore.accounts = SharedStore.accounts.filter((item) => item.email_address !== account);
-        } else {
+        if (!response.success) {
             alert(response.message);
         }
 
@@ -155,15 +118,9 @@
 
     async function removeAllAccounts() {
         if(confirm("Are you certain?")){
-            const response: PostResponse = await ApiService.post(
-                SharedStore.server,
-                PostRoutes.REMOVE_ACCOUNTS,
-                {},
-            );
+            const response = await accountController.removeAll();
 
-            if (response.success) {
-                SharedStore.reset(SharedStoreKeys.accounts);
-            } else {
+            if (!response.success) {
                 alert(response.message);
             }
         }
