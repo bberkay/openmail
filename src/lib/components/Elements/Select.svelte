@@ -1,18 +1,33 @@
 <script lang="ts">
     import { onMount } from "svelte";
 
-    interface Props {
-        id: string;
-        options: string[];
-        enableSearch: boolean;
+    export type Option = {
+        value: string | number,
+        inner: string | number
     }
 
-    let { id, options, enableSearch }: Props = $props();
+    interface Props {
+        id: string;
+        options: Option[];
+        operation: (selectedOption: string | null) => void,
+        placeholder: string;
+        value: string;
+        enableSearch?: boolean;
+    }
+
+    let {
+        id,
+        options,
+        operation,
+        placeholder,
+        value,
+        enableSearch = false,
+    }: Props = $props();
 
     let isOpen = $state(false);
     let showClass = $derived(isOpen ? "open" : "");
-    let filteredOptions: string[] = $state(options);
-    let selectedOption: string | null = $state(null);
+    let filteredOptions: Option[] = $state(options);
+    let selectedOption: string | null = $state(value);
     let searchInput: HTMLInputElement | null = null;
 
     onMount(() => {
@@ -36,7 +51,7 @@
         }
     })
 
-    function renderOptions(newOptions: string[] | null = null) {
+    function renderOptions(newOptions: Option[] | null = null) {
         filteredOptions = newOptions || options;
     }
 
@@ -64,6 +79,9 @@
 
         const value = option.dataset.value;
         selectedOption = value || null;
+
+        operation(selectedOption);
+
         closeSelect();
     };
 
@@ -74,7 +92,8 @@
         const target = e.target as HTMLInputElement;
         const searchTerm = target.value;
         renderOptions(options.filter((option) =>
-            option.toLowerCase().includes(searchTerm.toLowerCase()),
+            option.value.toLowerCase().includes(searchTerm.toLowerCase())
+            || option.inner.toLowerCase().includes(searchTerm.toLowerCase()),
         ));
     }
 </script>
@@ -96,8 +115,8 @@
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <div class="options-list" onclick={selectOption}>
             {#each filteredOptions as option}
-                <div class="option ${selectedOption === option ? "selected" : ""}" data-value="${option}">
-                    ${option}
+                <div class="option ${selectedOption && selectedOption === option.value ? "selected" : ""}" data-value="${option.value}">
+                    {@html option.inner}
                 </div>
             {:else}
                 <div class="no-results">No matching options found</div>

@@ -1,12 +1,11 @@
 <script lang="ts">
     import { mount, unmount } from "svelte";
-    import Loader from "$lib/components/Loader.svelte";
+    import Loader from "$lib/components/Elements/Loader.svelte";
 
     interface Props {
         id: string;
         operation: (eventTrigger: HTMLButtonElement) => Promise<void>,
         inner: string;
-        classes?: string | undefined;
         [attribute: string]: unknown;
     }
 
@@ -14,7 +13,6 @@
         id,
         operation,
         inner,
-        classes = "",
         ...attributes
     }: Props = $props();
 
@@ -38,7 +36,7 @@
     }
 </script>
 
-<button id={id} class={classes} {...attributes} onclick={makeAnApiRequest}>
+<button id={id} {...attributes} onclick={makeAnApiRequest}>
     {@html inner}
 </button>
 

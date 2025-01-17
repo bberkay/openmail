@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { range, getMonths, convertToIMAPDate } from "$lib/utils";
+    import Select from "$lib/components/Elements/Select.svelte";
 
     interface Props {
         id: string;
@@ -39,19 +40,15 @@
         renderCalendar();
     });
 
-    const selectMonth = (e: Event) => {
-        if (!e.target) return;
-
-        const target = e.target as HTMLInputElement;
-        displayedMonth = parseInt(target.value);
+    const selectMonth = (selectedMonthIndex: string | null) => {
+        if (!selectedMonthIndex) return;
+        displayedMonth = parseInt(selectedMonthIndex);
         renderCalendar();
     };
 
-    const selectYear = (e: Event) => {
-        if (!e.target) return;
-
-        const target = e.target as HTMLInputElement;
-        displayedYear = parseInt(target.value);
+    const selectYear = (selectedYear: string | null) => {
+        if (!selectedYear) return;
+        displayedYear = parseInt(selectedYear);
     };
 
     const goPrevMonth = () => {
@@ -160,30 +157,22 @@
     <div class="datepicker-container">
         <div class="datepicker-header">
             <div class="month-year-selector">
-                <button class="nav-button" id="prevMonth" onclick={goPrevMonth}
-                    >←</button
-                >
-                <select
-                    id="monthSelect"
-                    value={displayedMonth}
-                    onchange={selectMonth}
-                >
-                    {#each getMonths() as month, index}
-                        <option value={index}>{month}</option>
-                    {/each}
-                </select>
-                <select
-                    id="yearSelect"
-                    value={displayedYear}
-                    onchange={selectYear}
-                >
-                    {#each range(currentYear - 10, currentYear + 10, 1) as year}
-                        <option value={year}>{year}</option>
-                    {/each}
-                </select>
-                <button class="nav-button" id="nextMonth" onclick={goNextMonth}
-                    >→</button
-                >
+                <button class="nav-button" id="prevMonth" onclick={goPrevMonth}>←</button>
+                <Select
+                    id="month-select"
+                    options={getMonths().map((inner, value) => ({ value, inner }))}
+                    operation={selectMonth}
+                    placeholder="Month"
+                    value={displayedMonth.toString()}
+                />
+                <Select
+                    id="year-select"
+                    options={range(currentYear - 10, currentYear + 10, 1).map((inner) => ({ value: inner, inner }))}
+                    operation={selectYear}
+                    placeholder="Month"
+                    value={displayedYear.toString()}
+                />
+                <button class="nav-button" id="nextMonth" onclick={goNextMonth}>→</button>
             </div>
         </div>
         <table class="calendar">
