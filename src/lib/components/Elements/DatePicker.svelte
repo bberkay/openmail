@@ -160,14 +160,14 @@
                 <button class="nav-button" id="prevMonth" onclick={goPrevMonth}>←</button>
                 <Select
                     id="month-select"
-                    options={getMonths().map((inner, value) => ({ value, inner }))}
+                    options={getMonths().map((month, index) => ({ value: index, inner: month }))}
                     operation={selectMonth}
                     placeholder="Month"
                     value={displayedMonth.toString()}
                 />
                 <Select
                     id="year-select"
-                    options={range(currentYear - 10, currentYear + 10, 1).map((inner) => ({ value: inner, inner }))}
+                    options={range(currentYear - 10, currentYear + 10, 1).map((year) => ({ value: year, inner: year }))}
                     operation={selectYear}
                     placeholder="Month"
                     value={displayedYear.toString()}

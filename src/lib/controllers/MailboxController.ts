@@ -1,5 +1,5 @@
 import { SharedStore } from "$lib/stores/shared.svelte";
-import { ApiService, GetRoutes, type BaseResponse, type GetResponse } from "$lib/services/ApiService";
+import { ApiService, GetRoutes, type BaseResponse, type GetResponse, PostRoutes, type PostResponse } from "$lib/services/ApiService";
 import { Folder } from "$lib/types";
 
 export class MailboxController {
@@ -92,6 +92,14 @@ export class MailboxController {
                     uid: uid
                 }
             }
+        );
+    }
+
+    public async sendEmail(formData: FormData): Promise<PostResponse> {
+        return await ApiService.post(
+            SharedStore.server,
+            PostRoutes.SEND_EMAIL,
+            formData
         );
     }
 }
