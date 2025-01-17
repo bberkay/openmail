@@ -92,8 +92,8 @@
         const target = e.target as HTMLInputElement;
         const searchTerm = target.value;
         renderOptions(options.filter((option) =>
-            option.value.toLowerCase().includes(searchTerm.toLowerCase())
-            || option.inner.toLowerCase().includes(searchTerm.toLowerCase()),
+            option.value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+            || option.inner.toString().toLowerCase().includes(searchTerm.toLowerCase()),
         ));
     }
 </script>
@@ -102,7 +102,7 @@
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div class="custom-select {showClass}" onclick={() => { isOpen = !isOpen }}>
         <div class="select-trigger">
-            <span>{selectedOption}</span>
+            <span>{selectedOption || placeholder}</span>
             <div class="arrow"></div>
         </div>
     </div>
