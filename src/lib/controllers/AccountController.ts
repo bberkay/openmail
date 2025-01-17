@@ -8,7 +8,7 @@ export class AccountController {
     }
 
     public async update(): Promise<BaseResponse> {
-        const response = await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS);
+        const response = await this.list();
         if (response.success && response.data) {
             SharedStore.accounts = response.data;
         }
