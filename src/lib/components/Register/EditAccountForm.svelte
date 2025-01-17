@@ -3,7 +3,8 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Form from "$lib/components/Elements/Form.svelte";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
-    import type { Account } from "$lib/types";
+    import { AccountEvent, type Account } from "$lib/types";
+    import { onMount, onDestroy } from "svelte";
 
     const accountController = new AccountController();
 
@@ -12,6 +13,18 @@
             ? SharedStore.failedAccounts[0]
             : null
     );
+
+    function handleEditingAccount(event: CustomEvent) {
+        currentEditingAccount = event.detail.account;
+    }
+
+    onMount(() => {
+        document.addEventListener(AccountEvent.onEditingAccount, handleEditingAccount as EventListener);
+    });
+
+    onDestroy(() => {
+        document.removeEventListener(AccountEvent.onEditingAccount, handleEditingAccount as EventListener);
+    });
 
     $effect(() => {
         if (!currentEditingAccount && SharedStore.failedAccounts.length > 0)
@@ -49,6 +62,10 @@
             }
         }
     }
+
+    const cancelEdit = () => {
+        currentEditingAccount = null;
+    }
 </script>
 
 <Form Inner={EditAccountForm} operation={editAccount} />
@@ -83,6 +100,7 @@
                 <small style="font-style:italic;margin-top:5px;">Enter your fullname to be displayed in the email.</small>
                 </div>
             <button type="submit" id="edit-account-btn">Edit Account</button>
+            <button type="button" onclick={cancelEdit}>Cancel</button>
             <ActionButton id="remove-account" inner="Remove" operation={removeAccount} data-email-address={currentEditingAccount.email_address} />
         </div>
     {/if}

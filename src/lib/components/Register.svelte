@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, mount, unmount } from "svelte";
-    import Loader from "$lib/components/Loader.svelte";
+    import AccountList from "$lib/components/Register/AccountList.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
     import { Folder } from "$lib/types";
@@ -8,6 +8,7 @@
     import Form from "$lib/components/Elements/Form.svelte";
     import AddAccountForm from "./Register/AddAccountForm.svelte";
     import EditAccountForm from "./Register/EditAccountForm.svelte";
+    import ActionButton from "./Elements/ActionButton.svelte";
 
     async function getMailboxesOfAllAccounts() {
         const response = await ApiService.get(
@@ -73,23 +74,9 @@
         }
     }
 
-    async function continueToInbox(event: Event) {
-        event.preventDefault();
-
-        const continueToInboxBtn = event.target as HTMLButtonElement;
-
-        continueToInboxBtn.disabled = true;
-        continueToInboxBtn.innerText = '';
-        const loader = mount(Loader, {
-            target: continueToInboxBtn,
-        });
-
+    async function continueToInbox(): Promise<void> {
         await getFoldersOfAllAccounts();
         await getMailboxesOfAllAccounts();
-
-        continueToInboxBtn.disabled = false;
-        unmount(loader);
-        continueToInboxBtn.innerHTML = 'Continue to Inbox';
     }
 </script>
 
@@ -101,16 +88,8 @@
     <AddAccountForm />
 {/if}
 
-{#if SharedStore.accounts && SharedStore.accounts.length > 0}
-    <h3>Current Accounts <button onclick={removeAllAccounts}>Remove All</button></h3>
-    <ul>
-        {#each SharedStore.accounts as account}
-            <li>
-                <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
-                <button style="margin-right: 5px;" onclick={() => { currentEditingAccount = account }}>Edit</button>
-                <button onclick={removeAccount} data-email-address={account.email_address}>Remove</button>
-            </li>
-        {/each}
-    </ul>
-    <button class ="bg-primary" id="continue-to-inbox" onclick={continueToInbox}>Continue to Inbox</button>
-{/if}
+<AccountList/>
+
+<div>
+    <ActionButton classes="bg-primary" id="continue-to-inbox" operation={continueToInbox} inner="Continue To Inbox" />
+</div>

@@ -115,3 +115,13 @@ export enum Folder {
     Junk = "Junk",
     Trash = "Trash",
 }
+
+export enum AccountEvent {
+    /**
+     * Triggered when the user clicks the edit account
+     * button from AccountList component.
+     * @CustomEvent
+     * @param {Account} account
+     */
+    onEditingAccount = "onEditingAccount",
+}
