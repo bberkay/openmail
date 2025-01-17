@@ -56,19 +56,22 @@
         e.preventDefault();
 
         const target = e.target as HTMLFormElement;
-        let eventButton = target.querySelector(
-            'button[type="submit"]',
-        ) as HTMLButtonElement;
-        if (!eventButton) eventButton = e.target as HTMLButtonElement;
-        eventButton.disabled = true;
-        const temp = eventButton.innerText;
-        eventButton.innerText = "";
-        const loader = mount(Loader, { target: eventButton });
+        const eventTrigger = (target.tagName == "form"
+                ? target.querySelector('button[type="submit"]')
+                : e.target) as HTMLButtonElement;
+
+        if (!eventTrigger)
+            return;
+
+        eventTrigger.disabled = true;
+        const temp = eventTrigger.innerText;
+        eventTrigger.innerText = "";
+        const loader = mount(Loader, { target: eventTrigger });
 
         await callback();
 
-        eventButton.disabled = false;
-        eventButton.innerText = temp;
+        eventTrigger.disabled = false;
+        eventTrigger.innerText = temp;
         unmount(loader);
     }
 
