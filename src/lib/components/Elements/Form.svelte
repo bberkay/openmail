@@ -1,7 +1,6 @@
 <script lang="ts">
     import { mount, unmount } from "svelte";
-    import Loader from "$lib/components/Loader.svelte";
-    import AddAccountForm from "../Register/AddAccountForm.svelte";
+    import Loader from "$lib/components/Elements/Loader.svelte";
     import type { Snippet } from 'svelte';
 
     interface Props {

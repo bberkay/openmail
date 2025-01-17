@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Loader from "$lib/components/Loader.svelte";
+    import Loader from "$lib/components/Elements/Loader.svelte";
     import Inbox from "$lib/components/Inbox.svelte";
     import Register from "$lib/components/Register.svelte";
     import Sidebar from "$lib/components/Sidebar.svelte";
