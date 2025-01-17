@@ -80,4 +80,18 @@ export class MailboxController {
             message: response.message
         }
     }
+
+    public async getEmailContent(account: string, uid: string): Promise<GetResponse<GetRoutes.GET_EMAIL_CONTENT>> {
+        return await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_EMAIL_CONTENT,
+            {
+                pathParams: {
+                    accounts: account,
+                    folder: encodeURIComponent(SharedStore.currentFolder),
+                    uid: uid
+                }
+            }
+        );
+    }
 }

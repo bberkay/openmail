@@ -3,7 +3,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import AddAccountForm from "./Register/AddAccountForm.svelte";
     import EditAccountForm from "./Register/EditAccountForm.svelte";
-    import ActionButton from "./Elements/ActionButton.svelte";
+    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
 
     const mailboxController = new MailboxController();
@@ -39,5 +39,5 @@
 <AccountList/>
 
 <div>
-    <ActionButton classes="bg-primary" id="continue-to-inbox" operation={continueToInbox} inner="Continue To Inbox" />
+    <ActionButton id="continue-to-inbox" operation={continueToInbox} inner="Continue To Inbox" />
 </div>
