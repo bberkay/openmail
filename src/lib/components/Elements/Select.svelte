@@ -9,7 +9,8 @@
     interface Props {
         id: string;
         options: Option[];
-        placeholder: Option;
+        placeholder?: string;
+        value?: Option;
         operation?: (selectedOption: string | null) => void,
         enableSearch?: boolean;
     }
@@ -17,7 +18,8 @@
     let {
         id,
         options,
-        placeholder,
+        placeholder = undefined,
+        value = undefined,
         operation = undefined,
         enableSearch = false,
     }: Props = $props();
@@ -25,7 +27,7 @@
     let isOpen = $state(false);
     let showClass = $derived(isOpen ? "open" : "");
     let filteredOptions: Option[] = $state(options);
-    let selectedOption: Option | null = $state(placeholder);
+    let selectedOption: Option | null = $state(value || null);
     let searchInput: HTMLInputElement | null = null;
 
     onMount(() => {
@@ -48,6 +50,10 @@
             closeSelect();
         }
     })
+
+    $effect(() => {
+        selectedOption = value || null;
+    });
 
     function renderOptions(newOptions: Option[] | null = null) {
         filteredOptions = newOptions || options;
@@ -96,13 +102,21 @@
             || option.inner.toString().toLowerCase().includes(searchTerm.toLowerCase()),
         ));
     }
+
+    const clearSelection = (e: Event) => {
+        selectedOption = null;
+        renderOptions();
+    }
 </script>
 
 <div class="custom-select-wrapper">
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div class="custom-select {showClass}" onclick={() => { isOpen = !isOpen }}>
         <div class="select-trigger">
-            <span>{selectedOption || placeholder}</span>
+            <div class="select-trigger-content">
+                <span id={id}>{selectedOption && selectedOption.value ? selectedOption.inner : placeholder}</span>
+                <button class="clear-button {selectedOption ? "visible" : ""}" onclick={clearSelection}>×</button>
+            </div>
             <div class="arrow"></div>
         </div>
     </div>
@@ -155,6 +169,35 @@
             justify-content: space-between;
             align-items: center;
             color: #333;
+
+            & .select-trigger-content {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex: 1;
+
+                & .clear-button {
+                    background: none;
+                    border: none;
+                    color: #999;
+                    cursor: pointer;
+                    padding: 2px 6px;
+                    font-size: 18px;
+                    line-height: 1;
+                    visibility: hidden;
+                    opacity: 0;
+                    transition: all 0.2s ease;
+
+                    &.visible{
+                        visibility: visible;
+                        opacity: 1;
+                    }
+
+                    &:hover{
+                        color: #666;
+                    }
+                }
+            }
 
             & .arrow {
                 border-style: solid;

@@ -5,16 +5,24 @@
 
     interface Props {
         id: string;
+        placeholder?: string,
+        value?: Date,
+        operation?: (selectedDay: Date) => void,
     }
 
-    let { id }: Props = $props();
+    let {
+        id,
+        placeholder = undefined,
+        value = undefined,
+        operation = undefined
+    }: Props = $props();
 
     let currentDate = new Date();
     let currentYear = currentDate.getFullYear();
     let currentMonth = currentDate.getMonth();
     let displayedYear: number = $state(currentYear);
     let displayedMonth: number = $state(currentMonth);
-    let selectedDate: Date | "" = "";
+    let selectedDate: Date | "" = $state(value || "");
 
     let datePickerShown: boolean = $state(false);
     let datePickerWrapper: HTMLDivElement;
@@ -51,6 +59,17 @@
         displayedYear = parseInt(selectedYear);
     };
 
+    const selectDate = (selectedDayNumber: string) => {
+        selectedDate = new Date(
+            displayedYear,
+            displayedMonth,
+            parseInt(selectedDayNumber),
+        );
+        datePickerShown = false;
+        if(operation) operation(selectedDate);
+        renderCalendar();
+    }
+
     const goPrevMonth = () => {
         displayedMonth--;
         if (displayedMonth < 0) {
@@ -66,6 +85,12 @@
             displayedYear++;
         }
     };
+
+    const clearSelection = () => {
+        selectedDate = "";
+        dateInput.value = "";
+        renderCalendar();
+    }
 
     function renderCalendar() {
         const firstDay = new Date(displayedYear, displayedMonth, 1);
@@ -128,15 +153,7 @@
         calendarBody
             .querySelectorAll<HTMLElement>("td[data-date]")
             .forEach((cell: HTMLElement) => {
-                cell.addEventListener("click", () => {
-                    selectedDate = new Date(
-                        displayedYear,
-                        displayedMonth,
-                        parseInt(cell.dataset.date!),
-                    );
-                    datePickerShown = false;
-                    renderCalendar();
-                });
+                cell.addEventListener("click", () => { selectDate(cell.dataset.date!) });
             });
     }
 </script>
@@ -146,7 +163,7 @@
         type="text"
         class="date-input"
         readonly
-        placeholder="Select date"
+        placeholder={placeholder}
         value={() => {
             convertToIMAPDate(selectedDate);
         }}
@@ -157,21 +174,22 @@
     <div class="datepicker-container">
         <div class="datepicker-header">
             <div class="month-year-selector">
-                <button class="nav-button" id="prevMonth" onclick={goPrevMonth}>←</button>
+                <button class="nav-button" id="prev-month" onclick={goPrevMonth}>←</button>
                 <Select
                     id="month-select"
                     options={getMonths().map((month, index) => ({ value: index, inner: month }))}
                     operation={selectMonth}
-                    placeholder={{ value: displayedMonth, inner: displayedMonth.toString() }}
+                    value={{ value: displayedMonth, inner: displayedMonth.toString() }}
                 />
                 <Select
                     id="year-select"
                     options={range(currentYear - 10, currentYear + 10, 1).map((year) => ({ value: year, inner: year }))}
                     operation={selectYear}
-                    placeholder={{ value: displayedYear, inner: displayedYear.toString() }}
+                    value={{ value: displayedYear, inner: displayedYear.toString() }}
                 />
-                <button class="nav-button" id="nextMonth" onclick={goNextMonth}>→</button>
+                <button class="nav-button" id="next-month" onclick={goNextMonth}>→</button>
             </div>
+            <button class="clear-button" onclick={clearSelection}>Clear</button>
         </div>
         <table class="calendar">
             <thead>
@@ -185,13 +203,15 @@
                     <th>Sat</th>
                 </tr>
             </thead>
-            <tbody id="calendarBody"></tbody>
+            <tbody id="calendar-body">
+                <!-- TODO: Move renderOptions to here -->
+            </tbody>
         </table>
     </div>
 </div>
 
 <style>
-    .date-input-wrapper :global {
+    .date-input-wrapper :global{
         position: relative;
         width: 200px;
 
@@ -245,10 +265,18 @@
             }
         }
 
-        & select {
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+        & .clear-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+
+            &:hover {
+                background: #ff0000;
+            }
         }
 
         & .calendar {
