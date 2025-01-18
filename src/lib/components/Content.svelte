@@ -1,6 +1,6 @@
 <script lang="ts">
     import { mount, unmount } from "svelte";
-    import Loader from "$lib/components/Loader.svelte";
+    import Loader from "$lib/components/Elements/Loader.svelte";
     import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
     import type { Attachment, EmailWithContent } from "$lib/types";
     import { onMount } from "svelte";
@@ -52,7 +52,6 @@
                 attachments.appendChild(link);
             });
         }
-
     }
 
     async function downloadFile(linkId: string, attachment: Attachment): Promise<void> {
@@ -67,15 +66,6 @@
 
         unmount(loader);
         link.innerHTML = tempInnerHTML;
-    }
-
-    async function markEmail(event: Event): Promise<void> {
-    }
-
-    async function moveEmail(event: Event): Promise<void> {
-    }
-
-    async function deleteEmail(event: Event): Promise<void> {
     }
 </script>
 
