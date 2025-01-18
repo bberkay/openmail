@@ -170,11 +170,16 @@ export interface GetResponse<T extends GetRoutes> extends BaseResponse {
 export interface PostResponse extends BaseResponse {}
 
 export class ApiService {
-    static _removeUndefinedParams(
-        params: Record<string, any | undefined>
+    static _removeFalsyParamsAndEmptyLists(
+        params: Record<string, any>
     ): Record<string, string> {
         return Object.fromEntries(
-            Object.entries(params).filter((entry) => entry[1] !== undefined)
+            Object.entries(params).filter(([_, value]) => {
+                if (Array.isArray(value)) {
+                    return value.length > 0;
+                }
+                return !!value;
+            })
         );
     }
 
@@ -191,7 +196,7 @@ export class ApiService {
 
             if(params && "queryParams" in params && params.queryParams)
                 queryString += "?" + new URLSearchParams(
-                    ApiService._removeUndefinedParams(params.queryParams)
+                    ApiService._removeFalsyParamsAndEmptyLists(params.queryParams)
                 ).toString()
 
             return queryString
@@ -215,7 +220,7 @@ export class ApiService {
             body: body instanceof FormData
                 ? body
                 : JSON.stringify(
-                    this._removeUndefinedParams(body)
+                    this._removeFalsyParamsAndEmptyLists(body)
                 ),
         });
 
