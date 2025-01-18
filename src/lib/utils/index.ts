@@ -1,12 +1,5 @@
 import { Size } from "./types";
 
-export function makeSizeHumanReadable(bytes: number): string {
-    const sizes: Size[] = Object.values(Size);
-    if (bytes === 0) return "n/a";
-    const i = Math.floor(Math.log2(bytes) / 10);
-    return Math.round(bytes / Math.pow(2, i * 10)) + " " + sizes[i];
-}
-
 export function createDomObject(html: string): HTMLElement {
     const template = document.createElement("template");
     template.innerHTML = html.trim();
@@ -33,17 +26,47 @@ export function debounce(func: Function, delay: number) {
     };
 }
 
-export function adjustSizes(smaller: [number, Size], larger: [number, Size], adjustToSmaller: boolean = true): [[number, Size], [number, Size]] {
-    const multiplier = {
+export function makeSizeHumanReadable(bytes: number): string {
+    const sizes: Size[] = Object.values(Size);
+    if (bytes === 0) return "n/a";
+    const i = Math.floor(Math.log2(bytes) / 10);
+    return concatValueAndUnit(Math.round(bytes / Math.pow(2, i * 10)), sizes[i]);
+}
+
+export function convertSizeToBytes(size: [number, Size] | string): number {
+    const sizeMultiplier: Record<Size, number> = {
         [Size.Bytes]: 1,
         [Size.KB]: 1024,
-        [Size.MB]: 1024 ** 2
+        [Size.MB]: 1024 ** 2,
     };
 
-    let [smallerValue, smallerUnit] = smaller;
-    let [largerValue, largerUnit] = larger;
+    const [humanSizeValue, humanSizeType] = typeof size === "string" ? parseValueAndUnit(size) : size;
+    if (!humanSizeValue || !humanSizeType) {
+        throw new Error("Invalid human-readable size format");
+    }
 
-    if (smallerValue * multiplier[smallerUnit] <= largerValue * multiplier[largerUnit]) {
+    const multiplier = sizeMultiplier[humanSizeType as Size];
+    if (!multiplier) {
+        throw new Error(`Unsupported size type: ${humanSizeType}`);
+    }
+
+    return Math.round(multiplier * humanSizeValue);
+}
+
+export function parseValueAndUnit(size: string): [number, Size] {
+    const [sizeValue, sizeUnit] = size.split(" ");
+    return [parseFloat(sizeValue), sizeUnit as Size];
+}
+
+export function concatValueAndUnit(value: number, unit: Size): string {
+    return `${value} ${unit}`;
+}
+
+export function adjustSizes(smaller: string | [number, Size], larger: string | [number, Size], adjustToSmaller: boolean = true): [string | [number, Size], string | [number, Size]]  {
+    let [smallerValue, smallerUnit] = typeof smaller === "string" ? parseValueAndUnit(smaller) : smaller;
+    let [largerValue, largerUnit] = typeof larger === "string" ? parseValueAndUnit(larger) : larger;
+
+    if (convertSizeToBytes([smallerValue, smallerUnit]) <= convertSizeToBytes([largerValue, largerUnit])) {
         if (adjustToSmaller) {
             largerValue = Math.max(smallerValue - 1, 0);
             largerUnit = smallerUnit
@@ -53,7 +76,10 @@ export function adjustSizes(smaller: [number, Size], larger: [number, Size], adj
         }
     }
 
-    return [[smallerValue, smallerUnit], [largerValue, largerUnit]];
+    return [
+        typeof smaller === "string" ? concatValueAndUnit(smallerValue, smallerUnit) : [smallerValue, smallerUnit],
+        typeof larger === "string" ? concatValueAndUnit(largerValue, largerUnit) : [largerValue, largerUnit]
+    ];
 }
 
 export function capitalize(s: string): string {
@@ -78,26 +104,6 @@ export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: nu
 
     [arr[fromIndex], arr[toIndex]] = [arr[toIndex], arr[fromIndex]];
     return arr;
-}
-
-export function convertHumanSizeToBytes(humanSize: string): number {
-    const sizeMultiplier: Record<Size, number> = {
-        [Size.Bytes]: 1,
-        [Size.KB]: 1024,
-        [Size.MB]: 1024 ** 2,
-    };
-
-    const [humanSizeValue, humanSizeType] = humanSize.split(" ");
-    if (!humanSizeValue || !humanSizeType) {
-        throw new Error("Invalid human-readable size format");
-    }
-
-    const multiplier = sizeMultiplier[humanSizeType as Size];
-    if (!multiplier) {
-        throw new Error(`Unsupported size type: ${humanSizeType}`);
-    }
-
-    return Math.round(multiplier * parseFloat(humanSizeValue));
 }
 
 export function convertToIMAPDate(dateStringOrDate: string | Date): string {
