@@ -9,16 +9,16 @@
     interface Props {
         id: string;
         options: Option[];
-        operation: (selectedOption: string | null) => void,
         placeholder: Option;
+        operation?: (selectedOption: string | null) => void,
         enableSearch?: boolean;
     }
 
     let {
         id,
         options,
-        operation,
         placeholder,
+        operation = undefined,
         enableSearch = false,
     }: Props = $props();
 
@@ -81,9 +81,7 @@
             return;
 
         selectedOption = { value, inner };
-
-        operation(selectedOption.value.toString());
-
+        if(operation) operation(selectedOption.value.toString());
         closeSelect();
     };
 
