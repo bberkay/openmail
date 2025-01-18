@@ -1,11 +1,14 @@
 <script lang="ts">
     import { mount, onMount, unmount } from "svelte";
-    import Loader from "$lib/components/Loader.svelte";
+    import Loader from "$lib/components/Elements/Loader.svelte";
     import InboxItem from "./Inbox/InboxItem.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { ApiService, GetRoutes, PostRoutes } from "$lib/services/ApiService";
     import { Folder, Mark, type EmailSummary, type EmailWithContent } from "$lib/types";
+    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
 
+    const mailboxController = new MailboxController();
     let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
     let currentOffset = $state(1);
     let moveFolderSelection = $state("Move to");
@@ -56,49 +59,32 @@
         })
     }
 
-    function paginateEmails(event: Event, offset_start: number, offset_end: number) {
-        makeAnApiRequest(event, async () => {
-            const response = await ApiService.get(
-                SharedStore.server,
-                GetRoutes.PAGINATE_MAILBOXES,
-                {
-                    pathParams: {
-                        accounts: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                        offset_start: offset_start,
-                        offset_end: offset_end,
-                    }
-                }
-            );
-
-            if (response.success && response.data) {
-                currentOffset = Math.max(0, offset_start);
-                SharedStore.mailboxes = response.data;
-            } else {
-                alert(response.message);
-            }
-        })
-    }
-
-    function getPreviousEmails(event: Event) {
+    async function getPreviousEmails() {
         if (currentOffset <= 10)
             return;
 
-        paginateEmails(
-            event,
-            Math.max(0, currentOffset - 10),
-            Math.max(0, currentOffset)
-        );
+        const offset_start = Math.max(0, currentOffset - 10);
+        const offset_end = Math.max(0, currentOffset);
+        const response = await mailboxController.paginateEmails(offset_start, offset_end);
+        if (response.success) {
+            currentOffset = Math.max(0, offset_start);
+        } else {
+            alert(response.message);
+        }
     }
 
-    function getNextEmails(event: Event) {
+    async function getNextEmails() {
         if (currentOffset >= totalEmailCount)
             return;
 
-        paginateEmails(
-            event,
-            Math.min(totalEmailCount, currentOffset + 10),
-            Math.min(totalEmailCount, currentOffset + 10 + 10)
-        )
+        const offset_start = Math.min(totalEmailCount, currentOffset + 10);
+        const offset_end = Math.min(totalEmailCount, currentOffset + 10 + 10);
+        const response = await mailboxController.paginateEmails(offset_start, offset_end);
+        if (response.success) {
+            currentOffset = Math.max(0, offset_start);
+        } else {
+            alert(response.message);
+        }
     }
 
     function selectAllShownEmails(event: Event) {
@@ -290,21 +276,11 @@
 <h2>{SharedStore.currentFolder}</h2>
 <hr />
 <div style="display:flex;justify-content:space-between;align-items:center;">
-    {#if currentOffset < 10}
-        <button class = "bg-primary" disabled>Previous</button>
-    {:else}
-        <button class = "bg-primary" onclick={getPreviousEmails}>Previous</button>
-    {/if}
-
+    <ActionButton id="get-previous-emails-btn" operation={getPreviousEmails} inner="Previous" class="bg-primary {currentOffset < 10 ? "disabled" : ""}"/>
     <small>
         {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
     </small>
-
-    {#if currentOffset >= totalEmailCount}
-        <button class = "bg-primary" disabled>Next</button>
-    {:else}
-        <button class = "bg-primary" onclick={getNextEmails}>Next</button>
-    {/if}
+    <ActionButton id="get-next-emails-btn" operation={getNextEmails} inner="Next" class="bg-primary {currentOffset >= totalEmailCount ? "disabled" : ""}"/>
 </div>
 <hr />
 <div style="display:flex;">

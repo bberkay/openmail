@@ -102,4 +102,27 @@ export class MailboxController {
             formData
         );
     }
+
+    public async paginateEmails(offset_start: number, offset_end: number): Promise<BaseResponse> {
+        const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.PAGINATE_MAILBOXES,
+            {
+                pathParams: {
+                    accounts: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                    offset_start: offset_start,
+                    offset_end: offset_end,
+                }
+            }
+        );
+
+        if (response.success && response.data) {
+            SharedStore.mailboxes = response.data;
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
 }

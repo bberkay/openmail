@@ -137,6 +137,12 @@ button{
         background-color: transparent;
         text-align: left;
     }
+
+    &.disabled{
+        cursor: not-allowed;
+        opacity: 0.5;
+        pointer-events: none;
+    }
 }
 
 span {
