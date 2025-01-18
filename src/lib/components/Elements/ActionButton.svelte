@@ -36,7 +36,7 @@
     }
 </script>
 
-<button id={id} {...attributes} onclick={makeAnApiRequest}>
+<button type="button" id={id} {...attributes} onclick={makeAnApiRequest}>
     {@html inner}
 </button>
 
