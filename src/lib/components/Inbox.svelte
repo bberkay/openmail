@@ -7,12 +7,11 @@
     import { Folder, Mark, type EmailSummary, type EmailWithContent } from "$lib/types";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import Select from "$lib/components/Elements/Select.svelte";
 
     const mailboxController = new MailboxController();
     let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
     let currentOffset = $state(1);
-    let moveFolderSelection = $state("Move to");
-    let copyFolderSelection = $state("Copy to");
     let emailSelection: string[] = $state([]);
 
     interface Props {
@@ -36,30 +35,14 @@
         unmount(loader);
     }
 
-    function refreshMailbox(event: Event) {
-        makeAnApiRequest(event, async () => {
-            const response = await ApiService.get(
-                SharedStore.server,
-                GetRoutes.GET_MAILBOXES,
-                {
-                    pathParams: {
-                        accounts: SharedStore.accounts[0].email_address
-                    },
-                    queryParams: {
-                        folder: SharedStore.currentFolder
-                    }
-                }
-            );
-
-            if (response.success && response.data) {
-                SharedStore.mailboxes = response.data;
-            } else {
-                alert(response.message);
-            }
-        })
+    const refreshMailbox = async (): Promise<void> => {
+        const response = await mailboxController.refreshMailbox();
+        if (!response.success) {
+            alert(response.message);
+        }
     }
 
-    async function getPreviousEmails() {
+    const getPreviousEmails = async () => {
         if (currentOffset <= 10)
             return;
 
@@ -73,7 +56,7 @@
         }
     }
 
-    async function getNextEmails() {
+    const getNextEmails = async () => {
         if (currentOffset >= totalEmailCount)
             return;
 
@@ -87,14 +70,14 @@
         }
     }
 
-    function selectAllShownEmails(event: Event) {
+    const selectAllShownEmails = (event: Event) => {
         const selectAllCheckbox = event.target as HTMLInputElement;
         emailSelection = selectAllCheckbox.checked
             ? SharedStore.mailboxes.map((account) => account.result.emails.map((email) => email.uid)).flat()
             : [];
     }
 
-    function selectAllEmails(event: Event) {
+    const selectAllEmails = (event: Event) => {
         const selectAllButton = event.target as HTMLButtonElement;
         const selectAllCheckbox = document.getElementById("select-all") as HTMLInputElement;
         if (emailSelection.includes("*")) {
@@ -177,70 +160,33 @@
         unmarkEmail(event, Mark.Flagged);
     }
 
-    function deleteEmails(event: Event) {
-        makeAnApiRequest(event, async () => {
-            confirm("Are you sure you want to delete these emails?");
-
-            const response = await ApiService.post(
-                SharedStore.server,
-                PostRoutes.DELETE_EMAIL,
-                {
-                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    folder: SharedStore.currentFolder
-                }
-            );
-
-            if (response.success) {
-                refreshMailbox(event);
-            } else {
+    const deleteEmails = async (): Promise<void> => {
+        if (confirm("Are you sure you want to delete these emails?")) {
+            const response = await mailboxController.deleteEmails(emailSelection);
+            if(!response.success) {
                 alert(response.message);
             }
-        })
+        }
     }
 
-    function moveEmail(event: Event) {
-        makeAnApiRequest(event, async () => {
-            const response = await ApiService.post(
-                SharedStore.server,
-                PostRoutes.MOVE_EMAIL,
-                {
-                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    source_folder: SharedStore.currentFolder,
-                    destination_folder: moveFolderSelection
-                }
-            );
+    const moveEmails = async (destinationFolder: string | null): Promise<void> => {
+        if(!destinationFolder)
+            return;
 
-            if (response.success) {
-                refreshMailbox(event);
-            } else {
-                alert(response.message);
-            }
-
-            moveFolderSelection = "Move to";
-        })
+        const response = await mailboxController.moveEmails(emailSelection, destinationFolder);
+        if(!response.success) {
+            alert(response.message);
+        }
     }
 
-    function copyEmail(event: Event) {
-        makeAnApiRequest(event, async () => {
-            const response = await ApiService.post(
-                SharedStore.server,
-                PostRoutes.MOVE_EMAIL,
-                {
-                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    source_folder: SharedStore.currentFolder,
-                    destination_folder: copyFolderSelection
-                }
-            );
+    const copyEmails = async (destinationFolder: string | null): Promise<void> => {
+        if(!destinationFolder)
+            return;
 
-            if (!response.success) {
-                alert(response.message);
-            }
-
-            copyFolderSelection = "Copy to";
-        })
+        const response = await mailboxController.moveEmails(emailSelection, destinationFolder);
+        if(!response.success) {
+            alert(response.message);
+        }
     }
 
     function isAllSelectedEmailsAreMarked(mark: Mark): boolean {
@@ -291,19 +237,19 @@
             <button onclick={selectAllEmails}>Select all {totalEmailCount} emails</button>
         </span>
         <br>
-        <button class = "bg-primary" style="margin-right:5px;" onclick={deleteEmails}>Delete</button>
-        <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={moveFolderSelection} onchange={moveEmail}>
-            <option disabled selected>Move to</option>
-            {#each SharedStore.customFolders[0].result as folder}
-                <option value="{folder}">{folder}</option>
-            {/each}
-        </select>
-        <select class = "bg-primary" style="margin-right:5px;width:80px;" bind:value={copyFolderSelection} onchange={copyEmail}>
-            <option disabled selected>Copy to</option>
-            {#each SharedStore.customFolders[0].result as folder}
-                <option value="{folder}">{folder}</option>
-            {/each}
-        </select>
+        <ActionButton id="delete-emails-btn" operation={deleteEmails} inner="Delete" class="bg-primary" style="margin-right:5px"/>
+        <Select
+            id="move-to-select"
+            options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
+            operation={moveEmails}
+            placeholder={{ value: '', inner: 'Move To' }}
+        />
+        <Select
+            id="move-to-select"
+            options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
+            operation={copyEmails}
+            placeholder={{ value: '', inner: 'Copy To' }}
+        />
         {#if isAllSelectedEmailsAreMarkedAsFlagged()}
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsNotImportant}>Mark as Not Important</button>
         {:else if isAllSelectedEmailsAreMarkedAsNotFlagged()}
@@ -321,7 +267,7 @@
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
         {/if}
     {:else}
-        <button class = "bg-primary" style="margin-right:5px;" onclick={refreshMailbox}>Refresh</button>
+        <ActionButton id="refresh-mailbox-btn" operation={refreshMailbox} inner="Refresh" class="bg-primary" style="margin-right:5px"/>
     {/if}
 </div>
 <hr />
