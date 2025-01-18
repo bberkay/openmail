@@ -1,10 +1,7 @@
 <script lang="ts">
-    import { mount, onMount, unmount } from "svelte";
-    import Loader from "$lib/components/Elements/Loader.svelte";
     import InboxItem from "./Inbox/InboxItem.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { ApiService, GetRoutes, PostRoutes } from "$lib/services/ApiService";
-    import { Folder, Mark, type EmailSummary, type EmailWithContent } from "$lib/types";
+    import { Mark, type EmailWithContent } from "$lib/types";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import Select from "$lib/components/Elements/Select.svelte";
