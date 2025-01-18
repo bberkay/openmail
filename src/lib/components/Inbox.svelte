@@ -184,13 +184,13 @@
             id="move-to-select"
             options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
             operation={moveEmails}
-            placeholder={{ value: '', inner: 'Move To' }}
+            placeholder='Move To'
         />
         <Select
             id="move-to-select"
             options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
             operation={copyEmails}
-            placeholder={{ value: '', inner: 'Copy To' }}
+            placeholder='Copy To'
         />
         {#if isAllSelectedEmailsAreMarkedAsFlagged()}
             <ActionButton id="mark-as-not-important-btn" operation={markEmailsAsNotImportant} inner="Mark as Not Important" class="bg-primary" style="margin-right:5px"/>
