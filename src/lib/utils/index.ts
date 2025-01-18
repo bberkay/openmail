@@ -26,6 +26,25 @@ export function debounce(func: Function, delay: number) {
     };
 }
 
+export function isObjEmpty(obj: Record<string, any>): boolean {
+    return Object.values(obj).every(
+        (value) => !!value === false || (Array.isArray(value) && value.length === 0)
+    );
+}
+
+export function removeFalsyParamsAndEmptyLists(
+    params: Record<string, any>
+): Record<string, string> {
+    return Object.fromEntries(
+        Object.entries(params).filter(([_, value]) => {
+            if (Array.isArray(value)) {
+                return value.length > 0;
+            }
+            return !!value;
+        })
+    );
+}
+
 export function makeSizeHumanReadable(bytes: number): string {
     const sizes: Size[] = Object.values(Size);
     if (bytes === 0) return "n/a";
@@ -58,8 +77,8 @@ export function parseValueAndUnit(size: string): [number, Size] {
     return [parseFloat(sizeValue), sizeUnit as Size];
 }
 
-export function concatValueAndUnit(value: number, unit: Size): string {
-    return `${value} ${unit}`;
+export function concatValueAndUnit(value: number | string, unit: Size): string {
+    return `${typeof value === "string" ? parseFloat(value) : value} ${unit}`;
 }
 
 export function adjustSizes(smaller: string | [number, Size], larger: string | [number, Size], adjustToSmaller: boolean = true): [string | [number, Size], string | [number, Size]]  {

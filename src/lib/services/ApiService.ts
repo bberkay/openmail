@@ -1,4 +1,5 @@
 import type { Account, EmailWithContent, Mailbox, OpenMailTaskResults } from "$lib/types";
+import { removeFalsyParamsAndEmptyLists } from "$lib/utils";
 
 export enum GetRoutes {
     HELLO = "/hello",
@@ -170,19 +171,6 @@ export interface GetResponse<T extends GetRoutes> extends BaseResponse {
 export interface PostResponse extends BaseResponse {}
 
 export class ApiService {
-    static _removeFalsyParamsAndEmptyLists(
-        params: Record<string, any>
-    ): Record<string, string> {
-        return Object.fromEntries(
-            Object.entries(params).filter(([_, value]) => {
-                if (Array.isArray(value)) {
-                    return value.length > 0;
-                }
-                return !!value;
-            })
-        );
-    }
-
     static async get<T extends GetRoutes>(
         url: string,
         endpoint: T,
@@ -196,7 +184,7 @@ export class ApiService {
 
             if(params && "queryParams" in params && params.queryParams)
                 queryString += "?" + new URLSearchParams(
-                    ApiService._removeFalsyParamsAndEmptyLists(params.queryParams)
+                    removeFalsyParamsAndEmptyLists(params.queryParams)
                 ).toString()
 
             return queryString
@@ -220,7 +208,7 @@ export class ApiService {
             body: body instanceof FormData
                 ? body
                 : JSON.stringify(
-                    this._removeFalsyParamsAndEmptyLists(body)
+                    removeFalsyParamsAndEmptyLists(body)
                 ),
         });
 
