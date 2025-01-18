@@ -125,4 +125,93 @@ export class MailboxController {
             message: response.message
         }
     }
+
+    public async refreshMailbox(): Promise<BaseResponse> {
+        const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_MAILBOXES,
+            {
+                pathParams: {
+                    accounts: SharedStore.accounts[0].email_address
+                },
+                queryParams: {
+                    folder: SharedStore.currentFolder
+                }
+            }
+        );
+
+        if (response.success && response.data) {
+            SharedStore.mailboxes = response.data;
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
+
+    public async deleteEmails(selection: string[]): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.DELETE_EMAIL,
+            {
+                account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                sequence_set: selection.includes("*") ? "1:*" : selection.join(","),
+                folder: SharedStore.currentFolder
+            }
+        );
+
+        if (response.success) {
+            this.refreshMailbox();
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
+
+    public async moveEmails(selection: string[], destinationFolder: string): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.MOVE_EMAIL,
+            {
+                account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                sequence_set: selection.includes("*") ? "1:*" : selection.join(","),
+                source_folder: SharedStore.currentFolder,
+                destination_folder: destinationFolder
+            }
+        );
+
+        if (response.success) {
+            this.refreshMailbox();
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
+
+    public async copyEmails(selection: string[], destinationFolder: string): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.COPY_EMAIL,
+            {
+                account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                sequence_set: selection.includes("*") ? "1:*" : selection.join(","),
+                source_folder: SharedStore.currentFolder,
+                destination_folder: destinationFolder
+            }
+        );
+
+        if (response.success) {
+            this.refreshMailbox();
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
 }
