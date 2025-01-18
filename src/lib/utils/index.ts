@@ -1,7 +1,7 @@
-import { type Size } from "./types";
+import { Size } from "./types";
 
 export function makeSizeHumanReadable(bytes: number): string {
-    const sizes: Size[] = ["Bytes", "KB", "MB", "GB"];
+    const sizes: Size[] = Object.values(Size);
     if (bytes === 0) return "n/a";
     const i = Math.floor(Math.log2(bytes) / 10);
     return Math.round(bytes / Math.pow(2, i * 10)) + " " + sizes[i];
@@ -33,14 +33,37 @@ export function debounce(func: Function, delay: number) {
     };
 }
 
-export function addDays(dateString: string, days: number): string {
-    const date = new Date(dateString);
-    date.setDate(date.getDate() + days);
-    return date.toISOString().split("T")[0];
+export function adjustSizes(smaller: [number, Size], larger: [number, Size], adjustToSmaller: boolean = true): [[number, Size], [number, Size]] {
+    const multiplier = {
+        [Size.Bytes]: 1,
+        [Size.KB]: 1024,
+        [Size.MB]: 1024 ** 2
+    };
+
+    let [smallerValue, smallerUnit] = smaller;
+    let [largerValue, largerUnit] = larger;
+
+    if (smallerValue * multiplier[smallerUnit] <= largerValue * multiplier[largerUnit]) {
+        if (adjustToSmaller) {
+            largerValue = Math.max(smallerValue - 1, 0);
+            largerUnit = smallerUnit
+        } else {
+            smallerValue = largerValue + 1;
+            smallerUnit = largerUnit
+        }
+    }
+
+    return [[smallerValue, smallerUnit], [largerValue, largerUnit]];
 }
 
 export function capitalize(s: string): string {
     return s && String(s[0]).toUpperCase() + String(s).slice(1).toLowerCase();
+}
+
+export function isEmailValid(email: string): boolean {
+    return email.match(
+        /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/,
+    ) !== null;
 }
 
 export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: number): T[] {
@@ -59,10 +82,9 @@ export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: nu
 
 export function convertHumanSizeToBytes(humanSize: string): number {
     const sizeMultiplier: Record<Size, number> = {
-        "Bytes": 1,
-        "KB": 1024,
-        "MB": 1024 ** 2,
-        "GB": 100 ** 3
+        [Size.Bytes]: 1,
+        [Size.KB]: 1024,
+        [Size.MB]: 1024 ** 2,
     };
 
     const [humanSizeValue, humanSizeType] = humanSize.split(" ");

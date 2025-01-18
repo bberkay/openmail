@@ -1,1 +1,5 @@
-export type Size = "Bytes" | "KB" | "MB" | "GB";
+export enum Size {
+    "Bytes" = "Bytes",
+    "KB" = "KB",
+    "MB" = "MB"
+}
