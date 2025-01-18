@@ -1,6 +1,6 @@
 import { SharedStore } from "$lib/stores/shared.svelte";
 import { ApiService, GetRoutes, type BaseResponse, type GetResponse, PostRoutes, type PostResponse } from "$lib/services/ApiService";
-import { Folder, Mark, type EmailSummary } from "$lib/types";
+import { Folder, Mark, type EmailSummary, type SearchCriteria } from "$lib/types";
 
 export class MailboxController {
     public async getAllMailboxes(): Promise<GetResponse<GetRoutes.GET_MAILBOXES>> {
@@ -263,6 +263,34 @@ export class MailboxController {
                     }
                 })
             })
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
+
+    public async searchEmails(folder: Folder | string, searchCriteria: SearchCriteria | string | undefined = undefined): Promise<BaseResponse> {
+        const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_MAILBOXES,
+            {
+                pathParams: {
+                    accounts: SharedStore.accounts
+                        .map((account) => account.email_address)
+                        .join(","),
+                },
+                queryParams: {
+                    folder: folder,
+                    search: typeof searchCriteria !== "string" ? JSON.stringify(searchCriteria) : searchCriteria,
+                },
+            },
+        );
+
+        if (response.success && response.data) {
+            SharedStore.mailboxes = response.data;
+            SharedStore.currentFolder = response.data[0].result.folder;
         }
 
         return {

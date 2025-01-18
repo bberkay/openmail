@@ -1,31 +1,43 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { mount, unmount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import Loader from "$lib/components/Loader.svelte";
-    import { ApiService } from "$lib/services/ApiService";
-    import { GetRoutes } from "$lib/services/ApiService";
     import { Folder, Mark, type SearchCriteria } from "$lib/types";
-    import { addDays, debounce } from "$lib/utils";
+    import { Size } from "$lib/utils/types";
+    import { debounce, isEmailValid, adjustSizes, convertToIMAPDate, concatValueAndUnit, convertSizeToBytes, isObjEmpty } from "$lib/utils";
+    import Select, { type Option } from "$lib/components/Elements/Select.svelte";
+    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import DatePicker from "$lib/components/Elements/DatePicker.svelte";
+
+    const mailboxController = new MailboxController();
 
     let isAdvancedSearchMenuOpen = $state(false);
+    let includeFlagSelectTrigger: boolean = $state(true);
+    let selectedSince: Date | undefined = $state(undefined);
+    let selectedBefore: Date | undefined = $state(undefined);
+    let smallerThanUnit: Option | undefined = $state(undefined);
+    let largerThanUnit: Option | undefined = $state(undefined);
 
-    function toggleAdvancedSearchMenu() {
+    const tagTemplate = `
+        <span class="tag">
+            <span class="value">{tag}</span>
+            <button type="button" style="margin-left:5px;" onclick="this.parentElement.remove()">X</button>
+        </span>
+    `;
+
+    const toggleAdvancedSearchMenu = () => {
         isAdvancedSearchMenuOpen = !isAdvancedSearchMenuOpen;
     }
 
-    function handleTagEnter(e: KeyboardEvent) {
+    const handleEmailEnter = (e: KeyboardEvent) => {
         const target = e.target as HTMLInputElement;
-        const tags = target
+        const email = target.value;
+        const emails = target
             .closest(".form-group")!
-            .querySelector(".tags")! as HTMLElement;
-        const isEmailValid = target.value.match(
-            /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/,
-        );
+            .querySelector(".emails")! as HTMLElement;
         if (e.key === "Spacebar" || e.key === " ") {
-            if (target.value !== "" && isEmailValid) {
-                tags.style.display = "flex";
-                tags.innerHTML += `<span class="tag"><span class="value">${target.value}</span><button type="button" style="margin-left:5px;" onclick="this.parentElement.remove()">X</button></span>`;
+            if (email !== "" && isEmailValid(email)) {
+                emails.style.display = "flex";
+                emails.innerHTML += tagTemplate.replace("{tag}", email);
                 target.value = "";
             } else {
                 target.style.transform = "scale(1.02)";
@@ -36,111 +48,66 @@
         }
     }
 
-    const handleSize = debounce((e: Event) => {
+    const handleSizeValue = debounce((e: Event) => {
         const target = e.target as HTMLInputElement;
         const row = target.closest(".row")!;
 
-        const smallerThan = row.querySelector(
+        if (!smallerThanUnit || !largerThanUnit)
+            return;
+
+        const smallerThanInput = row.querySelector(
             'input[name="smaller_than"]',
         ) as HTMLInputElement;
-        const smallerThanValue = Number(smallerThan.value);
 
-        const largerThan = row.querySelector(
+        const largerThanInput = row.querySelector(
             'input[name="larger_than"]',
         ) as HTMLInputElement;
-        const largerThanValue = Number(largerThan.value);
 
-        const smallerThanUnit = row.querySelector(
-            'select[name="smaller_than_unit"]',
-        ) as HTMLInputElement;
-        const largerThanUnit = row.querySelector(
-            'select[name="larger_than_unit"]',
-        ) as HTMLInputElement;
+        const adjustedSizes = adjustSizes(
+            [
+                Number(smallerThanInput.value),
+                smallerThanUnit.value as Size
+            ],
+            [
+                Number(largerThanInput.value),
+                largerThanUnit.value as Size
+            ]
+        );
 
-        smallerThan.value = smallerThanValue < 0 ? "0" : smallerThan.value;
-        largerThan.value = largerThanValue < 0 ? "0" : largerThan.value;
+        smallerThanInput.value = adjustedSizes[0][0].toString();
+        smallerThanUnit = {value: adjustedSizes[0][1], inner: adjustedSizes[0][1]};
 
-        if (smallerThanUnit.value === largerThanUnit.value) {
-            if (smallerThanValue <= largerThanValue) {
-                if (target == smallerThan)
-                    largerThan.value = (smallerThanValue - 1).toString();
-                else smallerThan.value = (largerThanValue + 1).toString();
-            }
-        } else {
-            // Convert both of them to MB
-            let smallerThanValueMb = smallerThanValue;
-            if (smallerThanUnit.value === "kb") {
-                smallerThanValueMb = smallerThanValueMb / 1024;
-            } else if (smallerThanUnit.value === "gb") {
-                smallerThanValueMb = smallerThanValueMb * 1024;
-            }
-
-            let largerThanValueMb = largerThanValue;
-            if (largerThanUnit.value === "kb") {
-                largerThanValueMb = largerThanValueMb / 1024;
-            } else if (largerThanUnit.value === "gb") {
-                largerThanValueMb = largerThanValueMb * 1024;
-            }
-
-            if (smallerThanValueMb < largerThanValueMb) {
-                if (target == smallerThan || target == smallerThanUnit) {
-                    largerThan.value = (smallerThanValue - 1).toString();
-                    largerThanUnit.value = smallerThanUnit.value;
-                } else {
-                    smallerThan.value = (largerThanValue + 1).toString();
-                    smallerThanUnit.value = largerThanUnit.value;
-                }
-            }
-        }
+        largerThanInput.value = adjustedSizes[1][0].toString();
+        largerThanUnit = {value: adjustedSizes[1][1], inner: adjustedSizes[1][1]};
     }, 100);
 
-    function clearInput(e: Event) {
-        const target = e.target as HTMLButtonElement;
-        const inputGroup = target.closest(".input-group")!;
-
-        const targetInputs = inputGroup.querySelectorAll(
-            "input",
-        ) as NodeListOf<HTMLInputElement>;
-        targetInputs.forEach((input: HTMLInputElement) => {
-            if (input.type === "number") input.value = "0";
-            else input.value = "";
-        });
-
-        const targetSelects = inputGroup.querySelectorAll(
-            "select",
-        ) as NodeListOf<HTMLSelectElement>;
-        targetSelects.forEach((select: HTMLSelectElement) => {
-            select.selectedIndex = 0;
-        });
+    const handleSmallerThanUnit = (selectedUnit: string | null) => {
+        smallerThanUnit = selectedUnit ? {value: selectedUnit, inner: selectedUnit} : undefined;
     }
 
-    function handleDate(e: Event) {
-        const target = e.target as HTMLInputElement;
-        const row = target.closest(".row")!;
+    const handleLargerThanUnit = (selectedUnit: string | null) => {
+        largerThanUnit = selectedUnit ? {value: selectedUnit, inner: selectedUnit} : undefined;
+    }
 
-        const since = row.querySelector(
-            'input[name="since"]',
-        ) as HTMLInputElement;
-        const before = row.querySelector(
-            'input[name="before"]',
-        ) as HTMLInputElement;
-
-        if (since.value !== "" && before.value !== "") {
-            if (since.value > before.value) {
-                if (target == since) before.value = addDays(since.value, 1);
-                else since.value = addDays(before.value, -1);
-            }
+    const handleSince = (selectedDate: Date) => {
+        selectedSince = selectedDate;
+        if (selectedSince && selectedBefore && selectedSince > selectedBefore) {
+            selectedBefore.setDate(selectedSince.getDate() + 1)
         }
     }
 
-    function handleSelect(e: Event) {
-        const target = e.target as HTMLButtonElement;
-        const formGroup = target.closest(".form-group")!;
-        const select = formGroup.querySelector("select") as HTMLSelectElement;
-        const tags = formGroup.querySelector(".tags") as HTMLDivElement;
-        if (select.value !== "") {
-            tags.innerHTML += `<span class="tag"><span class="value">${select.value}</span><button type="button" style="margin-left:5px;" onclick="this.parentElement.remove()">X</button></span>`;
-            select.selectedIndex = 0;
+    const handleBefore = (selectedDate: Date) => {
+        selectedBefore = selectedDate;
+        if (selectedSince && selectedBefore && selectedSince > selectedBefore) {
+            selectedSince.setDate(selectedBefore.getDate() - 1)
+        }
+    }
+
+    const handleFlag = (selectedFlag: string | null) => {
+        const tags = document.getElementById("saved-flags") as HTMLDivElement;
+        if (selectedFlag) {
+            tags.innerHTML += tagTemplate.replace("{tag}", selectedFlag);
+            includeFlagSelectTrigger = !includeFlagSelectTrigger;
         }
     }
 
@@ -164,64 +131,41 @@
             receivers: extractAsArray("#saved-receivers"),
             cc: extractAsArray("#saved-cc"),
             bcc: extractAsArray("#saved-bcc"),
+            included_flags: extractAsArray("#saved-flags"),
             subject: advancedSearchMenu.querySelector<HTMLInputElement>(
                 'input[name="subject"]',
             )!.value,
-            since: advancedSearchMenu.querySelector<HTMLInputElement>(
-                'input[name="since"]',
-            )!.value,
-            before: advancedSearchMenu.querySelector<HTMLInputElement>(
-                'input[name="before"]',
-            )!.value,
-            smaller_than: parseInt(
-                advancedSearchMenu.querySelector<HTMLInputElement>(
-                    'input[name="smaller_than"]',
-                )!.value,
-            ),
-            larger_than: parseInt(
-                advancedSearchMenu.querySelector<HTMLInputElement>(
-                    'input[name="larger_than"]',
-                )!.value,
-            ),
             include: advancedSearchMenu.querySelector<HTMLInputElement>(
                 'input[name="include"]',
             )!.value,
             exclude: advancedSearchMenu.querySelector<HTMLInputElement>(
                 'input[name="exclude"]',
             )!.value,
-            included_flags: extractAsArray("#saved-flags"),
             has_attachments:
                 advancedSearchMenu.querySelector<HTMLInputElement>(
-                    'input[name="has_attachments"]:checked',
-                )!.checked
+                    'input[name="has_attachments"]',
+                )!.checked,
+            since: selectedSince ? convertToIMAPDate(selectedSince) : undefined,
+            before: selectedBefore ? convertToIMAPDate(selectedBefore) : undefined,
+            smaller_than: smallerThanUnit ? convertSizeToBytes(concatValueAndUnit(advancedSearchMenu.querySelector<HTMLInputElement>(
+                'input[name="smaller_than"]',
+            )!.value, smallerThanUnit.value as Size)) : undefined,
+            larger_than: largerThanUnit ? convertSizeToBytes(concatValueAndUnit(advancedSearchMenu.querySelector<HTMLInputElement>(
+                'input[name="larger_than"]',
+            )!.value, largerThanUnit.value as Size)) : undefined
         };
 
-        const isSearchCriteriaEmpty = Object.values(searchCriteria).every(
-            (value) => {
-                if (typeof value === "string") return value === "";
-                if (Array.isArray(value)) return value.length === 0;
-                if (typeof value === "boolean") return value === false;
-            },
-        );
-
-        if (isSearchCriteriaEmpty) return null;
+        if (isObjEmpty(searchCriteria))
+            return null;
 
         return searchCriteria;
     }
 
-    async function handleSearch(e: Event) {
-        e.preventDefault();
-
-        const eventButton = e.target as HTMLButtonElement;
-        eventButton.disabled = true;
-        const temp = eventButton.innerText;
-        eventButton.innerText = "";
-        const loader = mount(Loader, { target: eventButton });
-
+    const handleSearch = async (): Promise<void> => {
         let searchCriteria: SearchCriteria | string | undefined = undefined;
         let folder: string = Folder.All;
         if(isAdvancedSearchMenuOpen) {
-            searchCriteria = JSON.stringify(getSearchCriteria());
+            searchCriteria = getSearchCriteria() || undefined;
             folder = document.querySelector<HTMLSelectElement>(
                 "#advanced-search-menu #folder",
             )!.value;
@@ -231,32 +175,10 @@
             )?.value;
         }
 
-        const response = await ApiService.get(
-            SharedStore.server,
-            GetRoutes.GET_MAILBOXES,
-            {
-                pathParams: {
-                    accounts: SharedStore.accounts
-                        .map((account) => account.email_address)
-                        .join(","),
-                },
-                queryParams: {
-                    folder: folder,
-                    search: searchCriteria,
-                },
-            },
-        );
-
-        if (response.success && response.data) {
-            SharedStore.mailboxes = response.data;
-            SharedStore.currentFolder = response.data[0].result.folder;
-        } else {
+        const response = await mailboxController.searchEmails(folder, searchCriteria);
+        if (!response.success) {
             alert(response.message);
         }
-
-        eventButton.disabled = false;
-        eventButton.innerText = temp;
-        unmount(loader);
     }
 </script>
 
@@ -272,57 +194,63 @@
         <div class="form-group">
             <label for="folder">Folder</label>
             <div class="input-group">
-                <select name="folder" id="folder">
-                    <option value="{Folder.All}" selected>All</option>
-                    {#each SharedStore.standardFolders[0].result as standardFolder}
-                        {@const [folderTag, folderName] = standardFolder.split(":")}
-                        <option value={folderTag}>{folderName}</option>
-                    {/each}
-                    {#each SharedStore.customFolders[0].result as customFolder}
-                        <option value={customFolder}>{customFolder}</option>
-                    {/each}
-                </select>
-                <button type="button" onclick={clearInput}>X</button>
+                <Select
+                    id="search-folder-select"
+                    options={
+                        SharedStore.standardFolders[0].result.map((standardFolder) => {
+                            const [folderTag, folderName] = standardFolder.split(":")
+                            return {value: folderTag, inner: folderName}
+                        }).concat(SharedStore.customFolders[0].result.map(customFolder => (
+                            {value: customFolder, inner: customFolder})
+                        ))
+                    }
+                    value={{value: Folder.All, inner: "All"}}
+                />
             </div>
         </div>
         <div class="form-group">
             <label for="senders">Sender(s)</label>
-            <input type="email" name="senders" onkeyup={handleTagEnter} placeholder="someone@domain.xyz" />
-            <div class="tags" id="saved-senders"></div>
+            <input type="email" name="senders" onkeyup={handleEmailEnter} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="saved-senders"></div>
         </div>
         <div class="form-group">
             <label for="receivers">Receiver(s)</label>
-            <input type="email" name="receivers" onkeyup={handleTagEnter} placeholder="someone@domain.xyz" />
-            <div class="tags" id="saved-receivers"></div>
+            <input type="email" name="receivers" onkeyup={handleEmailEnter} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="saved-receivers"></div>
         </div>
         <div class="form-group">
             <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" onkeyup={handleTagEnter} placeholder="someone@domain.xyz" />
-            <div class="tags" id="saved-cc"></div>
+            <input type="email" name="cc" id="cc" onkeyup={handleEmailEnter} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="saved-cc"></div>
         </div>
         <div class="form-group">
             <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" onkeyup={handleTagEnter} placeholder="someone@domain.xyz" />
-            <div class="tags" id="saved-bcc"></div>
+            <input type="email" name="bcc" id="bcc" onkeyup={handleEmailEnter} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="saved-bcc"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
             <input type="text" name="subject" placeholder="Subject" />
-            <div class="tags"></div>
         </div>
         <div class="row">
             <div class="form-group">
                 <label for="since">Since</label>
                 <div class="input-group">
-                    <input type="date" name="since" onchange={handleDate} />
-                    <button type="button" onclick={clearInput}>X</button>
+                    <DatePicker
+                        id="since"
+                        operation={handleSince}
+                        value={selectedSince}
+                    />
                 </div>
             </div>
             <div class="form-group">
                 <label for="before">Before</label>
                 <div class="input-group">
-                    <input type="date" name="before" onchange={handleDate} />
-                    <button type="button" onclick={clearInput}>X</button>
+                    <DatePicker
+                        id="before"
+                        operation={handleBefore}
+                        value={selectedBefore}
+                    />
                 </div>
             </div>
         </div>
@@ -335,14 +263,14 @@
                         name="smaller_than"
                         min="0"
                         value="0"
-                        onkeyup={handleSize}
+                        onkeyup={handleSizeValue}
                     />
-                    <select name="smaller_than_unit" onchange={handleSize}>
-                        <option value="kb" selected>KB</option>
-                        <option value="mb">MB</option>
-                        <option value="gb">GB</option>
-                    </select>
-                    <button type="button" onclick={clearInput}>X</button>
+                    <Select
+                        id="smallter-than-unit"
+                        options={Object.values(Size).map(size => ({value: size, inner: size}))}
+                        operation={handleSmallerThanUnit}
+                        value={smallerThanUnit}
+                    />
                 </div>
             </div>
             <div class="form-group">
@@ -353,14 +281,14 @@
                         name="larger_than"
                         min="0"
                         value="0"
-                        onkeyup={handleSize}
+                        onkeyup={handleSizeValue}
                     />
-                    <select name="larger_than_unit" onchange={handleSize}>
-                        <option value="kb">KB</option>
-                        <option value="mb">MB</option>
-                        <option value="gb">GB</option>
-                    </select>
-                    <button type="button" onclick={clearInput}>X</button>
+                    <Select
+                        id="larger-than-unit"
+                        options={Object.values(Size).map(size => ({value: size, inner: size}))}
+                        operation={handleLargerThanUnit}
+                        value={largerThanUnit}
+                    />
                 </div>
             </div>
         </div>
@@ -386,23 +314,22 @@
             <input type="text" name="exclude" placeholder="What should be excluded" />
         </div>
         <div class="form-group">
-            <label for="includes-flags">Include Flag</label>
+            <label for="include-flags">Include Flag</label>
             <div class="input-group">
-                <select name="includes-flags" id="includes-flags">
-                    {#each Object.entries(Mark) as mark}
-                        <option value={mark[1]}>{mark[0]}</option>
-                    {/each}
-                </select>
-                <button type="button" onclick={handleSelect}>+</button>
+                <Select
+                    id="include-flags"
+                    options={Object.entries(Mark).map(mark => ({value: mark[1], inner: mark[0]}))}
+                    operation={handleFlag}
+                    placeholder='Flag'
+                    value={includeFlagSelectTrigger ? {value:'', inner:''} : {value:'', inner:''}}
+                />
             </div>
             <div class="tags" id="saved-flags">
                 <!-- Flags -->
             </div>
         </div>
     </div>
-    <button type="button" style="margin-top:5px;" onclick={handleSearch}
-        >Search</button
-    >
+    <ActionButton id="search-emails-btn" operation={handleSearch} inner="Search" style="margin-top:5px;"/>
 </div>
 
 <style>
