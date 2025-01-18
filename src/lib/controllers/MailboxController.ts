@@ -1,6 +1,6 @@
 import { SharedStore } from "$lib/stores/shared.svelte";
 import { ApiService, GetRoutes, type BaseResponse, type GetResponse, PostRoutes, type PostResponse } from "$lib/services/ApiService";
-import { Folder } from "$lib/types";
+import { Folder, Mark, type EmailSummary } from "$lib/types";
 
 export class MailboxController {
     public async getAllMailboxes(): Promise<GetResponse<GetRoutes.GET_MAILBOXES>> {
@@ -207,6 +207,62 @@ export class MailboxController {
 
         if (response.success) {
             this.refreshMailbox();
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
+
+    public async markEmails(selection: string[], mark: string | Mark): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.MARK_EMAIL,
+            {
+                account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                mark: mark,
+                sequence_set: selection.includes("*") ? "1:*" : selection.join(","),
+                folder: SharedStore.currentFolder
+            }
+        );
+
+        if (response.success) {
+            selection.forEach((uid: string) => {
+                SharedStore.mailboxes[0].result.emails.forEach((email: EmailSummary) => {
+                    if (email.uid === uid && Object.hasOwn(email, "flags") && email.flags) {
+                        email.flags.push(mark);
+                    }
+                })
+            })
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
+
+    public async unmarkEmails(selection: string[], mark: string | Mark): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.UNMARK_EMAIL,
+            {
+                account: SharedStore.accounts.map((account) => account.email_address).join(", "),
+                mark: mark,
+                sequence_set: selection.includes("*") ? "1:*" : selection.join(","),
+                folder: SharedStore.currentFolder
+            }
+        );
+
+        if (response.success) {
+            selection.forEach((uid: string) => {
+                SharedStore.mailboxes[0].result.emails.forEach((email: EmailSummary) => {
+                    if (email.uid === uid && Object.hasOwn(email, "flags") && email.flags) {
+                        email.flags = email.flags.filter((flag: string) => flag !== mark);
+                    }
+                })
+            })
         }
 
         return {

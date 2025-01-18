@@ -20,21 +20,6 @@
 
     let { showContent }: Props = $props();
 
-    async function makeAnApiRequest(event: Event, callback: () => Promise<void>) {
-        const eventButton = event.target as HTMLButtonElement;
-        eventButton.disabled = true;
-        const temp = eventButton.innerText;
-        eventButton.innerText = "";
-        const loader = mount(Loader, { target: eventButton })
-
-        await callback();
-
-        emailSelection = [];
-        eventButton.disabled = false;
-        eventButton.innerText = temp;
-        unmount(loader);
-    }
-
     const refreshMailbox = async (): Promise<void> => {
         const response = await mailboxController.refreshMailbox();
         if (!response.success) {
@@ -90,74 +75,34 @@
         }
     }
 
-    function markEmail(event: Event, mark: string | Mark) {
-        makeAnApiRequest(event, async () => {
-            const response = await ApiService.post(
-                SharedStore.server,
-                PostRoutes.MARK_EMAIL,
-                {
-                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                    mark: mark,
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    folder: SharedStore.currentFolder
-                }
-            );
-
-            if (response.success) {
-                emailSelection.forEach((uid: string) => {
-                    SharedStore.mailboxes[0].result.emails.forEach((email: EmailSummary) => {
-                        if (email.uid === uid && Object.hasOwn(email, "flags") && email.flags) {
-                            email.flags.push(mark);
-                        }
-                    })
-                })
-            } else {
-                alert(response.message);
-            }
-        })
+    const markEmail = async (mark: string | Mark): Promise<void> => {
+        const response = await mailboxController.markEmails(emailSelection, mark);
+        if(!response.success) {
+            alert(response.message);
+        }
     }
 
-    function unmarkEmail(event: Event, mark: string | Mark) {
-        makeAnApiRequest(event, async () => {
-            const response = await ApiService.post(
-                SharedStore.server,
-                PostRoutes.UNMARK_EMAIL,
-                {
-                    account: SharedStore.accounts.map((account) => account.email_address).join(", "),
-                    mark: mark,
-                    sequence_set: emailSelection.includes("*") ? "1:*" : emailSelection.join(","),
-                    folder: SharedStore.currentFolder
-                }
-            );
-
-            if (response.success) {
-                emailSelection.forEach((uid: string) => {
-                    SharedStore.mailboxes[0].result.emails.forEach((email: EmailSummary) => {
-                        if (email.uid === uid && Object.hasOwn(email, "flags") && email.flags) {
-                            email.flags = email.flags.filter((flag: string) => flag !== mark);
-                        }
-                    })
-                })
-            } else {
-                alert(response.message);
-            }
-        })
+    const unmarkEmail = async (mark: string | Mark): Promise<void> => {
+        const response = await mailboxController.unmarkEmails(emailSelection, mark);
+        if(!response.success) {
+            alert(response.message);
+        }
     }
 
-    function markEmailsAsRead(event: Event) {
-        markEmail(event, Mark.Seen);
+    const markEmailsAsRead = async (): Promise<void> => {
+        await markEmail(Mark.Seen);
     }
 
-    function markEmailsAsUnread(event: Event) {
-        unmarkEmail(event, Mark.Seen);
+    const markEmailsAsUnread = async (): Promise<void> => {
+        await unmarkEmail(Mark.Seen);
     }
 
-    function markEmailsAsImportant(event: Event) {
-        markEmail(event, Mark.Flagged);
+    const markEmailsAsImportant = async (): Promise<void> => {
+        markEmail(Mark.Flagged);
     }
 
-    function markEmailsAsNotImportant(event: Event) {
-        unmarkEmail(event, Mark.Flagged);
+    const markEmailsAsNotImportant = async (): Promise<void> => {
+        unmarkEmail(Mark.Flagged);
     }
 
     const deleteEmails = async (): Promise<void> => {
@@ -251,7 +196,7 @@
             placeholder={{ value: '', inner: 'Copy To' }}
         />
         {#if isAllSelectedEmailsAreMarkedAsFlagged()}
-            <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsNotImportant}>Mark as Not Important</button>
+            <ActionButton id="mark-as-not-important-btn" operation={markEmailsAsNotImportant} inner="Mark as Not Important" class="bg-primary" style="margin-right:5px"/>
         {:else if isAllSelectedEmailsAreMarkedAsNotFlagged()}
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
         {:else}
