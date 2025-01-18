@@ -162,15 +162,13 @@
                     id="month-select"
                     options={getMonths().map((month, index) => ({ value: index, inner: month }))}
                     operation={selectMonth}
-                    placeholder="Month"
-                    value={displayedMonth.toString()}
+                    placeholder={{ value: displayedMonth, inner: displayedMonth.toString() }}
                 />
                 <Select
                     id="year-select"
                     options={range(currentYear - 10, currentYear + 10, 1).map((year) => ({ value: year, inner: year }))}
                     operation={selectYear}
-                    placeholder="Month"
-                    value={displayedYear.toString()}
+                    placeholder={{ value: displayedYear, inner: displayedYear.toString() }}
                 />
                 <button class="nav-button" id="nextMonth" onclick={goNextMonth}>→</button>
             </div>

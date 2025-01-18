@@ -10,8 +10,7 @@
         id: string;
         options: Option[];
         operation: (selectedOption: string | null) => void,
-        placeholder: string;
-        value: string;
+        placeholder: Option;
         enableSearch?: boolean;
     }
 
@@ -20,14 +19,13 @@
         options,
         operation,
         placeholder,
-        value,
         enableSearch = false,
     }: Props = $props();
 
     let isOpen = $state(false);
     let showClass = $derived(isOpen ? "open" : "");
     let filteredOptions: Option[] = $state(options);
-    let selectedOption: string | null = $state(value);
+    let selectedOption: Option | null = $state(placeholder);
     let searchInput: HTMLInputElement | null = null;
 
     onMount(() => {
@@ -78,9 +76,13 @@
             return;
 
         const value = option.dataset.value;
-        selectedOption = value || null;
+        const inner = option.innerText;
+        if(!value || !inner)
+            return;
 
-        operation(selectedOption);
+        selectedOption = { value, inner };
+
+        operation(selectedOption.value.toString());
 
         closeSelect();
     };
@@ -115,7 +117,7 @@
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <div class="options-list" onclick={selectOption}>
             {#each filteredOptions as option}
-                <div class="option ${selectedOption && selectedOption === option.value ? "selected" : ""}" data-value="${option.value}">
+                <div class="option ${selectedOption && selectedOption.value === option.value ? "selected" : ""}" data-value="${option.value}">
                     {@html option.inner}
                 </div>
             {:else}

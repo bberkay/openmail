@@ -124,8 +124,7 @@
                 id="sender"
                 options={SharedStore.accounts.map((account, index) => ({ value: account.email_address, inner: `${account.fullname} &lt;${account.email_address}&gt;` }))}
                 operation={selectSender}
-                placeholder="Sender"
-                value={SharedStore.accounts[0].email_address}
+                placeholder={{ value: SharedStore.accounts[0].email_address, inner: `${SharedStore.accounts[0].fullname} &lt;${SharedStore.accounts[0].email_address}&gt;` }}
             />
         </div>
         <div class="form-group">
