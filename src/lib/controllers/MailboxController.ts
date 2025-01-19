@@ -298,4 +298,147 @@ export class MailboxController {
             message: response.message
         }
     }
+
+    public async createFolder(folderName: string, parentFolder: string | undefined): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.CREATE_FOLDER,
+            {
+                account: SharedStore.accounts[0].email_address,
+                folder_name: folderName,
+                parent_folder: parentFolder,
+            },
+        );
+
+        if(response.success){
+            SharedStore.customFolders[0].result.push(parentFolder ? `${parentFolder}/${folderName}` : folderName);
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        };
+    }
+
+    public async moveFolder(folderName: string, destinationFolder: string): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.MOVE_FOLDER,
+            {
+                account: SharedStore.accounts[0].email_address,
+                folder_name: folderName,
+                destination_folder: destinationFolder,
+            },
+        );
+
+        if(response.success){
+            SharedStore.customFolders[0].result = SharedStore.customFolders[0].result.filter(e => e !== folderName);
+
+            let newFolderPath = `${destinationFolder}/${folderName}`;
+            if (folderName.includes("/")) {
+                const tempLastIndex = folderName.lastIndexOf("/");
+                const parentFolder = folderName.slice(0, tempLastIndex);
+                if (SharedStore.customFolders[0].result.includes(parentFolder)) {
+                    newFolderPath = `${destinationFolder}/${folderName.slice(tempLastIndex+1)}`;
+                }
+            }
+            SharedStore.customFolders[0].result.push(newFolderPath);
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
+
+    public async renameFolder(folderPath: string, newFolderName: string): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.RENAME_FOLDER,
+            {
+                account: SharedStore.accounts[0].email_address,
+                folder_name: folderPath,
+                new_folder_name: newFolderName,
+            },
+        );
+
+        if(response.success){
+            SharedStore.customFolders[0].result = SharedStore.customFolders[0].result.map((currentFolderName) => {
+                return currentFolderName.replace(
+                    folderPath.includes("/") ? folderPath.slice(folderPath.lastIndexOf("/") + 1) : folderPath,
+                    newFolderName
+                )
+            });
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
+
+    public async deleteFolder(folderName: string, subfolders: boolean): Promise<BaseResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.DELETE_FOLDER,
+            {
+                account: SharedStore.accounts[0].email_address,
+                folder_name: folderName,
+                subfolders: subfolders
+            },
+        );
+
+        if(response.success){
+            SharedStore.customFolders[0].result = SharedStore.customFolders[0].result.filter(e => e !== folderName && !subfolders || !e.includes(folderName));
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        };
+    }
+
+    public async refreshFolders(): Promise<BaseResponse> {
+        const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_FOLDERS,
+            {
+                pathParams: {
+                    accounts: SharedStore.accounts[0].email_address
+                }
+            }
+        );
+
+        if (response.success && response.data) {
+            const standardFolderList = Object.values(Folder).map(folder => folder.trim().toLowerCase() + ":");
+            response.data.forEach((account, i) => {
+                // Standard folders
+                SharedStore.standardFolders[i] = {
+                    email_address: account.email_address,
+                    result: []
+                };
+                standardFolderList.forEach((standardFolder) => {
+                    const matchedFolder = account.result.find(
+                        currentFolder => currentFolder.trim().toLowerCase().startsWith(standardFolder)
+                    );
+                    if (matchedFolder)
+                        SharedStore.standardFolders[i].result.push(matchedFolder);
+                });
+
+                // Custom folders
+                SharedStore.customFolders[i] = {
+                    email_address: account.email_address,
+                    result: []
+                };
+                SharedStore.customFolders[i].result = account.result.filter((currentFolder) => {
+                    return SharedStore.standardFolders[i].result.includes(currentFolder) !== true
+                });
+            })
+        }
+
+        return {
+            success: response.success,
+            message: response.message
+        }
+    }
 }
