@@ -164,13 +164,13 @@
 <h2>{SharedStore.currentFolder}</h2>
 <hr />
 <div style="display:flex;justify-content:space-between;align-items:center;">
-    <ActionButton id="get-previous-emails-btn" operation={getPreviousEmails} class="bg-primary {currentOffset < 10 ? "disabled" : ""}">
+    <ActionButton onclick={getPreviousEmails} class="bg-primary {currentOffset < 10 ? "disabled" : ""}">
         Previous
     </ActionButton>
     <small>
         {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
     </small>
-    <ActionButton id="get-next-emails-btn" operation={getNextEmails}  class="bg-primary {currentOffset >= totalEmailCount ? "disabled" : ""}">
+    <ActionButton onclick={getNextEmails}  class="bg-primary {currentOffset >= totalEmailCount ? "disabled" : ""}">
         Next
     </ActionButton>
 </div>
@@ -183,7 +183,7 @@
             <button onclick={selectAllEmails}>Select all {totalEmailCount} emails</button>
         </span>
         <br>
-        <ActionButton id="delete-emails-btn" operation={deleteEmails} class="bg-primary" style="margin-right:5px">
+        <ActionButton onclick={deleteEmails} class="bg-primary" style="margin-right:5px">
             Delete
         </ActionButton>
         <Select
@@ -199,7 +199,7 @@
             placeholder='Copy To'
         />
         {#if isAllSelectedEmailsAreMarkedAsFlagged()}
-            <ActionButton id="mark-as-not-important-btn" operation={markEmailsAsNotImportant} class="bg-primary" style="margin-right:5px">
+            <ActionButton onclick={markEmailsAsNotImportant} class="bg-primary" style="margin-right:5px">
                 Mark as Not Important
             </ActionButton>
         {:else if isAllSelectedEmailsAreMarkedAsNotFlagged()}
@@ -217,7 +217,7 @@
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
         {/if}
     {:else}
-        <ActionButton id="refresh-mailbox-btn" operation={refreshMailbox} class="bg-primary" style="margin-right:5px" >
+        <ActionButton onclick={refreshMailbox} class="bg-primary" style="margin-right:5px" >
             Refresh
         </ActionButton>
     {/if}

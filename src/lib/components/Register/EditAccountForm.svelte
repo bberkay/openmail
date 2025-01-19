@@ -80,7 +80,7 @@
                     <li>
                         <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
                         <button style="margin-right: 5px;" onclick={() => { currentEditingAccount = account }}>Edit</button>
-                        <ActionButton id="remove-account" operation={removeAccount}  data-email-address={currentEditingAccount.email_address} >
+                        <ActionButton onclick={removeAccount}  data-email-address={currentEditingAccount.email_address} >
                             Remove
                         </ActionButton>
                         </li>
@@ -103,7 +103,7 @@
                 </div>
             <button type="submit" id="edit-account-btn">Edit Account</button>
             <button type="button" onclick={cancelEdit}>Cancel</button>
-            <ActionButton id="remove-account" operation={removeAccount} data-email-address={currentEditingAccount.email_address}>
+            <ActionButton onclick={removeAccount} data-email-address={currentEditingAccount.email_address}>
                 Remove
             </ActionButton>
         </div>

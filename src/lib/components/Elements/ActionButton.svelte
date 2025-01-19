@@ -3,15 +3,13 @@
     import Loader from "$lib/components/Elements/Loader.svelte";
 
     interface Props {
-        id: string;
-        operation: (eventTrigger: HTMLButtonElement) => Promise<void>,
+        onclick: (eventTrigger: HTMLButtonElement) => Promise<void>,
         children: Snippet;
         [attribute: string]: unknown;
     }
 
     let {
-        id,
-        operation,
+        onclick,
         children,
         ...attributes
     }: Props = $props();
@@ -19,7 +17,7 @@
     const makeAnApiRequest = async (e: Event): Promise<void> => {
         e.preventDefault();
 
-        const eventTrigger = document.getElementById(id) as HTMLButtonElement;
+        const eventTrigger = e.target as HTMLButtonElement;
         if (!eventTrigger)
             return;
 
@@ -28,7 +26,7 @@
         eventTrigger.innerText = "";
         const loader = mount(Loader, { target: eventTrigger });
 
-        await operation(eventTrigger);
+        await onclick(eventTrigger);
 
         eventTrigger.disabled = false;
         eventTrigger.innerText = temp;
@@ -36,7 +34,7 @@
     }
 </script>
 
-<button {...attributes} type="button" id={id} onclick={makeAnApiRequest}>
+<button {...attributes} type="button" onclick={makeAnApiRequest}>
     {@render children()}
 </button>
 

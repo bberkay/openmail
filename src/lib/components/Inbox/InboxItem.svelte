@@ -27,7 +27,7 @@
 <div>
     <pre>{JSON.stringify(email, null, 2)}</pre>
 
-    <ActionButton id="get-email-content" operation={getEmailContent} style="margin-top:10px">
+    <ActionButton onclick={getEmailContent} style="margin-top:10px">
         Show Content
     </ActionButton>
     {#if Object.hasOwn(email, "flags") && email.flags}

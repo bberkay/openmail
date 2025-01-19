@@ -39,7 +39,7 @@
 <AccountList/>
 
 <div>
-    <ActionButton id="continue-to-inbox" operation={continueToInbox}>
+    <ActionButton onclick={continueToInbox}>
         Continue To Inbox
     </ActionButton>
 </div>
