@@ -1,5 +1,6 @@
 import json
 import unittest
+import bisect
 
 from openmail import OpenMail
 from openmail.imap import FOLDER_LIST
@@ -11,6 +12,8 @@ class TestFolderOperations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print("Setting up test `TestFolderOperations`...")
+        cls.addClassCleanup(cls.cleanup)
+
         cls._openmail = OpenMail()
 
         with open("openmail/tests/credentials.json") as credentials:
@@ -24,7 +27,40 @@ class TestFolderOperations(unittest.TestCase):
 
     def test_get_folders_operation(self):
         print("test_get_folders_operation...")
-        status, msg = self.__class__._openmail.imap.get_folders()
+
+        random_folder_names = []
+        for i in range(1, 11):
+            bisect.insort(random_folder_names, NameGenerator.random_folder_name_with_uuid())
+
+        folder_structure = [
+            f"{random_folder_names[0]}",
+            f"{random_folder_names[0]}/{random_folder_names[1]}",
+            f"{random_folder_names[0]}/{random_folder_names[1]}/{random_folder_names[2]}",
+            f"{random_folder_names[0]}/{random_folder_names[1]}/{random_folder_names[2]}/{random_folder_names[3]}",
+            f"{random_folder_names[4]}",
+            f"{random_folder_names[4]}/{random_folder_names[5]}",
+            f"{random_folder_names[6]}",
+            f"{random_folder_names[7]}",
+            f"{random_folder_names[7]}/{random_folder_names[8]}",
+            f"{random_folder_names[7]}/{random_folder_names[8]}/{random_folder_names[9]}"
+        ]
+
+        for folder in folder_structure:
+            parent_folder_name, folder_name = folder.rsplit("/", 1) if "/" in folder else (None, folder)
+            self.__class__._openmail.imap.create_folder(folder_name, parent_folder_name)
+
+        folders = self.__class__._openmail.imap.get_folders()
+
+        # Standard Folders like INBOX, JUNK, TRASH
+        self.assertTrue(any(folder.lower() in FOLDER_LIST for folder in folders))
+
+        # Custom Folders
+        self.assertListEqual(
+            [folder for folder in folders if folder.split("/")[0] in random_folder_names],
+            folder_structure
+        )
+
+        self.__class__._created_test_folders.extend([folder for folder in folder_structure if "/" not in folder])
 
     def test_get_subfolders_operation(self):
         print("test_get_subfolders_operation...")
@@ -258,7 +294,7 @@ class TestFolderOperations(unittest.TestCase):
         self.__class__._created_test_folders.append(folder_name, new_folder_name)
 
     @classmethod
-    def tearDownClass(cls):
+    def cleanup(cls):
         print("Cleaning up test `TestFolderOperations`...")
         for folder_name in cls._created_test_folders:
             cls._openmail.imap.delete_folder(folder_name, True)
