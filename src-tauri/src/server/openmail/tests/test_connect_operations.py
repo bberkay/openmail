@@ -7,6 +7,8 @@ class TestConnectOperations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print("Setting up test `TestFolderOperations`...")
+        cls.addClassCleanup(cls.cleanup)
+
         cls._openmail = OpenMail()
         with open("openmail/tests/credentials.json") as credentials:
             credentials = json.load(credentials)
@@ -49,4 +51,8 @@ class TestConnectOperations(unittest.TestCase):
         status, message = self.__class__._openmail.disconnect()
         if not status:
             self.fail(f"Failed to logout with status: {status} and message: {message}")
-            
+
+    @classmethod
+    def cleanup(cls):
+        print("Cleaning up test `TestConnectOperations`...")
+        cls._openmail.disconnect()

@@ -11,6 +11,8 @@ class TestSendOperations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print("Setting up test `TestSendOperations`...")
+        cls.addClassCleanup(cls.cleanup)
+
         cls._openmail = OpenMail()
 
         with open("openmail/tests/credentials.json") as credentials:
@@ -349,7 +351,8 @@ class TestSendOperations(unittest.TestCase):
         self.assertTrue(status)"""
 
     @classmethod
-    def tearDownClass(cls):
+    def cleanup(cls):
+        print("Cleaning up test `TestSendOperations`...")
         for uid in cls._sent_test_email_uids:
             cls._openmail.imap.delete_email(Folder.Inbox, uid)
         cls._openmail.disconnect()

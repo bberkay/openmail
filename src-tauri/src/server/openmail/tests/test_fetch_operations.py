@@ -17,6 +17,8 @@ class TestFetchOperations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         print("Setting up test `TestFetchOperations`...")
+        cls.addClassCleanup(cls.cleanup)
+
         cls._openmail = OpenMail()
 
         with open("openmail/tests/credentials.json") as credentials:
@@ -463,8 +465,8 @@ class TestFetchOperations(unittest.TestCase):
         self.__class__._sent_test_email_uids.extend(uids_list)
 
     @classmethod
-    def tearDownClass(cls):
-        print("Cleaning up test `TestFolderOperations`...")
+    def cleanup(cls):
+        print("Cleaning up test `TestFetchOperations`...")
         for folder_name in cls._created_test_folders:
             cls._openmail.imap.delete_folder(folder_name, True)
         if cls._sent_test_email_uids:
