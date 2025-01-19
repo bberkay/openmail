@@ -69,9 +69,7 @@
     }
 </script>
 
-<Form Inner={EditAccountForm} operation={editAccount} />
-
-{#snippet EditAccountForm()}
+<Form onsubmit={editAccount}>
     {#if currentEditingAccount}
         <div>
             <h3>Updating Accounts <button onclick={removeAllAccounts}>Remove All</button></h3>
@@ -109,4 +107,4 @@
             </ActionButton>
         </div>
     {/if}
-{/snippet}
+</Form>

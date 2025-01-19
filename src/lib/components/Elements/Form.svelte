@@ -4,11 +4,11 @@
     import type { Snippet } from 'svelte';
 
     interface Props {
-        Inner: Snippet;
-        operation: (form: HTMLFormElement) => Promise<void>
+        children: Snippet;
+        onsubmit: (form: HTMLFormElement) => Promise<void>
     }
 
-    let { Inner, operation }: Props = $props();
+    let { children, onsubmit }: Props = $props();
 
     const makeAnApiRequest = async (e: Event) => {
         e.preventDefault();
@@ -26,7 +26,7 @@
         eventTrigger.innerText = "";
         const loader = mount(Loader, { target: eventTrigger });
 
-        await operation(form);
+        await onsubmit(form);
 
         eventTrigger.disabled = false;
         eventTrigger.innerText = temp;
@@ -36,5 +36,5 @@
 </script>
 
 <form onsubmit={makeAnApiRequest}>
-    {@render Inner()}
+    {@render children()}
 </form>

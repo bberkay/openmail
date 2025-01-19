@@ -114,9 +114,7 @@
     <button onclick={showInbox}>X</button>
 </div>
 
-<Form Inner={ComposeForm} operation={sendEmail} />
-
-{#snippet ComposeForm()}
+<Form onsubmit={sendEmail}>
     <div>
         <div class="form-group">
             <label for="sender">Sender</label>
@@ -161,7 +159,7 @@
         </div>
         <button type="submit" id="send-email" style="margin-top:10px;">Send</button>
     </div>
-{/snippet}
+</Form>
 
 <style>
     .header{
