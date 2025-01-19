@@ -14,22 +14,22 @@
     let isComposeShown: boolean = $state(false);
     let shownEmail: EmailWithContent | null = $state(null);
 
-    function showCompose() {
+    const showCompose = () => {
         clearContent();
         isComposeShown = true;
     }
 
-    function showContent(email: EmailWithContent) {
+    const showContent = (email: EmailWithContent) => {
         clearContent();
         shownEmail = email;
     }
 
-    function showInbox() {
+    const showInbox = () => {
         clearContent();
         isInboxShown = true;
     }
 
-    function clearContent() {
+    const clearContent = () => {
         if (isInboxShown) isInboxShown = false;
         if (isComposeShown) isComposeShown = false;
         if (shownEmail) shownEmail = null;
