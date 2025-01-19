@@ -3,7 +3,7 @@
     import Loader from "$lib/components/Elements/Loader.svelte";
 
     interface Props {
-        onclick: (eventTrigger: HTMLButtonElement) => Promise<void>,
+        onclick: (((e: Event) => void) | ((e: Event) => Promise<void>)),
         children: Snippet;
         [attribute: string]: unknown;
     }
@@ -26,7 +26,7 @@
         eventTrigger.innerText = "";
         const loader = mount(Loader, { target: eventTrigger });
 
-        await onclick(eventTrigger);
+        await onclick(e);
 
         eventTrigger.disabled = false;
         eventTrigger.innerText = temp;

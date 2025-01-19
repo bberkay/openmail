@@ -44,8 +44,9 @@
         }
     }
 
-    const removeAccount = async (eventTrigger: HTMLButtonElement): Promise<void> => {
-        const account = eventTrigger.getAttribute('data-email-address')!
+    const removeAccount = async (e: Event): Promise<void> => {
+        const target = e.target as HTMLButtonElement;
+        const account = target.getAttribute('data-email-address')!
         const response = await accountController.remove(account);
 
         if (!response.success) {
