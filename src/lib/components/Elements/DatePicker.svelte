@@ -203,9 +203,7 @@
                     <th>Sat</th>
                 </tr>
             </thead>
-            <tbody id="calendar-body">
-                <!-- TODO: Move renderOptions to here -->
-            </tbody>
+            <tbody id="calendar-body"></tbody>
         </table>
     </div>
 </div>
