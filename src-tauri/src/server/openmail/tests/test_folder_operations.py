@@ -2,6 +2,7 @@ import json
 import unittest
 
 from openmail import OpenMail
+from openmail.imap import FOLDER_LIST
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
 
@@ -21,7 +22,29 @@ class TestFolderOperations(unittest.TestCase):
 
         cls._created_test_folders = []
 
+    def test_get_folders_operation(self):
+        print("test_get_folders_operation...")
+        status, msg = self.__class__._openmail.imap.get_folders()
+
+    def test_get_subfolders_operation(self):
+        print("test_get_subfolders_operation...")
+        new_folder_name, parent_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, create_parent=True)
+        subfolders = self.__class__._openmail.imap.get_folders(parent_folder_name)
+        self.assertListEqual(subfolders, [f"{parent_folder_name}/{new_folder_name}"])
+        self.__class__._created_test_folders.append(parent_folder_name)
+
+    def test_get_folders_as_tagged_operation(self):
+        print("test_get_folders_as_tagged_operation...")
+        folders = self.__class__._openmail.imap.get_folders(tagged=True)
+        self.assertTrue(any(folder.split(":")[0].lower() in FOLDER_LIST for folder in folders if len(folder.split(":")) > 1))
+
+    def test_get_folders_as_not_tagged_operation(self):
+        print("test_get_folders_as_not_tagged_operation...")
+        folders = self.__class__._openmail.imap.get_folders(tagged=False)
+        self.assertFalse(any(folder.split(":")[0].lower() in FOLDER_LIST for folder in folders if len(folder.split(":")) > 1))
+
     def test_create_folder_operation(self):
+        print("test_create_folder_operation...")
         folder_name = NameGenerator.random_folder_name_with_uuid()
 
         status, msg = self.__class__._openmail.imap.create_folder(folder_name)

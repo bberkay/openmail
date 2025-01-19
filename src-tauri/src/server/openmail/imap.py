@@ -850,6 +850,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 if not folder_name or (folder_name in decoded_folder and not decoded_folder.endswith(folder_name)):
                     folder_list.append(decoded_folder)
 
+        # Sort folders
+        # Standard folders comes first for example:
+        # ['[Folder.Junk]:Spam', '[Folder.Trash]:[Gmail]/Trash Bin', 'customA', 'customA/customAB', ...]
+        # Custom folders will be sorted hierarchically for example:
+        # [..., 'customA', 'customA/customAB', 'customA/customAB/customABC', 'customB/customBA']
+        folder_list.sort(key=lambda path: (
+            not any(path.startswith(f"{folder.capitalize()}:") for folder in FOLDER_LIST),
+            path.split("/"),
+            len(path.split("/"))
+        ))
         return folder_list
 
     def build_search_criteria_query(self, search_criteria: SearchCriteria | str) -> str:
