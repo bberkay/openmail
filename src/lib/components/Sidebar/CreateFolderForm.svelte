@@ -1,15 +1,15 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
+    import Select from "$lib/components/Elements/Select.svelte";
 
     interface Props {
         parentFolderName: string | null,
         handleCreateFolderForm: (e: Event) => void,
-        closeCreateFolderForm: () => void,
-        clearInput: (e: Event) => void
+        closeCreateFolderForm: () => void
     }
 
-    let { parentFolderName, handleCreateFolderForm, closeCreateFolderForm, clearInput }: Props = $props();
+    let { parentFolderName, handleCreateFolderForm, closeCreateFolderForm }: Props = $props();
 
     onMount(() => {
         document.documentElement.scrollTop = 0;
@@ -35,17 +35,12 @@
         <div class="form-group">
             <label for="parent-folder">Parent Folder</label>
             <div class="input-group">
-                <select name="parent_folder" id="parent-folder">
-                    {#if parentFolderName}
-                        <option value={parentFolderName} selected>{parentFolderName}</option>
-                    {:else}
-                        <option value="" selected>Select Parent Folder</option>
-                        {#each SharedStore.customFolders[0].result as folder}
-                            <option value={folder}>{folder}</option>
-                        {/each}
-                    {/if}
-                </select>
-                <button type="button" onclick={clearInput}>X</button>
+                <Select
+                    id="parent-folder"
+                    options={SharedStore.customFolders[0].result.map(folder => ({value: folder, inner: folder}))}
+                    placeholder="Select Parent Folder"
+                    value={parentFolderName ? {value: parentFolderName, inner: parentFolderName} : undefined}
+                />
             </div>
         </div>
         <div class="display:flex;justify-content:space-between:align-items:center;">
