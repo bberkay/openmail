@@ -164,11 +164,15 @@
 <h2>{SharedStore.currentFolder}</h2>
 <hr />
 <div style="display:flex;justify-content:space-between;align-items:center;">
-    <ActionButton id="get-previous-emails-btn" operation={getPreviousEmails} inner="Previous" class="bg-primary {currentOffset < 10 ? "disabled" : ""}"/>
+    <ActionButton id="get-previous-emails-btn" operation={getPreviousEmails} class="bg-primary {currentOffset < 10 ? "disabled" : ""}">
+        Previous
+    </ActionButton>
     <small>
         {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
     </small>
-    <ActionButton id="get-next-emails-btn" operation={getNextEmails} inner="Next" class="bg-primary {currentOffset >= totalEmailCount ? "disabled" : ""}"/>
+    <ActionButton id="get-next-emails-btn" operation={getNextEmails}  class="bg-primary {currentOffset >= totalEmailCount ? "disabled" : ""}">
+        Next
+    </ActionButton>
 </div>
 <hr />
 <div style="display:flex;">
@@ -179,7 +183,9 @@
             <button onclick={selectAllEmails}>Select all {totalEmailCount} emails</button>
         </span>
         <br>
-        <ActionButton id="delete-emails-btn" operation={deleteEmails} inner="Delete" class="bg-primary" style="margin-right:5px"/>
+        <ActionButton id="delete-emails-btn" operation={deleteEmails} class="bg-primary" style="margin-right:5px">
+            Delete
+        </ActionButton>
         <Select
             id="move-to-select"
             options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
@@ -193,7 +199,9 @@
             placeholder='Copy To'
         />
         {#if isAllSelectedEmailsAreMarkedAsFlagged()}
-            <ActionButton id="mark-as-not-important-btn" operation={markEmailsAsNotImportant} inner="Mark as Not Important" class="bg-primary" style="margin-right:5px"/>
+            <ActionButton id="mark-as-not-important-btn" operation={markEmailsAsNotImportant} class="bg-primary" style="margin-right:5px">
+                Mark as Not Important
+            </ActionButton>
         {:else if isAllSelectedEmailsAreMarkedAsNotFlagged()}
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
         {:else}
@@ -209,7 +217,9 @@
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
         {/if}
     {:else}
-        <ActionButton id="refresh-mailbox-btn" operation={refreshMailbox} inner="Refresh" class="bg-primary" style="margin-right:5px"/>
+        <ActionButton id="refresh-mailbox-btn" operation={refreshMailbox} class="bg-primary" style="margin-right:5px" >
+            Refresh
+        </ActionButton>
     {/if}
 </div>
 <hr />

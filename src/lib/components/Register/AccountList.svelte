@@ -41,7 +41,9 @@
             <li>
                 <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
                 <button style="margin-right: 5px;" onclick={() => { dispatchEditAccount(account) }}>Edit</button>
-                <ActionButton id="remove-account" operation={removeAccount} inner="Remove" data-email-address={account.email_address} />
+                <ActionButton id="remove-account" operation={removeAccount} data-email-address={account.email_address} >
+                    Remove
+                </ActionButton>
             </li>
         {/each}
     </ul>

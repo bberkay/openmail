@@ -1,18 +1,18 @@
 <script lang="ts">
-    import { mount, unmount } from "svelte";
+    import { mount, unmount, type Snippet } from "svelte";
     import Loader from "$lib/components/Elements/Loader.svelte";
 
     interface Props {
         id: string;
         operation: (eventTrigger: HTMLButtonElement) => Promise<void>,
-        inner: string;
+        children: Snippet;
         [attribute: string]: unknown;
     }
 
     let {
         id,
         operation,
-        inner,
+        children,
         ...attributes
     }: Props = $props();
 
@@ -36,8 +36,8 @@
     }
 </script>
 
-<button type="button" id={id} {...attributes} onclick={makeAnApiRequest}>
-    {@html inner}
+<button {...attributes} type="button" id={id} onclick={makeAnApiRequest}>
+    {@render children()}
 </button>
 
 <style>

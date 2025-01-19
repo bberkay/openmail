@@ -329,7 +329,9 @@
             </div>
         </div>
     </div>
-    <ActionButton id="search-emails-btn" operation={handleSearch} inner="Search" style="margin-top:5px;"/>
+    <ActionButton id="search-emails-btn" operation={handleSearch}  style="margin-top:5px;">
+        Search
+    </ActionButton>
 </div>
 
 <style>
