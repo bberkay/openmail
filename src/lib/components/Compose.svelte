@@ -88,7 +88,8 @@
         ).map(span => span.textContent).join(',');
     }
 
-    const sendEmail = async (form: HTMLFormElement): Promise<void> => {
+    const sendEmail = async (e: Event): Promise<void> => {
+        const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
 
         formData.set('sender', sender);

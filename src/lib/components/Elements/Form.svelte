@@ -5,7 +5,7 @@
 
     interface Props {
         children: Snippet;
-        onsubmit: (form: HTMLFormElement) => Promise<void>
+        onsubmit: (e: Event) => Promise<void>
     }
 
     let { children, onsubmit }: Props = $props();
@@ -26,7 +26,7 @@
         eventTrigger.innerText = "";
         const loader = mount(Loader, { target: eventTrigger });
 
-        await onsubmit(form);
+        await onsubmit(e);
 
         eventTrigger.disabled = false;
         eventTrigger.innerText = temp;

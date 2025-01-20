@@ -31,7 +31,8 @@
             currentEditingAccount = SharedStore.failedAccounts[0];
     });
 
-    const editAccount = async (form: HTMLFormElement): Promise<void> => {
+    const editAccount = async (e: Event): Promise<void> => {
+        const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
         const response = await accountController.edit(
             formData.get('email_address') as string,

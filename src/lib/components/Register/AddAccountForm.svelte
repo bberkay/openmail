@@ -4,7 +4,8 @@
 
     const accountController = new AccountController();
 
-    const addAccount = async (form: HTMLFormElement): Promise<void> => {
+    const addAccount = async (e: Event): Promise<void> => {
+        const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
         const response = await accountController.add(
             formData.get('email_address') as string,
