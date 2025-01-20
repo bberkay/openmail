@@ -2,26 +2,44 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Select from "$lib/components/Elements/Select.svelte";
+    import Modal from "$lib/components/Elements/Modal.svelte";
+    import Form from "$lib/components/Elements/Form.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+
+    const mailboxController = new MailboxController();
 
     interface Props {
         parentFolderName: string | null,
-        handleCreateFolderForm: (e: Event) => void,
-        closeCreateFolderForm: () => void
     }
 
-    let { parentFolderName, handleCreateFolderForm, closeCreateFolderForm }: Props = $props();
+    let { parentFolderName }: Props = $props();
 
     onMount(() => {
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
         if (parentFolderName) {
             document.getElementById("parent-folder")!.setAttribute("disabled", "true");
         }
     });
+
+    const handleCreateFolderForm = async (e: Event): Promise<void> => {
+        const target = e.target as HTMLFormElement;
+        const folderName = target.querySelector<HTMLInputElement>(
+            'input[name="folder_name"]',
+        )!.value;
+        const parentFolder = target.querySelector<HTMLSelectElement>(
+            'select[name="parent_folder"]',
+        )?.value;
+
+        const response = await mailboxController.createFolder(folderName, parentFolder);
+        if(!response.success){
+            alert(response.message);
+        }
+
+        target.reset();
+    }
 </script>
 
-<div class="card absolute">
-    <form onsubmit={handleCreateFolderForm}>
+<Modal>
+    <Form onsubmit={handleCreateFolderForm}>
         <div class="form-group">
             <label for="folder-name">Folder Name</label>
             <input
@@ -45,7 +63,6 @@
         </div>
         <div class="display:flex;justify-content:space-between:align-items:center;">
             <button type="submit" class="bg-primary">Create</button>
-            <button type="button" onclick={closeCreateFolderForm}>Cancel</button>
         </div>
-    </form>
-</div>
+    </Form>
+</Modal>

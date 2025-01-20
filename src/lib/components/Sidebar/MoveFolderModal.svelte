@@ -1,23 +1,37 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
+    import Modal from "$lib/components/Elements/Modal.svelte";
+    import Form from "$lib/components/Elements/Form.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+
+    const mailboxController = new MailboxController();
 
     interface Props {
-        handleMoveFolderForm: (e: Event) => void,
-        closeMoveFolderForm: () => void,
         folderName: string
     }
 
-    let { handleMoveFolderForm, closeMoveFolderForm, folderName }: Props = $props();
+    let { folderName }: Props = $props();
 
-    onMount(() => {
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-    });
+    const handleMoveFolderForm = async (e: Event): Promise<void> => {
+        const target = e.target as HTMLFormElement;
+        const folderName = target.querySelector<HTMLInputElement>(
+            'input[name="folder_name"]',
+        )!.value;
+        const destinationFolder = target.querySelector<HTMLSelectElement>(
+            'select[name="destination_folder"]',
+        )!.value;
+
+        const response = await mailboxController.moveFolder(folderName, destinationFolder);
+        if(!response.success){
+            alert(response.message);
+        }
+
+        target.reset();
+    }
 </script>
 
-<div class="card absolute">
-    <form onsubmit={handleMoveFolderForm}>
+<Modal>
+    <Form onsubmit={handleMoveFolderForm}>
         <div class="form-group">
             <label for="folder-name">Select Folder</label>
             <div class="input-group">
@@ -37,7 +51,6 @@
         </div>
         <div class="display:flex;justify-content:space-between:align-items:center;">
             <button type="submit" class="bg-primary">Move</button>
-            <button type="button" onclick={closeMoveFolderForm}>Cancel</button>
         </div>
-    </form>
-</div>
+    </Form>
+</Modal>

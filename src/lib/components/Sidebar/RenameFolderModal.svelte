@@ -1,22 +1,36 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import Form from "$lib/components/Elements/Form.svelte";
+    import Modal from "$lib/components/Elements/Modal.svelte";
+
+    const mailboxController = new MailboxController();
 
     interface Props {
-        handleRenameFolderForm: (e: Event) => void,
-        closeRenameFolderForm: () => void,
         folderName: string
     }
 
-    let { handleRenameFolderForm, closeRenameFolderForm, folderName }: Props = $props();
+    let { folderName }: Props = $props();
 
-    onMount(() => {
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-    });
+    const handleRenameFolderForm = async (e: Event): Promise<void> => {
+        const target = e.target as HTMLFormElement;
+        const folderPath = target.querySelector<HTMLInputElement>(
+            'input[name="folder_name"]',
+        )!.value;
+        let newFolderName = target.querySelector<HTMLSelectElement>(
+            'input[name="new_folder_name"]',
+        )!.value;
+
+        const response = await mailboxController.renameFolder(folderPath, newFolderName);
+        if(!response.success){
+            alert(response.message);
+        }
+
+        target.reset();
+    }
 </script>
 
-<div class="card absolute">
-    <form onsubmit={handleRenameFolderForm} id="rename-folder-form">
+<Modal>
+    <Form onsubmit={handleRenameFolderForm}>
         <div class="form-group">
             <label for="folder-name">Folder Name</label>
             <input
@@ -42,7 +56,6 @@
         </div>
         <div class="display:flex;justify-content:space-between:align-items:center;">
             <button type="submit" class="bg-primary">Rename</button>
-            <button type="button" onclick={closeRenameFolderForm}>Cancel</button>
         </div>
-    </form>
-</div>
+    </Form>
+</Modal>
