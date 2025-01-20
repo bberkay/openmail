@@ -10,10 +10,6 @@
 
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
-    onMount(() => {
-        contentBody = document.getElementById("body")!;
-        attachments = document.getElementById("attachments")!;
-    })
 
     $effect(() => {
         printEmailContent(email);
@@ -80,8 +76,8 @@
         {/each}
     {/if}
 </div>
-<div id="body"></div>
-<div id="attachments"></div>
+<div id="body" bind:this={contentBody}></div>
+<div id="attachments" bind:this={attachments}></div>
 
 <style>
     #body:not(:has(iframe)) {
