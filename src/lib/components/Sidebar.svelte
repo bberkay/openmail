@@ -10,6 +10,7 @@
     import DropdownToggle from "$lib/components/Elements/DropdownToggle.svelte";
     import DropdownItem from "$lib/components/Elements/DropdownItem.svelte";
     import { showModal } from "$lib/components/Elements/Modal.svelte";
+    import ToggleButton from "$lib/components/Elements/ToggleButton.svelte";
 
     const mailboxController = new MailboxController();
     const TABSIZE_MULTIPLIER = 0.5;
@@ -84,10 +85,9 @@
         }
     }
 
-    const toggleSubfolders = (e: MouseEvent) => {
+    const toggleSubfolders = (e: Event) => {
         const toggleButton = e.target as HTMLButtonElement;
-        toggleButton.innerText = toggleButton.innerText === "▸" ? "▾" : "▸"; // TODO: Fix this.
-        const isClosing = toggleButton.innerText === "▸";
+        const isClosing = !toggleButton.classList.contains("opened");
 
         let folder = toggleButton.parentElement!;
         const currentTabsize = parseFloat(folder.style.paddingLeft);
@@ -112,7 +112,7 @@
                     const prevSibling = folder.previousElementSibling as HTMLDivElement;
                     const prevSiblingToggle = prevSibling.querySelector(".subfolder-toggle") as HTMLButtonElement;
                     if (!prevSiblingToggle.classList.contains("disabled")) {
-                        if (prevSiblingToggle.innerText.includes("▾"))
+                        if (prevSiblingToggle.classList.contains("opened"))
                             folder.style.display = prevSibling.style.display;
                     } else {
                         folder.style.display = prevSibling.style.display;
@@ -166,10 +166,9 @@
                 {@const ancestorCount = countRealAncestorsOfCustomFolder(customFolder)}
                 {@const folderName = customFolder.split("/").slice(ancestorCount).join("/")}
                 {@const tabsize = ancestorCount * TABSIZE_MULTIPLIER}
-                {@const opacity = tabsize > 0 ? 1 : 0}
-                {@const disabled = opacity === 0 ? "disabled" : ""}
+                {@const disabled = tabsize > 0 ? "" : "disabled"}
                 <div class="folder" style="padding-left:{tabsize}rem;">
-                    <button class="inline subfolder-toggle {disabled}" style="opacity:{opacity}" onclick={toggleSubfolders}>▾</button>
+                    <ToggleButton class="inline subfolder-toggle {disabled}" onclick={toggleSubfolders} opened={true} />
                     <ActionButton
                         onclick={async (): Promise<void> => { getEmailsInFolder(folderName) }}
                         class="inline folder-name"
@@ -191,3 +190,68 @@
         </div>
     </div>
 </div>
+
+<style>
+    :global(.folder){
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 0;
+        background-color: rgb(36, 36, 36);
+        border-bottom: 1px solid rgb(70, 70, 70);
+        position: relative;
+
+        & .subfolder-toggle.disabled {
+            opacity:0;
+        }
+
+        & button.inline{
+            text-align: left;
+            padding:7px 8px;
+
+            &:hover{
+                background-color: rgb(50, 50, 50);
+            }
+
+            &:active{
+                background-color: rgb(70, 70, 70);
+
+                &.hover{
+                    background-color: rgb(70, 70, 70);
+                }
+            }
+
+            &.hover{
+                padding-left:8px;
+                padding-right:8px;
+                margin-right: 5px;
+
+                &:hover{
+                    background-color: #727272;
+                }
+
+                &:active{
+                    background-color: #868686;
+                }
+            }
+        }
+
+        &:hover{
+            background-color: rgb(50, 50, 50);
+
+            & .hover{
+                opacity: 1;
+            }
+        }
+
+        & .hover{
+            opacity: 0;
+            transition: opacity 0.1s ease-in-out;
+        }
+
+        &:last-child{
+            border-bottom: none;
+        }
+    }
+</style>
