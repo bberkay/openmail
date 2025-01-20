@@ -37,7 +37,7 @@
 </script>
 
 {#if SharedStore.mailboxes.length > 0}
-    <main>
+    <div class="mailbox">
         <section style="width:20%;margin-right:5px;">
             <Sidebar {showCompose} />
         </section>
@@ -54,7 +54,7 @@
                 {/if}
             </div>
         </section>
-    </main>
+    </div>
 {:else if isLoading}
     <Loader />
 {:else}
@@ -63,3 +63,9 @@
 
 <hr />
 <pre>{SharedStore.toString()}</pre>
+
+<style>
+    .mailbox {
+        display: flex;
+    }
+</style>
