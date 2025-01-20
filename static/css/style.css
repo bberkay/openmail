@@ -13,27 +13,6 @@ body{
     color: #dddddd;
 }
 
-.overlay{
-    display:none
-}
-
-body:has(.card.absolute){
-    overflow:hidden;
-
-    & .overlay{
-        display: block;
-        position: absolute;
-        overflow:hidden;
-        width:100%;
-        height:100%;
-        background-color: #000;
-        opacity:0.5;
-        z-index:99;
-        pointer-events: none;
-        user-select:none;
-    }
-}
-
 iframe{
     width: 100%;
     height: 100%;
@@ -74,10 +53,6 @@ pre {
     border: 1px solid #3a3a3a;
     overflow-x: auto;
     box-sizing: border-box;
-}
-
-main {
-    display: flex;
 }
 
 /* Colors */
@@ -187,14 +162,6 @@ span {
     border-radius: 5px;
     padding: 1rem;
     margin-bottom: 5px;
-
-    &.absolute {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index:99999;
-    }
 }
 
 /* Folder */
