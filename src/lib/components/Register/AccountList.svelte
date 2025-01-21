@@ -7,10 +7,10 @@
     const accountController = new AccountController();
 
     interface Props {
-        setEditingAccount: (account: Account) => void;
+        editingAccount: Account | null;
     }
 
-    let { setEditingAccount }: Props = $props();
+    let { editingAccount = $bindable() }: Props = $props();
 
     const removeAccount = async (e: Event): Promise<void> => {
         const target = e.target as HTMLButtonElement;
@@ -49,7 +49,7 @@
         {#each SharedStore.accounts as account}
             <li>
                 <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
-                <button style="margin-right: 5px;" onclick={() => { setEditingAccount(account) }}>Edit</button>
+                <button style="margin-right: 5px;" onclick={() => { editingAccount = account }}>Edit</button>
                 <ActionButton onclick={removeAccount} data-email-address={account.email_address} >
                     Remove
                 </ActionButton>
@@ -62,7 +62,7 @@
         {#each SharedStore.failedAccounts as failedAccount}
             <li>
                 <span style="margin-right: 5px;">{failedAccount.fullname} &lt;{failedAccount.email_address}&gt;</span>
-                <button style="margin-right: 5px;" onclick={() => { setEditingAccount(failedAccount) }}>Edit</button>
+                <button style="margin-right: 5px;" onclick={() => { editingAccount = failedAccount }}>Edit</button>
                 <ActionButton onclick={removeAccount} data-email-address={failedAccount.email_address} >
                     Remove
                 </ActionButton>

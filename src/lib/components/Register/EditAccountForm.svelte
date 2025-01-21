@@ -8,11 +8,10 @@
     const accountController = new AccountController();
 
     interface Props {
-        editingAccount: Account;
-        setEditingAccount: (account: Account | null) => void;
+        editingAccount: Account | null;
     }
 
-    let { editingAccount, setEditingAccount }: Props = $props();
+    let { editingAccount = $bindable() }: Props = $props();
 
     $effect(() => {
         if (!editingAccount && SharedStore.failedAccounts.length > 0)
@@ -44,30 +43,32 @@
     }
 
     const cancelEdit = () => {
-        setEditingAccount(null);
+        editingAccount = null;
     }
 </script>
 
-<Form onsubmit={editAccount}>
-    <div>
+{#if editingAccount}
+    <Form onsubmit={editAccount}>
         <div>
-            <label for="email_address">Email Address</label><br>
-            <input type="email" name="email_address" id="email_address" autocomplete="off" placeholder="someone@domain.xyz" value="{editingAccount.email_address}" readonly required>
+            <div>
+                <label for="email_address">Email Address</label><br>
+                <input type="email" name="email_address" id="email_address" autocomplete="off" placeholder="someone@domain.xyz" value="{editingAccount.email_address}" readonly required>
             </div>
-        <div>
-            <label for="password">Password</label><br>
-                <!-- svelte-ignore a11y_autofocus -->
-            <input type="password" name="password" id="password" autocomplete="off" autofocus required>
+            <div>
+                <label for="password">Password</label><br>
+                    <!-- svelte-ignore a11y_autofocus -->
+                <input type="password" name="password" id="password" autocomplete="off" autofocus required>
             </div>
-        <div>
-            <label for="fullname">Fullname (Optional)</label><br>
-            <input type="text" name="fullname" id="fullname" autocomplete="off" placeholder="Fullname" value="{editingAccount.fullname}"><br>
-            <small style="font-style:italic;margin-top:5px;">Enter your fullname to be displayed in the email.</small>
+            <div>
+                <label for="fullname">Fullname (Optional)</label><br>
+                <input type="text" name="fullname" id="fullname" autocomplete="off" placeholder="Fullname" value="{editingAccount.fullname}"><br>
+                <small style="font-style:italic;margin-top:5px;">Enter your fullname to be displayed in the email.</small>
             </div>
-        <button type="submit" id="edit-account-btn">Edit Account</button>
-        <button type="button" onclick={cancelEdit}>Cancel</button>
-        <ActionButton onclick={removeAccount} data-email-address={editingAccount.email_address}>
-            Remove
-        </ActionButton>
-    </div>
-</Form>
+            <button type="submit" id="edit-account-btn">Edit Account</button>
+            <button type="button" onclick={cancelEdit}>Cancel</button>
+            <ActionButton onclick={removeAccount} data-email-address={editingAccount.email_address}>
+                Remove
+            </ActionButton>
+        </div>
+    </Form>
+{/if}

@@ -31,21 +31,17 @@
         await getFoldersOfAllAccounts();
         await getMailboxesOfAllAccounts();
     }
-
-    const setEditingAccount = (account: Account | null) => {
-        editingAccount = account;
-    }
 </script>
 
 {#if editingAccount}
     <h3>Edit Account</h3>
-    <EditAccountForm {editingAccount} {setEditingAccount}/>
+    <EditAccountForm bind:editingAccount={editingAccount}/>
 {:else}
     <h3>Add Account</h3>
     <AddAccountForm />
 {/if}
 
-<AccountList {setEditingAccount}/>
+<AccountList bind:editingAccount={editingAccount}/>
 
 <div>
     <ActionButton onclick={continueToInbox}>
