@@ -1234,7 +1234,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{len(emails)}`") from e
 
-        return Mailbox(folder=self._searched_emails.folder, emails=emails, total=len(emails))
+        return Mailbox(folder=self._searched_emails.folder, emails=emails, total=uids_len)
 
     def get_email_flags(self, sequence_set: str) -> list[Flags]:
         """
