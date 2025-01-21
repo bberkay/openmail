@@ -115,11 +115,3 @@ export enum Folder {
     Junk = "Junk",
     Trash = "Trash",
 }
-
-export enum AccountEvent {
-    /**
-     * @CustomEvent
-     * @param {Account} account
-     */
-    onEditingAccount = "onEditingAccount",
-}

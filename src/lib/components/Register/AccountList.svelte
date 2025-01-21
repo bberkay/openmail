@@ -2,9 +2,15 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
-    import { type Account, AccountEvent } from "$lib/types";
+    import { type Account } from "$lib/types";
 
     const accountController = new AccountController();
+
+    interface Props {
+        setEditingAccount: (account: Account) => void;
+    }
+
+    let { setEditingAccount }: Props = $props();
 
     const removeAccount = async (e: Event): Promise<void> => {
         const target = e.target as HTMLButtonElement;
@@ -17,7 +23,7 @@
     }
 
     const removeAllAccounts = async (): Promise<void> => {
-        if(confirm("Are you certain?")){
+        if(confirm("Are you certain? You are about to remove all accounts.")){
             const response = await accountController.removeAll();
 
             if (!response.success) {
@@ -26,12 +32,14 @@
         }
     }
 
-    const dispatchEditAccount = (account: Account) => {
-        document.dispatchEvent(
-            new CustomEvent(AccountEvent.onEditingAccount, {
-                detail: { account },
-            })
-        );
+    const removeAllFailedAccounts = async (): Promise<void> => {
+        if(confirm("Are you certain? You are about to remove all failed accounts.")){
+            const response = await accountController.removeAll();
+
+            if (!response.success) {
+                alert(response.message);
+            }
+        }
     }
 </script>
 
@@ -41,11 +49,24 @@
         {#each SharedStore.accounts as account}
             <li>
                 <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
-                <button style="margin-right: 5px;" onclick={() => { dispatchEditAccount(account) }}>Edit</button>
+                <button style="margin-right: 5px;" onclick={() => { setEditingAccount(account) }}>Edit</button>
                 <ActionButton onclick={removeAccount} data-email-address={account.email_address} >
                     Remove
                 </ActionButton>
             </li>
         {/each}
     </ul>
+    {#if SharedStore.failedAccounts.length > 0}
+        <h3>Failed Accounts <button onclick={removeAllFailedAccounts}>Remove All</button></h3>
+        <small>There were {SharedStore.failedAccounts.length} accounts that failed to connect.</small>
+        {#each SharedStore.failedAccounts as failedAccount}
+            <li>
+                <span style="margin-right: 5px;">{failedAccount.fullname} &lt;{failedAccount.email_address}&gt;</span>
+                <button style="margin-right: 5px;" onclick={() => { setEditingAccount(failedAccount) }}>Edit</button>
+                <ActionButton onclick={removeAccount} data-email-address={failedAccount.email_address} >
+                    Remove
+                </ActionButton>
+            </li>
+        {/each}
+    {/if}
 {/if}

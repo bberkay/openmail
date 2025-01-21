@@ -5,8 +5,13 @@
     import EditAccountForm from "$lib/components/Register/EditAccountForm.svelte";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import { type Account } from "$lib/types";
 
     const mailboxController = new MailboxController();
+
+    let editingAccount: Account | null = $state(SharedStore.failedAccounts
+        ? SharedStore.failedAccounts[0]
+        : null);
 
     async function getFoldersOfAllAccounts() {
         const response = await mailboxController.getAllFolders();
@@ -26,17 +31,21 @@
         await getFoldersOfAllAccounts();
         await getMailboxesOfAllAccounts();
     }
+
+    const setEditingAccount = (account: Account | null) => {
+        editingAccount = account;
+    }
 </script>
 
-{#if SharedStore.failedAccounts.length > 0}
+{#if editingAccount}
     <h3>Edit Account</h3>
-    <EditAccountForm />
+    <EditAccountForm {editingAccount} {setEditingAccount}/>
 {:else}
     <h3>Add Account</h3>
     <AddAccountForm />
 {/if}
 
-<AccountList/>
+<AccountList {setEditingAccount}/>
 
 <div>
     <ActionButton onclick={continueToInbox}>

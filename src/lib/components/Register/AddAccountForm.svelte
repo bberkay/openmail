@@ -9,8 +9,8 @@
         const formData = new FormData(form);
         const response = await accountController.add(
             formData.get('email_address') as string,
-            formData.get('fullname') as string,
-            formData.get("password") as string
+            formData.get("password") as string,
+            formData.get('fullname') as string
         );
 
         if(!response.success){

@@ -3,32 +3,20 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Form from "$lib/components/Elements/Form.svelte";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
-    import { AccountEvent, type Account } from "$lib/types";
-    import { onMount, onDestroy } from "svelte";
+    import { type Account } from "$lib/types";
 
     const accountController = new AccountController();
 
-    let currentEditingAccount: Account | null = $state(
-        SharedStore.failedAccounts
-            ? SharedStore.failedAccounts[0]
-            : null
-    );
-
-    function handleEditingAccount(event: CustomEvent) {
-        currentEditingAccount = event.detail.account;
+    interface Props {
+        editingAccount: Account;
+        setEditingAccount: (account: Account | null) => void;
     }
 
-    onMount(() => {
-        document.addEventListener(AccountEvent.onEditingAccount, handleEditingAccount as EventListener);
-    });
-
-    onDestroy(() => {
-        document.removeEventListener(AccountEvent.onEditingAccount, handleEditingAccount as EventListener);
-    });
+    let { editingAccount, setEditingAccount }: Props = $props();
 
     $effect(() => {
-        if (!currentEditingAccount && SharedStore.failedAccounts.length > 0)
-            currentEditingAccount = SharedStore.failedAccounts[0];
+        if (!editingAccount && SharedStore.failedAccounts.length > 0)
+            editingAccount = SharedStore.failedAccounts[0];
     });
 
     const editAccount = async (e: Event): Promise<void> => {
@@ -36,8 +24,8 @@
         const formData = new FormData(form);
         const response = await accountController.edit(
             formData.get('email_address') as string,
-            formData.get('fullname') as string,
-            formData.get("password") as string
+            formData.get("password") as string,
+            formData.get('fullname') as string
         );
 
         if(!response.success){
@@ -55,57 +43,31 @@
         }
     }
 
-    const removeAllAccounts = async (): Promise<void> => {
-        if(confirm("Are you certain?")){
-            const response = await accountController.removeAll();
-
-            if (!response.success) {
-                alert(response.message);
-            }
-        }
-    }
-
     const cancelEdit = () => {
-        currentEditingAccount = null;
+        setEditingAccount(null);
     }
 </script>
 
 <Form onsubmit={editAccount}>
-    {#if currentEditingAccount}
+    <div>
         <div>
-            <h3>Updating Accounts <button onclick={removeAllAccounts}>Remove All</button></h3>
-            <small>There were {SharedStore.failedAccounts.length} accounts that failed to connect.</small>
-            <ul>
-                {#each SharedStore.failedAccounts as account}
-                    <li>
-                        <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
-                        <button style="margin-right: 5px;" onclick={() => { currentEditingAccount = account }}>Edit</button>
-                        <ActionButton onclick={removeAccount}  data-email-address={currentEditingAccount.email_address} >
-                            Remove
-                        </ActionButton>
-                        </li>
-                    {/each}
-                </ul>
-            <hr>
-            <div>
-                <label for="email_address">Email Address</label><br>
-                <input type="email" name="email_address" id="email_address" autocomplete="off" placeholder="someone@domain.xyz" value="{currentEditingAccount.email_address}" readonly required>
-                </div>
-            <div>
-                <label for="password">Password</label><br>
-                    <!-- svelte-ignore a11y_autofocus -->
-                <input type="password" name="password" id="password" autocomplete="off" autofocus required>
-                </div>
-            <div>
-                <label for="fullname">Fullname (Optional)</label><br>
-                <input type="text" name="fullname" id="fullname" autocomplete="off" placeholder="Fullname" value="{currentEditingAccount.fullname}"><br>
-                <small style="font-style:italic;margin-top:5px;">Enter your fullname to be displayed in the email.</small>
-                </div>
-            <button type="submit" id="edit-account-btn">Edit Account</button>
-            <button type="button" onclick={cancelEdit}>Cancel</button>
-            <ActionButton onclick={removeAccount} data-email-address={currentEditingAccount.email_address}>
-                Remove
-            </ActionButton>
-        </div>
-    {/if}
+            <label for="email_address">Email Address</label><br>
+            <input type="email" name="email_address" id="email_address" autocomplete="off" placeholder="someone@domain.xyz" value="{editingAccount.email_address}" readonly required>
+            </div>
+        <div>
+            <label for="password">Password</label><br>
+                <!-- svelte-ignore a11y_autofocus -->
+            <input type="password" name="password" id="password" autocomplete="off" autofocus required>
+            </div>
+        <div>
+            <label for="fullname">Fullname (Optional)</label><br>
+            <input type="text" name="fullname" id="fullname" autocomplete="off" placeholder="Fullname" value="{editingAccount.fullname}"><br>
+            <small style="font-style:italic;margin-top:5px;">Enter your fullname to be displayed in the email.</small>
+            </div>
+        <button type="submit" id="edit-account-btn">Edit Account</button>
+        <button type="button" onclick={cancelEdit}>Cancel</button>
+        <ActionButton onclick={removeAccount} data-email-address={editingAccount.email_address}>
+            Remove
+        </ActionButton>
+    </div>
 </Form>
