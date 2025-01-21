@@ -181,13 +181,11 @@
             Delete
         </ActionButton>
         <Select
-            id="move-to-select"
             options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
             operation={moveEmails}
             placeholder='Move To'
         />
         <Select
-            id="move-to-select"
             options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
             operation={copyEmails}
             placeholder='Copy To'

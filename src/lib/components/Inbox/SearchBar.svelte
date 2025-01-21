@@ -195,7 +195,7 @@
             <label for="folder">Folder</label>
             <div class="input-group">
                 <Select
-                    id="search-folder-select"
+                    enableSearch={true}
                     options={
                         SharedStore.standardFolders[0].result.map((standardFolder) => {
                             const [folderTag, folderName] = standardFolder.split(":")
@@ -237,7 +237,6 @@
                 <label for="since">Since</label>
                 <div class="input-group">
                     <DatePicker
-                        id="since"
                         operation={handleSince}
                         value={selectedSince}
                     />
@@ -247,7 +246,6 @@
                 <label for="before">Before</label>
                 <div class="input-group">
                     <DatePicker
-                        id="before"
                         operation={handleBefore}
                         value={selectedBefore}
                     />
@@ -266,7 +264,6 @@
                         onkeyup={handleSizeValue}
                     />
                     <Select
-                        id="smallter-than-unit"
                         options={Object.values(Size).map(size => ({value: size, inner: size}))}
                         operation={handleSmallerThanUnit}
                         value={smallerThanUnit}
@@ -284,7 +281,6 @@
                         onkeyup={handleSizeValue}
                     />
                     <Select
-                        id="larger-than-unit"
                         options={Object.values(Size).map(size => ({value: size, inner: size}))}
                         operation={handleLargerThanUnit}
                         value={largerThanUnit}
@@ -315,9 +311,8 @@
         </div>
         <div class="form-group">
             <label for="include-flags">Include Flag</label>
-            <div class="input-group">
+            <div class="input-group" id="include-flags">
                 <Select
-                    id="include-flags"
                     options={Object.entries(Mark).map(mark => ({value: mark[1], inner: mark[0]}))}
                     operation={handleFlag}
                     placeholder='Flag'

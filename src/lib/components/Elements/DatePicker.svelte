@@ -1,18 +1,16 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import { range, getMonths, convertToIMAPDate } from "$lib/utils";
     import Select from "$lib/components/Elements/Select.svelte";
 
     interface Props {
-        id: string;
         placeholder?: string,
         value?: Date,
         operation?: (selectedDay: Date) => void,
     }
 
     let {
-        id,
-        placeholder = undefined,
+        placeholder = "1 Jan 1970",
         value = undefined,
         operation = undefined
     }: Props = $props();
@@ -30,23 +28,31 @@
     let calendarBody: HTMLElement;
 
     onMount(() => {
-        datePickerWrapper = document.getElementById(id) as HTMLDivElement;
-        dateInput = datePickerWrapper.querySelector(
-            ".date-input",
-        ) as HTMLInputElement;
-        calendarBody = datePickerWrapper.querySelector("#calendar-body")!;
+        if (datePickerWrapper) {
+            dateInput = datePickerWrapper.querySelector(
+                ".date-input",
+            ) as HTMLInputElement;
+            calendarBody = datePickerWrapper.querySelector("#calendar-body")!;
 
-        document.addEventListener("click", (e) => {
-            if (
-                !datePickerWrapper.contains(e.target as HTMLElement) &&
-                e.target !== dateInput
-            ) {
-                datePickerShown = false;
-            }
-        });
+            document.removeEventListener("click", closeWhenClickedOutside);
+            document.addEventListener("click", closeWhenClickedOutside);
 
-        renderCalendar();
+            renderCalendar();
+        }
     });
+
+    onDestroy(() => {
+        document.removeEventListener("click", closeWhenClickedOutside);
+    });
+
+    const closeWhenClickedOutside = (e: Event) => {
+        if (
+            !datePickerWrapper.contains(e.target as HTMLElement) &&
+            e.target !== dateInput
+        ) {
+            datePickerShown = false;
+        }
+    }
 
     const selectMonth = (selectedMonthIndex: string | null) => {
         if (!selectedMonthIndex) return;
@@ -158,31 +164,27 @@
     }
 </script>
 
-<div class="date-input-wrapper {!datePickerShown ? 'hidden' : ''}" {id}>
+<div class="date-input-wrapper" bind:this={datePickerWrapper}>
     <input
         type="text"
         class="date-input"
         readonly
         placeholder={placeholder}
-        value={() => {
-            convertToIMAPDate(selectedDate);
-        }}
+        value={selectedDate ? convertToIMAPDate(selectedDate) : ""}
         onclick={() => {
-            datePickerShown = true;
+            datePickerShown = !datePickerShown;
         }}
     />
-    <div class="datepicker-container">
+    <div class="datepicker-container {datePickerShown ? 'visible' : ''}">
         <div class="datepicker-header">
             <div class="month-year-selector">
                 <button class="nav-button" id="prev-month" onclick={goPrevMonth}>←</button>
                 <Select
-                    id="month-select"
                     options={getMonths().map((month, index) => ({ value: index, inner: month }))}
                     operation={selectMonth}
                     value={{ value: displayedMonth, inner: displayedMonth.toString() }}
                 />
                 <Select
-                    id="year-select"
                     options={range(currentYear - 10, currentYear + 10, 1).map((year) => ({ value: year, inner: year }))}
                     operation={selectYear}
                     value={{ value: displayedYear, inner: displayedYear.toString() }}
@@ -222,7 +224,7 @@
         }
 
         & .datepicker-container {
-            display: none;
+            visibility: hidden;
             position: absolute;
             top: 100%;
             left: 0;
@@ -232,9 +234,17 @@
             border-radius: 5px;
             padding: 10px;
             background: #fff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             margin-top: 5px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+            &.visible {
+                opacity: 1;
+                visibility: visible;
+            }
         }
 
         & .datepicker-header {

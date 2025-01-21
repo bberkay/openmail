@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
 
     export type Option = {
         value: string | number,
@@ -7,7 +7,6 @@
     }
 
     interface Props {
-        id: string;
         options: Option[];
         placeholder?: string;
         value?: Option;
@@ -16,7 +15,6 @@
     }
 
     let {
-        id,
         options,
         placeholder = undefined,
         value = undefined,
@@ -25,29 +23,33 @@
     }: Props = $props();
 
     let isOpen = $state(false);
-    let showClass = $derived(isOpen ? "open" : "");
     let filteredOptions: Option[] = $state(options);
     let selectedOption: Option | null = $state(value || null);
     let searchInput: HTMLInputElement | null = null;
+    let selectWrapper: HTMLElement;
 
     onMount(() => {
-        const selectWrapper = document.getElementById(id) as HTMLDivElement;
-        searchInput = enableSearch ? selectWrapper.querySelector(".search-input") as HTMLInputElement : null;
-
-        document.addEventListener("click", (e) => {
-            if (!selectWrapper.contains(e.target as HTMLElement)) {
-                closeSelect();
-            }
-        });
-
-        renderOptions();
+        if(selectWrapper) {
+            searchInput = enableSearch ? selectWrapper.querySelector(".search-input") as HTMLInputElement : null;
+            document.removeEventListener("click", closedWhenClickedOutside);
+            document.addEventListener("click", closedWhenClickedOutside);
+            renderOptions();
+        }
     });
 
-    $effect(() => {
-        if (isOpen) {
-            openSelect();
-        } else {
+    onDestroy(() => {
+        document.removeEventListener("click", closedWhenClickedOutside);
+    });
+
+    const closedWhenClickedOutside = (e: Event) => {
+        if (!selectWrapper.contains(e.target as HTMLElement)) {
             closeSelect();
+        }
+    }
+
+    $effect(() => {
+        if (isOpen && enableSearch) {
+            searchInput!.focus();
         }
     })
 
@@ -58,11 +60,6 @@
     function renderOptions(newOptions: Option[] | null = null) {
         filteredOptions = newOptions || options;
     }
-
-    const openSelect = () => {
-        isOpen = true;
-        if(enableSearch) searchInput!.focus();
-    };
 
     const closeSelect = () => {
         if (!isOpen)
@@ -109,18 +106,18 @@
     }
 </script>
 
-<div class="custom-select-wrapper">
+<div class="custom-select-wrapper" bind:this={selectWrapper}>
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="custom-select {showClass}" onclick={() => { isOpen = !isOpen }}>
+    <div class="custom-select {isOpen ? "open" : ""}" onclick={() => { isOpen = !isOpen }}>
         <div class="select-trigger">
             <div class="select-trigger-content">
-                <span id={id}>{selectedOption && selectedOption.value ? selectedOption.inner : placeholder}</span>
+                <span>{selectedOption && selectedOption.value ? selectedOption.inner : placeholder}</span>
                 <button class="clear-button {selectedOption ? "visible" : ""}" onclick={clearSelection}>×</button>
             </div>
             <div class="arrow"></div>
         </div>
     </div>
-    <div class="options-container {showClass}">
+    <div class="options-container {isOpen ? "open" : ""}">
         {#if enableSearch}
             <div class="search-box">
                 <input type="text" class="search-input" placeholder="Search..." onclick={(e) => { e.stopPropagation() }} oninput={handleSearch}/>
@@ -164,7 +161,7 @@
             }
         }
 
-        .select-trigger {
+        & .select-trigger {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -207,7 +204,7 @@
             }
         }
 
-        .options-container {
+        & .options-container {
             position: absolute;
             top: 100%;
             left: 0;
@@ -248,7 +245,7 @@
             }
         }
 
-        .option {
+        & .option {
             padding: 10px;
             cursor: pointer;
             transition: background-color 0.2s ease;
@@ -265,7 +262,7 @@
         }
 
         /* Search input styles */
-        .search-box {
+        & .search-box {
             padding: 8px;
             position: sticky;
             top: 0;
@@ -273,7 +270,7 @@
             border-bottom: 1px solid #e1e1e1;
         }
 
-        .search-input {
+        & .search-input {
             width: 100%;
             padding: 6px;
             border: 1px solid #e1e1e1;
@@ -286,7 +283,7 @@
         }
 
         /* No results message */
-        .no-results {
+        & .no-results {
             padding: 10px;
             color: #666;
             text-align: center;

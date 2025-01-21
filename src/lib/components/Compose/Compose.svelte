@@ -121,7 +121,6 @@
         <div class="form-group">
             <label for="sender">Sender</label>
             <Select
-                id="sender"
                 options={SharedStore.accounts.map((account, index) => ({ value: account.email_address, inner: `${account.fullname} &lt;${account.email_address}&gt;` }))}
                 operation={selectSender}
                 value={{ value: SharedStore.accounts[0].email_address, inner: `${SharedStore.accounts[0].fullname} &lt;${SharedStore.accounts[0].email_address}&gt;` }}
