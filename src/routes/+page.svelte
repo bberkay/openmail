@@ -1,14 +1,14 @@
 <script lang="ts">
     import Loader from "$lib/components/Elements/Loader.svelte";
-    import Inbox from "$lib/components/Inbox.svelte";
-    import Register from "$lib/components/Register.svelte";
+    import Inbox from "$lib/components/Inbox/Inbox.svelte";
+    import Register from "$lib/components/Register/Register.svelte";
     import Sidebar from "$lib/components/Sidebar.svelte";
-    import SearchBar from "$lib/components/SearchBar.svelte";
+    import SearchBar from "$lib/components/Inbox/SearchBar.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import Layout from "$lib/components/Layout.svelte";
     import Main from "$lib/components/Main.svelte";
     import Content from "$lib/components/Content.svelte";
     import MainSidebar from "$lib/components/Sidebar/MainSidebar.svelte";
+    import Layout from "$lib/components/Layout.svelte";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
 </script>
