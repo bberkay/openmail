@@ -126,7 +126,7 @@
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <div class="options-list" onclick={selectOption}>
             {#each filteredOptions as option}
-                <div class="option ${selectedOption && selectedOption.value === option.value ? "selected" : ""}" data-value="${option.value}">
+                <div class="option {selectedOption && selectedOption.value === option.value ? "selected" : ""}" data-value={option.value}>
                     {@html option.inner}
                 </div>
             {:else}
