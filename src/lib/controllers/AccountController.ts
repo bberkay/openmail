@@ -1,5 +1,12 @@
 import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
-import { ApiService, GetRoutes, PostRoutes, type GetResponse, type PostResponse, type BaseResponse } from "$lib/services/ApiService";
+import {
+    ApiService,
+    GetRoutes,
+    PostRoutes,
+    type GetResponse,
+    type PostResponse,
+    type BaseResponse,
+} from "$lib/services/ApiService";
 import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 
 export class AccountController {
@@ -15,24 +22,29 @@ export class AccountController {
 
         return {
             success: response.success,
-            message: response.message
-        }
+            message: response.message,
+        };
     }
 
-    public async add(email_address: string, plain_password: string, fullname: string | null = null): Promise<PostResponse> {
+    public async add(
+        email_address: string,
+        plain_password: string,
+        fullname: string | null = null,
+    ): Promise<PostResponse> {
         const encryptor = new RSAEncryptor();
-        const encryptedPassword = await encryptor.encryptPassword(plain_password);
+        const encryptedPassword =
+            await encryptor.encryptPassword(plain_password);
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.ADD_ACCOUNT,
             {
                 email_address: email_address,
                 fullname: fullname || undefined,
-                encrypted_password: encryptedPassword
-            }
+                encrypted_password: encryptedPassword,
+            },
         );
 
-        if(response.success){
+        if (response.success) {
             SharedStore.accounts.push({
                 email_address,
                 ...(fullname && { fullname }),
@@ -42,33 +54,42 @@ export class AccountController {
         return response;
     }
 
-    public async edit(email_address: string, plain_password: string, fullname: string | null = null): Promise<PostResponse> {
+    public async edit(
+        email_address: string,
+        plain_password: string,
+        fullname: string | null = null,
+    ): Promise<PostResponse> {
         const encryptor = new RSAEncryptor();
-        const encryptedPassword = await encryptor.encryptPassword(plain_password);
+        const encryptedPassword =
+            await encryptor.encryptPassword(plain_password);
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.EDIT_ACCOUNT,
             {
                 email_address: email_address,
                 fullname: fullname || undefined,
-                encrypted_password: encryptedPassword
-            }
+                encrypted_password: encryptedPassword,
+            },
         );
 
-        if(response.success){
+        if (response.success) {
             SharedStore.accounts.push({
                 email_address: email_address,
-                ...(fullname && { fullname })
+                ...(fullname && { fullname }),
             });
 
             SharedStore.failedAccounts = SharedStore.failedAccounts.filter(
-                (item) => item.email_address !== email_address
+                (item) => item.email_address !== email_address,
             );
         } else {
-            if (SharedStore.failedAccounts.find((item) => item.email_address !== email_address)) {
+            if (
+                SharedStore.failedAccounts.find(
+                    (item) => item.email_address !== email_address,
+                )
+            ) {
                 SharedStore.failedAccounts.push({
                     email_address: email_address,
-                    ...(fullname && { fullname })
+                    ...(fullname && { fullname }),
                 });
             }
         }
@@ -81,12 +102,14 @@ export class AccountController {
             SharedStore.server,
             PostRoutes.REMOVE_ACCOUNT,
             {
-                account: account
-            }
+                account: account,
+            },
         );
 
         if (response.success) {
-            SharedStore.accounts = SharedStore.accounts.filter((item) => item.email_address !== account);
+            SharedStore.accounts = SharedStore.accounts.filter(
+                (item) => item.email_address !== account,
+            );
         }
 
         return response;
