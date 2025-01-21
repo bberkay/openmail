@@ -17,8 +17,8 @@
 	});
 </script>
 
-<main>
+<div id="layout-container">
     {@render children()}
-</main>
+</div>
 
 <div id="modal-container"></div>

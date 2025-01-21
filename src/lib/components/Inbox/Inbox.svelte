@@ -1,5 +1,5 @@
 <script lang="ts">
-    import InboxItem from "./Inbox/InboxItem.svelte";
+    import InboxItem from "./InboxItem.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Mark, type EmailWithContent } from "$lib/types";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
@@ -10,12 +10,6 @@
     let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
     let currentOffset = $state(1);
     let emailSelection: string[] = $state([]);
-
-    interface Props {
-        showContent: (email: EmailWithContent) => void;
-    }
-
-    let { showContent }: Props = $props();
 
     const refreshMailbox = async (): Promise<void> => {
         const response = await mailboxController.refreshMailbox();
@@ -229,7 +223,7 @@
             <div style="display:flex;">
                 <input type="checkbox" style="margin-right:10px;" bind:group={emailSelection} value={email.uid}>
                 <div style="flex-grow:1">
-                    <InboxItem owner={account.email_address} {email} {showContent}  />
+                    <InboxItem owner={account.email_address} {email} />
                 </div>
             </div>
         {/each}

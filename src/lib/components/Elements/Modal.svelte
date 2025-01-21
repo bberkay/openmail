@@ -60,7 +60,7 @@
     :global(body:has(.backdrop)){
         overflow:hidden;
 
-        & main {
+        & #layout-container {
             pointer-events: none;
         }
 

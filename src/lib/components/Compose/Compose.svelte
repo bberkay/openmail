@@ -6,6 +6,8 @@
     import Select from "$lib/components/Elements/Select.svelte";
     import Form from "$lib/components/Elements/Form.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import { show as showContent } from "$lib/components/Content.svelte";
+    import Inbox from '../Inbox/Inbox.svelte';
 
     const mailboxController = new MailboxController();
 
@@ -19,15 +21,14 @@
         </span>
     `;
 
-    interface Props {
-        showInbox: () => void
-    }
-
-    let { showInbox }: Props = $props();
     onMount(() => {
         body = new WYSIWYGEditor('body');
         body.init();
     });
+
+    const showInbox = () => {
+        showContent(Inbox);
+    }
 
     const handleTagEnter = (e: KeyboardEvent) => {
         const target = e.target as HTMLInputElement;
