@@ -6,16 +6,6 @@ export function createDomObject(html: string): HTMLElement {
     return template.content.firstElementChild as HTMLElement;
 }
 
-export function countCharacter(str: string, char: string): number {
-    let count = 0;
-    for (const c of str) {
-        if (c === char) {
-            count++;
-        }
-    }
-    return count;
-}
-
 export function debounce(func: Function, delay: number) {
     let timer = -1;
     return (...args: any) => {
