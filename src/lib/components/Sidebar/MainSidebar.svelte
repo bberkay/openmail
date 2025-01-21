@@ -209,7 +209,7 @@
             pointer-events: none;
         }
 
-        & button.inline{
+        & .inline{
             text-align: left;
             padding:7px 8px;
 

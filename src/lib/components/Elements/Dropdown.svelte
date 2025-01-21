@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Snippet } from "svelte";
+    import { onDestroy, onMount, type Snippet } from "svelte";
 
     interface Props {
         children: Snippet;
@@ -12,12 +12,29 @@
     }: Props = $props();
 
     let isContentShown = $state(false);
+    let dropdownContainer: HTMLElement;
+
+    const closeWhenClickedOutside = (e: Event) => {
+        if(!dropdownContainer.contains(e.target as HTMLElement)) {
+            isContentShown = false;
+        }
+    }
+
+    onMount(() => {
+        document.removeEventListener("click", closeWhenClickedOutside);
+        document.addEventListener("click", closeWhenClickedOutside);
+    })
+
+    onDestroy(() => {
+        document.removeEventListener("click", closeWhenClickedOutside);
+    });
 </script>
 
-<div class="dropdown">
-    <button class="dropdown-toggle" type="button" onclick={() => { isContentShown = !isContentShown }}>
+<div class="dropdown-container" bind:this={dropdownContainer}>
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+    <div class="dropdown-toggle-container" onclick={() => { isContentShown = !isContentShown }}>
         {@render children()}
-    </button>
+    </div>
     {#if isContentShown}
         <div class="dropdown-content">
             {@render content()}

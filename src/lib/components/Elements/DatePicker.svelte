@@ -29,11 +29,6 @@
 
     onMount(() => {
         if (datePickerWrapper) {
-            dateInput = datePickerWrapper.querySelector(
-                ".date-input",
-            ) as HTMLInputElement;
-            calendarBody = datePickerWrapper.querySelector("#calendar-body")!;
-
             document.removeEventListener("click", closeWhenClickedOutside);
             document.addEventListener("click", closeWhenClickedOutside);
 
@@ -171,6 +166,7 @@
         readonly
         placeholder={placeholder}
         value={selectedDate ? convertToIMAPDate(selectedDate) : ""}
+        bind:this={dateInput}
         onclick={() => {
             datePickerShown = !datePickerShown;
         }}
@@ -205,7 +201,7 @@
                     <th>Sat</th>
                 </tr>
             </thead>
-            <tbody id="calendar-body"></tbody>
+            <tbody id="calendar-body" bind:this={calendarBody}></tbody>
         </table>
     </div>
 </div>
