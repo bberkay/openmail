@@ -49,6 +49,10 @@
         return (SharedStore.customFolders[0].result.includes(parentPath) ? 1 : 0) + countRealAncestorsOfCustomFolder(parentPath);
     }
 
+    function isCustomFolderAParentFolder(path: string): boolean {
+        return SharedStore.customFolders[0].result.filter(customFolder => customFolder == path || customFolder.startsWith(path)).length > 1;
+    }
+
     const showCompose = () => {
         showContent(Compose);
     }
@@ -87,6 +91,9 @@
 
     const toggleSubfolders = (e: Event) => {
         const toggleButton = e.target as HTMLButtonElement;
+        if (toggleButton.classList.contains("disabled"))
+            return;
+
         const isClosing = !toggleButton.classList.contains("opened");
 
         let folder = toggleButton.parentElement!;
@@ -158,11 +165,11 @@
         <button onclick={showCreateFolderModal} class="bg-primary">+</button>
     </div>
     <div id="custom-folders">
-        {#each SharedStore.customFolders[0].result as customFolder, index}
+        {#each SharedStore.customFolders[0].result as customFolder}
             {@const ancestorCount = countRealAncestorsOfCustomFolder(customFolder)}
             {@const folderName = customFolder.split("/").slice(ancestorCount).join("/")}
             {@const tabsize = ancestorCount * TABSIZE_MULTIPLIER}
-            {@const disabled = tabsize > 0 ? "" : "disabled"}
+            {@const disabled = isCustomFolderAParentFolder(customFolder) ? "" : "disabled"}
             <div class="folder" style="padding-left:{tabsize}rem;">
                 <ToggleButton class="inline subfolder-toggle {disabled}" onclick={toggleSubfolders} opened={true} />
                 <ActionButton
@@ -199,6 +206,7 @@
 
         & .subfolder-toggle.disabled {
             opacity:0;
+            pointer-events: none;
         }
 
         & button.inline{
