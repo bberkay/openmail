@@ -9,14 +9,14 @@
     const mailboxController = new MailboxController();
 
     async function getFoldersOfAllAccounts() {
-        const response = await mailboxController.updateAllFolders();
+        const response = await mailboxController.getAllFolders();
         if (!response.success) {
             alert(response.message);
         }
     }
 
     async function getMailboxesOfAllAccounts() {
-        const response = await mailboxController.updateAllMailboxes();
+        const response = await mailboxController.getAllMailboxes();
         if (!response.success) {
             alert(response.message);
         }

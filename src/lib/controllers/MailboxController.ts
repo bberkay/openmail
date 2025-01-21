@@ -3,8 +3,8 @@ import { ApiService, GetRoutes, type BaseResponse, type GetResponse, PostRoutes,
 import { Folder, Mark, type EmailSummary, type SearchCriteria } from "$lib/types";
 
 export class MailboxController {
-    public async getAllMailboxes(): Promise<GetResponse<GetRoutes.GET_MAILBOXES>> {
-        return await ApiService.get(
+    public async getAllMailboxes(): Promise<BaseResponse> {
+        const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.GET_MAILBOXES,
             {
@@ -15,10 +15,6 @@ export class MailboxController {
                 }
             }
         );
-    }
-
-    public async updateAllMailboxes(): Promise<BaseResponse> {
-        const response = await this.getAllMailboxes();
 
         if (response.success && response.data) {
             SharedStore.mailboxes = response.data;
@@ -31,8 +27,8 @@ export class MailboxController {
         }
     }
 
-    public async getAllFolders(): Promise<GetResponse<GetRoutes.GET_FOLDERS>> {
-        return await ApiService.get(
+    public async getAllFolders(): Promise<BaseResponse> {
+        const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.GET_FOLDERS,
             {
@@ -43,10 +39,6 @@ export class MailboxController {
                 }
             }
         );
-    }
-
-    public async updateAllFolders(): Promise<BaseResponse> {
-        const response = await this.getAllFolders();
 
         if (response.success && response.data) {
             const standardFolderList = Object.values(Folder).map(folder => folder.trim().toLowerCase() + ":");
