@@ -6,13 +6,13 @@
     interface Props {
         placeholder?: string,
         value?: Date,
-        operation?: (selectedDay: Date) => void,
+        onchange?: (selectedDay: Date) => void,
     }
 
     let {
         placeholder = "1 Jan 1970",
         value = undefined,
-        operation = undefined
+        onchange = undefined
     }: Props = $props();
 
     let currentDate = new Date();
@@ -67,7 +67,7 @@
             parseInt(selectedDayNumber),
         );
         datePickerShown = false;
-        if(operation) operation(selectedDate);
+        if(onchange) onchange(selectedDate);
         renderCalendar();
     }
 

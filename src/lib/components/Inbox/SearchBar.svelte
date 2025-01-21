@@ -237,7 +237,7 @@
                 <label for="since">Since</label>
                 <div class="input-group">
                     <DatePicker
-                        operation={handleSince}
+                        onchange={handleSince}
                         value={selectedSince}
                     />
                 </div>
@@ -246,7 +246,7 @@
                 <label for="before">Before</label>
                 <div class="input-group">
                     <DatePicker
-                        operation={handleBefore}
+                        onchange={handleBefore}
                         value={selectedBefore}
                     />
                 </div>
