@@ -1,14 +1,20 @@
 import type { GetRoutes, GetQueryResponse } from "$lib/services/ApiService";
-import { Folder, type Account, type EmailWithContent, type Mailbox, type OpenMailTaskResults } from "../types";
+import {
+    Folder,
+    type Account,
+    type EmailWithContent,
+    type Mailbox,
+    type OpenMailTaskResults,
+} from "../types";
 
 export enum SharedStoreKeys {
-    server="server",
-    accounts="accounts",
-    failedAccounts="failedAccounts",
-    mailboxes="mailboxes",
-    standardFolders="standardFolders",
-    customFolders="customFolders",
-    currentFolder="currentFolder",
+    server = "server",
+    accounts = "accounts",
+    failedAccounts = "failedAccounts",
+    mailboxes = "mailboxes",
+    standardFolders = "standardFolders",
+    customFolders = "customFolders",
+    currentFolder = "currentFolder",
 }
 
 interface ISharedStore {
@@ -29,42 +35,41 @@ export const DefaultSharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = {
     [SharedStoreKeys.standardFolders]: [],
     [SharedStoreKeys.customFolders]: [],
     [SharedStoreKeys.currentFolder]: Folder.Inbox,
-}
+};
 
 let nonSharedState = $state(DefaultSharedStore);
 
 export class SharedStore {
-
     /**
      * Getters
      */
 
     public static get server(): ISharedStore[SharedStoreKeys.server] {
-        return nonSharedState[SharedStoreKeys.server]
+        return nonSharedState[SharedStoreKeys.server];
     }
 
     public static get accounts(): ISharedStore[SharedStoreKeys.accounts] {
-        return nonSharedState[SharedStoreKeys.accounts]
+        return nonSharedState[SharedStoreKeys.accounts];
     }
 
     public static get failedAccounts(): ISharedStore[SharedStoreKeys.failedAccounts] {
-        return nonSharedState[SharedStoreKeys.failedAccounts]
+        return nonSharedState[SharedStoreKeys.failedAccounts];
     }
 
     public static get mailboxes(): ISharedStore[SharedStoreKeys.mailboxes] {
-        return nonSharedState[SharedStoreKeys.mailboxes]
+        return nonSharedState[SharedStoreKeys.mailboxes];
     }
 
     public static get standardFolders(): ISharedStore[SharedStoreKeys.standardFolders] {
-        return nonSharedState[SharedStoreKeys.standardFolders]
+        return nonSharedState[SharedStoreKeys.standardFolders];
     }
 
     public static get customFolders(): ISharedStore[SharedStoreKeys.customFolders] {
-        return nonSharedState[SharedStoreKeys.customFolders]
+        return nonSharedState[SharedStoreKeys.customFolders];
     }
 
     public static get currentFolder(): ISharedStore[SharedStoreKeys.currentFolder] {
-        return nonSharedState[SharedStoreKeys.currentFolder]
+        return nonSharedState[SharedStoreKeys.currentFolder];
     }
 
     /**
@@ -75,7 +80,9 @@ export class SharedStore {
         nonSharedState[SharedStoreKeys.server] = server;
     }
 
-    public static set accounts(data: GetQueryResponse[GetRoutes.GET_ACCOUNTS] | Account[]) {
+    public static set accounts(
+        data: GetQueryResponse[GetRoutes.GET_ACCOUNTS] | Account[],
+    ) {
         if (Array.isArray(data)) {
             nonSharedState[SharedStoreKeys.accounts] = data;
             return;
@@ -89,15 +96,21 @@ export class SharedStore {
         nonSharedState[SharedStoreKeys.failedAccounts] = accounts;
     }
 
-    public static set mailboxes(data: GetQueryResponse[GetRoutes.GET_MAILBOXES]) {
+    public static set mailboxes(
+        data: GetQueryResponse[GetRoutes.GET_MAILBOXES],
+    ) {
         nonSharedState[SharedStoreKeys.mailboxes] = data;
     }
 
-    public static set standardFolders(data: GetQueryResponse[GetRoutes.GET_FOLDERS]) {
+    public static set standardFolders(
+        data: GetQueryResponse[GetRoutes.GET_FOLDERS],
+    ) {
         nonSharedState[SharedStoreKeys.standardFolders] = data;
     }
 
-    public static set customFolders(data: GetQueryResponse[GetRoutes.GET_FOLDERS]) {
+    public static set customFolders(
+        data: GetQueryResponse[GetRoutes.GET_FOLDERS],
+    ) {
         nonSharedState[SharedStoreKeys.customFolders] = data;
     }
 
@@ -107,13 +120,11 @@ export class SharedStore {
 
     /* Custom Methods */
 
-    public static keys(): SharedStoreKeys[]
-    {
+    public static keys(): SharedStoreKeys[] {
         return Object.values(SharedStoreKeys);
     }
 
-    public static toString(): string
-    {
+    public static toString(): string {
         return JSON.stringify(nonSharedState, null, 2);
     }
 
