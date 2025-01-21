@@ -3,7 +3,9 @@ import { SharedStore } from "$lib/stores/shared.svelte";
 
 export class RSAEncryptor {
     private pemToArrayBuffer(pem: string) {
-        const binary = atob(pem.replace(/(-----(BEGIN|END) PUBLIC KEY-----|\n)/g, ""));
+        const binary = atob(
+            pem.replace(/(-----(BEGIN|END) PUBLIC KEY-----|\n)/g, ""),
+        );
         const buffer = new ArrayBuffer(binary.length);
         const view = new Uint8Array(buffer);
         for (let i = 0; i < binary.length; i++) {
@@ -13,7 +15,10 @@ export class RSAEncryptor {
     }
 
     private async getPublicKey(): Promise<CryptoKey> {
-        const response = await ApiService.get(SharedStore.server, GetRoutes.GET_PUBLIC_KEY);
+        const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_PUBLIC_KEY,
+        );
         if (!response.success || !response.data)
             throw new Error("Failed to fetch public key");
 
@@ -26,13 +31,15 @@ export class RSAEncryptor {
                 hash: { name: "SHA-256" },
             },
             true,
-            ["encrypt"]
+            ["encrypt"],
         );
 
         return publicKey;
     }
 
-    public async encryptPassword(plaint_text_password: string): Promise<string> {
+    public async encryptPassword(
+        plaint_text_password: string,
+    ): Promise<string> {
         const publicKey = await this.getPublicKey();
 
         const encoder = new TextEncoder();
@@ -40,9 +47,9 @@ export class RSAEncryptor {
         const encryptedPassword = await window.crypto.subtle.encrypt(
             { name: "RSA-OAEP" },
             publicKey,
-            encodedPassword
+            encodedPassword,
         );
 
-        return btoa(String.fromCharCode(...new Uint8Array(encryptedPassword)))
+        return btoa(String.fromCharCode(...new Uint8Array(encryptedPassword)));
     }
 }
