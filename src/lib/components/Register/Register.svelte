@@ -1,8 +1,8 @@
 <script lang="ts">
     import AccountList from "$lib/components/Register/AccountList.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import AddAccountForm from "./Register/AddAccountForm.svelte";
-    import EditAccountForm from "./Register/EditAccountForm.svelte";
+    import AddAccountForm from "$lib/components/Register/AddAccountForm.svelte";
+    import EditAccountForm from "$lib/components/Register/EditAccountForm.svelte";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
 

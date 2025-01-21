@@ -1,5 +1,5 @@
 <script lang="ts">
-    import InboxItem from "./InboxItem.svelte";
+    import InboxItem from "$lib/components/Inbox/InboxItem.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Mark, type EmailWithContent } from "$lib/types";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";

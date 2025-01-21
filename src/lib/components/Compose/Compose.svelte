@@ -7,7 +7,7 @@
     import Form from "$lib/components/Elements/Form.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { show as showContent } from "$lib/components/Content.svelte";
-    import Inbox from '../Inbox/Inbox.svelte';
+    import Inbox from '$lib/components/Inbox/Inbox.svelte';
 
     const mailboxController = new MailboxController();
 
