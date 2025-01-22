@@ -3,10 +3,11 @@
     import { Folder, Mark, type SearchCriteria } from "$lib/types";
     import { Size } from "$lib/utils/types";
     import { debounce, isEmailValid, adjustSizes, convertToIMAPDate, concatValueAndUnit, convertSizeToBytes, isObjEmpty } from "$lib/utils";
-    import Select, { type Option } from "$lib/components/Elements/Select.svelte";
+    import Select from "$lib/components/Elements/Select.svelte";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import DatePicker from "$lib/components/Elements/DatePicker.svelte";
+    import Option from "$lib/components/Elements/Option.svelte";
 
     const mailboxController = new MailboxController();
 
@@ -14,8 +15,8 @@
     let includeFlagSelectTrigger: boolean = $state(true);
     let selectedSince: Date | undefined = $state(undefined);
     let selectedBefore: Date | undefined = $state(undefined);
-    let smallerThanUnit: Option | undefined = $state(undefined);
-    let largerThanUnit: Option | undefined = $state(undefined);
+    let smallerThanUnit: string | undefined = $state(undefined);
+    let largerThanUnit: string | undefined = $state(undefined);
 
     const tagTemplate = `
         <span class="tag">
@@ -66,27 +67,27 @@
         const adjustedSizes = adjustSizes(
             [
                 Number(smallerThanInput.value),
-                smallerThanUnit.value as Size
+                smallerThanUnit as Size
             ],
             [
                 Number(largerThanInput.value),
-                largerThanUnit.value as Size
+                largerThanUnit as Size
             ]
         );
 
         smallerThanInput.value = adjustedSizes[0][0].toString();
-        smallerThanUnit = {value: adjustedSizes[0][1], inner: adjustedSizes[0][1]};
+        smallerThanUnit = adjustedSizes[0][1]
 
         largerThanInput.value = adjustedSizes[1][0].toString();
-        largerThanUnit = {value: adjustedSizes[1][1], inner: adjustedSizes[1][1]};
+        largerThanUnit = adjustedSizes[1][1]
     }, 100);
 
     const handleSmallerThanUnit = (selectedUnit: string | null) => {
-        smallerThanUnit = selectedUnit ? {value: selectedUnit, inner: selectedUnit} : undefined;
+        smallerThanUnit = selectedUnit || undefined;
     }
 
     const handleLargerThanUnit = (selectedUnit: string | null) => {
-        largerThanUnit = selectedUnit ? {value: selectedUnit, inner: selectedUnit} : undefined;
+        largerThanUnit = selectedUnit || undefined;
     }
 
     const handleSince = (selectedDate: Date) => {
@@ -149,10 +150,10 @@
             before: selectedBefore ? convertToIMAPDate(selectedBefore) : undefined,
             smaller_than: smallerThanUnit ? convertSizeToBytes(concatValueAndUnit(advancedSearchMenu.querySelector<HTMLInputElement>(
                 'input[name="smaller_than"]',
-            )!.value, smallerThanUnit.value as Size)) : undefined,
+            )!.value, smallerThanUnit as Size)) : undefined,
             larger_than: largerThanUnit ? convertSizeToBytes(concatValueAndUnit(advancedSearchMenu.querySelector<HTMLInputElement>(
                 'input[name="larger_than"]',
-            )!.value, largerThanUnit.value as Size)) : undefined
+            )!.value, largerThanUnit as Size)) : undefined
         };
 
         if (isObjEmpty(searchCriteria))
@@ -194,18 +195,15 @@
         <div class="form-group">
             <label for="folder">Folder</label>
             <div class="input-group">
-                <Select
-                    enableSearch={true}
-                    options={
-                        SharedStore.standardFolders[0].result.map((standardFolder) => {
-                            const [folderTag, folderName] = standardFolder.split(":")
-                            return {value: folderTag, inner: folderName}
-                        }).concat(SharedStore.customFolders[0].result.map(customFolder => (
-                            {value: customFolder, inner: customFolder})
-                        ))
-                    }
-                    value={{value: Folder.All, inner: "All"}}
-                />
+                <Select enableSearch={true} value={Folder.All}>
+                    {#each SharedStore.standardFolders[0].result as standardFolder}
+                        {@const [folderTag, folderName] = standardFolder.split(":")}
+                        <Option value={folderTag}>{folderName}</Option>
+                    {/each}
+                    {#each SharedStore.customFolders[0].result as customFolder}
+                        <Option value={customFolder}>{customFolder}</Option>
+                    {/each}
+                </Select>
             </div>
         </div>
         <div class="form-group">
@@ -263,11 +261,11 @@
                         value="0"
                         onkeyup={handleSizeValue}
                     />
-                    <Select
-                        options={Object.values(Size).map(size => ({value: size, inner: size}))}
-                        operation={handleSmallerThanUnit}
-                        value={smallerThanUnit}
-                    />
+                    <Select value={smallerThanUnit} onchange={handleSmallerThanUnit}>
+                        {#each Object.values(Size) as size}
+                            <Option value={size}>{size}</Option>
+                        {/each}
+                    </Select>
                 </div>
             </div>
             <div class="form-group">
@@ -280,11 +278,11 @@
                         value="0"
                         onkeyup={handleSizeValue}
                     />
-                    <Select
-                        options={Object.values(Size).map(size => ({value: size, inner: size}))}
-                        operation={handleLargerThanUnit}
-                        value={largerThanUnit}
-                    />
+                    <Select value={largerThanUnit} onchange={handleLargerThanUnit}>
+                        {#each Object.values(Size) as size}
+                            <Option value={size}>{size}</Option>
+                        {/each}
+                    </Select>
                 </div>
             </div>
         </div>
@@ -312,12 +310,11 @@
         <div class="form-group">
             <label for="include-flags">Include Flag</label>
             <div class="input-group" id="include-flags">
-                <Select
-                    options={Object.entries(Mark).map(mark => ({value: mark[1], inner: mark[0]}))}
-                    operation={handleFlag}
-                    placeholder='Flag'
-                    value={includeFlagSelectTrigger ? {value:'', inner:''} : {value:'', inner:''}}
-                />
+                <Select onchange={handleFlag} placeholder="Flag" resetAfterSelect={true}>
+                    {#each Object.entries(Mark) as mark}
+                        <Option value={mark[1]}>{mark[0]}</Option>
+                    {/each}
+                </Select>
             </div>
             <div class="tags" id="saved-flags">
                 <!-- Flags -->

@@ -5,6 +5,7 @@
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import Select from "$lib/components/Elements/Select.svelte";
+    import Option from "$lib/components/Elements/Option.svelte";
 
     const mailboxController = new MailboxController();
     let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
@@ -180,16 +181,16 @@
         <ActionButton onclick={deleteEmails} class="bg-primary" style="margin-right:5px">
             Delete
         </ActionButton>
-        <Select
-            options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
-            operation={moveEmails}
-            placeholder='Move To'
-        />
-        <Select
-            options={SharedStore.customFolders[0].result.map((folder) => ({ value: folder, inner: folder }))}
-            operation={copyEmails}
-            placeholder='Copy To'
-        />
+        <Select onchange={moveEmails} placeholder='Move To'>
+            {#each SharedStore.customFolders[0].result as customFolder}
+                <Option value={customFolder}>customFolder</Option>
+            {/each}
+        </Select>
+        <Select onchange={copyEmails} placeholder='Copy To'>
+            {#each SharedStore.customFolders[0].result as customFolder}
+                <Option value={customFolder}>customFolder</Option>
+            {/each}
+        </Select>
         {#if isAllSelectedEmailsAreMarkedAsFlagged()}
             <ActionButton onclick={markEmailsAsNotImportant} class="bg-primary" style="margin-right:5px">
                 Mark as Not Important

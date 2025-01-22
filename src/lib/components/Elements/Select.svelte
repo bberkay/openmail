@@ -1,39 +1,41 @@
 <script lang="ts">
-    import { onDestroy, onMount } from "svelte";
-
-    export type Option = {
-        value: string | number,
-        inner: string | number
-    }
+    import { onDestroy, onMount, type Snippet } from "svelte";
 
     interface Props {
-        options: Option[];
+        children: Snippet;
         placeholder?: string;
-        value?: Option;
-        operation?: (selectedOption: string | null) => void,
+        value?: string;
+        onchange?: (selectedOption: string | null) => void;
         enableSearch?: boolean;
+        resetAfterSelect?: boolean;
     }
 
     let {
-        options,
+        children,
         placeholder = undefined,
         value = undefined,
-        operation = undefined,
+        onchange = undefined,
         enableSearch = false,
+        resetAfterSelect = false
     }: Props = $props();
 
     let isOpen = $state(false);
-    let filteredOptions: Option[] = $state(options);
-    let selectedOption: Option | null = $state(value || null);
-    let searchInput: HTMLInputElement | null = null;
+    let options: HTMLElement[] = $state([]);
+    let selectedOption: HTMLElement | null = $state(null);
+
     let selectWrapper: HTMLElement;
+    let optionsList: HTMLElement;
+    let searchInput: HTMLInputElement;
+
+    const noResultWarning = `<div class="no-results">No matching options found</div>`;
 
     onMount(() => {
         if(selectWrapper) {
-            searchInput = enableSearch ? selectWrapper.querySelector(".search-input") as HTMLInputElement : null;
+            options = Array.from(selectWrapper.querySelectorAll(".option")) as HTMLElement[];
+            selectedOption = selectWrapper.querySelector(`.option[data-value="${value}"]`) as HTMLElement;
             document.removeEventListener("click", closedWhenClickedOutside);
             document.addEventListener("click", closedWhenClickedOutside);
-            renderOptions();
+            filterOptions();
         }
     });
 
@@ -53,12 +55,31 @@
         }
     })
 
-    $effect(() => {
-        selectedOption = value || null;
-    });
+    function filterOptions(searchTerm: string | null = null) {
+        searchTerm = searchTerm?.toLowerCase() || null;
 
-    function renderOptions(newOptions: Option[] | null = null) {
-        filteredOptions = newOptions || options;
+        let isAnyOptionFound = false;
+        optionsList.querySelector(".no-results")?.remove();
+
+        options.forEach((option: HTMLElement) => {
+            if (searchTerm) {
+                if (
+                    option.getAttribute("data-value")!.toString().toLowerCase().includes(searchTerm)
+                    || option.innerText!.toString().toLowerCase().includes(searchTerm)
+                ) {
+                    option.classList.remove("hidden");
+                    isAnyOptionFound = true;
+                } else {
+                    option.classList.add("hidden");
+                }
+            } else {
+                option.classList.remove("hidden");
+            }
+        })
+
+        if(searchTerm && !isAnyOptionFound) {
+            optionsList.innerHTML += noResultWarning;
+        }
     }
 
     const closeSelect = () => {
@@ -67,7 +88,7 @@
 
         isOpen = false;
         if(enableSearch) searchInput!.value = "";
-        renderOptions();
+        filterOptions();
     };
 
     const selectOption = (e: Event) => {
@@ -79,12 +100,14 @@
             return;
 
         const value = option.dataset.value;
-        const inner = option.innerText;
-        if(!value || !inner)
+        if(!value)
             return;
 
-        selectedOption = { value, inner };
-        if(operation) operation(selectedOption.value.toString());
+        selectedOption = option;
+        optionsList.querySelector(".selected")?.classList.remove("selected");
+        selectedOption.classList.add("selected");
+        if(onchange) onchange(value.toString());
+        if(resetAfterSelect) selectedOption = null;
         closeSelect();
     };
 
@@ -93,16 +116,13 @@
             return;
 
         const target = e.target as HTMLInputElement;
-        const searchTerm = target.value;
-        renderOptions(options.filter((option) =>
-            option.value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-            || option.inner.toString().toLowerCase().includes(searchTerm.toLowerCase()),
-        ));
+        filterOptions(target.value);
     }
 
     const clearSelection = (e: Event) => {
         selectedOption = null;
-        renderOptions();
+        optionsList.querySelector(".selected")?.classList.remove("selected");
+        filterOptions();
     }
 </script>
 
@@ -111,8 +131,12 @@
     <div class="custom-select {isOpen ? "open" : ""}" onclick={() => { isOpen = !isOpen }}>
         <div class="select-trigger">
             <div class="select-trigger-content">
-                <span>{selectedOption && selectedOption.value ? selectedOption.inner : placeholder}</span>
-                <button class="clear-button {selectedOption ? "visible" : ""}" onclick={clearSelection}>×</button>
+                {#if selectedOption}
+                    <span data-value={selectedOption.getAttribute("data-value")!}>{selectedOption.innerText}</span>
+                    <button class="clear-button {selectedOption ? "visible" : ""}" onclick={clearSelection}>×</button>
+                {:else}
+                    <span data-value="">{placeholder}</span>
+                {/if}
             </div>
             <div class="arrow"></div>
         </div>
@@ -120,18 +144,12 @@
     <div class="options-container {isOpen ? "open" : ""}">
         {#if enableSearch}
             <div class="search-box">
-                <input type="text" class="search-input" placeholder="Search..." onclick={(e) => { e.stopPropagation() }} oninput={handleSearch}/>
+                <input type="text" class="search-input" placeholder="Search..." onclick={(e) => { e.stopPropagation() }} oninput={handleSearch} bind:this={searchInput}/>
             </div>
         {/if}
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-        <div class="options-list" onclick={selectOption}>
-            {#each filteredOptions as option}
-                <div class="option {selectedOption && selectedOption.value === option.value ? "selected" : ""}" data-value={option.value}>
-                    {@html option.inner}
-                </div>
-            {:else}
-                <div class="no-results">No matching options found</div>
-            {/each}
+        <div class="options-list" onclick={selectOption} bind:this={optionsList}>
+            {@render children()}
         </div>
     </div>
 </div>
@@ -242,22 +260,6 @@
 
             &::-webkit-scrollbar-thumb:hover {
                 background: #999;
-            }
-        }
-
-        & .option {
-            padding: 10px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-
-            &:hover{
-                background-color: #f8f9fa;
-            }
-
-            &.selected {
-                background-color: #e3f2fd;
-                color: #007bff;
-                font-weight: 500;
             }
         }
 

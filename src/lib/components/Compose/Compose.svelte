@@ -8,6 +8,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { show as showContent } from "$lib/components/Content.svelte";
     import Inbox from '$lib/components/Inbox/Inbox.svelte';
+    import Option from "$lib/components/Elements/Option.svelte";
 
     const mailboxController = new MailboxController();
 
@@ -120,11 +121,11 @@
     <div>
         <div class="form-group">
             <label for="sender">Sender</label>
-            <Select
-                options={SharedStore.accounts.map((account, index) => ({ value: account.email_address, inner: `${account.fullname} &lt;${account.email_address}&gt;` }))}
-                operation={selectSender}
-                value={{ value: SharedStore.accounts[0].email_address, inner: `${SharedStore.accounts[0].fullname} &lt;${SharedStore.accounts[0].email_address}&gt;` }}
-            />
+            <Select onchange={selectSender} value={SharedStore.accounts[0].email_address}>
+                {#each SharedStore.accounts as account}
+                    <Option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</Option>
+                {/each}
+            </Select>
         </div>
         <div class="form-group">
             <label for="receiver">Receiver(s)</label>

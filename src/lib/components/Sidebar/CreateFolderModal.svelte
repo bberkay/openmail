@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Select from "$lib/components/Elements/Select.svelte";
+    import Option from "$lib/components/Elements/Option.svelte";
     import Modal from "$lib/components/Elements/Modal.svelte";
     import Form from "$lib/components/Elements/Form.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
@@ -25,16 +26,17 @@
         const folderName = target.querySelector<HTMLInputElement>(
             'input[name="folder_name"]',
         )!.value;
-        const parentFolder = target.querySelector<HTMLSelectElement>(
-            'select[name="parent_folder"]',
-        )?.value;
 
-        const response = await mailboxController.createFolder(folderName, parentFolder);
+        const response = await mailboxController.createFolder(folderName, parentFolderName || undefined);
         if(!response.success){
             alert(response.message);
         }
 
         target.reset();
+    }
+
+    const handleParentFolder = (selectedOption: string | null) => {
+        parentFolderName = selectedOption;
     }
 </script>
 
@@ -53,12 +55,11 @@
         <div class="form-group">
             <label for="parent-folder">Parent Folder</label>
             <div class="input-group">
-                <Select
-                    id="parent-folder"
-                    options={SharedStore.customFolders[0].result.map(folder => ({value: folder, inner: folder}))}
-                    placeholder="Select Parent Folder"
-                    value={parentFolderName ? {value: parentFolderName, inner: parentFolderName} : undefined}
-                />
+                <Select placeholder="Select Parent Folder" value={parentFolderName || undefined} onchange={handleParentFolder}>
+                    {#each SharedStore.customFolders[0].result as customFolder}
+                        <Option value={customFolder}>{customFolder}</Option>
+                    {/each}
+                </Select>
             </div>
         </div>
         <div class="display:flex;justify-content:space-between:align-items:center;">

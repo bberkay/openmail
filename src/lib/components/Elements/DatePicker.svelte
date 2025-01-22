@@ -2,6 +2,7 @@
     import { onDestroy, onMount } from "svelte";
     import { range, getMonths, convertToIMAPDate } from "$lib/utils";
     import Select from "$lib/components/Elements/Select.svelte";
+    import Option from "$lib/components/Elements/Option.svelte";
 
     interface Props {
         placeholder?: string,
@@ -175,16 +176,16 @@
         <div class="datepicker-header">
             <div class="month-year-selector">
                 <button class="nav-button" id="prev-month" onclick={goPrevMonth}>←</button>
-                <Select
-                    options={getMonths().map((month, index) => ({ value: index, inner: month }))}
-                    operation={selectMonth}
-                    value={{ value: displayedMonth, inner: displayedMonth.toString() }}
-                />
-                <Select
-                    options={range(currentYear - 10, currentYear + 10, 1).map((year) => ({ value: year, inner: year }))}
-                    operation={selectYear}
-                    value={{ value: displayedYear, inner: displayedYear.toString() }}
-                />
+                <Select onchange={selectMonth} value={displayedMonth.toString()}>
+                    {#each getMonths() as month, index}
+                        <Option value={index.toString()}>{month}</Option>
+                    {/each}
+                </Select>
+                <Select onchange={selectYear} value={displayedYear.toString()}>
+                    {#each range(currentYear - 10, currentYear + 10, 1) as year}
+                        <Option value={year.toString()}>{year}</Option>
+                    {/each}
+                </Select>
                 <button class="nav-button" id="next-month" onclick={goNextMonth}>→</button>
             </div>
             <button class="clear-button" onclick={clearSelection}>Clear</button>
