@@ -12,8 +12,6 @@ export enum SharedStoreKeys {
     mailboxes = "mailboxes",
     standardFolders = "standardFolders",
     customFolders = "customFolders",
-    currentFolder = "currentFolder",
-    currentAccount = "currentAccount"
 }
 
 interface ISharedStore {
@@ -23,8 +21,6 @@ interface ISharedStore {
     [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
     [SharedStoreKeys.standardFolders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.customFolders]: OpenMailTaskResults<string[]>;
-    [SharedStoreKeys.currentFolder]: string;
-    [SharedStoreKeys.currentAccount]: Account | null;
 }
 
 export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] }  = $state({
@@ -34,6 +30,4 @@ export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] }  = $state({
     [SharedStoreKeys.mailboxes]: [],
     [SharedStoreKeys.standardFolders]: [],
     [SharedStoreKeys.customFolders]: [],
-    [SharedStoreKeys.currentFolder]: Folder.Inbox,
-    [SharedStoreKeys.currentAccount]: null,
 });

@@ -10,27 +10,50 @@ import {
 import {
     Folder,
     Mark,
+    type Account,
     type EmailSummary,
     type SearchCriteria,
 } from "$lib/types";
 
+
 export class MailboxController {
-    public async getAllMailboxes(): Promise<BaseResponse> {
+    private _get_accounts(accounts: Account [] | null = null): string {
+        return (accounts || SharedStore.accounts)
+            .map((account) => account.email_address)
+            .join(",")
+    }
+
+    public async init(): Promise<BaseResponse> {
+        let response;
+
+        response = await this.getFolders();
+        if (!response.success) {
+            return {
+                success: response.success,
+                message: response.message
+            }
+        }
+
+        response = await this.getMailboxes();
+        return {
+            success: response.success,
+            message: response.success ? "Mailbox Controller Initialized" : response.message
+        }
+    }
+
+    public async getMailboxes(accounts: Account[] | null = null): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.GET_MAILBOXES,
             {
                 pathParams: {
-                    accounts: SharedStore.accounts
-                        .map((account) => account.email_address)
-                        .join(","),
+                    accounts: this._get_accounts(accounts),
                 },
             },
         );
 
         if (response.success && response.data) {
             SharedStore.mailboxes = response.data;
-            SharedStore.currentFolder = response.data[0].result.folder;
         }
 
         return {
@@ -39,15 +62,13 @@ export class MailboxController {
         };
     }
 
-    public async getAllFolders(): Promise<BaseResponse> {
+    public async getFolders(accounts: Account[] | null = null): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.GET_FOLDERS,
             {
                 pathParams: {
-                    accounts: SharedStore.accounts
-                        .map((account) => account.email_address)
-                        .join(","),
+                    accounts: this._get_accounts(accounts)
                 },
             },
         );
@@ -56,12 +77,16 @@ export class MailboxController {
             const standardFolderList = Object.values(Folder).map(
                 (folder) => folder.trim().toLowerCase() + ":",
             );
+
+            // Extract standard and custom folders from data
             response.data.forEach((account, i) => {
                 // Standard folders
-                SharedStore.standardFolders[i] = {
-                    email_address: account.email_address,
-                    result: [],
-                };
+                const standardFolders = SharedStore.standardFolders.find(
+                    item => item.email_address === account.email_address
+                );
+                if (!standardFolders)
+                    return;
+
                 standardFolderList.forEach((standardFolder) => {
                     const matchedFolder = account.result.find((currentFolder) =>
                         currentFolder
@@ -69,21 +94,22 @@ export class MailboxController {
                             .toLowerCase()
                             .startsWith(standardFolder),
                     );
-                    if (matchedFolder)
-                        SharedStore.standardFolders[i].result.push(
-                            matchedFolder,
-                        );
+                    if (matchedFolder) {
+                        standardFolders.result.push(matchedFolder);
+                    }
                 });
 
                 // Custom folders
-                SharedStore.customFolders[i] = {
-                    email_address: account.email_address,
-                    result: [],
-                };
-                SharedStore.customFolders[i].result = account.result.filter(
+                const customFolders = SharedStore.customFolders.find(
+                    item => item.email_address === account.email_address
+                );
+                if (!customFolders)
+                    return;
+
+                customFolders.result = account.result.filter(
                     (currentFolder) => {
                         return (
-                            SharedStore.standardFolders[i].result.includes(
+                            standardFolders.result.includes(
                                 currentFolder,
                             ) !== true
                         );
@@ -107,6 +133,7 @@ export class MailboxController {
     }
 
     public async searchEmails(
+        accounts: Account[],
         folder: Folder | string,
         searchCriteria: SearchCriteria | string | undefined = undefined,
     ): Promise<BaseResponse> {
@@ -115,9 +142,7 @@ export class MailboxController {
             GetRoutes.GET_MAILBOXES,
             {
                 pathParams: {
-                    accounts: SharedStore.accounts
-                        .map((account) => account.email_address)
-                        .join(","),
+                    accounts: this._get_accounts(accounts)
                 },
                 queryParams: {
                     folder: folder,
@@ -131,7 +156,6 @@ export class MailboxController {
 
         if (response.success && response.data) {
             SharedStore.mailboxes = response.data;
-            SharedStore.currentFolder = response.data[0].result.folder;
         }
 
         return {
@@ -144,14 +168,15 @@ export class MailboxController {
         offset_start: number,
         offset_end: number,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+
         const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.PAGINATE_MAILBOXES,
             {
                 pathParams: {
-                    accounts: SharedStore.accounts
-                        .map((account) => account.email_address)
-                        .join(", "),
+                    accounts: SharedStore.currentAccount.email_address,
                     offset_start: offset_start,
                     offset_end: offset_end,
                 },
@@ -170,6 +195,7 @@ export class MailboxController {
 
     public async getEmailContent(
         account: string,
+        folder: string,
         uid: string,
     ): Promise<GetResponse<GetRoutes.GET_EMAIL_CONTENT>> {
         return await ApiService.get(
@@ -178,7 +204,7 @@ export class MailboxController {
             {
                 pathParams: {
                     accounts: account,
-                    folder: encodeURIComponent(SharedStore.currentFolder),
+                    folder: encodeURIComponent(folder),
                     uid: uid,
                 },
             },
@@ -186,13 +212,16 @@ export class MailboxController {
     }
 
     public async deleteEmails(selection: string[]): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+        if (!SharedStore.currentFolder)
+            throw CurrentFolderIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.DELETE_EMAIL,
             {
-                account: SharedStore.accounts
-                    .map((account) => account.email_address)
-                    .join(", "),
+                account: SharedStore.currentAccount.email_address,
                 sequence_set: selection.includes("*")
                     ? "1:*"
                     : selection.join(","),
@@ -214,13 +243,16 @@ export class MailboxController {
         selection: string[],
         destinationFolder: string,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+        if (!SharedStore.currentFolder)
+            throw CurrentFolderIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.MOVE_EMAIL,
             {
-                account: SharedStore.accounts
-                    .map((account) => account.email_address)
-                    .join(", "),
+                account: SharedStore.currentAccount.email_address,
                 sequence_set: selection.includes("*")
                     ? "1:*"
                     : selection.join(","),
@@ -243,13 +275,16 @@ export class MailboxController {
         selection: string[],
         destinationFolder: string,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+        if (!SharedStore.currentFolder)
+            throw CurrentFolderIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.COPY_EMAIL,
             {
-                account: SharedStore.accounts
-                    .map((account) => account.email_address)
-                    .join(", "),
+                account: SharedStore.currentAccount.email_address,
                 sequence_set: selection.includes("*")
                     ? "1:*"
                     : selection.join(","),
@@ -272,13 +307,16 @@ export class MailboxController {
         selection: string[],
         mark: string | Mark,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+        if (!SharedStore.currentFolder)
+            throw CurrentFolderIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.MARK_EMAIL,
             {
-                account: SharedStore.accounts
-                    .map((account) => account.email_address)
-                    .join(", "),
+                account: SharedStore.currentAccount.email_address,
                 mark: mark,
                 sequence_set: selection.includes("*")
                     ? "1:*"
@@ -313,13 +351,16 @@ export class MailboxController {
         selection: string[],
         mark: string | Mark,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+        if (!SharedStore.currentFolder)
+            throw CurrentFolderIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.UNMARK_EMAIL,
             {
-                account: SharedStore.accounts
-                    .map((account) => account.email_address)
-                    .join(", "),
+                account: SharedStore.currentAccount.email_address,
                 mark: mark,
                 sequence_set: selection.includes("*")
                     ? "1:*"
@@ -352,39 +393,18 @@ export class MailboxController {
         };
     }
 
-    public async refreshMailbox(): Promise<BaseResponse> {
-        const response = await ApiService.get(
-            SharedStore.server,
-            GetRoutes.GET_MAILBOXES,
-            {
-                pathParams: {
-                    accounts: SharedStore.accounts[0].email_address,
-                },
-                queryParams: {
-                    folder: SharedStore.currentFolder,
-                },
-            },
-        );
-
-        if (response.success && response.data) {
-            SharedStore.mailboxes = response.data;
-        }
-
-        return {
-            success: response.success,
-            message: response.message,
-        };
-    }
-
     public async createFolder(
         folderName: string,
         parentFolder: string | undefined,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.CREATE_FOLDER,
             {
-                account: SharedStore.accounts[0].email_address,
+                account: SharedStore.currentAccount.email_address,
                 folder_name: folderName,
                 parent_folder: parentFolder,
             },
@@ -406,11 +426,14 @@ export class MailboxController {
         folderName: string,
         destinationFolder: string,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.MOVE_FOLDER,
             {
-                account: SharedStore.accounts[0].email_address,
+                account: SharedStore.currentAccount.email_address,
                 folder_name: folderName,
                 destination_folder: destinationFolder,
             },
@@ -445,11 +468,14 @@ export class MailboxController {
         folderPath: string,
         newFolderName: string,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.RENAME_FOLDER,
             {
-                account: SharedStore.accounts[0].email_address,
+                account: SharedStore.currentAccount.email_address,
                 folder_name: folderPath,
                 new_folder_name: newFolderName,
             },
@@ -477,11 +503,14 @@ export class MailboxController {
         folderName: string,
         subfolders: boolean,
     ): Promise<BaseResponse> {
+        if (!SharedStore.currentAccount)
+            throw CurrentAccountIsNotSelectedError
+
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.DELETE_FOLDER,
             {
-                account: SharedStore.accounts[0].email_address,
+                account: SharedStore.currentAccount.email_address,
                 folder_name: folderName,
                 subfolders: subfolders,
             },
@@ -494,63 +523,6 @@ export class MailboxController {
                         (e !== folderName && !subfolders) ||
                         !e.includes(folderName),
                 );
-        }
-
-        return {
-            success: response.success,
-            message: response.message,
-        };
-    }
-
-    public async refreshFolders(): Promise<BaseResponse> {
-        const response = await ApiService.get(
-            SharedStore.server,
-            GetRoutes.GET_FOLDERS,
-            {
-                pathParams: {
-                    accounts: SharedStore.accounts[0].email_address,
-                },
-            },
-        );
-
-        if (response.success && response.data) {
-            const standardFolderList = Object.values(Folder).map(
-                (folder) => folder.trim().toLowerCase() + ":",
-            );
-            response.data.forEach((account, i) => {
-                // Standard folders
-                SharedStore.standardFolders[i] = {
-                    email_address: account.email_address,
-                    result: [],
-                };
-                standardFolderList.forEach((standardFolder) => {
-                    const matchedFolder = account.result.find((currentFolder) =>
-                        currentFolder
-                            .trim()
-                            .toLowerCase()
-                            .startsWith(standardFolder),
-                    );
-                    if (matchedFolder)
-                        SharedStore.standardFolders[i].result.push(
-                            matchedFolder,
-                        );
-                });
-
-                // Custom folders
-                SharedStore.customFolders[i] = {
-                    email_address: account.email_address,
-                    result: [],
-                };
-                SharedStore.customFolders[i].result = account.result.filter(
-                    (currentFolder) => {
-                        return (
-                            SharedStore.standardFolders[i].result.includes(
-                                currentFolder,
-                            ) !== true
-                        );
-                    },
-                );
-            });
         }
 
         return {

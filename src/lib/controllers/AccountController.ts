@@ -11,11 +11,7 @@ import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 import type { Account } from "$lib/types";
 
 export class AccountController {
-    public async list(): Promise<GetResponse<GetRoutes.GET_ACCOUNTS>> {
-        return await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS);
-    }
-
-    public async update(): Promise<BaseResponse> {
+    public async init(): Promise<BaseResponse> {
         const response = await this.list();
         if (response.success && response.data) {
             SharedStore.accounts = response.data.connected;
@@ -24,8 +20,12 @@ export class AccountController {
 
         return {
             success: response.success,
-            message: response.message,
-        };
+            message: response.success ? "Account Controller Initialized" : response.message
+        }
+    }
+
+    public async list(): Promise<GetResponse<GetRoutes.GET_ACCOUNTS>> {
+        return await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS);
     }
 
     public async add(

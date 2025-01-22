@@ -20,7 +20,7 @@ async function loadAccounts() {
         return;
 
     const accountController = new AccountController();
-    const response = await accountController.update();
+    const response = await accountController.init();
     if (!response.success) {
         error(500, response.message);
     }

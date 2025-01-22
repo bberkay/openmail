@@ -35,6 +35,42 @@ export enum PostRoutes {
     DELETE_FOLDER = "/delete-folder",
 }
 
+interface GetQueryParams {
+    [GetRoutes.HELLO]: {};
+    [GetRoutes.GET_ACCOUNTS]: {};
+    [GetRoutes.GET_MAILBOXES]: {
+        pathParams: {
+            accounts: string;
+        };
+        queryParams?: {
+            folder?: string;
+            search?: string;
+            offset_start?: number;
+            offset_end?: number;
+        };
+    };
+    [GetRoutes.PAGINATE_MAILBOXES]: {
+        pathParams: {
+            accounts: string;
+            offset_start: number;
+            offset_end: number;
+        };
+    };
+    [GetRoutes.GET_FOLDERS]: {
+        pathParams: {
+            accounts: string;
+        };
+    };
+    [GetRoutes.GET_EMAIL_CONTENT]: {
+        pathParams: {
+            accounts: string;
+            folder: string;
+            uid: string;
+        };
+    };
+    [GetRoutes.GET_PUBLIC_KEY]: {};
+}
+
 interface PostBody {
     [PostRoutes.ADD_ACCOUNT]: {
         email_address: string;
@@ -111,42 +147,6 @@ interface PostBody {
         folder_name: string;
         subfolders: boolean;
     };
-}
-
-interface GetQueryParams {
-    [GetRoutes.HELLO]: {};
-    [GetRoutes.GET_ACCOUNTS]: {};
-    [GetRoutes.GET_MAILBOXES]: {
-        pathParams: {
-            accounts: string;
-        };
-        queryParams?: {
-            folder?: string;
-            search?: string;
-            offset_start?: number;
-            offset_end?: number;
-        };
-    };
-    [GetRoutes.PAGINATE_MAILBOXES]: {
-        pathParams: {
-            accounts: string;
-            offset_start: number;
-            offset_end: number;
-        };
-    };
-    [GetRoutes.GET_FOLDERS]: {
-        pathParams: {
-            accounts: string;
-        };
-    };
-    [GetRoutes.GET_EMAIL_CONTENT]: {
-        pathParams: {
-            accounts: string;
-            folder: string;
-            uid: string;
-        };
-    };
-    [GetRoutes.GET_PUBLIC_KEY]: {};
 }
 
 export interface GetQueryResponse {

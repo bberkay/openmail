@@ -222,7 +222,7 @@
             <div style="display:flex;">
                 <input type="checkbox" style="margin-right:10px;" bind:group={emailSelection} value={email.uid}>
                 <div style="flex-grow:1">
-                    <InboxItem owner={account.email_address} {email} />
+                    <InboxItem owner={account.email_address} folder={account.result.folder} email={email} />
                 </div>
             </div>
         {/each}

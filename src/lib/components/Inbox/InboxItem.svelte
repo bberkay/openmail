@@ -7,15 +7,16 @@
 
     interface Props {
         owner: string;
+        folder: string;
         email: EmailSummary;
     }
 
-    let { owner, email }: Props = $props();
+    let { owner, folder, email }: Props = $props();
 
     const mailboxController = new MailboxController();
 
     const getEmailContent = async (): Promise<void> => {
-        const response = await mailboxController.getEmailContent(owner, email.uid);
+        const response = await mailboxController.getEmailContent(owner, folder, email.uid);
 
         if (response.success && response.data) {
             showContent(Email, response.data);

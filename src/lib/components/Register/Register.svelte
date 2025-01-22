@@ -13,23 +13,11 @@
         ? SharedStore.failedAccounts[0]
         : null);
 
-    async function getFoldersOfAllAccounts() {
-        const response = await mailboxController.getAllFolders();
+    async function initMailboxes(): Promise<void> {
+        const response = await mailboxController.init();
         if (!response.success) {
             alert(response.message);
         }
-    }
-
-    async function getMailboxesOfAllAccounts() {
-        const response = await mailboxController.getAllMailboxes();
-        if (!response.success) {
-            alert(response.message);
-        }
-    }
-
-    async function continueToInbox(): Promise<void> {
-        await getFoldersOfAllAccounts();
-        await getMailboxesOfAllAccounts();
     }
 </script>
 
@@ -44,7 +32,7 @@
 <AccountList bind:editingAccount={editingAccount}/>
 
 <div>
-    <ActionButton onclick={continueToInbox}>
+    <ActionButton onclick={initMailboxes}>
         Continue To Inbox
     </ActionButton>
 </div>
