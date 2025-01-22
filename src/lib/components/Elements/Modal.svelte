@@ -37,40 +37,12 @@
     });
 </script>
 
-<div class="backdrop"></div>
 <div class="modal">
     {@render children()}
     <button type="button" onclick={close}>Close</button>
 </div>
 
 <style>
-    .backdrop{
-        display:none;
-        position: fixed;
-        overflow:hidden;
-        width:100%;
-        height:100%;
-        top:0;
-        left:0;
-        background-color: #000;
-        opacity:0.5;
-        z-index:99;
-        pointer-events: none;
-        user-select:none;
-    }
-
-    :global(body:has(.backdrop)){
-        overflow:hidden;
-
-        & #layout-container {
-            pointer-events: none;
-        }
-
-        & .backdrop{
-            display: block;
-        }
-    }
-
     .modal {
         background-color: #2e2e2e;
         border:1px solid #5a5a5a;
