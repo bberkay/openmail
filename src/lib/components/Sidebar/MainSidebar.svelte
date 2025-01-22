@@ -180,7 +180,7 @@
                     {folderName}
                 </ActionButton>
                 <Dropdown>
-                    <DropdownToggle class="inline hover">⋮</DropdownToggle>
+                    <DropdownToggle class="inline">⋮</DropdownToggle>
                     {#snippet content()}
                         <DropdownItem class="bg-primary" onclick={showCreateFolderModal}>Add Sub Tag</DropdownItem>
                         <DropdownItem class="bg-primary" onclick={showRenameFolderModal}>Rename</DropdownItem>
@@ -194,7 +194,7 @@
 </div>
 
 <style>
-    :global(.folder){
+    .folder :global{
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -219,38 +219,11 @@
 
             &:active{
                 background-color: rgb(70, 70, 70);
-
-                &.hover{
-                    background-color: rgb(70, 70, 70);
-                }
-            }
-
-            &.hover{
-                padding-left:8px;
-                padding-right:8px;
-                margin-right: 5px;
-
-                &:hover{
-                    background-color: #727272;
-                }
-
-                &:active{
-                    background-color: #868686;
-                }
             }
         }
 
         &:hover{
             background-color: rgb(50, 50, 50);
-
-            & .hover{
-                opacity: 1;
-            }
-        }
-
-        & .hover{
-            opacity: 0;
-            transition: opacity 0.1s ease-in-out;
         }
 
         &:last-child{

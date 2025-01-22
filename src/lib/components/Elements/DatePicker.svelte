@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onDestroy, onMount } from "svelte";
+    import {  onMount } from "svelte";
     import { range, getMonths, convertToIMAPDate } from "$lib/utils";
     import Select from "$lib/components/Elements/Select.svelte";
     import Option from "$lib/components/Elements/Option.svelte";
@@ -30,15 +30,8 @@
 
     onMount(() => {
         if (datePickerWrapper) {
-            document.removeEventListener("click", closeWhenClickedOutside);
-            document.addEventListener("click", closeWhenClickedOutside);
-
             renderCalendar();
         }
-    });
-
-    onDestroy(() => {
-        document.removeEventListener("click", closeWhenClickedOutside);
     });
 
     const closeWhenClickedOutside = (e: Event) => {
@@ -159,6 +152,8 @@
             });
     }
 </script>
+
+<svelte:body onclick={closeWhenClickedOutside} />
 
 <div class="date-input-wrapper" bind:this={datePickerWrapper}>
     <input

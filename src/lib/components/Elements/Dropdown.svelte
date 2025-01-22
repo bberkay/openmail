@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onDestroy, onMount, type Snippet } from "svelte";
+    import { type Snippet } from "svelte";
 
     interface Props {
         children: Snippet;
@@ -19,16 +19,9 @@
             isContentShown = false;
         }
     }
-
-    onMount(() => {
-        document.removeEventListener("click", closeWhenClickedOutside);
-        document.addEventListener("click", closeWhenClickedOutside);
-    })
-
-    onDestroy(() => {
-        document.removeEventListener("click", closeWhenClickedOutside);
-    });
 </script>
+
+<svelte:body onclick={closeWhenClickedOutside} />
 
 <div class="dropdown-container" bind:this={dropdownContainer}>
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->

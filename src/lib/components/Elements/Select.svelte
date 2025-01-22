@@ -33,17 +33,11 @@
         if(selectWrapper) {
             options = Array.from(selectWrapper.querySelectorAll(".option")) as HTMLElement[];
             selectedOption = selectWrapper.querySelector(`.option[data-value="${value}"]`) as HTMLElement;
-            document.removeEventListener("click", closedWhenClickedOutside);
-            document.addEventListener("click", closedWhenClickedOutside);
             filterOptions();
         }
     });
 
-    onDestroy(() => {
-        document.removeEventListener("click", closedWhenClickedOutside);
-    });
-
-    const closedWhenClickedOutside = (e: Event) => {
+    const closeWhenClickedOutside = (e: Event) => {
         if (!selectWrapper.contains(e.target as HTMLElement)) {
             closeSelect();
         }
@@ -125,6 +119,8 @@
         filterOptions();
     }
 </script>
+
+<svelte:body onclick={closeWhenClickedOutside} />
 
 <div class="custom-select-wrapper" bind:this={selectWrapper}>
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
