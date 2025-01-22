@@ -1,4 +1,4 @@
-import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
+import { SharedStore } from "$lib/stores/shared.svelte";
 import {
     ApiService,
     GetRoutes,
@@ -8,6 +8,7 @@ import {
     type BaseResponse,
 } from "$lib/services/ApiService";
 import { RSAEncryptor } from "$lib/services/RSAEncryptor";
+import type { Account } from "$lib/types";
 
 export class AccountController {
     public async list(): Promise<GetResponse<GetRoutes.GET_ACCOUNTS>> {
@@ -17,7 +18,8 @@ export class AccountController {
     public async update(): Promise<BaseResponse> {
         const response = await this.list();
         if (response.success && response.data) {
-            SharedStore.accounts = response.data;
+            SharedStore.accounts = response.data.connected;
+            SharedStore.failedAccounts = response.data.failed;
         }
 
         return {
@@ -79,12 +81,12 @@ export class AccountController {
             });
 
             SharedStore.failedAccounts = SharedStore.failedAccounts.filter(
-                (item) => item.email_address !== email_address,
+                (account: Account) => account.email_address !== email_address,
             );
         } else {
             if (
                 SharedStore.failedAccounts.find(
-                    (item) => item.email_address !== email_address,
+                    (account: Account) => account.email_address !== email_address,
                 )
             ) {
                 SharedStore.failedAccounts.push({
@@ -108,7 +110,7 @@ export class AccountController {
 
         if (response.success) {
             SharedStore.accounts = SharedStore.accounts.filter(
-                (item) => item.email_address !== account,
+                (item: Account) => item.email_address !== account,
             );
         }
 
@@ -123,7 +125,7 @@ export class AccountController {
         );
 
         if (response.success) {
-            SharedStore.reset(SharedStoreKeys.accounts);
+            SharedStore.accounts = [];
         }
 
         return response;
