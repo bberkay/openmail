@@ -23,7 +23,7 @@ export class MailboxController {
             accounts = [accounts];
         }
 
-        return (accounts || SharedStore.accounts)
+        return (accounts && accounts.length > 0 ? accounts : SharedStore.accounts)
             .map((account) => {
                 return typeof account !== "string"
                     ? account.email_address
