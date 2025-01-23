@@ -18,13 +18,14 @@
     const TABSIZE_MULTIPLIER = 0.5;
 
     async function getEmailsInFolder(folderName: string): Promise<void> {
-        // TODO: If we are in HOME Page then accounts should be:
-        // SharedStore.accounts otherwise(and for now) SharedStore.currentAccount
         const response = await mailboxController.getMailboxes(
             SharedStore.currentAccount,
             folderName
         );
-        if(!response.success) {
+
+        if(response.success) {
+            SharedStore.currentFolder = folderName;
+        } else {
             alert(response.message);
         }
     }
@@ -39,7 +40,6 @@
 
         if (parent && parseFloat(parent.style.paddingLeft) < parseFloat(folder.style.paddingLeft)) {
             if (!parent.querySelector(".subfolder-toggle")!.classList.contains("disabled")) {
-                const parentFolderName = parent!.querySelector(".folder-name")!.textContent!;
                 return getFullFolderPath(parent) + `/${folderName}`
             }
         }
@@ -88,7 +88,6 @@
     }
 
     const refreshFolders = async (): Promise<void> => {
-        // Same with SharedStore.accounts/HOME Page Component
         const response = await mailboxController.getFolders(
             SharedStore.currentAccount
         );

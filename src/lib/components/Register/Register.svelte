@@ -18,10 +18,6 @@
         if (!response.success) {
             alert(response.message);
         } else {
-            // TODO: This needs to be moved to its own component, like
-            // in SelectAccount.svelte:
-            // SharedStore.currentAccount = selectedAccount
-            // SharedStore.currentFolder = Folder.Inbox
             SharedStore.currentAccount = SharedStore.accounts[0];
             SharedStore.currentFolder = Folder.Inbox;
         }
