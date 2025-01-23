@@ -2,6 +2,7 @@ import unittest
 import json
 
 from openmail import OpenMail
+from openmail.utils import contains_non_ascii
 
 class TestConnectOperations(unittest.TestCase):
     @classmethod
@@ -11,46 +12,101 @@ class TestConnectOperations(unittest.TestCase):
 
         cls._openmail = OpenMail()
         with open("openmail/tests/credentials.json") as credentials:
-            credentials = json.load(credentials)
-        if len(credentials) < 3:
+            cls._credentials = json.load(credentials)
+        if len(cls._credentials) < 3:
             raise ValueError("At least 3 credentials are required.")
 
     def test_login(self):
         print("test_login...")
-        status, message = self.__class__._openmail.connect(
+        failed_accounts = []
+        for credential in self.__class__._credentials:
+            status, message = self.__class__._openmail.connect(
+                credential["email"],
+                credential["password"]
+            )
 
-        )
-        if status:
-            print(message)
-        else:
-            self.fail(f"Failed to login with status: {status} and message: {message}")
+            if status:
+                print(f"Successfully logged in {credential["email"]}")
+            else:
+                failed_accounts.append({"email": credential["email"], "status": status, "message": message})
+
+            self.__class__._openmail.disconnect()
+
+        if len(failed_accounts) > 0:
+            self.fail(f"There were accounts that could not be logged in: {failed_accounts}")
 
     def test_login_with_nonascii_email(self):
-        print("test_login_with_utf8_email...")
-        status, message = self.__class__._openmail.connect(
-            "test-ü"
-        )
-        if status:
-            print(message)
-        else:
-            self.fail(f"Failed to login with status: {status} and message: {message}")
+        print("test_login_with_nonascii_email...")
+        failed_accounts = []
+        for credential in self.__class__._credentials:
+            if not contains_non_ascii(credential["email"]):
+                print(f"{credential["email"]} does not include nonascii character. Skipping...")
+                continue
+
+            status, message = self.__class__._openmail.connect(
+                credential["email"],
+                credential["password"]
+            )
+
+            if status:
+                print(f"Successfully logged in {credential["email"]}")
+            else:
+                failed_accounts.append({"email": credential["email"], "status": status, "message": message})
+
+            self.__class__._openmail.disconnect()
+
+        if len(failed_accounts) > 0:
+            self.fail(f"There were accounts that could not be logged in: {failed_accounts}")
 
     def test_login_with_nonascii_password(self):
-        print("test_login_with_utf8_password...")
-        status, message = self.__class__._openmail.connect(
-            "test-username",
-            "test-password-ü"
-        )
-        if status:
-            print(message)
-        else:
-            self.fail(f"Failed to login with status: {status} and message: {message}")
+        print("test_login_with_nonascii_password...")
+        failed_accounts = []
+        for credential in self.__class__._credentials:
+            if not contains_non_ascii(credential["password"]):
+                print(f"{credential["email"]} does not include nonascii character. Skipping...")
+                continue
+
+            status, message = self.__class__._openmail.connect(
+                credential["email"],
+                credential["password"]
+            )
+
+            if status:
+                print(f"Successfully logged in {credential["email"]}")
+            else:
+                failed_accounts.append({"email": credential["email"], "status": status, "message": message})
+
+            self.__class__._openmail.disconnect()
+
+        if len(failed_accounts) > 0:
+            self.fail(f"There were accounts that could not be logged in: {failed_accounts}")
 
     def test_logout(self):
         print("test_logout...")
-        status, message = self.__class__._openmail.disconnect()
-        if not status:
-            self.fail(f"Failed to logout with status: {status} and message: {message}")
+        logged_in_failed_accounts = []
+        logged_out_failed_accounts = []
+        for credential in self.__class__._credentials:
+            status, message = self.__class__._openmail.connect(
+                credential["email"],
+                credential["password"]
+            )
+
+            if status:
+                print(f"Successfully logged in {credential["email"]}")
+            else:
+                logged_in_failed_accounts.append({"email": credential["email"], "status": status, "message": message})
+
+            status, message = self.__class__._openmail.disconnect()
+            if status:
+                print(f"Successfully logged out from {credential["email"]}")
+            else:
+                logged_out_failed_accounts.append({"email": credential["email"], "status": status, "message": message})
+
+        if len(logged_in_failed_accounts) > 0:
+            self.fail(f"There were accounts that could not be logged in: {logged_in_failed_accounts}")
+
+        if len(logged_out_failed_accounts) > 0:
+            self.fail(f"There were accounts that could not be logged out: {logged_out_failed_accounts}")
 
     @classmethod
     def cleanup(cls):
