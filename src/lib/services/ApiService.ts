@@ -63,7 +63,7 @@ interface GetQueryParams {
     };
     [GetRoutes.GET_EMAIL_CONTENT]: {
         pathParams: {
-            accounts: string;
+            account: string;
             folder: string;
             uid: string;
         };
