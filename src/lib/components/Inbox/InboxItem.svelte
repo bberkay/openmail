@@ -1,22 +1,22 @@
 <script lang="ts">
-    import type { EmailSummary, EmailWithContent } from "$lib/types";
+    import type { Account, EmailSummary } from "$lib/types";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { show as showContent } from "$lib/components/Content.svelte";
     import Email from "../Email/Email.svelte";
 
     interface Props {
-        owner: string;
+        account: Account;
         folder: string;
         email: EmailSummary;
     }
 
-    let { owner, folder, email }: Props = $props();
+    let { account, folder, email }: Props = $props();
 
     const mailboxController = new MailboxController();
 
     const getEmailContent = async (): Promise<void> => {
-        const response = await mailboxController.getEmailContent(owner, folder, email.uid);
+        const response = await mailboxController.getEmailContent(account, folder, email.uid);
 
         if (response.success && response.data) {
             showContent(Email, response.data);
