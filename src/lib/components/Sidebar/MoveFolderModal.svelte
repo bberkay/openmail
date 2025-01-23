@@ -13,6 +13,11 @@
     let { folderName }: Props = $props();
 
     const handleMoveFolderForm = async (e: Event): Promise<void> => {
+        if (!SharedStore.currentAccount) {
+            alert("Current account should be selected");
+            return;
+        }
+
         const target = e.target as HTMLFormElement;
         const folderName = target.querySelector<HTMLInputElement>(
             'input[name="folder_name"]',
@@ -21,7 +26,11 @@
             'select[name="destination_folder"]',
         )!.value;
 
-        const response = await mailboxController.moveFolder(folderName, destinationFolder);
+        const response = await mailboxController.moveFolder(
+            SharedStore.currentAccount,
+            folderName,
+            destinationFolder
+        );
         if(!response.success){
             alert(response.message);
         }

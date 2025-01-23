@@ -2,6 +2,7 @@
     import Modal from "$lib/components/Elements/Modal.svelte";
     import Form from "$lib/components/Elements/Form.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import { SharedStore } from "$lib/stores/shared.svelte";
 
     const mailboxController = new MailboxController();
 
@@ -12,6 +13,11 @@
     let { folderName }: Props = $props();
 
     const handleDeleteFolderForm = async (e: Event): Promise<void> => {
+        if (!SharedStore.currentAccount) {
+            alert("Current account should be selected");
+            return;
+        }
+
         const target = e.target as HTMLFormElement;
         const folderName = target.querySelector<HTMLInputElement>(
             'input[name="folder_name"]',
@@ -20,7 +26,11 @@
             'input[name="subfolders"]',
         )!.checked;
 
-        const response = await mailboxController.deleteFolder(folderName, subfolders);
+        const response = await mailboxController.deleteFolder(
+            SharedStore.currentAccount,
+            folderName,
+            subfolders
+        );
         if(!response.success){
             alert(response.message);
         }

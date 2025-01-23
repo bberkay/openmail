@@ -68,14 +68,35 @@
     }
 
     const markEmail = async (mark: string | Mark): Promise<void> => {
-        const response = await mailboxController.markEmails(emailSelection, mark);
+        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
+            alert("Current account and folder should be selected");
+            return;
+        }
+
+
+        const response = await mailboxController.markEmails(
+            SharedStore.currentAccount,
+            emailSelection,
+            mark,
+            SharedStore.currentFolder
+        );
         if(!response.success) {
             alert(response.message);
         }
     }
 
     const unmarkEmail = async (mark: string | Mark): Promise<void> => {
-        const response = await mailboxController.unmarkEmails(emailSelection, mark);
+        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
+            alert("Current account and folder should be selected");
+            return;
+        }
+
+        const response = await mailboxController.unmarkEmails(
+            SharedStore.currentAccount,
+            emailSelection,
+            mark,
+            SharedStore.currentFolder
+        );
         if(!response.success) {
             alert(response.message);
         }
@@ -98,8 +119,17 @@
     }
 
     const deleteEmails = async (): Promise<void> => {
+        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
+            alert("Current account and folder should be selected");
+            return;
+        }
+
         if (confirm("Are you sure you want to delete these emails?")) {
-            const response = await mailboxController.deleteEmails(emailSelection);
+            const response = await mailboxController.deleteEmails(
+                SharedStore.currentAccount,
+                emailSelection,
+                SharedStore.currentFolder
+            );
             if(!response.success) {
                 alert(response.message);
             }
@@ -107,20 +137,44 @@
     }
 
     const moveEmails = async (destinationFolder: string | null): Promise<void> => {
-        if(!destinationFolder)
+        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
+            alert("Current account and folder should be selected");
             return;
+        }
 
-        const response = await mailboxController.moveEmails(emailSelection, destinationFolder);
+        if(!destinationFolder) {
+            alert("Destination folder is not selected");
+            return;
+        }
+
+        const response = await mailboxController.moveEmails(
+            SharedStore.currentAccount,
+            emailSelection,
+            SharedStore.currentFolder,
+            destinationFolder
+        );
         if(!response.success) {
             alert(response.message);
         }
     }
 
     const copyEmails = async (destinationFolder: string | null): Promise<void> => {
-        if(!destinationFolder)
+        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
+            alert("Current account and folder should be selected");
             return;
+        }
 
-        const response = await mailboxController.moveEmails(emailSelection, destinationFolder);
+        if(!destinationFolder) {
+            alert("Destination folder is not selected");
+            return;
+        }
+
+        const response = await mailboxController.moveEmails(
+            SharedStore.currentAccount,
+            emailSelection,
+            SharedStore.currentFolder,
+            destinationFolder
+        );
         if(!response.success) {
             alert(response.message);
         }

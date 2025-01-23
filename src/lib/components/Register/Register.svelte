@@ -5,7 +5,7 @@
     import EditAccountForm from "$lib/components/Register/EditAccountForm.svelte";
     import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Account } from "$lib/types";
+    import { Folder, type Account } from "$lib/types";
 
     const mailboxController = new MailboxController();
 
@@ -17,6 +17,13 @@
         const response = await mailboxController.init();
         if (!response.success) {
             alert(response.message);
+        } else {
+            // TODO: This needs to be moved to its own component, like
+            // in SelectAccount.svelte:
+            // SharedStore.currentAccount = selectedAccount
+            // SharedStore.currentFolder = Folder.Inbox
+            SharedStore.currentAccount = SharedStore.accounts[0];
+            SharedStore.currentFolder = Folder.Inbox;
         }
     }
 </script>

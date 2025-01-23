@@ -2,6 +2,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import Form from "$lib/components/Elements/Form.svelte";
     import Modal from "$lib/components/Elements/Modal.svelte";
+    import { SharedStore } from "$lib/stores/shared.svelte";
 
     const mailboxController = new MailboxController();
 
@@ -12,6 +13,11 @@
     let { folderName }: Props = $props();
 
     const handleRenameFolderForm = async (e: Event): Promise<void> => {
+        if (!SharedStore.currentAccount) {
+            alert("Current account should be selected");
+            return;
+        }
+
         const target = e.target as HTMLFormElement;
         const folderPath = target.querySelector<HTMLInputElement>(
             'input[name="folder_name"]',
@@ -20,7 +26,11 @@
             'input[name="new_folder_name"]',
         )!.value;
 
-        const response = await mailboxController.renameFolder(folderPath, newFolderName);
+        const response = await mailboxController.renameFolder(
+            SharedStore.currentAccount,
+            folderPath,
+            newFolderName
+        );
         if(!response.success){
             alert(response.message);
         }

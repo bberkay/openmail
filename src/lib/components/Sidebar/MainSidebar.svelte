@@ -18,7 +18,12 @@
     const TABSIZE_MULTIPLIER = 0.5;
 
     async function getEmailsInFolder(folderName: string): Promise<void> {
-        const response = await mailboxController.searchEmails(folderName);
+        // TODO: If we are in HOME Page then accounts should be:
+        // SharedStore.accounts otherwise(and for now) SharedStore.currentAccount
+        const response = await mailboxController.getMailboxes(
+            SharedStore.currentAccount,
+            folderName
+        );
         if(!response.success) {
             alert(response.message);
         }
@@ -83,7 +88,10 @@
     }
 
     const refreshFolders = async (): Promise<void> => {
-        const response = await mailboxController.refreshFolders();
+        // Same with SharedStore.accounts/HOME Page Component
+        const response = await mailboxController.getFolders(
+            SharedStore.currentAccount
+        );
         if (!response.success) {
             alert(response.message);
         }

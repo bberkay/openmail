@@ -22,12 +22,21 @@
     });
 
     const handleCreateFolderForm = async (e: Event): Promise<void> => {
+        if (!SharedStore.currentAccount) {
+            alert("Current account should be selected");
+            return;
+        }
+
         const target = e.target as HTMLFormElement;
         const folderName = target.querySelector<HTMLInputElement>(
             'input[name="folder_name"]',
         )!.value;
 
-        const response = await mailboxController.createFolder(folderName, parentFolderName || undefined);
+        const response = await mailboxController.createFolder(
+            SharedStore.currentAccount,
+            folderName,
+            parentFolderName || undefined
+        );
         if(!response.success){
             alert(response.message);
         }
