@@ -16,6 +16,10 @@ export function debounce(func: Function, delay: number) {
     };
 }
 
+export function removeWhitespaces(text: string): string {
+    return text.replace(/\s+/g, '');
+}
+
 export function isObjEmpty(obj: Record<string, any>): boolean {
     return Object.values(obj).every(
         (value) => !!value === false || (Array.isArray(value) && value.length === 0)
