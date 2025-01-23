@@ -1,5 +1,5 @@
 <script module lang="ts">
-    import { mount, unmount, type Component, type Snippet } from "svelte";
+    import { mount, unmount } from "svelte";
 
     let currentMountedComponent: Record<string, any> | null = null;
 

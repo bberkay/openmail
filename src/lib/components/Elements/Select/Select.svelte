@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onDestroy, onMount, type Snippet } from "svelte";
+    import { onMount, type Snippet } from "svelte";
 
     interface Props {
         children: Snippet;
