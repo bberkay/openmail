@@ -11,12 +11,15 @@
 
     const mailboxController = new MailboxController();
 
+    let advancedSearchMenu: HTMLElement;
+    let simpleSearchInput: HTMLInputElement;
+
     let isAdvancedSearchMenuOpen = $state(false);
-    let includeFlagSelectTrigger: boolean = $state(true);
     let selectedSince: Date | undefined = $state(undefined);
     let selectedBefore: Date | undefined = $state(undefined);
     let smallerThanUnit: string | undefined = $state(undefined);
     let largerThanUnit: string | undefined = $state(undefined);
+    let folder: string | undefined = $state(Folder.All);
 
     const tagTemplate = `
         <span class="tag">
@@ -108,25 +111,27 @@
         const tags = document.getElementById("saved-flags") as HTMLDivElement;
         if (selectedFlag) {
             tags.innerHTML += tagTemplate.replace("{tag}", selectedFlag);
-            includeFlagSelectTrigger = !includeFlagSelectTrigger;
         }
     }
 
+    const handleAccount = (selectedAccount: string | null) => {
+        const tags = document.getElementById("saved-accounts") as HTMLDivElement;
+        if (selectedAccount) {
+            tags.innerHTML += tagTemplate.replace("{tag}", selectedAccount);
+        }
+    }
+
+    function extractAsArray(selector: string): string[] {
+        return Array.from<HTMLElement>(
+            advancedSearchMenu
+                .querySelector(selector)!
+                .querySelectorAll("span.value"),
+        ).map((span: HTMLElement) => {
+            return span.textContent || "";
+        });
+    };
+
     function getSearchCriteria(): SearchCriteria | null {
-        const advancedSearchMenu = document.getElementById(
-            "advanced-search-menu",
-        ) as HTMLDivElement;
-
-        const extractAsArray = (selector: string) => {
-            return Array.from(
-                advancedSearchMenu
-                    .querySelector(selector)!
-                    .querySelectorAll("span.value"),
-            ).map((span) => {
-                return span.textContent || "";
-            });
-        };
-
         const searchCriteria: SearchCriteria = {
             senders: extractAsArray("#saved-senders"),
             receivers: extractAsArray("#saved-receivers"),
@@ -162,21 +167,24 @@
         return searchCriteria;
     }
 
+    const handleFolder = (selectedFolder: string | null) => {
+        if (selectedFolder) {
+            folder = selectedFolder;
+        }
+    }
+
     const handleSearch = async (): Promise<void> => {
         let searchCriteria: SearchCriteria | string | undefined = undefined;
-        let folder: string = Folder.All;
-        if(isAdvancedSearchMenuOpen) {
-            searchCriteria = getSearchCriteria() || undefined;
-            folder = document.querySelector<HTMLSelectElement>(
-                "#advanced-search-menu #folder",
-            )!.value;
-        } else {
-            searchCriteria = document.querySelector<HTMLInputElement>(
-                "#simple-search-input",
-            )?.value;
-        }
+        searchCriteria = isAdvancedSearchMenuOpen
+            ? (getSearchCriteria() || undefined)
+            : simpleSearchInput.value;
 
-        const response = await mailboxController.searchEmails(folder, searchCriteria);
+        const savedAccounts = extractAsArray("#saved-accounts");
+        const response = await mailboxController.getMailboxes(
+            SharedStore.accounts.filter(account => savedAccounts.includes(account.email_address)),
+            folder,
+            searchCriteria
+        );
         if (!response.success) {
             alert(response.message);
         }
@@ -185,17 +193,31 @@
 
 <div class="card" id="search-menu">
     <div class="input-group">
-        <input type="text" style="width:100%" placeholder="Search" id="simple-search-input"/>
+        <input type="text" style="width:100%" placeholder="Search" id="simple-search-input" bind:this={simpleSearchInput}/>
         <button type="button" onclick={toggleAdvancedSearchMenu}>⇅</button>
     </div>
     <div
         id="advanced-search-menu"
         class={isAdvancedSearchMenuOpen ? "open" : ""}
+        bind:this={advancedSearchMenu}
     >
+        <div class="form-group">
+            <label for="accounts">Accounts</label>
+            <div class="input-group" id="accounts">
+                <Select onchange={handleAccount} placeholder="Account(s) to Search" resetAfterSelect={true}>
+                    {#each SharedStore.accounts as account}
+                        <Option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</Option>
+                    {/each}
+                </Select>
+            </div>
+            <div class="tags" id="saved-accounts">
+                <!-- Accounts -->
+            </div>
+        </div>
         <div class="form-group">
             <label for="folder">Folder</label>
             <div class="input-group">
-                <Select enableSearch={true} value={Folder.All}>
+                <Select enableSearch={true} onchange={handleFolder} value={Folder.All}>
                     {#each SharedStore.standardFolders[0].result as standardFolder}
                         {@const [folderTag, folderName] = standardFolder.split(":")}
                         <Option value={folderTag}>{folderName}</Option>
