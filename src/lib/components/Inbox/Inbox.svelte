@@ -13,7 +13,7 @@
     let emailSelection: string[] = $state([]);
 
     const refreshMailbox = async (): Promise<void> => {
-        const response = await mailboxController.refreshMailbox();
+        const response = await mailboxController.getMailboxes();
         if (!response.success) {
             alert(response.message);
         }
@@ -222,7 +222,7 @@
             <div style="display:flex;">
                 <input type="checkbox" style="margin-right:10px;" bind:group={emailSelection} value={email.uid}>
                 <div style="flex-grow:1">
-                    <InboxItem owner={account.email_address} folder={account.result.folder} email={email} />
+                    <InboxItem account={account} folder={account.result.folder} email={email} />
                 </div>
             </div>
         {/each}
