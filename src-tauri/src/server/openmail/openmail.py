@@ -32,12 +32,12 @@ class OpenMail:
         self._smtp = None
 
     @property
-    def imap(self) -> IMAPManager:
+    def imap(self) -> IMAPManager | None:
         """Get the IMAPManager instance."""
         return self._imap
 
     @property
-    def smtp(self) -> SMTPManager:
+    def smtp(self) -> SMTPManager | None:
         """Get the SMTPManager instance."""
         return self._smtp
 
@@ -47,10 +47,10 @@ class OpenMail:
         password: str,
         imap_host: str = "",
         imap_port: int = 993,
-        imap_ssl_context: any = None,
+        imap_ssl_context = None,
         smtp_host: str = "",
         smtp_port: int = 587,
-        smtp_local_hostname: str = None,
+        smtp_local_hostname: str | None = None,
         timeout: int = 30
     ) -> tuple[bool, str]:
         """
@@ -88,11 +88,26 @@ class OpenMail:
         )
         return True, "Connected successfully"
 
-    def disconnect(self) -> None:
+    def disconnect(self) -> tuple[bool, str]:
         """
         Close both IMAP and SMTP connections.
         """
-        self.imap.logout()
-        self.smtp.logout()
+        imap_stat = True
+        if self.imap:
+            imap_stat, _ = self.imap.logout()
+
+        smtp_stat = True
+        if self.smtp:
+            smtp_stat, _ = self.smtp.logout()
+
+        disconnect_msg = ""
+        if not imap_stat:
+            disconnect_msg = f"IMAP connection could not terminated properly. "
+        if not smtp_stat:
+            disconnect_msg += f"SMTP connection could not terminated properly."
+        if disconnect_msg:
+            return False, disconnect_msg
+
+        return True, "Disconnected successfully."
 
 __all__ = ["OpenMail"]

@@ -22,12 +22,12 @@ import re
 import threading
 import base64
 import time
-
 from typing import override
-from dataclasses import dataclass
-from types import MappingProxyType
 from datetime import datetime
 from enum import Enum
+from ssl import SSLContext
+from types import MappingProxyType
+from dataclasses import dataclass
 
 from .parser import MessageParser
 from .utils import add_quotes_if_str, extract_domain, choose_positive
@@ -136,7 +136,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         password: str,
         host: str = "",
         port: int = IMAP_PORT,
-        ssl_context: any = None,
+        ssl_context: SSLContext | None = None,
         timeout: int = CONN_TIMEOUT
     ):
         self._host = host or self._find_imap_server(email_address)
