@@ -12,8 +12,9 @@ header fields.
 import base64
 import re
 import quopri
-from email.header import decode_header
 from typing import TypedDict
+from email.header import decode_header
+from html.parser import HTMLParser as BuiltInHTMLParser
 
 """
 Types, that are only used in this module
@@ -50,7 +51,8 @@ LINE_PATTERN = re.compile(r'(=\\r|\\.*?r\\.*?n)')
 SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>\(]')
 LINK_PATTERN = re.compile(r'https?://[^\s]+|\([^\)]+\)', re.DOTALL)
 BRACKET_PATTERN = re.compile(r'\[.*?\]')
-SPACES_PATTERN = re.compile(r'\s+')
+SPACE_PATTERN = re.compile(r'\s+')
+HTML_TAG_PATTERN = re.compile(r'<[^>]+>')
 
 class MessageParser:
     """
@@ -254,7 +256,7 @@ class MessageParser:
         body = BRACKET_PATTERN.sub(' ', body)
         body = LINE_PATTERN.sub(' ', body)
         body = SPECIAL_CHAR_PATTERN.sub(' ', body)
-        body = SPACES_PATTERN.sub(' ', body)
+        body = SPACE_PATTERN.sub(' ', body)
 
         return body.strip()
 
@@ -476,7 +478,7 @@ class MessageParser:
         # Subject
         subject = SUBJECT_PATTERN.search(header_match)
         subject = MessageParser.decode_utf8_header(subject.group(1)) if subject else ""
-        subject = SPACES_PATTERN.sub(" ", subject)
+        subject = SPACE_PATTERN.sub(" ", subject)
         subject = subject.strip()
 
         return {
@@ -486,4 +488,89 @@ class MessageParser:
             "subject": subject or "",
         }
 
-__all__ = ["MessageParser", "MessageHeaders"]
+class _HTML2TextParser(BuiltInHTMLParser):
+    """
+    `_HTML2TextParser` is a subclass of `HTMLParser` of `html.parser`.
+    This class should not be used directly, instead use `HTMLParser`.
+    """
+    def __init__(self):
+        super().__init__()
+        self.text = []
+        self._ignore = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ('script', 'style'):
+            self._ignore = True
+
+    def handle_endtag(self, tag):
+        if tag in ('script', 'style'):
+            self._ignore = False
+
+    def handle_data(self, data):
+        if not self._ignore:
+            self.text.append(data.strip())
+
+    def get_text(self) -> str:
+        return SPACE_PATTERN.sub(' '.join(self.text)).strip()
+
+    def parse(self, html: str) -> str:
+        self.feed(html)
+        return self.get_text()
+
+class HTMLParser():
+    """
+    This class does not directly parse given html strings,
+    instead it creates an instance of `_HTML2TextParser` and
+    uses it for parsing operations.
+    """
+    @staticmethod
+    def parse(html: str) -> str:
+        """
+        Get plain text from given html string.
+
+        Example:
+            >>> parse('''
+            <html>
+              <head><title>Test</title></head>
+              <body>
+                <script>console.log("Hello");</script>
+                <h1>Welcome</h1>
+                <p>This is a <b>test</b> page.</p>
+                <style>body { color: red; }</style>
+              </body>
+            </html>
+            ''')
+            "Welcome This is a test page."
+        """
+        htmlParser = _HTML2TextParser()
+        return htmlParser.parse(html)
+
+    @staticmethod
+    def is_html(text: str) -> bool:
+        """
+        Check if the given text is html.
+
+        Notes:
+            - Does not check if it is valid or not.
+
+        Example:
+            >>> is_html('''
+            <html>
+              <head><title>Test</title></head>
+              <body>
+                <script>console.log("Hello");</script>
+                <h1>Welcome</h1>
+                <p>This is a <b>test</b> page.</p>
+                <style>body { color: red; }</style>
+              </body>
+            </html>
+            ''')
+            true
+            >>> is_html("<sp>This is a test page")
+            true
+            >>> is_html("This is a test page")
+            false
+        """
+        return bool(HTML_TAG_PATTERN.search(text))
+
+__all__ = ["HTMLParser", "MessageParser", "MessageHeaders"]
