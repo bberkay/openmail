@@ -20,14 +20,14 @@ struct ServerInfo {
 fn start_uvicorn() -> Result<(), String> {
     if consts::IS_WINDOWS {
         Command::new("cmd")
-            .current_dir("src/shell")
+            .current_dir("src/script")
             .arg("/C")
             .arg(consts::UVICORN_START_SCRIPT_PATH)
             .spawn()
             .map_err(|err| format!("Failed to start Python server: {}", err))?;
     } else {
         Command::new("sh")
-            .current_dir("src/shell")
+            .current_dir("src/script")
             .arg("-c")
             .arg(consts::UVICORN_START_SCRIPT_PATH)
             .spawn()
