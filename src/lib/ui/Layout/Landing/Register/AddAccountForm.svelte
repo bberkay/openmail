@@ -1,6 +1,6 @@
 <script lang="ts">
     import { AccountController } from "$lib/controllers/AccountController";
-    import Form from "$lib/components/Elements/Form.svelte";
+    import Form from "$lib/ui/Elements/Form";
 
     const accountController = new AccountController();
 
