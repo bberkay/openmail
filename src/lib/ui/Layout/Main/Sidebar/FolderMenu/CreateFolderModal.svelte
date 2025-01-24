@@ -1,11 +1,10 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import Select from "$lib/components/Elements/Select.svelte";
-    import Option from "$lib/components/Elements/Option.svelte";
-    import Modal from "$lib/components/Elements/Modal.svelte";
-    import Form from "$lib/components/Elements/Form.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import Form from "$lib/ui/Elements/Form";
+    import Modal from "$lib/ui/Elements/Modal";
+    import Select from "$lib/ui/Elements/Select";
 
     const mailboxController = new MailboxController();
 
@@ -64,11 +63,11 @@
         <div class="form-group">
             <label for="parent-folder">Parent Folder</label>
             <div class="input-group">
-                <Select placeholder="Select Parent Folder" value={parentFolderName || undefined} onchange={handleParentFolder}>
+                <Select.Menu placeholder="Select Parent Folder" value={parentFolderName || undefined} onchange={handleParentFolder}>
                     {#each SharedStore.customFolders[0].result as customFolder}
-                        <Option value={customFolder}>{customFolder}</Option>
+                        <Select.Option value={customFolder}>{customFolder}</Select.Option>
                     {/each}
-                </Select>
+                </Select.Menu>
             </div>
         </div>
         <div class="display:flex;justify-content:space-between:align-items:center;">
