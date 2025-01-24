@@ -511,7 +511,7 @@ class _HTML2TextParser(BuiltInHTMLParser):
             self.text.append(data.strip())
 
     def get_text(self) -> str:
-        return SPACE_PATTERN.sub(' '.join(self.text)).strip()
+        return SPACE_PATTERN.sub(' ', ' '.join(self.text)).strip()
 
     def parse(self, html: str) -> str:
         self.feed(html)
@@ -544,33 +544,5 @@ class HTMLParser():
         """
         htmlParser = _HTML2TextParser()
         return htmlParser.parse(html)
-
-    @staticmethod
-    def is_html(text: str) -> bool:
-        """
-        Check if the given text is html.
-
-        Notes:
-            - Does not check if it is valid or not.
-
-        Example:
-            >>> is_html('''
-            <html>
-              <head><title>Test</title></head>
-              <body>
-                <script>console.log("Hello");</script>
-                <h1>Welcome</h1>
-                <p>This is a <b>test</b> page.</p>
-                <style>body { color: red; }</style>
-              </body>
-            </html>
-            ''')
-            true
-            >>> is_html("<sp>This is a test page")
-            true
-            >>> is_html("This is a test page")
-            false
-        """
-        return bool(HTML_TAG_PATTERN.search(text))
 
 __all__ = ["HTMLParser", "MessageParser", "MessageHeaders"]
