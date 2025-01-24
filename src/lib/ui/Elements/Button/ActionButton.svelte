@@ -1,6 +1,6 @@
 <script lang="ts">
     import { mount, unmount, type Snippet } from "svelte";
-    import Loader from "$lib/components/Elements/Loader.svelte";
+    import Spinner from "$lib/ui/Elements/Loader";
 
     interface Props {
         onclick: (((e: Event) => void) | ((e: Event) => Promise<void>)),
@@ -24,7 +24,7 @@
         eventTrigger.disabled = true;
         const temp = eventTrigger.innerText;
         eventTrigger.innerText = "";
-        const loader = mount(Loader, { target: eventTrigger });
+        const loader = mount(Spinner, { target: eventTrigger });
 
         await onclick(e);
 
