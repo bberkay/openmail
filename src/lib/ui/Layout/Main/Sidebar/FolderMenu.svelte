@@ -1,21 +1,22 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import CreateFolderModal from "$lib/components/Sidebar/CreateFolderModal.svelte";
-    import RenameFolderModal from "$lib/components/Sidebar/RenameFolderModal.svelte";
-    import DeleteFolderModal from "$lib/components/Sidebar/DeleteFolderModal.svelte";
-    import MoveFolderModal from "$lib/components/Sidebar/MoveFolderModal.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
-    import Dropdown from "$lib/components/Elements/Dropdown.svelte";
-    import DropdownToggle from "$lib/components/Elements/DropdownToggle.svelte";
-    import DropdownItem from "$lib/components/Elements/DropdownItem.svelte";
-    import { showModal } from "$lib/components/Elements/Modal.svelte";
-    import ToggleButton from "$lib/components/Elements/ToggleButton.svelte";
-    import { show as showContent } from "$lib/components/Content.svelte";
+    import Dropdown from "$lib/ui/Elements/Dropdown";
+    import Button from "$lib/ui/Elements/Button";
+    import CreateFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/CreateFolderModal.svelte";
+    import RenameFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/RenameFolderModal.svelte";
+    import DeleteFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/DeleteFolderModal.svelte";
+    import MoveFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/MoveFolderModal.svelte";
     import Compose from "../Compose/Compose.svelte";
+    import { show as showModal } from "$lib/components/Elements/Modal.svelte";
+    import { showThis as showContent } from "$lib/components/Content.svelte";
+
+    /* Constants */
 
     const mailboxController = new MailboxController();
     const TABSIZE_MULTIPLIER = 0.5;
+
+    /* Folder Menu */
 
     async function getEmailsInFolder(folderName: string): Promise<void> {
         const response = await mailboxController.getMailboxes(
@@ -30,23 +31,6 @@
         }
     }
 
-    function getFullFolderPath(optionsNode: HTMLElement): string {
-        const folder = optionsNode.closest(".folder") as HTMLButtonElement;
-        const folderName = folder.querySelector(".folder-name")!.textContent!;
-
-        const parent = optionsNode.previousElementSibling as HTMLButtonElement;
-        if(!parent || !parent.classList.contains("folder"))
-            return folderName;
-
-        if (parent && parseFloat(parent.style.paddingLeft) < parseFloat(folder.style.paddingLeft)) {
-            if (!parent.querySelector(".subfolder-toggle")!.classList.contains("disabled")) {
-                return getFullFolderPath(parent) + `/${folderName}`
-            }
-        }
-
-        return folderName;
-    }
-
     function countRealAncestorsOfCustomFolder(path: string): number {
         const parentPath = path.split("/").slice(0, -1).join("/");
         if (!parentPath)
@@ -55,36 +39,7 @@
     }
 
     function isCustomFolderAParentFolder(path: string): boolean {
-        return SharedStore.customFolders[0].result.filter(customFolder => customFolder == path || customFolder.startsWith(path)).length > 1;
-    }
-
-    const showCompose = () => {
-        showContent(Compose);
-    }
-
-    const showSidebarModal = (e: Event, component: any): void => {
-        const target = e.target as HTMLElement;
-        const folderNode = target.closest(".folder") as HTMLElement;
-        const folderName = folderNode ? getFullFolderPath(folderNode) : null;
-        showModal(component, {
-            folderName
-        });
-    }
-
-    const showCreateFolderModal = (e: Event): void => {
-        showSidebarModal(e, CreateFolderModal);
-    }
-
-    const showRenameFolderModal = (e: Event) => {
-        showSidebarModal(e, RenameFolderModal);
-    }
-
-    const showDeleteFolderModal = (e: Event) => {
-        showSidebarModal(e, DeleteFolderModal);
-    }
-
-    const showMoveFolderModal = (e: Event) => {
-        showSidebarModal(e, MoveFolderModal);
+        return SharedStore.customFolders[0].result.filter((customFolder: string) => customFolder == path || customFolder.startsWith(path)).length > 1;
     }
 
     const refreshFolders = async (): Promise<void> => {
@@ -137,6 +92,51 @@
             }
         }
     };
+
+    /* Folder Operations */
+
+    function getFullFolderPath(optionsNode: HTMLElement): string {
+        const folder = optionsNode.closest(".folder") as HTMLButtonElement;
+        const folderName = folder.querySelector(".folder-name")!.textContent!;
+
+        const parent = optionsNode.previousElementSibling as HTMLButtonElement;
+        if(!parent || !parent.classList.contains("folder"))
+            return folderName;
+
+        if (parent && parseFloat(parent.style.paddingLeft) < parseFloat(folder.style.paddingLeft)) {
+            if (!parent.querySelector(".subfolder-toggle")!.classList.contains("disabled")) {
+                return getFullFolderPath(parent) + `/${folderName}`
+            }
+        }
+
+        return folderName;
+    }
+
+    function showFolderOperationModal(e: Event, component: any) {
+        const target = e.target as HTMLElement;
+        const folderNode = target.closest(".folder") as HTMLElement;
+        const folderName = folderNode ? getFullFolderPath(folderNode) : null;
+        showModal(component, {
+            folderName
+        });
+    }
+
+    const showCreateFolderModal = (e: Event): void => {
+        showFolderOperationModal(e, CreateFolderModal);
+    }
+
+    const showRenameFolderModal = (e: Event) => {
+        showFolderOperationModal(e, RenameFolderModal);
+    }
+
+    const showDeleteFolderModal = (e: Event) => {
+        showFolderOperationModal(e, DeleteFolderModal);
+    }
+
+    const showMoveFolderModal = (e: Event) => {
+        showFolderOperationModal(e, MoveFolderModal);
+    }
+
 </script>
 
 <div>
@@ -144,20 +144,20 @@
         <button
             class="bg-primary"
             style="width:100%;padding:7x;margin:10px 0;"
-            onclick={showCompose}>New Message +</button>
+            onclick={() => { showContent(Compose) }}>New Message +</button>
     </div>
     <div style="border-bottom:1px solid dimgrey;">
         <div id="standard-folders">
             {#each SharedStore.standardFolders[0].result as standardFolder, index}
                 {@const [folderTag, folderName] = standardFolder.trim().split(":")}
                 <div class="folder">
-                    <ActionButton
+                    <Button.Action
                         onclick={async (): Promise<void> => { getEmailsInFolder(folderTag) }}
                         class="inline folder-name"
                         style="flex-grow:1;"
                     >
                         {folderName}
-                    </ActionButton>
+                    </Button.Action>
                 </div>
             {/each}
         </div>
@@ -178,23 +178,23 @@
             {@const tabsize = ancestorCount * TABSIZE_MULTIPLIER}
             {@const disabled = isCustomFolderAParentFolder(customFolder) ? "" : "disabled"}
             <div class="folder" style="padding-left:{tabsize}rem;">
-                <ToggleButton class="inline subfolder-toggle {disabled}" onclick={toggleSubfolders} opened={true} />
-                <ActionButton
+                <Button.Toggle class="inline subfolder-toggle {disabled}" onclick={toggleSubfolders} opened={true} />
+                <Button.Action
                     onclick={async (): Promise<void> => { getEmailsInFolder(folderName) }}
                     class="inline folder-name"
                     style="flex-grow:1;"
                 >
                     {folderName}
-                </ActionButton>
-                <Dropdown>
-                    <DropdownToggle class="inline">⋮</DropdownToggle>
+                </Button.Action>
+                <Dropdown.Menu>
+                    <Dropdown.Toggle class="inline">⋮</Dropdown.Toggle>
                     {#snippet content()}
-                        <DropdownItem class="bg-primary" onclick={showCreateFolderModal}>Add Sub Tag</DropdownItem>
-                        <DropdownItem class="bg-primary" onclick={showRenameFolderModal}>Rename</DropdownItem>
-                        <DropdownItem class="bg-primary" onclick={showDeleteFolderModal}>Delete</DropdownItem>
-                        <DropdownItem class="bg-primary" onclick={showMoveFolderModal}>Move</DropdownItem>
+                        <Dropdown.Item class="bg-primary" onclick={showCreateFolderModal}>Add Sub Tag</Dropdown.Item>
+                        <Dropdown.Item class="bg-primary" onclick={showRenameFolderModal}>Rename</Dropdown.Item>
+                        <Dropdown.Item class="bg-primary" onclick={showDeleteFolderModal}>Delete</Dropdown.Item>
+                        <Dropdown.Item class="bg-primary" onclick={showMoveFolderModal}>Move</Dropdown.Item>
                     {/snippet}
-                </Dropdown>
+                </Dropdown.Menu>
             </div>
         {/each}
     </div>
