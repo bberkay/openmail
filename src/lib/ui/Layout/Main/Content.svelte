@@ -1,16 +1,16 @@
 <script module lang="ts">
-    import { closeSkeleton, showSkeleton } from "$lib/components/Skeleton.svelte";
+    import { display, destroy } from "../Component.svelte";
     import { type Snippet } from "svelte";
 
     let componentContainer: HTMLElement;
     let isMounted = $state(false);
-    export function show(component: any, props?: any) {
+    export function showThis(component: any, props?: any) {
         isMounted = true;
-        showSkeleton(component, componentContainer, props);
+        display(component, componentContainer, props);
     }
 
-    export function goBack() {
-        closeSkeleton();
+    export function backToDefault() {
+        destroy();
         isMounted = false;
     }
 </script>
