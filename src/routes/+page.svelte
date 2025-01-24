@@ -1,16 +1,17 @@
 <script lang="ts">
-    import Loader from "$lib/components/Elements/Loader.svelte";
-    import Inbox from "$lib/components/Inbox/Inbox.svelte";
-    import Register from "$lib/components/Register/Register.svelte";
-    import Sidebar from "$lib/components/Sidebar.svelte";
-    import SearchBar from "$lib/components/Inbox/SearchBar.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import Main from "$lib/components/Main.svelte";
-    import Content from "$lib/components/Content.svelte";
-    import MainSidebar from "$lib/components/Sidebar/MainSidebar.svelte";
-    import Layout from "$lib/components/Layout.svelte";
-    import Navbar from "$lib/components/Navbar.svelte";
-    import Account from "$lib/components/Navbar/Account.svelte";
+    import Layout from "$lib/ui/Layout/Layout.svelte";
+    import Main from "$lib/ui/Layout/Main.svelte";
+    import Content from "$lib/ui/Layout/Main/Content.svelte";
+    import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import Navbar from "$lib/ui/Layout/Main/Navbar.svelte";
+    import Account from "$lib/ui/Layout/Navbar/Account.svelte";
+    import SearchBar from "$lib/ui/Layout/Navbar/SearchBar.svelte";
+    import Sidebar from "$lib/ui/Layout/Main/Sidebar.svelte";
+    import FolderMenu from "$lib/ui/Layout/Main/Sidebar/FolderMenu.svelte";
+    import Landing from "$lib/ui/Layout/Landing.svelte";
+    import Register from "$lib/ui/Layout/Landing/Register.svelte";
+    import Spinner from "$lib/ui/Elements/Loader";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
 </script>
@@ -20,15 +21,15 @@
         <Main>
             <Navbar>
                 <Account />
+                <SearchBar />
             </Navbar>
             <div class="mailbox">
                 <section style="width:20%;margin-right:5px;">
-                    <Sidebar >
-                        <MainSidebar />
+                    <Sidebar>
+                        <FolderMenu />
                     </Sidebar>
                 </section>
                 <section style="width:80%;">
-                    <SearchBar />
                     <div class="card">
                         <Content>
                             <Inbox />
@@ -38,9 +39,11 @@
             </div>
         </Main>
     {:else if isLoading}
-        <Loader />
+        <Spinner />
     {:else}
-        <Register />
+        <Landing>
+            <Register />
+        </Landing>
     {/if}
 </Layout>
 
