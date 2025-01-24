@@ -1,11 +1,11 @@
 <script lang="ts">
-    import AccountList from "$lib/components/Register/AccountList.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import AddAccountForm from "$lib/components/Register/AddAccountForm.svelte";
-    import EditAccountForm from "$lib/components/Register/EditAccountForm.svelte";
-    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, type Account } from "$lib/types";
+    import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
+    import AddAccountForm from "$lib/ui/Layout/Landing/Register/AddAccountForm.svelte";
+    import EditAccountForm from "$lib/ui/Layout/Landing/Register/EditAccountForm.svelte";
+    import Button from "$lib/ui/Elements/Button";
 
     const mailboxController = new MailboxController();
 
@@ -35,7 +35,7 @@
 <AccountList bind:editingAccount={editingAccount}/>
 
 <div>
-    <ActionButton onclick={initMailboxes}>
+    <Button.Action onclick={initMailboxes}>
         Continue To Inbox
-    </ActionButton>
+    </Button.Action>
 </div>
