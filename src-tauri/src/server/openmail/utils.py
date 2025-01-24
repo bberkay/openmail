@@ -5,6 +5,10 @@ These functions provide helper methods for email-related operations,
 including domain extraction, date conversion, and other utility tasks.
 """
 
+def extract_username(email: str) -> str:
+    """Extract the user name from an email address."""
+    return email.split('@')[0]
+
 def extract_domain(email: str) -> str:
     """Extract the domain name from an email address."""
     return email.split('@')[1].split(".")[0]
