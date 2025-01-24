@@ -1,26 +1,16 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { Folder, Mark, type SearchCriteria } from "$lib/types";
-    import { Size } from "$lib/utils/types";
-    import { debounce, isEmailValid, adjustSizes, convertToIMAPDate, concatValueAndUnit, convertSizeToBytes, isObjEmpty } from "$lib/utils";
-    import Select from "$lib/components/Elements/Select.svelte";
-    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import DatePicker from "$lib/components/Elements/DatePicker.svelte";
-    import Option from "$lib/components/Elements/Option.svelte";
+    import { Folder, Mark, Account, type SearchCriteria } from "$lib/types";
+    import { debounce, isEmailValid, adjustSizes, convertToIMAPDate, concatValueAndUnit, convertSizeToBytes, isObjEmpty } from "$lib/utils";
+    import { Size } from "$lib/utils/types";
+    import Select from "$lib/ui/Elements/Select";
+    import Button from "$lib/ui/Elements/Button";
+    import Input from "$lib/ui/Elements/Input";
+
+    /* Constants */
 
     const mailboxController = new MailboxController();
-
-    let advancedSearchMenu: HTMLElement;
-    let simpleSearchInput: HTMLInputElement;
-
-    let isAdvancedSearchMenuOpen = $state(false);
-    let selectedSince: Date | undefined = $state(undefined);
-    let selectedBefore: Date | undefined = $state(undefined);
-    let smallerThanUnit: string | undefined = $state(undefined);
-    let largerThanUnit: string | undefined = $state(undefined);
-    let folder: string | undefined = $state(Folder.All);
-
     const tagTemplate = `
         <span class="tag">
             <span class="value">{tag}</span>
@@ -28,11 +18,34 @@
         </span>
     `;
 
-    const toggleAdvancedSearchMenu = () => {
-        isAdvancedSearchMenuOpen = !isAdvancedSearchMenuOpen;
+    /* Variables */
+
+    let advancedSearchMenu: HTMLElement;
+    let simpleSearchInput: HTMLInputElement;
+
+    let folder: string | undefined = $state(Folder.All);
+    let isAdvancedSearchMenuOpen = $state(false);
+    let selectedSince: Date | undefined = $state(undefined);
+    let selectedBefore: Date | undefined = $state(undefined);
+    let smallerThanUnit: string | undefined = $state(undefined);
+    let largerThanUnit: string | undefined = $state(undefined);
+
+    /* Criteria Handling Functions */
+
+    const addSelectedAccount = (selectedAccount: string | null) => {
+        const tags = document.getElementById("saved-accounts") as HTMLDivElement;
+        if (selectedAccount) {
+            tags.innerHTML += tagTemplate.replace("{tag}", selectedAccount);
+        }
     }
 
-    const handleEmailEnter = (e: KeyboardEvent) => {
+    const setSelectedFolder = (selectedFolder: string | null) => {
+        if (selectedFolder) {
+            folder = selectedFolder;
+        }
+    }
+
+    const addEnteredEmail = (e: KeyboardEvent) => {
         const target = e.target as HTMLInputElement;
         const email = target.value;
         const emails = target
@@ -52,7 +65,7 @@
         }
     }
 
-    const handleSizeValue = debounce((e: Event) => {
+    const setEnteredSizeValue = debounce((e: Event) => {
         const target = e.target as HTMLInputElement;
         const row = target.closest(".row")!;
 
@@ -85,41 +98,36 @@
         largerThanUnit = adjustedSizes[1][1]
     }, 100);
 
-    const handleSmallerThanUnit = (selectedUnit: string | null) => {
+    const setSelectedSmallerThanUnit = (selectedUnit: string | null) => {
         smallerThanUnit = selectedUnit || undefined;
     }
 
-    const handleLargerThanUnit = (selectedUnit: string | null) => {
+    const setSelectedLargerThanUnit = (selectedUnit: string | null) => {
         largerThanUnit = selectedUnit || undefined;
     }
 
-    const handleSince = (selectedDate: Date) => {
+    const setSelectedSinceDate = (selectedDate: Date) => {
         selectedSince = selectedDate;
         if (selectedSince && selectedBefore && selectedSince > selectedBefore) {
             selectedBefore.setDate(selectedSince.getDate() + 1)
         }
     }
 
-    const handleBefore = (selectedDate: Date) => {
+    const setSelectedBeforeDate = (selectedDate: Date) => {
         selectedBefore = selectedDate;
         if (selectedSince && selectedBefore && selectedSince > selectedBefore) {
             selectedSince.setDate(selectedBefore.getDate() - 1)
         }
     }
 
-    const handleFlag = (selectedFlag: string | null) => {
+    const addSelectedFlag = (selectedFlag: string | null) => {
         const tags = document.getElementById("saved-flags") as HTMLDivElement;
         if (selectedFlag) {
             tags.innerHTML += tagTemplate.replace("{tag}", selectedFlag);
         }
     }
 
-    const handleAccount = (selectedAccount: string | null) => {
-        const tags = document.getElementById("saved-accounts") as HTMLDivElement;
-        if (selectedAccount) {
-            tags.innerHTML += tagTemplate.replace("{tag}", selectedAccount);
-        }
-    }
+    /* Search Criteria Creator Functions */
 
     function extractAsArray(selector: string): string[] {
         return Array.from<HTMLElement>(
@@ -167,13 +175,9 @@
         return searchCriteria;
     }
 
-    const handleFolder = (selectedFolder: string | null) => {
-        if (selectedFolder) {
-            folder = selectedFolder;
-        }
-    }
+    /* Main Operation */
 
-    const handleSearch = async (): Promise<void> => {
+    const search = async (): Promise<void> => {
         let searchCriteria: SearchCriteria | string | undefined = undefined;
         searchCriteria = isAdvancedSearchMenuOpen
             ? (getSearchCriteria() || undefined)
@@ -181,7 +185,7 @@
 
         const savedAccounts = extractAsArray("#saved-accounts");
         const response = await mailboxController.getMailboxes(
-            SharedStore.accounts.filter(account => savedAccounts.includes(account.email_address)),
+            SharedStore.accounts.filter((account: Account) => savedAccounts.includes(account.email_address)),
             folder,
             searchCriteria
         );
@@ -194,7 +198,7 @@
 <div class="card" id="search-menu">
     <div class="input-group">
         <input type="text" style="width:100%" placeholder="Search" id="simple-search-input" bind:this={simpleSearchInput}/>
-        <button type="button" onclick={toggleAdvancedSearchMenu}>⇅</button>
+        <button type="button" onclick={() => { isAdvancedSearchMenuOpen = !isAdvancedSearchMenuOpen }}>⇅</button>
     </div>
     <div
         id="advanced-search-menu"
@@ -204,49 +208,51 @@
         <div class="form-group">
             <label for="accounts">Accounts</label>
             <div class="input-group" id="accounts">
-                <Select onchange={handleAccount} placeholder="Account(s) to Search" resetAfterSelect={true}>
+                <Select.Menu onchange={addSelectedAccount} placeholder="Account(s) to Search" resetAfterSelect={true}>
                     {#each SharedStore.accounts as account}
-                        <Option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</Option>
+                        <Select.Option value={account.email_address}>
+                            {account.fullname} &lt;{account.email_address}&gt;
+                        </Select.Option>
                     {/each}
-                </Select>
+                </Select.Menu>
             </div>
-            <div class="tags" id="saved-accounts">
+            <div class="tags" id="added-accounts">
                 <!-- Accounts -->
             </div>
         </div>
         <div class="form-group">
             <label for="folder">Folder</label>
             <div class="input-group">
-                <Select enableSearch={true} onchange={handleFolder} value={Folder.All}>
+                <Select.Menu enableSearch={true} onchange={setSelectedFolder} value={Folder.All}>
                     {#each SharedStore.standardFolders[0].result as standardFolder}
                         {@const [folderTag, folderName] = standardFolder.split(":")}
-                        <Option value={folderTag}>{folderName}</Option>
+                        <Select.Option value={folderTag}>{folderName}</Select.Option>
                     {/each}
                     {#each SharedStore.customFolders[0].result as customFolder}
-                        <Option value={customFolder}>{customFolder}</Option>
+                        <Select.Option value={customFolder}>{customFolder}</Select.Option>
                     {/each}
-                </Select>
+                </Select.Menu>
             </div>
         </div>
         <div class="form-group">
             <label for="senders">Sender(s)</label>
-            <input type="email" name="senders" onkeyup={handleEmailEnter} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="saved-senders"></div>
+            <input type="email" name="senders" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="added-senders"></div>
         </div>
         <div class="form-group">
             <label for="receivers">Receiver(s)</label>
-            <input type="email" name="receivers" onkeyup={handleEmailEnter} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="saved-receivers"></div>
+            <input type="email" name="receivers" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="added-receivers"></div>
         </div>
         <div class="form-group">
             <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" onkeyup={handleEmailEnter} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="saved-cc"></div>
+            <input type="email" name="cc" id="cc" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="added-cc"></div>
         </div>
         <div class="form-group">
             <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" onkeyup={handleEmailEnter} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="saved-bcc"></div>
+            <input type="email" name="bcc" id="bcc" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="added-bcc"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
@@ -256,8 +262,8 @@
             <div class="form-group">
                 <label for="since">Since</label>
                 <div class="input-group">
-                    <DatePicker
-                        onchange={handleSince}
+                    <Input.Date
+                        onchange={setSelectedSinceDate}
                         value={selectedSince}
                     />
                 </div>
@@ -265,8 +271,8 @@
             <div class="form-group">
                 <label for="before">Before</label>
                 <div class="input-group">
-                    <DatePicker
-                        onchange={handleBefore}
+                    <Input.Date
+                        onchange={setSelectedBeforeDate}
                         value={selectedBefore}
                     />
                 </div>
@@ -281,13 +287,13 @@
                         name="smaller_than"
                         min="0"
                         value="0"
-                        onkeyup={handleSizeValue}
+                        onkeyup={setEnteredSizeValue}
                     />
-                    <Select value={smallerThanUnit} onchange={handleSmallerThanUnit}>
+                    <Select.Menu value={smallerThanUnit} onchange={setSelectedSmallerThanUnit}>
                         {#each Object.values(Size) as size}
-                            <Option value={size}>{size}</Option>
+                            <Select.Option value={size}>{size}</Select.Option>
                         {/each}
-                    </Select>
+                    </Select.Menu>
                 </div>
             </div>
             <div class="form-group">
@@ -298,13 +304,13 @@
                         name="larger_than"
                         min="0"
                         value="0"
-                        onkeyup={handleSizeValue}
+                        onkeyup={setEnteredSizeValue}
                     />
-                    <Select value={largerThanUnit} onchange={handleLargerThanUnit}>
+                    <Select.Menu value={largerThanUnit} onchange={setSelectedLargerThanUnit}>
                         {#each Object.values(Size) as size}
-                            <Option value={size}>{size}</Option>
+                            <Select.Option value={size}>{size}</Select.Option>
                         {/each}
-                    </Select>
+                    </Select.Menu>
                 </div>
             </div>
         </div>
@@ -332,20 +338,20 @@
         <div class="form-group">
             <label for="include-flags">Include Flag</label>
             <div class="input-group" id="include-flags">
-                <Select onchange={handleFlag} placeholder="Flag" resetAfterSelect={true}>
+                <Select.Menu onchange={addSelectedFlag} placeholder="Flag" resetAfterSelect={true}>
                     {#each Object.entries(Mark) as mark}
-                        <Option value={mark[1]}>{mark[0]}</Option>
+                        <Select.Option value={mark[1]}>{mark[0]}</Select.Option>
                     {/each}
-                </Select>
+                </Select.Menu>
             </div>
-            <div class="tags" id="saved-flags">
+            <div class="tags" id="added-flags">
                 <!-- Flags -->
             </div>
         </div>
     </div>
-    <ActionButton onclick={handleSearch} style="margin-top:5px;">
+    <Button.Action onclick={search} style="margin-top:5px;">
         Search
-    </ActionButton>
+    </Button.Action>
 </div>
 
 <style>
