@@ -1,9 +1,11 @@
 <script lang="ts">
-    import type { Account, EmailSummary } from "$lib/types";
-    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { show as showContent } from "$lib/components/Content.svelte";
+    import type { Account, EmailSummary } from "$lib/types";
+    import Button from "$lib/ui/Elements/Button";
     import Email from "../Email/Email.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+
+    const mailboxController = new MailboxController();
 
     interface Props {
         account: Account;
@@ -12,8 +14,6 @@
     }
 
     let { account, folder, email }: Props = $props();
-
-    const mailboxController = new MailboxController();
 
     const getEmailContent = async (): Promise<void> => {
         const response = await mailboxController.getEmailContent(account, folder, email.uid);
@@ -28,10 +28,9 @@
 
 <div>
     <pre>{JSON.stringify(email, null, 2)}</pre>
-
-    <ActionButton onclick={getEmailContent} style="margin-top:10px">
+    <Button.Action onclick={getEmailContent} style="margin-top:10px">
         Show Content
-    </ActionButton>
+    </Button.Action>
     {#if Object.hasOwn(email, "flags") && email.flags}
         {#each email.flags as flag}
             <span class="tag">{flag}</span>
