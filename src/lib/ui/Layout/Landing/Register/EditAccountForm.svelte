@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { AccountController } from "$lib/controllers/AccountController";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import Form from "$lib/components/Elements/Form.svelte";
-    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
+    import { AccountController } from "$lib/controllers/AccountController";
     import { type Account } from "$lib/types";
+    import Form from "$lib/ui/Elements/Form";
+    import Button from "$lib/ui/Elements/Button";
 
     const accountController = new AccountController();
 
@@ -66,9 +66,9 @@
             </div>
             <button type="submit" id="edit-account-btn">Edit Account</button>
             <button type="button" onclick={cancelEdit}>Cancel</button>
-            <ActionButton onclick={removeAccount} data-email-address={editingAccount.email_address}>
+            <Button.Action onclick={removeAccount} data-email-address={editingAccount.email_address}>
                 Remove
-            </ActionButton>
+            </Button.Action>
         </div>
     </Form>
 {/if}
