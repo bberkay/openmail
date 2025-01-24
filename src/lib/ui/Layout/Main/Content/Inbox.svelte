@@ -1,16 +1,22 @@
 <script lang="ts">
-    import InboxItem from "$lib/components/Inbox/InboxItem.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { Mark, type EmailWithContent } from "$lib/types";
-    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import Select from "$lib/components/Elements/Select.svelte";
-    import Option from "$lib/components/Elements/Option.svelte";
+    import { EmailSummary, Mark, Mailbox } from "$lib/types";
+    import InboxItem from "$lib/ui/Layout/Main/Content/Inbox/InboxItem.svelte";
+    import Select from "$lib/ui/Elements/Select";
+    import Button from "$lib/ui/Elements/Button";
+
+    /* Constants */
 
     const mailboxController = new MailboxController();
-    let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
+
+    /* Variables */
+
+    let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a: number, b: Mailbox) => a + b.result.total, 0));
     let currentOffset = $state(1);
     let emailSelection: string[] = $state([]);
+
+    /* Inbox Functions */
 
     const refreshMailbox = async (): Promise<void> => {
         const response = await mailboxController.getMailboxes();
@@ -47,6 +53,8 @@
         }
     }
 
+    /* Selection Functions */
+
     const selectAllShownEmails = (event: Event) => {
         const selectAllCheckbox = event.target as HTMLInputElement;
         emailSelection = selectAllCheckbox.checked
@@ -67,56 +75,35 @@
         }
     }
 
-    const markEmail = async (mark: string | Mark): Promise<void> => {
-        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
-            alert("Current account and folder should be selected");
-            return;
-        }
-
-
-        const response = await mailboxController.markEmails(
-            SharedStore.currentAccount,
-            emailSelection,
-            mark,
-            SharedStore.currentFolder
-        );
-        if(!response.success) {
-            alert(response.message);
-        }
+    function isAllSelectedEmailsAreMarked(mark: Mark): boolean {
+        return emailSelection.every((uid) => {
+            return SharedStore.mailboxes[0].result.emails.find((email: EmailSummary) => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && email.flags.includes(mark));
+        });
     }
 
-    const unmarkEmail = async (mark: string | Mark): Promise<void> => {
-        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
-            alert("Current account and folder should be selected");
-            return;
-        }
-
-        const response = await mailboxController.unmarkEmails(
-            SharedStore.currentAccount,
-            emailSelection,
-            mark,
-            SharedStore.currentFolder
-        );
-        if(!response.success) {
-            alert(response.message);
-        }
+    function isAllSelectedEmailsAreUnmarked(mark: Mark, unmark: Mark): boolean {
+        return emailSelection.every((uid) => {
+            return SharedStore.mailboxes[0].result.emails.find((email: EmailSummary) => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && (!email.flags.includes(mark) || email.flags.includes(unmark)));
+        });
     }
 
-    const markEmailsAsRead = async (): Promise<void> => {
-        await markEmail(Mark.Seen);
+    function isAllSelectedEmailsAreMarkedAsFlagged(): boolean {
+        return isAllSelectedEmailsAreMarked(Mark.Flagged);
     }
 
-    const markEmailsAsUnread = async (): Promise<void> => {
-        await unmarkEmail(Mark.Seen);
+    function isAllSelectedEmailsAreMarkedAsSeen(): boolean {
+        return isAllSelectedEmailsAreMarked(Mark.Seen);
     }
 
-    const markEmailsAsImportant = async (): Promise<void> => {
-        markEmail(Mark.Flagged);
+    function isAllSelectedEmailsAreMarkedAsNotFlagged(): boolean {
+        return isAllSelectedEmailsAreUnmarked(Mark.Flagged, Mark.Unflagged);
     }
 
-    const markEmailsAsNotImportant = async (): Promise<void> => {
-        unmarkEmail(Mark.Flagged);
+    function isAllSelectedEmailsAreMarkedAsNotSeen(): boolean {
+        return isAllSelectedEmailsAreUnmarked(Mark.Seen, Mark.Unseen);
     }
+
+    /* Email Operations */
 
     const deleteEmails = async (): Promise<void> => {
         if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
@@ -180,32 +167,54 @@
         }
     }
 
-    function isAllSelectedEmailsAreMarked(mark: Mark): boolean {
-        return emailSelection.every((uid) => {
-            return SharedStore.mailboxes[0].result.emails.find(email => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && email.flags.includes(mark));
-        });
+    const markEmail = async (mark: string | Mark): Promise<void> => {
+        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
+            alert("Current account and folder should be selected");
+            return;
+        }
+
+        const response = await mailboxController.markEmails(
+            SharedStore.currentAccount,
+            emailSelection,
+            mark,
+            SharedStore.currentFolder
+        );
+        if(!response.success) {
+            alert(response.message);
+        }
     }
 
-    function isAllSelectedEmailsAreUnmarked(mark: Mark, unmark: Mark): boolean {
-        return emailSelection.every((uid) => {
-            return SharedStore.mailboxes[0].result.emails.find(email => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && (!email.flags.includes(mark) || email.flags.includes(unmark)));
-        });
+    const unmarkEmail = async (mark: string | Mark): Promise<void> => {
+        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
+            alert("Current account and folder should be selected");
+            return;
+        }
+
+        const response = await mailboxController.unmarkEmails(
+            SharedStore.currentAccount,
+            emailSelection,
+            mark,
+            SharedStore.currentFolder
+        );
+        if(!response.success) {
+            alert(response.message);
+        }
     }
 
-    function isAllSelectedEmailsAreMarkedAsFlagged(): boolean {
-        return isAllSelectedEmailsAreMarked(Mark.Flagged);
+    const markEmailsAsRead = async (): Promise<void> => {
+        await markEmail(Mark.Seen);
     }
 
-    function isAllSelectedEmailsAreMarkedAsSeen(): boolean {
-        return isAllSelectedEmailsAreMarked(Mark.Seen);
+    const markEmailsAsUnread = async (): Promise<void> => {
+        await unmarkEmail(Mark.Seen);
     }
 
-    function isAllSelectedEmailsAreMarkedAsNotFlagged(): boolean {
-        return isAllSelectedEmailsAreUnmarked(Mark.Flagged, Mark.Unflagged);
+    const markEmailsAsImportant = async (): Promise<void> => {
+        markEmail(Mark.Flagged);
     }
 
-    function isAllSelectedEmailsAreMarkedAsNotSeen(): boolean {
-        return isAllSelectedEmailsAreUnmarked(Mark.Seen, Mark.Unseen);
+    const markEmailsAsNotImportant = async (): Promise<void> => {
+        unmarkEmail(Mark.Flagged);
     }
 </script>
 
@@ -213,15 +222,15 @@
 <h2>{SharedStore.currentFolder}</h2>
 <hr />
 <div style="display:flex;justify-content:space-between;align-items:center;">
-    <ActionButton onclick={getPreviousEmails} class="bg-primary {currentOffset < 10 ? "disabled" : ""}">
+    <Button.Action onclick={getPreviousEmails} class="bg-primary {currentOffset < 10 ? "disabled" : ""}">
         Previous
-    </ActionButton>
+    </Button.Action>
     <small>
         {Math.max(1, currentOffset)} - {Math.min(totalEmailCount, currentOffset + 10)} of {totalEmailCount}
     </small>
-    <ActionButton onclick={getNextEmails}  class="bg-primary {currentOffset >= totalEmailCount ? "disabled" : ""}">
+    <Button.Action onclick={getNextEmails}  class="bg-primary {currentOffset >= totalEmailCount ? "disabled" : ""}">
         Next
-    </ActionButton>
+    </Button.Action>
 </div>
 <hr />
 <div style="display:flex;">
@@ -232,23 +241,23 @@
             <button onclick={selectAllEmails}>Select all {totalEmailCount} emails</button>
         </span>
         <br>
-        <ActionButton onclick={deleteEmails} class="bg-primary" style="margin-right:5px">
+        <Button.Action onclick={deleteEmails} class="bg-primary" style="margin-right:5px">
             Delete
-        </ActionButton>
-        <Select onchange={moveEmails} placeholder='Move To'>
+        </Button.Action>
+        <Select.Menu onchange={moveEmails} placeholder='Move To'>
             {#each SharedStore.customFolders[0].result as customFolder}
-                <Option value={customFolder}>customFolder</Option>
+                <Select.Option value={customFolder}>customFolder</Select.Option>
             {/each}
-        </Select>
-        <Select onchange={copyEmails} placeholder='Copy To'>
+        </Select.Menu>
+        <Select.Menu onchange={copyEmails} placeholder='Copy To'>
             {#each SharedStore.customFolders[0].result as customFolder}
-                <Option value={customFolder}>customFolder</Option>
+                <Select.Option value={customFolder}>customFolder</Select.Option>
             {/each}
-        </Select>
+        </Select.Menu>
         {#if isAllSelectedEmailsAreMarkedAsFlagged()}
-            <ActionButton onclick={markEmailsAsNotImportant} class="bg-primary" style="margin-right:5px">
+            <Button.Action onclick={markEmailsAsNotImportant} class="bg-primary" style="margin-right:5px">
                 Mark as Not Important
-            </ActionButton>
+            </Button.Action>
         {:else if isAllSelectedEmailsAreMarkedAsNotFlagged()}
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsImportant}>Mark as Important</button>
         {:else}
@@ -264,9 +273,9 @@
             <button class = "bg-primary" style="margin-right:5px;" onclick={markEmailsAsUnread}>Mark as Unread</button>
         {/if}
     {:else}
-        <ActionButton onclick={refreshMailbox} class="bg-primary" style="margin-right:5px" >
+        <Button.Action onclick={refreshMailbox} class="bg-primary" style="margin-right:5px" >
             Refresh
-        </ActionButton>
+        </Button.Action>
     {/if}
 </div>
 <hr />
