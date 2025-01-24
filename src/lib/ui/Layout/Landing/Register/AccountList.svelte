@@ -1,8 +1,8 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
-    import ActionButton from "$lib/components/Elements/ActionButton.svelte";
     import { type Account } from "$lib/types";
+    import Button from "$lib/ui/Elements/Button";
 
     const accountController = new AccountController();
 
@@ -50,9 +50,9 @@
             <li>
                 <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
                 <button style="margin-right: 5px;" onclick={() => { editingAccount = account }}>Edit</button>
-                <ActionButton onclick={removeAccount} data-email-address={account.email_address} >
+                <Button.Action onclick={removeAccount} data-email-address={account.email_address} >
                     Remove
-                </ActionButton>
+                </Button.Action>
             </li>
         {/each}
     </ul>
@@ -63,9 +63,9 @@
             <li>
                 <span style="margin-right: 5px;">{failedAccount.fullname} &lt;{failedAccount.email_address}&gt;</span>
                 <button style="margin-right: 5px;" onclick={() => { editingAccount = failedAccount }}>Edit</button>
-                <ActionButton onclick={removeAccount} data-email-address={failedAccount.email_address} >
+                <Button.Action onclick={removeAccount} data-email-address={failedAccount.email_address} >
                     Remove
-                </ActionButton>
+                </Button.Action>
             </li>
         {/each}
     {/if}
