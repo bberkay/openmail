@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { mount, unmount } from "svelte";
-    import Loader from "$lib/components/Elements/Loader.svelte";
     import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
+    import { mount, unmount } from "svelte";
     import type { Attachment, EmailWithContent } from "$lib/types";
     import { makeSizeHumanReadable } from "$lib/utils";
-    import { goBack as goBackContent } from "$lib/components/Content.svelte";
+    import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
+    import Spinner from "$lib/ui/Elements/Loader";
 
     let { email }: { email: EmailWithContent } = $props();
 
@@ -54,7 +54,7 @@
         const link = document.getElementById(linkId)!;
         const tempInnerHTML = link.innerHTML;
         link.innerHTML = "";
-        const loader = mount(Loader, { target: link });
+        const loader = mount(Spinner, { target: link });
 
         const file = await create(attachment.name, { baseDir: BaseDirectory.Download });
         await file.write(Uint8Array.from(atob(attachment.data), (char) => char.charCodeAt(0)));
@@ -65,7 +65,7 @@
     }
 </script>
 
-<button onclick={goBackContent}>Back</button>
+<button onclick={backToDefault}>Back</button>
 <div id="subject" style="margin-bottom: 5px;">
     <h3>{email.subject || ""}</h3>
     <p>From: {email.receiver || ""}</p>
