@@ -43,12 +43,6 @@
         }
     }
 
-    $effect(() => {
-        if (isOpen && enableSearch) {
-            searchInput!.focus();
-        }
-    })
-
     function filterOptions(searchTerm: string | null = null) {
         searchTerm = searchTerm?.toLowerCase() || null;
 
@@ -74,6 +68,14 @@
         if(searchTerm && !isAnyOptionFound) {
             optionsList.innerHTML += noResultWarning;
         }
+    }
+
+    const toggleSelect = () => {
+        if (isOpen)
+            return closeSelect();
+
+        isOpen = true;
+        if (enableSearch) searchInput!.focus();
     }
 
     const closeSelect = () => {
@@ -124,7 +126,7 @@
 
 <div class="custom-select-wrapper" bind:this={selectWrapper}>
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="custom-select {isOpen ? "open" : ""}" onclick={() => { isOpen = !isOpen }}>
+    <div class="custom-select {isOpen ? "open" : ""}" onclick={toggleSelect}>
         <div class="select-trigger">
             <div class="select-trigger-content">
                 {#if selectedOption}

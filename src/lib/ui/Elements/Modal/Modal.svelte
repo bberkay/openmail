@@ -10,7 +10,7 @@
         }
 	};
 
-	export function showModal(modal: Component, modalProps: any) {
+	export function show(modal: Component, modalProps: any) {
 	    if(mountedModal)
 			return;
 
