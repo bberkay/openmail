@@ -1,12 +1,11 @@
 <script lang="ts">
-    import Select from "$lib/components/Elements/Select.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import Option from "$lib/components/Elements/Option.svelte";
-    import { Folder } from "$lib/types";
+    import { Folder, Account } from "$lib/types";
+    import Select from "$lib/ui/Elements/Select";
 
     const handleAccount = (selectedAccountEmailAddr: string | null) => {
         if (selectedAccountEmailAddr) {
-            const selectedAccount = SharedStore.accounts.find(account => account.email_address === selectedAccountEmailAddr);
+            const selectedAccount = SharedStore.accounts.find((account: Account) => account.email_address === selectedAccountEmailAddr);
             if (!selectedAccount) {
                 alert("Selected account could not found");
                 return;
@@ -18,8 +17,8 @@
     }
 </script>
 
-<Select onchange={handleAccount} value={SharedStore.currentAccount?.email_address} placeholder="Account">
+<Select.Menu onchange={handleAccount} value={SharedStore.currentAccount?.email_address} placeholder="Account">
     {#each SharedStore.accounts as account}
-        <Option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</Option>
+        <Select.Option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</Select.Option>
     {/each}
-</Select>
+</Select.Menu>
