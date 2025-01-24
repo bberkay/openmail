@@ -1,7 +1,7 @@
 <script lang="ts">
     import { mount, unmount } from "svelte";
-    import Loader from "$lib/components/Elements/Loader.svelte";
     import type { Snippet } from 'svelte';
+    import Spinner from "$lib/ui/Elements/Loader";
 
     interface Props {
         children: Snippet;
@@ -24,7 +24,7 @@
         eventTrigger.disabled = true;
         const temp = eventTrigger.innerText;
         eventTrigger.innerText = "";
-        const loader = mount(Loader, { target: eventTrigger });
+        const loader = mount(Spinner, { target: eventTrigger });
 
         await onsubmit(e);
 
