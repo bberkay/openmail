@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { MailboxController } from "$lib/controllers/MailboxController";
-    import Form from "$lib/components/Elements/Form.svelte";
-    import Modal from "$lib/components/Elements/Modal.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import Form from "$lib/ui/Elements/Form";
+    import Modal from "$lib/ui/Elements/Modal";
 
     const mailboxController = new MailboxController();
 
