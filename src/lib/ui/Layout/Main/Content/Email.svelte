@@ -3,8 +3,8 @@
     import { mount, unmount } from "svelte";
     import type { Attachment, EmailWithContent } from "$lib/types";
     import { makeSizeHumanReadable } from "$lib/utils";
-    import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
     import Spinner from "$lib/ui/Elements/Loader";
+    import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
 
     let { email }: { email: EmailWithContent } = $props();
 
