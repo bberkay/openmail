@@ -1193,28 +1193,22 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
                 body = MessageParser.body_from_message(message)
                 if not body:
-                    """
-                    1. Get the content-type and rfc.size in the header fields and parse them
-                    2. If the body is just text html then check the size and get half of the
-                    html content with ThreadPoolExecutor(learn the threadpoolexecuter).
-                    """
                     body = UNKNOWN_PLACEHOLDERS["body"]
 
                 """
-                # TODO: if text plain body does not exists.
-                https://mail.google.com/mail/u/0/?ik=ee9acb692d&view=om&permmsgid=msg-f:1818347503870535537
+                #TODO: If text plain body does not exists.
+                1. Get the content-type and rfc.size in the header fields and parse them
+                2. If the body is just text html then check the size and get half of the
+                html content with ThreadPoolExecutor(learn the threadpoolexecuter).
                 if not body:
-                    from bs4 import BeautifulSoup
-                    status, comp = self.uid('FETCH', uid, '(BODY.PEEK[TEXT])')
-                    print("comp: ", comp)
+                    status, complete_text = self.uid('FETCH', uid, '(BODY.PEEK[TEXT])')
                     if status == 'OK':
-                        new_body = MessageParser.body_from_message(comp)
-                        print("new_body: ", new_body)
-                        msg = email.message_from_bytes(messages[0][1])
+                        msg = email.message_from_bytes(_text[0][1])
                         for part in msg.walk():
                             if part.get_content_type() == 'text/html':
                                 body = part.get_payload(decode=True).decode('utf-8')
-                                body = BeautifulSoup(body, "html.parser").get_text(" ", strip=True)
+                                # use html.parser instead of bs4
+                                #body = BeautifulSoup(body, "html.parser").get_text(" ", strip=True)
                                 print("body: ", body)
                                 #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
                                 #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
@@ -1368,14 +1362,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             # If there is a problem with inline attachments
             # just ignore them.
             print(f"An error occurred while replacing inline attachments: `{str(e)}` of email `{uid}`'s content in folder `{folder}`.")
-            pass
-
-        try:
-            self.mark_email(Mark.Seen, uid, folder)
-        except Exception as e:
-            # If there is a problem with marking the email as seen
-            # just ignore it.
-            print(f"An error occurred while marking email as seen: `{str(e)}` of email `{uid}`'s content in folder `{folder}`.")
             pass
 
         return EmailWithContent(
