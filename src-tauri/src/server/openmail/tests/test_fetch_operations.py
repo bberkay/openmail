@@ -46,6 +46,7 @@ class TestFetchOperations(unittest.TestCase):
             cls._openmail,
             cls._test_sent_basic_email
         )
+        cls._sent_test_email_uids.append(cls._test_sent_basic_email.uid)
 
         # Send Complex Text Email
         cls._test_sent_complex_email = EmailToSend(
@@ -64,10 +65,7 @@ class TestFetchOperations(unittest.TestCase):
         cls._openmail._imap.mark_email(Mark.Seen, cls._test_sent_complex_email.uid, Folder.Inbox)
         cls._openmail._imap.mark_email(Mark.Flagged, cls._test_sent_complex_email.uid, Folder.Inbox)
 
-        cls._sent_test_email_uids.extend([
-            cls._test_sent_basic_email.uid,
-            cls._test_sent_complex_email.uid
-        ])
+        cls._sent_test_email_uids.extend(cls._test_sent_complex_email.uid)
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
@@ -106,6 +104,7 @@ class TestFetchOperations(unittest.TestCase):
         print("test_is_email_exists...")
 
         new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        self.__class__._created_test_folders.append(new_created_empty_test_folder)
 
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(
             Folder.Inbox,
@@ -116,8 +115,6 @@ class TestFetchOperations(unittest.TestCase):
             self.__class__._test_sent_basic_email.uid
 
         ))
-
-        self.__class__._created_test_folders.append(new_created_empty_test_folder)
 
     def test_build_search_criteria_query_multiple_or_with_even_length_lists(self):
         print("test_build_search_criteria_query_multiple_or_with_even_length_lists...")
@@ -394,8 +391,10 @@ class TestFetchOperations(unittest.TestCase):
         print("test_search_in_custom_folder...")
 
         new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        self.__class__._created_test_folders.append(new_created_empty_test_folder)
 
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
+        self.__class__._sent_test_email_uids.append(uid)
         self.__class__._openmail.imap.move_email(Folder.Inbox, new_created_empty_test_folder, uid)
 
         print("Waiting 2 seconds after move operation")
@@ -405,30 +404,30 @@ class TestFetchOperations(unittest.TestCase):
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertEqual(found_emails.total, 1)
 
-        self.__class__._created_test_folders.append(new_created_empty_test_folder)
         self.__class__._sent_test_email_uids.extend([email.uid for email in found_emails.emails])
 
     def test_fetch_with_pagination(self):
         print("test_fetch_with_pagination...")
 
         new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        self.__class__._created_test_folders.append(new_created_empty_test_folder)
 
         uids_list = []
         count = 3
         random_subject_list = []
         for i in range(1, count + 1):
             random_subject = NameGenerator.random_subject_with_uuid()
-            uids_list.append(
-                DummyOperator.send_test_email_to_self_and_get_uid(
-                    self.__class__._openmail,
-                    EmailToSend(
-                        sender=self.__class__._sender_email,
-                        receiver=self.__class__._sender_email,
-                        subject=random_subject,
-                        body=NameGenerator.random_body_with_uuid()
-                    )
+            uid = DummyOperator.send_test_email_to_self_and_get_uid(
+                self.__class__._openmail,
+                EmailToSend(
+                    sender=self.__class__._sender_email,
+                    receiver=self.__class__._sender_email,
+                    subject=random_subject,
+                    body=NameGenerator.random_body_with_uuid()
                 )
             )
+            uids_list.append(uid)
+            self.__class__._sent_test_email_uids.append(uid)
             random_subject_list.append(random_subject)
 
         self.__class__._openmail.imap.copy_email(Folder.Inbox, new_created_empty_test_folder, ",".join(uids_list))
@@ -446,9 +445,6 @@ class TestFetchOperations(unittest.TestCase):
         other_part_of_emails = self.__class__._openmail.imap.get_emails(half + 1, count)
         self.assertEqual(other_part_of_emails.total, count - half)
         self.assertEqual([email.subject for email in other_part_of_emails.emails], random_subject_list[half:count])
-
-        self.__class__._created_test_folders.append(new_created_empty_test_folder)
-        self.__class__._sent_test_email_uids.extend(uids_list)
 
     @classmethod
     def cleanup(cls):
