@@ -244,7 +244,7 @@ class SMTPManager(smtplib.SMTP):
         inline_attachment_srcs = MessageParser.inline_attachment_src_from_message(email.body)
         for match in inline_attachment_srcs:
             try:
-                inline_attachment = match.group(2)
+                inline_attachment = match[1]
                 if inline_attachment.startswith("data:"):
                     inline_attachments.append(AttachmentConverter.from_base64(inline_attachment))
                 else:
@@ -262,9 +262,9 @@ class SMTPManager(smtplib.SMTP):
                         raise SMTPManagerException("Inline image size exceeds the maximum allowed size.")
 
                     email.body = (
-                        email.body[:match.start(2)] +
+                        email.body[:match[0]] +
                         f"cid:{inline_attachments[i].cid}" +
-                        email.body[match.end(2):]
+                        email.body[match[2]:]
                     )
 
                     if inline_attachments[i].cid in generated_inline_attachment_cids:

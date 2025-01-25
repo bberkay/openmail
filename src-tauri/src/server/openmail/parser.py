@@ -12,7 +12,7 @@ header fields.
 import base64
 import re
 import quopri
-from typing import TypedDict
+from typing import Iterator, Match, TypedDict
 from email.header import decode_header
 from html.parser import HTMLParser as BuiltInHTMLParser
 
@@ -377,7 +377,7 @@ class MessageParser:
         return [match.group(1) for match in matches]
 
     @staticmethod
-    def inline_attachment_src_from_message(message: str) -> list[str]:
+    def inline_attachment_src_from_message(message: str) -> list[tuple[int, str, int]]:
         """
         Get inline attachments' src from raw message string.
 
@@ -385,7 +385,7 @@ class MessageParser:
             message (str): Raw message string.
 
         Returns:
-            list[tuple[str, str]]: List of inline attachments as src and cid.
+            list[tuple[int, str, int]]: src start position, src value, src end position.
 
         Example:
             >>> message = '''
@@ -399,9 +399,9 @@ class MessageParser:
             ... </html>
             ... '''
             >>> inline_attachment_src_from_message(message)
-            ['image1.png', 'image2.jpeg', 'image3.jpg']
+            [(10, "image1.jpg", 19), (22, "image2.jpg", 29), (32, "image3.jpg", 39)]
         """
-        return list(INLINE_ATTACHMENT_SRC_PATTERN.finditer(message))
+        return [(match.start(2), match.group(2), match.end(2)) for match in INLINE_ATTACHMENT_SRC_PATTERN.finditer(message)]
 
     @staticmethod
     def flags_from_message(message: str) -> list[str]:
