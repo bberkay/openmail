@@ -44,7 +44,7 @@ BODY_TEXT_ENCODING_PATTERN = re.compile(r'Content-Transfer-Encoding:\s*(.+?)\\r\
 ATTACHMENT_PATTERN = re.compile(r'ATTACHMENT.*?\("FILENAME" "([^"]+)"\)', re.DOTALL)
 INLINE_ATTACHMENT_CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"', re.DOTALL)
 INLINE_ATTACHMENT_FILEPATH_PATTERN = re.compile(r'<img\s+[^>]*src=["\']((?!data:|cid:)[^"\']+)["\']', re.DOTALL | re.IGNORECASE)
-INLINE_ATTACHMENT_DATA_CID_PATTERN = re.compile(r'data:([a-zA-Z0-9+/.-]+);base64,([a-zA-Z0-9+/=]+)', re.DOTALL | re.IGNORECASE)
+INLINE_ATTACHMENT_BASE64_DATA_PATTERN = re.compile(r'data:([a-zA-Z0-9+/.-]+);base64,([a-zA-Z0-9+/=]+)', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_SRC_PATTERN = re.compile(r'(<img\s+[^>]*src=")(.*?)(")')
 FLAGS_PATTERN = re.compile(r'FLAGS \((.*?)\)', re.DOTALL)
 LINE_PATTERN = re.compile(r'(=\\r|\\.*?r\\.*?n)')
@@ -334,12 +334,12 @@ class MessageParser:
             ...     </body>
             ... </html>
             ... '''
-            >>> inline_attachment_data_and_cid_from_message(message)
+            >>> inline_attachment_base64_data_from_message(message)
             [('image/png', 'iVBORw0KGgoAAAANSUhEUgAAAAUA'),
              ('audio/mp3', '/9j/4AAQSkZJRgABAQEAAAAAA'),
              ('text/plain', 'SGVsbG8sIHdvcmxkIQ==')]
         """
-        matches = INLINE_ATTACHMENT_DATA_CID_PATTERN.finditer(message)
+        matches = INLINE_ATTACHMENT_BASE64_DATA_PATTERN.finditer(message)
         if not matches:
             return []
 
