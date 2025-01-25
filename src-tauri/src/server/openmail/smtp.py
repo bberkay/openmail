@@ -326,6 +326,7 @@ class SMTPManager(smtplib.SMTP):
                         attachment.data,
                         maintype=maintype,
                         subtype=subtype,
+                        cid=attachment.cid,
                         filename=attachment.name
                     )
                     generated_attachment_cids.add(attachment.cid)
