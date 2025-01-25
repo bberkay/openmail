@@ -339,7 +339,13 @@ class TestFetchOperations(unittest.TestCase):
     def test_get_email_content(self):
         print("test_get_email_content...")
 
-        def assert_count_equal_email_addresses(key: str):
+        email_content = self.__class__._openmail.imap.get_email_content(
+            self.__class__._test_sent_complex_email.uid,
+            Folder.Inbox
+        )
+
+        # Recipients
+        for key in ["sender", "receiver", "cc", "bcc"]:
             self.assertCountEqual(
                 [email.strip() for email in email_content[key].split(",")],
                 (
@@ -348,17 +354,6 @@ class TestFetchOperations(unittest.TestCase):
                     else self.__class__._test_sent_complex_email[key]
                 )
             )
-
-        email_content = self.__class__._openmail.imap.get_email_content(
-            self.__class__._test_sent_complex_email.uid,
-            Folder.Inbox
-        )
-
-        # Recipients
-        assert_count_equal_email_addresses("sender")
-        assert_count_equal_email_addresses("receiver")
-        assert_count_equal_email_addresses("cc")
-        assert_count_equal_email_addresses("bcc")
 
         # Subject
         self.assertEqual(
