@@ -30,9 +30,22 @@ def get_mime_type_from_base64(base64_data: str) -> str:
         return base64_data.split(";")[0].split(":")[1]
     return ""
 
-def generate_cid() -> str:
-    """Creates a content ID with `make_msgid` but without `<>`."""
-    return make_msgid()[1:-1]
+def generate_cid_from_data(data: str | bytes, length: int = 32) -> str:
+    """
+    Creates a content ID from the given data.
+
+    Args:
+        data (str|bytes): The data to generate the content ID from.
+
+    Returns:
+        str: The generated content ID.
+    """
+    if length <= 0:
+        raise ValueError("Content ID length must be greater than 0.")
+
+    return hashlib.sha256(
+        data.encode("utf-8") if isinstance(data, str) else data
+    ).hexdigest()[:length]
 
 class AttachmentConverter:
     """A static class for converting file paths, urls, etc. to `Attachment` objects."""
@@ -75,7 +88,7 @@ class AttachmentConverter:
             type=mime_type,
             path=file_path,
             data=None,
-            cid=generate_cid()
+            cid=generate_cid_from_data(content)
         )
 
     @staticmethod
@@ -116,7 +129,7 @@ class AttachmentConverter:
             type=mime_type,
             path=url,
             data=None,
-            cid=generate_cid()
+            cid=generate_cid_from_data(content)
         )
 
     @staticmethod
@@ -183,7 +196,7 @@ class AttachmentConverter:
                 type=uncomplete_attachment.type or mime_type,
                 path=uncomplete_attachment.path,
                 data=uncomplete_attachment.data,
-                cid=uncomplete_attachment.cid or generate_cid()
+                cid=uncomplete_attachment.cid or generate_cid_from_data(content)
             )
         elif uncomplete_attachment.data is not None:
             return Attachment(
@@ -192,7 +205,7 @@ class AttachmentConverter:
                 type=uncomplete_attachment.type or get_mime_type_from_base64(uncomplete_attachment.data),
                 size=uncomplete_attachment.size or len(uncomplete_attachment.data),
                 data=uncomplete_attachment.data,
-                cid=uncomplete_attachment.cid or generate_cid()
+                cid=uncomplete_attachment.cid or generate_cid_from_data(uncomplete_attachment.data)
             )
 
         raise ValueError("Either `path` or `data` must be provided in the `Attachment` object.")
@@ -226,7 +239,7 @@ class AttachmentConverter:
             type=mime_type,
             path=None,
             data=base64_data.replace(f"data:{mime_type};base64,", ""),
-            cid=generate_cid()
+            cid=generate_cid_from_data(base64_data)
         )
 
     @staticmethod
