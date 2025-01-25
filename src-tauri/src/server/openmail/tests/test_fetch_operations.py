@@ -53,7 +53,7 @@ class TestFetchOperations(unittest.TestCase):
             receiver=cls._receiver_emails,
             subject=NameGenerator.random_subject_with_uuid(),
             cc=cls._receiver_emails[1:],
-            bcc=cls._receiver_emails[2:],
+            bcc=cls._sender_email,
             body=NameGenerator.random_body_with_uuid(),
             attachments=[SampleDocumentGenerator().as_filepath()]
         )
@@ -236,7 +236,6 @@ class TestFetchOperations(unittest.TestCase):
             found_emails.folder
         )
 
-        # Cc
         self.assertCountEqual(
             [email.strip() for email in email_content.cc.split(",")],
             self.__class__._test_sent_complex_email.cc
@@ -257,7 +256,6 @@ class TestFetchOperations(unittest.TestCase):
             found_emails.folder
         )
 
-        # Bcc
         self.assertIn(
             [email.strip() for email in email_content.bcc.split(",")],
             self.__class__._test_sent_complex_email.bcc
@@ -341,40 +339,26 @@ class TestFetchOperations(unittest.TestCase):
     def test_get_email_content(self):
         print("test_get_email_content...")
 
+        def assert_count_equal_email_addresses(key: str):
+            self.assertCountEqual(
+                [email.strip() for email in email_content[key].split(",")],
+                (
+                    [email.strip() for email in self.__class__._test_sent_complex_email[key].split(",")]
+                    if isinstance(self.__class__._test_sent_complex_email[key], str)
+                    else self.__class__._test_sent_complex_email[key]
+                )
+            )
+
         email_content = self.__class__._openmail.imap.get_email_content(
             self.__class__._test_sent_complex_email.uid,
             Folder.Inbox
         )
 
-        # Sender
-        self.assertCountEqual(
-            [email.strip() for email in email_content.sender.split(",")],
-            (
-                [email.strip() for email in self.__class__._test_sent_complex_email.sender.split(",")]
-                if isinstance(self.__class__._test_sent_complex_email.sender, str)
-                else self.__class__._test_sent_complex_email.sender
-            )
-        )
-
-        # Receiver
-        self.assertCountEqual(
-            [email.strip() for email in email_content.receiver.split(",")],
-            (
-                [email.strip() for email in self.__class__._test_sent_complex_email.receiver.split(",")]
-                if isinstance(self.__class__._test_sent_complex_email.receiver, str)
-                else self.__class__._test_sent_complex_email.receiver
-            )
-        )
-
-        # Cc
-        self.assertCountEqual(
-            [email.strip() for email in email_content.cc.split(",")],
-            (
-                [email.strip() for email in self.__class__._test_sent_complex_email.cc.split(",")]
-                if isinstance(self.__class__._test_sent_complex_email.cc, str)
-                else self.__class__._test_sent_complex_email.cc
-            )
-        )
+        # Recipients
+        assert_count_equal_email_addresses("sender")
+        assert_count_equal_email_addresses("receiver")
+        assert_count_equal_email_addresses("cc")
+        assert_count_equal_email_addresses("bcc")
 
         # Subject
         self.assertEqual(
@@ -388,7 +372,13 @@ class TestFetchOperations(unittest.TestCase):
             self.__class__._test_sent_complex_email.body
         )
 
-        # Attachment
+        # Inline Attachments
+        self.assertCountEqual(
+            [os.path.basename(attachment) for attachment in self.__class__._test_sent_complex_email.attachments],
+            [attachment.name for attachment in email_content.attachments]
+        )
+
+        # Attachments
         self.assertCountEqual(
             [os.path.basename(attachment) for attachment in self.__class__._test_sent_complex_email.attachments],
             [attachment.name for attachment in email_content.attachments]
