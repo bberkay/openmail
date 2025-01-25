@@ -277,7 +277,7 @@ class SMTPManager(smtplib.SMTP):
 
 
         # Second payload, text/html.
-        if HTMLParser.is_html(email.body)
+        if HTMLParser.is_html(email.body):
             msg.add_alternative(email.body, subtype="html")
 
         # Attach inline attachments to `msg` according to their cid number.
