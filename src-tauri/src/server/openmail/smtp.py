@@ -275,8 +275,10 @@ class SMTPManager(smtplib.SMTP):
                 except Exception as e:
                     print(f"Error while replacing inline images with cid: `{str(e)}` - Skipping inline image...")
 
+
         # Second payload, text/html.
-        msg.add_alternative(email.body, subtype="html")
+        if HTMLParser.is_html(email.body)
+            msg.add_alternative(email.body, subtype="html")
 
         # Attach inline attachments to `msg` according to their cid number.
         if inline_attachments:
