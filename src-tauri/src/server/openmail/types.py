@@ -69,6 +69,10 @@ class Attachment():
     type: Optional[str] = None
     cid: Optional[str] = None
 
+    def keys(self):
+        """Returns a list of all field names in the dataclass instance."""
+        return [field.name for field in fields(self)]
+
 @dataclass
 class EmailWithContent():
     """Represents an email with its content."""
