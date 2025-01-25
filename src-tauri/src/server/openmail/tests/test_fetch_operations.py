@@ -108,12 +108,13 @@ class TestFetchOperations(unittest.TestCase):
         new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
 
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(
-            self.__class__._test_sent_basic_email.uid,
-            Folder.Inbox
+            Folder.Inbox,
+            self.__class__._test_sent_basic_email.uid
         ))
         self.assertFalse(self.__class__._openmail.imap.is_email_exists(
-            self.__class__._test_sent_basic_email.uid,
-            new_created_empty_test_folder
+            new_created_empty_test_folder,
+            self.__class__._test_sent_basic_email.uid
+
         ))
 
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
@@ -203,7 +204,7 @@ class TestFetchOperations(unittest.TestCase):
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(found_emails.total, 1)
 
-        email_content = self.__class__._openmail.imap.get_email_content(found_emails.emails[0].uid, found_emails.folder)
+        email_content = self.__class__._openmail.imap.get_email_content(found_emails.folder, found_emails.emails[0].uid)
         self.assertIn(self.__class__._test_sent_basic_email.body, email_content.body)
 
     def test_complex_search_with_multiple_receiver(self):
@@ -232,8 +233,8 @@ class TestFetchOperations(unittest.TestCase):
         self.assertGreaterEqual(found_emails.total, 1)
 
         email_content = self.__class__._openmail._imap.get_email_content(
-            found_emails.emails[0].uid,
-            found_emails.folder
+            found_emails.folder,
+            found_emails.emails[0].uid
         )
 
         self.assertCountEqual(
@@ -252,8 +253,8 @@ class TestFetchOperations(unittest.TestCase):
         self.assertGreaterEqual(found_emails.total, 1)
 
         email_content = self.__class__._openmail.imap.get_email_content(
-            found_emails.emails[0].uid,
-            found_emails.folder
+            found_emails.folder,
+            found_emails.emails[0].uid
         )
 
         self.assertIn(
@@ -271,7 +272,7 @@ class TestFetchOperations(unittest.TestCase):
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertEqual(found_emails.total, 1)
 
-        email_content = self.__class__._openmail.imap.get_email_content(found_emails.emails[0].uid, found_emails.folder)
+        email_content = self.__class__._openmail.imap.get_email_content(found_emails.folder, found_emails.emails[0].uid)
         self.assertIn(self.__class__._test_sent_complex_email.body, email_content.body)
 
     def test_complex_search_with_exclude(self):
@@ -284,7 +285,7 @@ class TestFetchOperations(unittest.TestCase):
         found_emails = self.__class__._openmail.imap.get_emails(1, 1)
         self.assertEqual(found_emails.total, 1)
 
-        email_content = self.__class__._openmail.imap.get_email_content(found_emails.emails[0].uid, found_emails.folder)
+        email_content = self.__class__._openmail.imap.get_email_content(found_emails.folder, found_emails.emails[0].uid)
         self.assertNotIn(self.__class__._test_sent_basic_email.body, email_content.body)
 
     def test_complex_search_with_attachments(self):
@@ -340,8 +341,8 @@ class TestFetchOperations(unittest.TestCase):
         print("test_get_email_content...")
 
         email_content = self.__class__._openmail.imap.get_email_content(
-            self.__class__._test_sent_complex_email.uid,
-            Folder.Inbox
+            Folder.Inbox,
+            self.__class__._test_sent_complex_email.uid
         )
 
         # Recipients

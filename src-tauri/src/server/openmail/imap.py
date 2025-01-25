@@ -1084,8 +1084,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}` and error is `{str(e)}.`")
 
     def is_email_exists(self,
-        sequence_set: str,
-        folder: str
+        folder: str,
+        sequence_set: str
     ) -> bool:
         """
         Check is given uid exists in given folder.
@@ -1282,8 +1282,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def get_email_content(
         self,
-        uid: str,
-        folder: str
+        folder: str,
+        uid: str
     ) -> EmailWithContent:
         """
         Retrieve full content of a specific email.
@@ -1296,7 +1296,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             EmailWithContent: Dataclass containing the email content.
 
         Example:
-            >>> get_email_content("1", "INBOX")
+            >>> get_email_content("INBOX", "1")
             EmailWithContent(uid="1", sender="a@gmail.com", ...)
 
         Notes:
