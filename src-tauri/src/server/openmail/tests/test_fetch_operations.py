@@ -108,12 +108,12 @@ class TestFetchOperations(unittest.TestCase):
         new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
 
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(
-            Folder.Inbox,
-            self.__class__._test_sent_basic_email.uid
+            self.__class__._test_sent_basic_email.uid,
+            Folder.Inbox
         ))
         self.assertFalse(self.__class__._openmail.imap.is_email_exists(
-            new_created_empty_test_folder,
-            self.__class__._test_sent_basic_email.uid
+            self.__class__._test_sent_basic_email.uid,
+            new_created_empty_test_folder
         ))
 
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
@@ -366,13 +366,13 @@ class TestFetchOperations(unittest.TestCase):
             self.__class__._test_sent_complex_email.subject
         )
 
-        # Body
+        # Body, TODO: PLAIN TEXT TEST
         self.assertEqual(
             email_content.body,
             self.__class__._test_sent_complex_email.body
         )
 
-        # Inline Attachments
+        # TODO: Inline Attachments
         self.assertCountEqual(
             [os.path.basename(attachment) for attachment in self.__class__._test_sent_complex_email.attachments],
             [attachment.name for attachment in email_content.attachments]
