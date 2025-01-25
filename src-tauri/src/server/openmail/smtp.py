@@ -236,7 +236,7 @@ class SMTPManager(smtplib.SMTP):
         except Exception as e:
             print(f"Error while adding metadata to headers: {str(e)} - Skipping metadata.")
 
-        # First payload, plain text.
+        # First payload, text/plain.
         msg.set_content(HTMLParser.parse(email.body))
 
         # Extract inline attachments.
@@ -257,42 +257,44 @@ class SMTPManager(smtplib.SMTP):
         generated_inline_attachment_cids = set()
         if inline_attachments:
             for i, match in enumerate(reversed(inline_attachment_srcs)):
-                if inline_attachments[i].size > MAX_INLINE_IMAGE_SIZE:
-                    raise SMTPManagerException("Inline image size exceeds the maximum allowed size.")
+                try:
+                    if inline_attachments[i].size > MAX_INLINE_IMAGE_SIZE:
+                        raise SMTPManagerException("Inline image size exceeds the maximum allowed size.")
 
-                email.body = (
-                    email.body[:match.start(2)] +
-                    f"cid:{inline_attachments[i].cid}" +
-                    email.body[match.end(2):]
-                )
+                    email.body = (
+                        email.body[:match.start(2)] +
+                        f"cid:{inline_attachments[i].cid}" +
+                        email.body[match.end(2):]
+                    )
 
-                if inline_attachments[i].cid in generated_inline_attachment_cids:
-                    print("Duplicate inline images found. Skipping MIME attachment.")
-                    continue
+                    if inline_attachments[i].cid in generated_inline_attachment_cids:
+                        print("Duplicate inline images found. Skipping MIME attachment.")
+                        continue
 
-                generated_inline_attachment_cids.add(inline_attachments[i].cid)
+                    generated_inline_attachment_cids.add(inline_attachments[i].cid)
+                except Exception as e:
+                    print(f"Error while replacing inline images with cid: `{str(e)}` - Skipping inline image...")
 
-        # Second payload, mostly html.
+        # Second payload, text/html.
         msg.add_alternative(email.body, subtype="html")
 
         # Attach inline attachments to `msg` according to their cid number.
         if inline_attachments:
-            for i, match in enumerate(reversed(inline_attachment_srcs)):
+            for cid in generated_inline_attachment_cids:
                 try:
-                    if inline_attachments[i].cid not in generated_inline_attachment_cids:
-                        continue
-
+                    inline = next(inline for inline in inline_attachments if inline.cid == cid)
                     msg.get_payload()[1].add_related(
                         base64.b64decode(
-                            inline_attachments[i].data
+                            inline.data
                             or
-                            FileBase64Encoder.read_file(inline_attachments[i].path)[3]
+                            FileBase64Encoder.read_file(inline.path)[3]
                         ),
                         maintype='image',
-                        subtype=inline_attachments[i].type.split('/')[1],
-                        cid=f"<{inline_attachments[i].cid}>",
-                        filename=inline_attachments[i].name
+                        subtype=inline.type.split('/')[1],
+                        cid=f"<{inline.cid}>",
+                        filename=inline.name,
                     )
+                    inline = None
                 except Exception as e:
                     print(f"Error while replacing inline images with cid: `{str(e)}` - Skipping inline image...")
 
