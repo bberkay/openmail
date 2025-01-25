@@ -18,8 +18,12 @@ class TestSendOperations(unittest.TestCase):
         with open("openmail/tests/credentials.json") as credentials:
             credentials = json.load(credentials)
 
-        cls._email = credentials[0]["email"]
-        cls._openmail.connect(cls._email, credentials[0]["password"])
+        if len(credentials) < 4:
+            raise ValueError("At least 4 credentials are required.")
+
+        cls._sender_email = credentials[0]["email"]
+        cls._receiver_emails = [credential["email"] for credential in credentials]
+        cls._openmail.connect(cls._sender_email, credentials[0]["password"])
 
         cls._sent_test_email_uids = []
 
@@ -28,12 +32,26 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
-                body="test_send_basic_email",
-                cc=self.__class__._email,
-                bcc=self.__class__._email,
+                body="test_send_basic_email"
+            )
+        )
+        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self._sent_test_email_uids.append(uid)
+
+    def test_send_multiple_recipients_email(self):
+        print("test_send_multiple_recipients_email...")
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(
+            self.__class__._openmail,
+            EmailToSend(
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._receiver_emails[0:2],
+                subject=NameGenerator.random_subject_with_uuid(),
+                body="test_send_multiple_recipients_email",
+                cc=self.__class__._receiver_emails[2],
+                bcc=self.__class__._receiver_emails[3],
             )
         )
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
@@ -44,8 +62,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=f'''
                 <html>
@@ -68,8 +86,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body="test_send_email_with_filepath_attachment",
                 attachments=[
@@ -87,8 +105,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body="test_send_email_with_link_attachment",
                 attachments=[
@@ -107,8 +125,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body="test_send_email_with_all_options_attachment",
                 attachments=[
@@ -128,8 +146,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=f'''
                 <html>
@@ -155,8 +173,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=f'''
                 <html>
@@ -182,8 +200,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=f'''
                 <html>
@@ -211,8 +229,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=f'''
                 <html>
@@ -242,8 +260,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=f'''
                 <html>
@@ -274,8 +292,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=f'''
                 <html>
@@ -305,8 +323,8 @@ class TestSendOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=f'''
                 <html>
@@ -330,8 +348,8 @@ class TestSendOperations(unittest.TestCase):
         print("test_reply_email...")
         status, _ = self.__class__._smtp.reply_email(
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=NameGenerator.random_subject_with_uuid(),
                 body=NameGenerator.random_body_with_uuid(),
             )
@@ -342,8 +360,8 @@ class TestSendOperations(unittest.TestCase):
         print("test_forward_email...")
         status, _ = self.__class__._smtp.forward_email(
             EmailToSend(
-                sender=self.__class__._email,
-                receiver=self.__class__._email,
+                sender=self.__class__._sender_email,
+                receiver=self.__class__._sender_email,
                 subject=generate_random_subject_with_uuid(),
                 body=NameGenerator.random_body_with_uuid(),
             )
