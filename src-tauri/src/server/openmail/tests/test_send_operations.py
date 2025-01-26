@@ -54,26 +54,25 @@ class TestSendOperations(unittest.TestCase):
         )
 
         # Body (and inline attachments)
-        email_to_send_inline_attachments = [
-            match[1] for match in MessageParser.inline_attachment_src_from_message(email_to_send.body)
-        ]
-        email_content_inline_attachments = [
-            match[1].split(",")[1] for match in MessageParser.inline_attachment_src_from_message(email_content.body)
-        ]
-        for email_to_send_inline_attachment in email_to_send_inline_attachments:
-            if email_to_send_inline_attachment.startswith("data:"):
-                self.assertIn(
-                    email_to_send_inline_attachment.split(",")[1],
-                    email_content_inline_attachments
-                )
-            else:
-                base64_data = FileBase64Encoder.read_file(
-                    AttachmentConverter.resolve_and_convert(email_to_send_inline_attachment).path
-                )
-                self.assertIn(
-                    base64_data[3],
-                    email_content_inline_attachments
-                )
+        email_to_send_inline_attachments = None
+        inline_srcs = MessageParser.inline_attachment_src_from_message(email_to_send.body)
+        if inline_srcs:
+            email_to_send_inline_attachments = [match[1] for match in inline_srcs]
+
+        if email_to_send_inline_attachments:
+            for email_to_send_inline_attachment in email_to_send_inline_attachments:
+                # Replace src values with base64 data to compare with email_content if they are not
+                if not email_to_send_inline_attachment.startswith("data:"):
+                    base64_data = FileBase64Encoder.read_file(
+                        AttachmentConverter.resolve_and_convert(email_to_send_inline_attachment).path
+                    )
+                    email_to_send.body = email_to_send.body.replace(email_to_send_inline_attachment, f"data:{base64_data[1]};base64,{base64_data[3]}", count=1)
+
+        email_content.body = email_content.body.replace("base64, ", "base64,", count=1)
+        self.assertEqual(
+            email_to_send.body.replace("\r", "").replace("\n", "").replace("\r\n", ""),
+            email_content.body.replace("\r", "").replace("\n", "").replace("\r\n", ""),
+        )
 
         # Attachments (strings or `Attachment` objects)
         if (
@@ -90,7 +89,7 @@ class TestSendOperations(unittest.TestCase):
 
     def test_send_basic_email(self):
         print("test_send_basic_email...")
-        email = EmailToSend(
+        email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.random_subject_with_uuid(),
@@ -98,223 +97,232 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            email
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        #self.is_sent_email_valid(uid, email)
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_multiple_recipients_email(self):
         print("test_send_multiple_recipients_email...")
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._receiver_emails[0:2],
+            subject=NameGenerator.random_subject_with_uuid(),
+            body="test_send_multiple_recipients_email",
+            cc=self.__class__._receiver_emails[2],
+            bcc=self.__class__._sender_email,
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._receiver_emails[0:2],
-                subject=NameGenerator.random_subject_with_uuid(),
-                body="test_send_multiple_recipients_email",
-                cc=self.__class__._receiver_emails[2],
-                bcc=self.__class__._sender_email,
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_html_email(self):
         print("test_send_html_email...")
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=f'''
+            <html>
+                <head></head>
+                <body>
+                    <hr/>
+                    <i>test_send_html_email</i>
+                    <hr/>
+                </body>
+            </html>
+            ''',
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=f'''
-                <html>
-                    <head></head>
-                    <body>
-                        <hr/>
-                        <i>test_send_html_email</i>
-                        <hr/>
-                    </body>
-                </html>
-                ''',
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_filepath_attachment(self):
         print("test_send_email_with_filepath_attachment...")
         sampleDocumentFiles = SampleDocumentGenerator().as_filepath(count=2, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body="test_send_email_with_filepath_attachment",
+            attachments=[
+                sampleDocumentFiles[0],
+                Attachment(path=sampleDocumentFiles[1]),
+            ],
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body="test_send_email_with_filepath_attachment",
-                attachments=[
-                    sampleDocumentFiles[0],
-                    Attachment(path=sampleDocumentFiles[1]),
-                ],
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_link_attachment(self):
         print("test_send_email_with_link_attachment...")
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body="test_send_email_with_link_attachment",
+            attachments=[
+                sampleImageUrls[0],
+                Attachment(path=sampleImageUrls[1]),
+            ],
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body="test_send_email_with_link_attachment",
-                attachments=[
-                    sampleImageUrls[0],
-                    Attachment(path=sampleImageUrls[1]),
-                ],
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_all_options_attachment(self):
         print("test_send_email_with_all_option_attachment...")
         sampleImageFiles = SampleImageGenerator().as_filepath(count=2, all_different=True)
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body="test_send_email_with_all_options_attachment",
+            attachments=[
+                sampleImageFiles[0],
+                sampleImageUrls[0],
+                Attachment(path=sampleImageFiles[1]),
+                Attachment(path=sampleImageUrls[1]),
+            ],
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body="test_send_email_with_all_options_attachment",
-                attachments=[
-                    sampleImageFiles[0],
-                    sampleImageUrls[0],
-                    Attachment(path=sampleImageFiles[1]),
-                    Attachment(path=sampleImageUrls[1]),
-                ],
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_inline_path_attachment(self):
         print("test_send_email_with_inline_path_attachment...")
         sampleImageFiles = SampleImageGenerator().as_filepath(count=2, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=f'''
+            <html>
+                <head></head>
+                <body>
+                    <hr/>
+                    <i>test_send_email_with_inline_path_attachment</i>
+                    <br>
+                    <img src="{sampleImageFiles[0]}"/>
+                    <img src="{sampleImageFiles[1]}"/>
+                    <hr/>
+                </body>
+            </html>
+            '''
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=f'''
-                <html>
-                    <head></head>
-                    <body>
-                        <hr/>
-                        <i>test_send_email_with_inline_path_attachment</i>
-                        <br>
-                        <img src="{sampleImageFiles[0]}"/>
-                        <img src="{sampleImageFiles[1]}"/>
-                        <hr/>
-                    </body>
-                </html>
-                '''
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_inline_link_attachment(self):
         print("test_send_email_with_inline_link_attachment...")
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=f'''
+            <html>
+                <head></head>
+                <body>
+                    <hr/>
+                    <i>test_send_email_with_inline_link_attachment</i>
+                    <br>
+                    <img src="{sampleImageUrls[0]}"/>
+                    <img src="{sampleImageUrls[1]}"/>
+                    <hr/>
+                </body>
+            </html>
+            '''
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=f'''
-                <html>
-                    <head></head>
-                    <body>
-                        <hr/>
-                        <i>test_send_email_with_inline_link_attachment</i>
-                        <br>
-                        <img src="{sampleImageUrls[0]}"/>
-                        <img src="{sampleImageUrls[1]}"/>
-                        <hr/>
-                    </body>
-                </html>
-                '''
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_inline_base64_attachment(self):
         print("test_send_email_with_inline_base64_attachment...")
         sampleImageFiles = SampleImageGenerator().as_base64(count=2, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=f'''
+            <html>
+                <head></head>
+                <body>
+                    <hr/>
+                    <i>test_send_email_with_inline_base64_attachment</i>
+                    <br>
+                    <img src="{sampleImageFiles[0]}"/>
+                    <img src="{sampleImageFiles[1]}"/>
+                    <hr/>
+                </body>
+            </html>
+            '''
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=f'''
-                <html>
-                    <head></head>
-                    <body>
-                        <hr/>
-                        <i>test_send_email_with_inline_base64_attachment</i>
-                        <br>
-                        <img src="{sampleImageFiles[0]}"/>
-                        <img src="{sampleImageFiles[1]}"/>
-                        <hr/>
-                    </body>
-                </html>
-                '''
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_inline_all_options_attachment(self):
         print("test_send_email_with_inline_all_options_attachment...")
         sampleBase64Images = SampleImageGenerator().as_base64(count=2, all_different=True)
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
         sampleImagePaths = SampleImageGenerator().as_filepath(count=2, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=f'''
+            <html>
+                <head></head>
+                <body>
+                    <hr/>
+                    <i>test_send_email_with_inline_all_options_attachment</i>
+                    <br>
+                    <img src="{sampleBase64Images[0]}"/>
+                    <img src="{sampleBase64Images[1]}"/>
+                    <img src="{sampleImageUrls[0]}"/>
+                    <img src="{sampleImageUrls[1]}"/>
+                    <img src="{sampleImagePaths[0]}"/>
+                    <img src="{sampleImagePaths[1]}"/>
+                    <hr/>
+                </body>
+            </html>
+            '''
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=f'''
-                <html>
-                    <head></head>
-                    <body>
-                        <hr/>
-                        <i>test_send_email_with_inline_all_options_attachment</i>
-                        <br>
-                        <img src="{sampleBase64Images[0]}"/>
-                        <img src="{sampleBase64Images[1]}"/>
-                        <img src="{sampleImageUrls[0]}"/>
-                        <img src="{sampleImageUrls[1]}"/>
-                        <img src="{sampleImagePaths[0]}"/>
-                        <img src="{sampleImagePaths[1]}"/>
-                        <hr/>
-                    </body>
-                </html>
-                '''
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_both_attachment_and_inline_attachment(self):
         print("test_send_email_with_both_attachment_and_inline_attachment...")
@@ -346,68 +354,68 @@ class TestSendOperations(unittest.TestCase):
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
-        print("here CHECK 1")
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_duplicate_attachments(self):
         print("test_send_email_with_duplicate_attachments...")
         sampleDocument1 = SampleImageGenerator().as_filepath(count=1, all_different=True)
         sampleDocument2 = SampleDocumentGenerator().as_filepath(count=1, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=f'''
+            <html>
+                <head></head>
+                <body>
+                    <hr/>
+                    <i>test_send_email_with_duplicate_attachments</i>
+                    <br>
+                    <img src="{sampleDocument1}"/>
+                    <img src="{sampleDocument1}"/>
+                    <hr/>
+                </body>
+            </html>
+            ''',
+            attachments=[
+                sampleDocument2,
+                Attachment(path=sampleDocument2)
+            ],
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=f'''
-                <html>
-                    <head></head>
-                    <body>
-                        <hr/>
-                        <i>test_send_email_with_duplicate_attachments</i>
-                        <br>
-                        <img src="{sampleDocument1}"/>
-                        <img src="{sampleDocument1}"/>
-                        <hr/>
-                    </body>
-                </html>
-                ''',
-                attachments=[
-                    sampleDocument2,
-                    Attachment(path=sampleDocument2)
-                ],
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_large_attachment(self):
         print("test_send_email_with_large_attachment...")
         sampleVideo = SampleVideoGenerator().as_filepath(count=1, all_different=True)
+        email_to_send = EmailToSend(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.random_subject_with_uuid(),
+            body=f'''
+            <html>
+                <head></head>
+                <body>
+                    <hr/>
+                    <i>test_send_email_with_large_attachment</i>
+                    <hr/>
+                </body>
+            </html>
+            ''',
+            attachments=[
+                Attachment(path=sampleVideo)
+            ],
+        )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
-            EmailToSend(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=f'''
-                <html>
-                    <head></head>
-                    <body>
-                        <hr/>
-                        <i>test_send_email_with_large_attachment</i>
-                        <hr/>
-                    </body>
-                </html>
-                ''',
-                attachments=[
-                    Attachment(path=sampleVideo)
-                ],
-            )
+            copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
+        self.is_sent_email_valid(email_to_send, uid)
 
     """def test_reply_email(self):
         print("test_reply_email...")
@@ -436,6 +444,6 @@ class TestSendOperations(unittest.TestCase):
     @classmethod
     def cleanup(cls):
         print("Cleaning up test `TestSendOperations`...")
-        for uid in cls._sent_test_email_uids:
-            cls._openmail.imap.delete_email(Folder.Inbox, uid)
+        """for uid in cls._sent_test_email_uids:
+            cls._openmail.imap.delete_email(Folder.Inbox, uid)"""
         cls._openmail.disconnect()
