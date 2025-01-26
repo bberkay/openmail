@@ -279,7 +279,8 @@ class SMTPManager(smtplib.SMTP):
         if inline_attachments:
             for inline_attachment in inline_attachments:
                 try:
-                    msg.get_payload()[1].add_related(
+                    related_payload = msg.get_payload()[1]
+                    related_payload.add_related(
                         base64.b64decode(
                             inline_attachment.data
                             or
@@ -289,7 +290,9 @@ class SMTPManager(smtplib.SMTP):
                         subtype=inline_attachment.type.split('/')[1],
                         cid=f"<{inline_attachment.cid}>",
                         filename=inline_attachment.name,
+                        disposition='inline'
                     )
+                    related_payload.get_payload(-1).add_header('Content-Length', str(inline_attachment.size))
                 except Exception as e:
                     print(f"Error while replacing inline images with cid: `{str(e)}` - Skipping inline image...")
 
@@ -319,8 +322,9 @@ class SMTPManager(smtplib.SMTP):
                         maintype=maintype,
                         subtype=subtype,
                         cid=attachment.cid,
-                        filename=attachment.name
+                        filename=attachment.name,
                     )
+                    msg.get_payload(-1).add_header('Content-Length', str(attachment.size))
                     generated_attachment_cids.add(attachment.cid)
                 except Exception as e:
                     print(f"Error while creating MIME attachment: `{str(e)}` - Skipping MIME attachment.")
