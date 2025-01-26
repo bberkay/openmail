@@ -34,7 +34,7 @@ class SearchCriteria():
         return str(self.__dict__)
 
     @classmethod
-    def parse_raw(self, raw: str) -> SearchCriteria | str:
+    def parse_raw(cls, raw: str) -> SearchCriteria | str:
         """Parses a string representation of a SearchCriteria object."""
         if not raw:
             return ""
@@ -65,8 +65,8 @@ class Attachment():
     path: Optional[str] = None
     name: Optional[str] = None
     size: Optional[int] = None
-    data: Optional[str] = None
     type: Optional[str] = None
+    data: Optional[str] = None
     cid: Optional[str] = None
 
     def keys(self):
