@@ -239,42 +239,37 @@ class SMTPManager(smtplib.SMTP):
         # First payload, text/plain.
         msg.set_content(HTMLParser.parse(email.body))
 
-        # Extract inline attachments.
+        # Extract inline attachments, create cid for inline attachments,
+        # and change the body with generated cids.
+        position_shift = 0
         inline_attachments: list[Attachment] = []
-        inline_attachment_srcs = MessageParser.inline_attachment_src_from_message(email.body)
-        for match in inline_attachment_srcs:
+        inline_attachments_cids = set()
+        for match in MessageParser.inline_attachment_src_from_message(email.body):
             try:
-                inline_attachment = match[1]
-                if inline_attachment.startswith("data:"):
-                    inline_attachments.append(AttachmentConverter.from_base64(inline_attachment))
+                inline_attachment = None
+                src_start, src_value, src_end = match
+                src_start, src_end = src_start + position_shift, src_end + position_shift
+                if src_value.startswith("data:"):
+                    inline_attachment = AttachmentConverter.from_base64(src_value)
                 else:
-                    inline_attachments.append(AttachmentConverter.resolve_and_convert(inline_attachment))
+                    inline_attachment = AttachmentConverter.resolve_and_convert(src_value)
+
+                if inline_attachment.size > MAX_INLINE_IMAGE_SIZE:
+                    raise SMTPManagerException("Inline image size exceeds the maximum allowed size.")
+
+                src_cid = f"cid:{inline_attachment.cid}"
+                email.body = email.body[:src_start] + src_cid + email.body[src_end:]
+
+                position_shift += len(src_cid) - (src_end - src_start)
+
+                if inline_attachment.cid in inline_attachments_cids:
+                    print("Duplicate inline images found. Skipping MIME attachment.")
+                    continue
+
+                inline_attachments.append(inline_attachment)
+                inline_attachments_cids.add(inline_attachment.cid)
             except Exception as e:
                 print(f"Error while converting inline attachment to base64 data: `{str(e)}` - Skipping inline image...")
-
-        # Create cid for inline attachments, and change the body with
-        # generated cids.
-        generated_inline_attachment_cids = set()
-        if inline_attachments:
-            for i, match in enumerate(reversed(inline_attachment_srcs)):
-                try:
-                    if inline_attachments[i].size > MAX_INLINE_IMAGE_SIZE:
-                        raise SMTPManagerException("Inline image size exceeds the maximum allowed size.")
-
-                    email.body = (
-                        email.body[:match[0]] +
-                        f"cid:{inline_attachments[i].cid}" +
-                        email.body[match[2]:]
-                    )
-
-                    if inline_attachments[i].cid in generated_inline_attachment_cids:
-                        print("Duplicate inline images found. Skipping MIME attachment.")
-                        continue
-
-                    generated_inline_attachment_cids.add(inline_attachments[i].cid)
-                except Exception as e:
-                    print(f"Error while replacing inline images with cid: `{str(e)}` - Skipping inline image...")
-
 
         # Second payload, text/html.
         if HTMLParser.is_html(email.body):
@@ -282,25 +277,22 @@ class SMTPManager(smtplib.SMTP):
 
         # Attach inline attachments to `msg` according to their cid number.
         if inline_attachments:
-            for cid in generated_inline_attachment_cids:
+            for inline_attachment in inline_attachments:
                 try:
-                    inline = next(inline for inline in inline_attachments if inline.cid == cid)
                     msg.get_payload()[1].add_related(
                         base64.b64decode(
-                            inline.data
+                            inline_attachment.data
                             or
-                            FileBase64Encoder.read_file(inline.path)[3]
+                            FileBase64Encoder.read_file(inline_attachment.path)[3]
                         ),
                         maintype='image',
-                        subtype=inline.type.split('/')[1],
-                        cid=f"<{inline.cid}>",
-                        filename=inline.name,
+                        subtype=inline_attachment.type.split('/')[1],
+                        cid=f"<{inline_attachment.cid}>",
+                        filename=inline_attachment.name,
                     )
-                    inline = None
                 except Exception as e:
                     print(f"Error while replacing inline images with cid: `{str(e)}` - Skipping inline image...")
 
-            inline_attachment_srcs.clear()
             inline_attachments.clear()
 
         # Attach attachments to `msg`.
