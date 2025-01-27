@@ -41,7 +41,10 @@ DATE_PATTERN = re.compile(r'Date:\s+(.+?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.DOTALL
 BODY_PATTERN = re.compile(r"BODY\[TEXT\].*?b(.*?)(?=\),\s+\(b\'|$)", re.DOTALL)
 BODY_TEXT_PATTERN = re.compile(r'Content-Type:\s*text/plain;.*?\\r\\n\\r\\n(.*?)(?=\\r\\n\\r\\n--.*?Content-Type|$)', re.DOTALL | re.IGNORECASE)
 BODY_TEXT_ENCODING_PATTERN = re.compile(r'Content-Transfer-Encoding:\s*(.+?)\\r\\n', re.DOTALL | re.IGNORECASE)
-ATTACHMENT_PATTERN = re.compile(r'\("([^"]+)"\s+"([^"]+)"\s+NIL\s+"([^"]+)"\s+NIL\s+"[^"]+"\s+(\d+)\s+NIL\s+\("ATTACHMENT"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+NIL\)', re.DOTALL | re.IGNORECASE)
+TEXT_PLAIN_PATTERN = re.compile(rb'Content-Type: text/plain.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
+TEXT_HTML_PATTERN = re.compile(rb'Content-Type: text/html.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
+INLINE_ATTACHMENT_DATA_PATTERN = re.compile(rb'Content-ID: <(.*?)>.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
+ATTACHMENT_PATTERN = re.compile(r'\("([^"]+)"\s+"([^"]+)"\s+NIL\s+"([^"]+)"\s+NIL\s+"[^"]+"\s+(\d+)\s+NIL\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+NIL\)', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"', re.DOTALL)
 INLINE_ATTACHMENT_FILEPATH_PATTERN = re.compile(r'<img\s+[^>]*src=["\']((?!data:|cid:)[^"\']+)["\']', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_BASE64_DATA_PATTERN = re.compile(r'data:([a-zA-Z0-9+/.-]+);base64,([a-zA-Z0-9+/=]+)', re.DOTALL | re.IGNORECASE)
@@ -276,6 +279,104 @@ class MessageParser:
             [("file.txt", 1029, "bcida...", "APPLICATION/TXT"), ("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
         """
         return [(match[4], int(match[3]), match[2], f"{match[0]}/{match[1]}",) for match in ATTACHMENT_PATTERN.findall(message)]
+
+    @staticmethod
+    def text_plain_body(message: bytes) -> tuple[int, int, bytes] | None:
+        """
+        Get plain text from raw message string.
+
+        Args:
+            message(bytes): Raw message bytes.
+
+        Returns:
+            tuple[int, int, bytes]: Plain text as (start offset, end offset, text itself as bytes)
+
+        Example:
+            >>> message = b'''
+            ...     ...Content-Type: text/plain; charset="utf-8"
+            ...     \r\n...\r\n\r\ntest_send_email_with_attachment
+            ...     _and_inline_attachment\r\n\r\nContent-Type...
+            ... '''
+            >>> text_plain_body(message)
+            (42, 74, b"test_send_email_with_attachment_and_inline_attachment")
+        """
+        text_plain_match = TEXT_PLAIN_PATTERN.search(message)
+        if not text_plain_match:
+            return None
+        start, end = text_plain_match.span()
+        return (int(start), int(end), text_plain_match.group(1))
+
+    @staticmethod
+    def text_html_body(message: bytes) -> tuple[int, int, bytes] | None:
+        """
+        Get html text from raw message string.
+
+        Args:
+            message(bytes): Raw message bytes.
+
+        Returns:
+            tuple[int, int, bytes]: HTML text as (start offset, end offset, text itself as bytes)
+
+        Example:
+            >>> message = b'''
+            ...     ...Content-Type: text/html; charset="utf-8"...\r\n\r\n
+            ...     <html>\r\n<head></head>\r\n<body>\r\n<hr/>\r\n<i>test_s
+            ...     end_email_with_attachment_and_inline_attachment<=\r\n/i>\r
+            ...     \n<br>\r\n<img src=3D"cid:b89e7b1f7436a0727acf307413310f92"/>
+            ...     \r\n<img src=3D"cid:2b07dc3482f143180e8e78d5f9428d67"/>\r\n<hr
+            ...     />\r\n</body>\r\n</html>\r\n\r\n\r\b...
+            ... '''
+            >>> text_html_body(message)
+            (
+                42,
+                74,
+                b"<html>
+                    <head></head>
+                    <body>
+                        <hr/>
+                        <i>test_send_email_with_attachment_and_inline_attachment</i>
+                        <br>
+                        <img src=3D"cid:b89e7b1f7436a0727acf307413310f92"/>
+                        <img src=3D"cid:2b07dc3482f143180e8e78d5f9428d67"/>
+                        <hr/>
+                    </body>
+                </html>"
+            )
+        """
+        text_html_match = TEXT_HTML_PATTERN.search(message)
+        if not text_html_match:
+            return None
+        start, end = text_html_match.span()
+        return (int(start), int(end), text_html_match.group(1))
+
+    @staticmethod
+    def inline_attachments_cid_and_data_from_message(message: bytes) -> list[tuple[bytes, bytes]] | None:
+        """
+        Get inline attachments' data from raw message bytes.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            list[tuple[bytes, bytes]]: List of inline attachment cid and data
+
+        Example:
+            >>> message = b'''
+            ...    r\n--===============2546737710995511502==\r\nContent-Type: image/png\r\nContent-Transfer-Encoding:
+            ...    base64\r\nContent-Disposition: inline; filename="red.png"\r\nContent-ID: <b89e7b1f7436a0727acf307413310f9
+            ...    2>\r\nMIME-Version: 1.0\r\nContent-Length: 1243\r\n\r\niVBORw0KGgoAAAANSUhEUgAAAeAAAAEOCAYAAABRmsRnAAAABHNC
+            ...    SVQICAgIfAhkiAAAABl0RVh0\r\nU29mdHdhcmUAZ25vbWUtc2NyZWVuc2hvdO8Dvz4AAAAtdEVYdENyZWF0aW9uIFRpbWUAU2F0IDE0...
+            ...    Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: inline; filename="darkblu
+            ...    e.png"\r\nContent-ID: <2b07dc3482f143180e8e78d5f9428d67>\r\nMIME-Version: 1.0\r\nContent-Length: 1910\r\n\r\n
+            ...    iVBORw0KGgoAAAANSUhEUgAAAnQAAAFxCAYAAAD6TDXhAAAABHNCSVQICAgIfAhkiAAAABl0RVh0\r\nU29mdHdhcmUAZ25vbWUtc2Ny...
+            ... '''
+            >>> inline_attachments_cid_and_data_from_message(message)
+            [
+                (b"b89e7b1f7436a0727acf307413310f92", b"iVBORw0KGgoAAAANSUhEUgAAAeAAAAEOCAYAAABRmsRnAAAABHNC..."),
+                (b"2b07dc3482f143180e8e78d5f9428d67", b"iVBORw0KGgoAAAANSUhEUgAAAnQAAAFxCAYAAAD6TDXhAAAABHNC..."),
+            ]
+        """
+        return [(cid, data) for cid, data in INLINE_ATTACHMENT_DATA_PATTERN.findall(message)]
 
     @staticmethod
     def inline_attachment_cids_from_message(message: str) -> list[str]:
