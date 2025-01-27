@@ -1308,11 +1308,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # Get body and attachments
         body, attachments = "", []
         try:
-            status, message = self.uid('fetch', uid, '(BODYSTRUCTURE BODY.PEEK[1])')
+            status, message = self.uid('fetch', uid, '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC REPLY-TO IN-REPLY-TO REFERENCES)] BODYSTRUCTURE BODY.PEEK[1])')
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
-            # Get attachments from bodystructure
+            # Parse headers
+            message_headers = MessageParser.headers_from_message(str(message[0]))
+
+            # Parse attachments from bodystructure
             for attachment in MessageParser.attachments_from_message(message[0][0].decode("utf-8")):
                 attachments.append(Attachment(
                     name=attachment[0],
@@ -1321,8 +1324,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     type=attachment[3],
                 ))
 
-            # Get body(html or text if body has not html part and inline attachments).
-            message = message[0][1]
+            # Parse body(get html or text if body has not html part and inline attachments).
+            message = message[1][1]
             start, end, body = MessageParser.text_html_body(message) or MessageParser.text_plain_body(message)
             if body: message = message[:start] + message[end:]
             body = body.decode("utf-8")
@@ -1347,21 +1350,19 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 pass
         except Exception as e:
             raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from e
-        print("Body: ", body)
-        print("Attachments: ", attachments)
+
         return EmailWithContent(
             uid=uid,
-            sender=message.get("From", ""),
-            receiver=message.get("To", ""),
-            subject=message.get("Subject", ""),
+            sender=message_headers["sender"],
+            receiver=message_headers["receiver"],
+            subject=message_headers["subject"],
             body=body,
-            date=message.get("Date", ""),
-            cc=message.get("Cc", ""),
-            bcc=message.get("Bcc", ""),
-            message_id=message.get("Message-Id", ""),
+            date=message_headers["date"],
+            cc="",
+            bcc="",
             metadata={
-                "In-Reply-To": message.get("In-Reply-To", ""),
-                "References": message.get("References", "")
+                "In-Reply-To": "",
+                "References": ""
             },
             flags=self.get_email_flags(uid)[0].flags or [],
             attachments=attachments

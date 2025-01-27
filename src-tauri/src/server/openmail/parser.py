@@ -56,6 +56,7 @@ LINK_PATTERN = re.compile(r'https?://[^\s]+|\([^\)]+\)', re.DOTALL)
 BRACKET_PATTERN = re.compile(r'\[.*?\]')
 SPACE_PATTERN = re.compile(r'\s+')
 HTML_TAG_PATTERN = re.compile(r'<[^>]+>')
+CID_TAG_PATTERN = re.compile(r'^<|>$')
 
 class MessageParser:
     """
@@ -278,7 +279,7 @@ class MessageParser:
             >>> attachments_from_message("b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\") ... ATTACHMENT (FILENAME \"banner.jpg\") b'")
             [("file.txt", 1029, "bcida...", "APPLICATION/TXT"), ("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
         """
-        return [(match[4], int(match[3]), match[2], f"{match[0]}/{match[1]}",) for match in ATTACHMENT_PATTERN.findall(message)]
+        return [(match[4], int(match[3]), CID_TAG_PATTERN.sub('', match[2]), f"{match[0]}/{match[1]}".lower(),) for match in ATTACHMENT_PATTERN.findall(message)]
 
     @staticmethod
     def text_plain_body(message: bytes) -> tuple[int, int, bytes] | None:

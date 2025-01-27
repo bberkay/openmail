@@ -29,7 +29,6 @@ export interface EmailWithContent {
     bcc?: string;
     flags?: string[];
     attachments?: Attachment[];
-    message_id?: string;
     metadata?: Record<string, string>;
 }
 
