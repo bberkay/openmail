@@ -41,7 +41,7 @@ DATE_PATTERN = re.compile(r'Date:\s+(.+?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.DOTALL
 BODY_PATTERN = re.compile(r"BODY\[TEXT\].*?b(.*?)(?=\),\s+\(b\'|$)", re.DOTALL)
 BODY_TEXT_PATTERN = re.compile(r'Content-Type:\s*text/plain;.*?\\r\\n\\r\\n(.*?)(?=\\r\\n\\r\\n--.*?Content-Type|$)', re.DOTALL | re.IGNORECASE)
 BODY_TEXT_ENCODING_PATTERN = re.compile(r'Content-Transfer-Encoding:\s*(.+?)\\r\\n', re.DOTALL | re.IGNORECASE)
-ATTACHMENT_PATTERN = re.compile(r'ATTACHMENT.*?\("FILENAME" "([^"]+)"\)', re.DOTALL)
+ATTACHMENT_PATTERN = re.compile(r'\("([^"]+)"\s+"([^"]+)"\s+NIL\s+"([^"]+)"\s+NIL\s+"[^"]+"\s+(\d+)\s+NIL\s+\("ATTACHMENT"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+NIL\)', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"', re.DOTALL)
 INLINE_ATTACHMENT_FILEPATH_PATTERN = re.compile(r'<img\s+[^>]*src=["\']((?!data:|cid:)[^"\']+)["\']', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_BASE64_DATA_PATTERN = re.compile(r'data:([a-zA-Z0-9+/.-]+);base64,([a-zA-Z0-9+/=]+)', re.DOTALL | re.IGNORECASE)
@@ -261,7 +261,7 @@ class MessageParser:
         return body.strip()
 
     @staticmethod
-    def attachments_from_message(message: str) -> list[str]:
+    def attachments_from_message(message: str) -> list[tuple[str, int, str, str]]:
         """
         Get attachments from raw message string.
 
@@ -269,17 +269,13 @@ class MessageParser:
             message (str): Raw message string.
 
         Returns:
-            list[str]: List of attachments.
+            list[tuple[str, int, str, str, str]]: List of attachments as (filename, size, cid, mimetype/subtype)
 
         Example:
-            >>> attachments_from_message("b'(UID ... ATTACHMENT (FILENAME \"file.txt\") ... ATTACHMENT (FILENAME \"banner.jpg\") b'")
-            ['file.txt', 'banner.jpg']
+            >>> attachments_from_message("b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\") ... ATTACHMENT (FILENAME \"banner.jpg\") b'")
+            [("file.txt", 1029, "bcida...", "APPLICATION/TXT"), ("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
         """
-        matches = ATTACHMENT_PATTERN.findall(message)
-        if not matches:
-            return []
-
-        return [MessageParser.decode_filename(match) for match in matches]
+        return [(match[4], int(match[3]), match[2], f"{match[0]}/{match[1]}",) for match in ATTACHMENT_PATTERN.findall(message)]
 
     @staticmethod
     def inline_attachment_cids_from_message(message: str) -> list[str]:
