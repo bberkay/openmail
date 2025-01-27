@@ -1273,37 +1273,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return flags_list or []
 
-    def parse_message_optimized2(message):
-        processed_data = {"text_plain": "", "text_html": "", "attachments": attachments}
-
-        # Text plain kısmını çıkar
-        text_plain_match = TEXT_PLAIN_PATTERN.search(message)
-        if text_plain_match:
-            processed_data["text_plain"] = text_plain_match.group(1).decode('utf-8').strip()
-            start, end = text_plain_match.span()
-            # İşlenmiş kısmı mesajdan çıkar
-            message = message[:start] + message[end:]
-
-        # Text html kısmını çıkar
-        text_html_match = TEXT_HTML_PATTERN.search(message)
-        if text_html_match:
-            processed_data["text_html"] = text_html_match.group(1).decode('utf-8').strip()
-            start, end = text_html_match.span()
-            # İşlenmiş kısmı mesajdan çıkar
-            message = message[:start] + message[end:]
-
-        inline_attachments = INLINE_ATTACHMENT_DATA_PATTERN.findall(message)
-        for cid, data in inline_attachments:
-            cid = cid.decode("utf-8")
-            for attachment in attachments:
-                if attachment["cid"] == cid:
-                    attachment["data"] = data.decode('utf-8').strip()
-                    break
-
-        print("Text plain: ", processed_data["text_plain"])
-        print("Text html: ", processed_data["text_html"])
-        print("Attachments: ", processed_data["attachments"])
-
     def get_email_content(
         self,
         folder: str,
@@ -1363,7 +1332,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     cid = cid.decode("utf-8")
                     i = 0
                     while i < len(attachments):
-                        if attachments[i]["cid"] == cid:
+                        if attachments[i].cid == cid:
                             body = body.replace(
                                 f'cid:{attachments[i].cid}',
                                 f'data:{attachments[i].type};base64,{data.decode("utf-8")}'
@@ -1378,7 +1347,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 pass
         except Exception as e:
             raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from e
-
+        print("Body: ", body)
+        print("Attachments: ", attachments)
         return EmailWithContent(
             uid=uid,
             sender=message.get("From", ""),
