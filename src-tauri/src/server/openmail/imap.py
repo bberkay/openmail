@@ -81,13 +81,6 @@ FOLDER_LIST = [str(f).lower() for f in Folder]
 """
 Custom consts
 """
-UNKNOWN_PLACEHOLDERS = MappingProxyType({
-    "receiver": "Unknown Receiver",
-    "sender": "Unknown Sender",
-    "subject": "No Subject",
-    "body": "No Body",
-    "date": "Unknown Date",
-})
 GET_EMAILS_OFFSET_START = 1
 GET_EMAILS_OFFSET_END = 10
 BODY_SHORT_THRESHOLD = 100
@@ -1176,7 +1169,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
-                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.500> FLAGS BODYSTRUCTURE)'
+                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.512> FLAGS BODYSTRUCTURE)'
             )
 
             if status != 'OK':
@@ -1193,37 +1186,37 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
                 body = MessageParser.body_from_message(message)
                 if not body:
-                    body = UNKNOWN_PLACEHOLDERS["body"]
-
-                """
-                #TODO: If text plain body does not exists.
-                1. Get the content-type and rfc.size in the header fields and parse them
-                2. If the body is just text html then check the size and get half of the
-                html content with ThreadPoolExecutor(learn the threadpoolexecuter).
-                if not body:
-                    status, complete_text = self.uid('FETCH', uid, '(BODY.PEEK[TEXT])')
-                    if status == 'OK':
-                        msg = email.message_from_bytes(_text[0][1])
-                        for part in msg.walk():
-                            if part.get_content_type() == 'text/html':
-                                body = part.get_payload(decode=True).decode('utf-8')
-                                # use html.parser instead of bs4
-                                #body = BeautifulSoup(body, "html.parser").get_text(" ", strip=True)
-                                print("body: ", body)
-                                #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
-                                #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
-                    else:
-                        body = UNKNOWN_PLACEHOLDERS["body"]"""
+                    """
+                    #TODO: If text plain body does not exists.
+                    1. Get the content-type and rfc.size in the header fields and parse them
+                    2. If the body is just text html then check the size and get half of the
+                    html content with ThreadPoolExecutor(learn the threadpoolexecuter).
+                        status, complete_text = self.uid('FETCH', uid, '(BODY.PEEK[1])')
+                        if status == 'OK':
+                            msg = email.message_from_bytes(_text[0][1])
+                            for part in msg.walk():
+                                if part.get_content_type() == 'text/html':
+                                    body = part.get_payload(decode=True).decode('utf-8')
+                                    # use html.parser instead of bs4
+                                    #body = BeautifulSoup(body, "html.parser").get_text(" ", strip=True)
+                                    print("body: ", body)
+                                    #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
+                                    #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
+                    """
+                    pass
 
                 emails.append(EmailSummary(
                     uid=uid,
-                    sender=message_headers.get("sender", UNKNOWN_PLACEHOLDERS["sender"]),
-                    receiver=message_headers.get("receiver", UNKNOWN_PLACEHOLDERS["receiver"]),
-                    subject=message_headers.get("subject", UNKNOWN_PLACEHOLDERS["subject"]),
-                    date=message_headers.get("date", UNKNOWN_PLACEHOLDERS["date"]),
+                    sender=message_headers.get("sender"),
+                    receiver=message_headers.get("receiver"),
+                    subject=message_headers.get("subject"),
+                    date=message_headers.get("date"),
                     body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
                     flags=MessageParser.flags_from_message(message),
-                    attachments=MessageParser.attachments_from_message(message)
+                    attachments=[
+                        Attachment(name=attachment[0], size=attachment[1], cid=attachment[2], type=attachment[3])
+                        for attachment in MessageParser.attachments_from_message(message)
+                    ]
                 ))
         except Exception as e:
             raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{len(emails)}`") from e
@@ -1280,6 +1273,37 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return flags_list or []
 
+    def parse_message_optimized2(message):
+        processed_data = {"text_plain": "", "text_html": "", "attachments": attachments}
+
+        # Text plain kısmını çıkar
+        text_plain_match = TEXT_PLAIN_PATTERN.search(message)
+        if text_plain_match:
+            processed_data["text_plain"] = text_plain_match.group(1).decode('utf-8').strip()
+            start, end = text_plain_match.span()
+            # İşlenmiş kısmı mesajdan çıkar
+            message = message[:start] + message[end:]
+
+        # Text html kısmını çıkar
+        text_html_match = TEXT_HTML_PATTERN.search(message)
+        if text_html_match:
+            processed_data["text_html"] = text_html_match.group(1).decode('utf-8').strip()
+            start, end = text_html_match.span()
+            # İşlenmiş kısmı mesajdan çıkar
+            message = message[:start] + message[end:]
+
+        inline_attachments = INLINE_ATTACHMENT_DATA_PATTERN.findall(message)
+        for cid, data in inline_attachments:
+            cid = cid.decode("utf-8")
+            for attachment in attachments:
+                if attachment["cid"] == cid:
+                    attachment["data"] = data.decode('utf-8').strip()
+                    break
+
+        print("Text plain: ", processed_data["text_plain"])
+        print("Text html: ", processed_data["text_html"])
+        print("Attachments: ", processed_data["attachments"])
+
     def get_email_content(
         self,
         folder: str,
@@ -1315,62 +1339,53 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # Get body and attachments
         body, attachments = "", []
         try:
-            status, message = self.uid('fetch', uid, '(RFC822)')
+            status, message = self.uid('fetch', uid, '(BODYSTRUCTURE BODY.PEEK[1])')
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
-            message = email.message_from_bytes(message[0][1], policy=email.policy.default)
+            # Get attachments from bodystructure
+            for attachment in MessageParser.attachments_from_message(message[0][0].decode("utf-8")):
+                attachments.append(Attachment(
+                    name=attachment[0],
+                    size=attachment[1],
+                    cid=attachment[2],
+                    type=attachment[3],
+                ))
 
-            for part in (message.walk() if message.is_multipart() else [message]):
-                content_type = part.get_content_type()
-                file_name = part.get_filename()
-                if file_name:
-                    attachments.append(Attachment(
-                        cid=re.sub(r'^<|>$', '', part.get("X-Attachment-Id") or part.get("Content-ID")),
-                        name=file_name,
-                        data=base64.b64encode(
-                            part.get_payload(decode=True)
-                        ).decode("utf-8", errors="ignore"),
-                        size=len(part.get_payload(decode=True)),
-                        type=content_type
-                    ))
-                elif content_type == "text/html" or (content_type == "text/plain" and not body):
-                    body = part.get_payload(decode=True)
-                    if body:
-                        body = body.decode(part.get_content_charset())
-        except Exception as e:
-            raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from e
+            # Get body(html or text if body has not html part and inline attachments).
+            message = message[0][1]
+            start, end, body = MessageParser.text_html_body(message) or MessageParser.text_plain_body(message)
+            if body: message = message[:start] + message[end:]
+            body = body.decode("utf-8")
 
-        try:
-            # Replacing inline attachments
-            if attachments:
-                inline_cids = MessageParser.inline_attachment_cids_from_message(body)
-                if inline_cids:
+            try:
+                for cid, data in MessageParser.inline_attachments_cid_and_data_from_message(message):
+                    cid = cid.decode("utf-8")
                     i = 0
                     while i < len(attachments):
-                        if attachments[i].cid in inline_cids:
+                        if attachments[i]["cid"] == cid:
                             body = body.replace(
                                 f'cid:{attachments[i].cid}',
-                                f'data:{attachments[i].type};base64,{attachments[i].data}'
+                                f'data:{attachments[i].type};base64,{data.decode("utf-8")}'
                             )
                             del attachments[i]
                         else:
                             i += 1
-                else:
-                    print(f"No inline attachments found in found attachments of email `{uid}`'s content in folder `{folder}`.")
+            except Exception as e:
+                # If there is a problem with inline attachments
+                # just ignore them.
+                print(f"An error occurred while replacing inline attachments: `{str(e)}` of email `{uid}`'s content in folder `{folder}`.")
+                pass
         except Exception as e:
-            # If there is a problem with inline attachments
-            # just ignore them.
-            print(f"An error occurred while replacing inline attachments: `{str(e)}` of email `{uid}`'s content in folder `{folder}`.")
-            pass
+            raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from e
 
         return EmailWithContent(
             uid=uid,
-            sender=message.get("From", UNKNOWN_PLACEHOLDERS["sender"]),
-            receiver=message.get("To", UNKNOWN_PLACEHOLDERS["receiver"]),
-            subject=message.get("Subject", UNKNOWN_PLACEHOLDERS["subject"]),
+            sender=message.get("From", ""),
+            receiver=message.get("To", ""),
+            subject=message.get("Subject", ""),
             body=body,
-            date=message.get("Date", UNKNOWN_PLACEHOLDERS["date"]),
+            date=message.get("Date", ""),
             cc=message.get("Cc", ""),
             bcc=message.get("Bcc", ""),
             message_id=message.get("Message-Id", ""),
