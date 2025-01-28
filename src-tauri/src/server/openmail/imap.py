@@ -1312,10 +1312,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
             # Parse headers
-            message_headers = MessageParser.headers_from_message(str(message[0]))
+            message_headers = MessageParser.get_headers(message[0])
 
             # Parse attachments from bodystructure
-            for attachment in MessageParser.attachments_from_message(message[0][0].decode("utf-8")):
+            for attachment in MessageParser.get_attachment_list(message[0][0]):
                 attachments.append(Attachment(
                     name=attachment[0],
                     size=attachment[1],
@@ -1325,19 +1325,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             # Parse body(get html or text if body has not html part and inline attachments).
             message = message[1][1]
-            start, end, body = MessageParser.text_html_body(message) or MessageParser.text_plain_body(message)
+            start, end, body = MessageParser.get_text_html_body(message) or MessageParser.get_text_plain_body(message) or 0, 0, ""
             if body: message = message[:start] + message[end:]
-            body = body.decode("utf-8")
 
             try:
-                for cid, data in MessageParser.inline_attachments_cid_and_data_from_message(message):
-                    cid = cid.decode("utf-8")
+                for cid, data in MessageParser.get_data_by_cid_from_inline_attachments(message):
                     i = 0
                     while i < len(attachments):
                         if attachments[i].cid == cid:
                             body = body.replace(
                                 f'cid:{attachments[i].cid}',
-                                f'data:{attachments[i].type};base64,{data.decode("utf-8")}'
+                                f'data:{attachments[i].type};base64,{data}'
                             )
                             del attachments[i]
                         else:
@@ -1353,16 +1351,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
         return EmailWithContent(
             uid=uid,
             sender=message_headers["sender"],
-            receiver=message_headers["receiver"],
+            receiver=message_headers["receivers"],
             subject=message_headers["subject"],
             body=body,
             date=message_headers["date"],
-            cc="",
-            bcc="",
-            message_id="",
+            cc=message_headers["cc"],
+            bcc=message_headers["bcc"],
+            message_id=message_headers["message_id"],
             metadata={
-                "In-Reply-To": "",
-                "References": ""
+                "In-Reply-To": message_headers["in_reply_to"],
+                "References": message_headers["references"]
             },
             flags=self.get_email_flags(uid)[0].flags or [],
             attachments=attachments

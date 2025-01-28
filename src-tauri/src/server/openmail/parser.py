@@ -16,34 +16,24 @@ from typing import Iterator, Match, TypedDict
 from email.header import decode_header
 from html.parser import HTMLParser as BuiltInHTMLParser
 
-"""
-Regular expressions, avoid changing
-"""
+
 MESSAGE_PATTERN = re.compile(r'\(UID \d+.*?(?=b\'\d+ \(UID|\Z)')
-SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
-UID_PATTERN = re.compile(rb"UID\s+(\d+)")
-FLEX_LINE_PATTERN = re.compile(rb'(=\r|\.*?r\.*?n)', re.DOTALL)
-STRICT_LINE_PATTERN = re.compile(rb'\r\n')
-FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
-TAG_PATTERN = re.compile(r'<[^>]+>')
-CID_TAG_PATTERN = re.compile(r'^<|>$')
 
 BODY_PATTERN = re.compile(r"BODY\[TEXT\].*?b(.*?)(?=\),\s+\(b\'|$)", re.DOTALL)
 BODY_TEXT_PATTERN = re.compile(r'Content-Type:\s*text/plain;.*?\\r\\n\\r\\n(.*?)(?=\\r\\n\\r\\n--.*?Content-Type|$)', re.DOTALL | re.IGNORECASE)
 BODY_TEXT_ENCODING_PATTERN = re.compile(r'Content-Transfer-Encoding:\s*(.+?)\\r\\n', re.DOTALL | re.IGNORECASE)
-TEXT_PLAIN_PATTERN = re.compile(rb'Content-Type: text/plain.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
-TEXT_HTML_PATTERN = re.compile(rb'Content-Type: text/html.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
-INLINE_ATTACHMENT_DATA_PATTERN = re.compile(rb'Content-ID: <(.*?)>.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
-ATTACHMENT_PATTERN = re.compile(r'\("([^"]+)"\s+"([^"]+)"\s+NIL\s+"([^"]+)"\s+NIL\s+"[^"]+"\s+(\d+)\s+NIL\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+NIL\)', re.DOTALL | re.IGNORECASE)
+
 INLINE_ATTACHMENT_CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"', re.DOTALL)
 INLINE_ATTACHMENT_FILEPATH_PATTERN = re.compile(r'<img\s+[^>]*src=["\']((?!data:|cid:)[^"\']+)["\']', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_BASE64_DATA_PATTERN = re.compile(r'data:([a-zA-Z0-9+/.-]+);base64,([a-zA-Z0-9+/=]+)', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_SRC_PATTERN = re.compile(r'(<img\s+[^>]*src=")(.*?)(")')
 
-SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>\(]')
-LINK_PATTERN = re.compile(r'https?://[^\s]+|\([^\)]+\)', re.DOTALL)
-BRACKET_PATTERN = re.compile(r'\[.*?\]')
-SPACE_PATTERN = re.compile(r'\s+')
+"""
+General Fetch Constants
+"""
+UID_PATTERN = re.compile(rb"UID\s+(\d+)")
+SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
+FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
 
 """
 Header Constants
@@ -82,6 +72,27 @@ MESSAGE_HEADER_PATTERN_MAP = {
     "message_id": MESSAGE_ID_PATTERN,
     "references": REFERENCES_PATTERN
 }
+
+"""
+Body Constants
+"""
+BODY_TEXT_PLAIN_PATTERN = re.compile(rb'Content-Type: text/plain.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
+BODY_TEXT_HTML_PATTERN = re.compile(rb'Content-Type: text/html.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
+ATTACHMENT_LIST_PATTERN = re.compile(r'\("([^"]+)"\s+"([^"]+)"\s+NIL\s+"([^"]+)"\s+NIL\s+"[^"]+"\s+(\d+)\s+NIL\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+NIL\)', re.DOTALL | re.IGNORECASE)
+INLINE_ATTACHMENT_DATA_BY_CID_PATTERN = re.compile(rb'Content-ID: <(.*?)>.*?\r\n\r\n(.*?)\r\n\r\n--', re.DOTALL)
+
+"""
+Util Constants
+"""
+FLEX_LINE_PATTERN = re.compile(rb'(=\r|\.*?r\.*?n)', re.DOTALL)
+STRICT_LINE_PATTERN = re.compile(rb'\r\n')
+TAG_PATTERN = re.compile(r'<[^>]+>')
+TAG_CLEANING_PATTERN = re.compile(r'^<|>$')
+SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>\(]')
+LINK_PATTERN = re.compile(r'https?://[^\s]+|\([^\)]+\)', re.DOTALL)
+BRACKET_PATTERN = re.compile(r'\[.*?\]')
+SPACE_PATTERN = re.compile(r'\s+')
+
 
 class MessageParser:
     """
@@ -286,32 +297,44 @@ class MessageParser:
         return body.strip()
 
     @staticmethod
-    def attachments_from_message(message: str) -> list[tuple[str, int, str, str]]:
+    def get_attachment_list(message: bytes) -> list[tuple[str, int, str, str]]:
         """
-        Get attachments from raw message string.
+        Get attachments from `BODYSTRUCTURE` fetch result.
 
         Args:
-            message (str): Raw message string.
+            message (str): Raw message bytes.
 
         Returns:
-            list[tuple[str, int, str, str, str]]: List of attachments as (filename, size, cid, mimetype/subtype)
+            list[tuple[str, int, str, str]]: List of attachments as (filename, size, cid, mimetype/subtype)
 
         Example:
-            >>> attachments_from_message("b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\") ... ATTACHMENT (FILENAME \"banner.jpg\") b'")
+            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\") ... INLINE (FILENAME \"banner.jpg\") b')
             [("file.txt", 1029, "bcida...", "APPLICATION/TXT"), ("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
         """
-        return [(match[4], int(match[3]), CID_TAG_PATTERN.sub('', match[2]), f"{match[0]}/{match[1]}".lower(),) for match in ATTACHMENT_PATTERN.findall(message)]
+        attachment_list = ATTACHMENT_LIST_PATTERN.findall(message.decode())
+        if not attachment_list or not attachment_list[0]:
+            return []
+
+        return [
+            (
+                match[4],
+                int(match[3]),
+                TAG_CLEANING_PATTERN.sub('', match[2]),
+                f"{match[0]}/{match[1]}".lower()
+            )
+            for match in attachment_list
+        ]
 
     @staticmethod
-    def text_plain_body(message: bytes) -> tuple[int, int, bytes] | None:
+    def get_text_plain_body(message: bytes) -> tuple[int, int, str] | None:
         """
-        Get plain text from raw message string.
+        Get plain text from `BODY.PEEK[1]`, `RFC822`, `BODY[TEXT]` etc. fetch results.
 
         Args:
             message(bytes): Raw message bytes.
 
         Returns:
-            tuple[int, int, bytes]: Plain text as (start offset, end offset, text itself as bytes)
+            tuple[int, int, str]: Plain text as (start offset, end offset, decoded text)
 
         Example:
             >>> message = b'''
@@ -319,25 +342,25 @@ class MessageParser:
             ...     \r\n...\r\n\r\ntest_send_email_with_attachment
             ...     _and_inline_attachment\r\n\r\nContent-Type...
             ... '''
-            >>> text_plain_body(message)
+            >>> get_text_plain_body(message)
             (42, 74, b"test_send_email_with_attachment_and_inline_attachment")
         """
-        text_plain_match = TEXT_PLAIN_PATTERN.search(message)
+        text_plain_match = BODY_TEXT_PLAIN_PATTERN.search(message)
         if not text_plain_match:
             return None
         start, end = text_plain_match.span()
-        return (int(start), int(end), text_plain_match.group(1))
+        return (int(start), int(end), text_plain_match.group(1).decode("utf-8"))
 
     @staticmethod
-    def text_html_body(message: bytes) -> tuple[int, int, bytes] | None:
+    def get_text_html_body(message: bytes) -> tuple[int, int, str] | None:
         """
-        Get html text from raw message string.
+        Get html text from `BODY.PEEK[1]`, `RFC822`, `BODY[TEXT]` etc. fetch results.
 
         Args:
             message(bytes): Raw message bytes.
 
         Returns:
-            tuple[int, int, bytes]: HTML text as (start offset, end offset, text itself as bytes)
+            tuple[int, int, bytes]: HTML text as (start offset, end offset, decoded text)
 
         Example:
             >>> message = b'''
@@ -348,7 +371,7 @@ class MessageParser:
             ...     \r\n<img src=3D"cid:2b07dc3482f143180e8e78d5f9428d67"/>\r\n<hr
             ...     />\r\n</body>\r\n</html>\r\n\r\n\r\b...
             ... '''
-            >>> text_html_body(message)
+            >>> get_text_html_body(message)
             (
                 42,
                 74,
@@ -365,22 +388,22 @@ class MessageParser:
                 </html>"
             )
         """
-        text_html_match = TEXT_HTML_PATTERN.search(message)
+        text_html_match = BODY_TEXT_HTML_PATTERN.search(message)
         if not text_html_match:
             return None
         start, end = text_html_match.span()
-        return (int(start), int(end), text_html_match.group(1))
+        return (int(start), int(end), text_html_match.group(1).decode("utf-8"))
 
     @staticmethod
-    def inline_attachments_cid_and_data_from_message(message: bytes) -> list[tuple[bytes, bytes]] | None:
+    def get_data_by_cid_from_inline_attachments(message: bytes) -> list[tuple[str, str]]:
         """
-        Get inline attachments' data from raw message bytes.
+        Get inline attachments' data from `BODY.PEEK[1]`, `RFC822`, `BODY[TEXT]` etc. fetch results.
 
         Args:
             message (bytes): Raw message bytes.
 
         Returns:
-            list[tuple[bytes, bytes]]: List of inline attachment cid and data
+            list[tuple[str, str]]: List of inline attachment cid and data
 
         Example:
             >>> message = b'''
@@ -392,13 +415,14 @@ class MessageParser:
             ...    e.png"\r\nContent-ID: <2b07dc3482f143180e8e78d5f9428d67>\r\nMIME-Version: 1.0\r\nContent-Length: 1910\r\n\r\n
             ...    iVBORw0KGgoAAAANSUhEUgAAAnQAAAFxCAYAAAD6TDXhAAAABHNCSVQICAgIfAhkiAAAABl0RVh0\r\nU29mdHdhcmUAZ25vbWUtc2Ny...
             ... '''
-            >>> inline_attachments_cid_and_data_from_message(message)
+            >>> get_cid_and_data_from_inline_attachments(message)
             [
-                (b"b89e7b1f7436a0727acf307413310f92", b"iVBORw0KGgoAAAANSUhEUgAAAeAAAAEOCAYAAABRmsRnAAAABHNC..."),
-                (b"2b07dc3482f143180e8e78d5f9428d67", b"iVBORw0KGgoAAAANSUhEUgAAAnQAAAFxCAYAAAD6TDXhAAAABHNC..."),
+                ("b89e7b1f7436a0727acf307413310f92", "iVBORw0KGgoAAAANSUhEUgAAAeAAAAEOCAYAAABRmsRnAAAABHNC..."),
+                ("2b07dc3482f143180e8e78d5f9428d67", "iVBORw0KGgoAAAANSUhEUgAAAnQAAAFxCAYAAAD6TDXhAAAABHNC..."),
             ]
         """
-        return [(cid, data) for cid, data in INLINE_ATTACHMENT_DATA_PATTERN.findall(message)]
+        cid_and_data_match = INLINE_ATTACHMENT_DATA_BY_CID_PATTERN.findall(message)
+        return [(cid.decode(), data.decode()) for cid, data in cid_and_data_match] if cid_and_data_match else []
 
     @staticmethod
     def inline_attachment_cids_from_message(message: str) -> list[str]:
