@@ -17,27 +17,17 @@ from email.header import decode_header
 from html.parser import HTMLParser as BuiltInHTMLParser
 
 """
-Types, that are only used in this module
-"""
-class MessageHeaders(TypedDict):
-    """Header fields of a email message."""
-    sender: str
-    receiver: str
-    date: str
-    subject: str
-
-"""
 Regular expressions, avoid changing
 """
 MESSAGE_PATTERN = re.compile(r'\(UID \d+.*?(?=b\'\d+ \(UID|\Z)')
 SIZE_PATTERN = re.compile(r"RFC822\.SIZE (\d+)")
-UID_PATTERN = re.compile(r"UID\s+(\d+)")
-HEADERS_PATTERN = re.compile(r"BODY\[HEADER\.FIELDS.*?\\r\\n\\r\\n", re.DOTALL)
-SENDER_PATTERN = re.compile(r'From:\s+(.+?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.DOTALL)
-RECEIVER_PATTERN = re.compile(r'To:\s+(.+?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.DOTALL)
-NAME_EMAIL_PATTERN = re.compile(r"<[^>]+>")
-SUBJECT_PATTERN = re.compile(r'Subject:\s+(.*?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.DOTALL)
-DATE_PATTERN = re.compile(r'Date:\s+(.+?)(?=\\r\\n\w+:|\\r\\n\\r\\n)', re.DOTALL)
+UID_PATTERN = re.compile(rb"UID\s+(\d+)")
+FLEX_LINE_PATTERN = re.compile(rb'(=\r|\.*?r\.*?n)', re.DOTALL)
+STRICT_LINE_PATTERN = re.compile(rb'\r\n')
+FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
+TAG_PATTERN = re.compile(r'<[^>]+>')
+CID_TAG_PATTERN = re.compile(r'^<|>$')
+
 BODY_PATTERN = re.compile(r"BODY\[TEXT\].*?b(.*?)(?=\),\s+\(b\'|$)", re.DOTALL)
 BODY_TEXT_PATTERN = re.compile(r'Content-Type:\s*text/plain;.*?\\r\\n\\r\\n(.*?)(?=\\r\\n\\r\\n--.*?Content-Type|$)', re.DOTALL | re.IGNORECASE)
 BODY_TEXT_ENCODING_PATTERN = re.compile(r'Content-Transfer-Encoding:\s*(.+?)\\r\\n', re.DOTALL | re.IGNORECASE)
@@ -49,14 +39,49 @@ INLINE_ATTACHMENT_CID_PATTERN = re.compile(r'<img src="cid:([^"]+)"', re.DOTALL)
 INLINE_ATTACHMENT_FILEPATH_PATTERN = re.compile(r'<img\s+[^>]*src=["\']((?!data:|cid:)[^"\']+)["\']', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_BASE64_DATA_PATTERN = re.compile(r'data:([a-zA-Z0-9+/.-]+);base64,([a-zA-Z0-9+/=]+)', re.DOTALL | re.IGNORECASE)
 INLINE_ATTACHMENT_SRC_PATTERN = re.compile(r'(<img\s+[^>]*src=")(.*?)(")')
-FLAGS_PATTERN = re.compile(r'FLAGS \((.*?)\)', re.DOTALL)
-LINE_PATTERN = re.compile(r'(=\\r|\\.*?r\\.*?n)')
+
 SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>\(]')
 LINK_PATTERN = re.compile(r'https?://[^\s]+|\([^\)]+\)', re.DOTALL)
 BRACKET_PATTERN = re.compile(r'\[.*?\]')
 SPACE_PATTERN = re.compile(r'\s+')
-HTML_TAG_PATTERN = re.compile(r'<[^>]+>')
-CID_TAG_PATTERN = re.compile(r'^<|>$')
+
+"""
+Header Constants
+"""
+HEADERS_PATTERN = re.compile(rb"BODY\[HEADER\.FIELDS.*?\r\n\r\n", re.DOTALL | re.IGNORECASE)
+SUBJECT_PATTERN = re.compile(rb'Subject:\s+(.*?)(?=\r\n\w+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+SENDER_PATTERN = re.compile(rb'From:\s+(.+?)(?=\r\n\w+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+RECEIVERS_PATTERN = re.compile(rb'To:\s+(.+?)(?=\r\n\w+:|\r\\n\\r\\n)', re.DOTALL | re.IGNORECASE)
+CC_PATTERN = re.compile(rb'Cc:\s+(.*?)(?=\r\n\w+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+BCC_PATTERN = re.compile(rb'Bcc:\s+(.*?)(?=\r\n\w+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+REFERENCES_PATTERN = re.compile(rb'References:\s+(.*?)(?=\r\n\w+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+MESSAGE_ID_PATTERN = re.compile(rb'Message-ID:\s+(.*?)(?=\r\n\w+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+IN_REPLY_TO_PATTERN = re.compile(rb'In-Reply-To:\s+(.*?)(?=\r\n\w+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+DATE_PATTERN = re.compile(rb'Date:\s+(.+?)(?=\r\n\w+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+
+class MessageHeaders(TypedDict):
+    """Header fields of a email message."""
+    subject: str
+    sender: str
+    receivers: str
+    date: str
+    cc: str
+    bcc: str
+    in_reply_to: str
+    message_id: str
+    references: str
+
+MESSAGE_HEADER_PATTERN_MAP = {
+    "subject": SUBJECT_PATTERN,
+    "sender": SENDER_PATTERN,
+    "receivers": RECEIVERS_PATTERN,
+    "date": DATE_PATTERN,
+    "cc": CC_PATTERN,
+    "bcc": BCC_PATTERN,
+    "in_reply_to": IN_REPLY_TO_PATTERN,
+    "message_id": MESSAGE_ID_PATTERN,
+    "references": REFERENCES_PATTERN
+}
 
 class MessageParser:
     """
@@ -115,12 +140,12 @@ class MessageParser:
         return base64.b64decode(message[:-(len(message) % 4)]).decode("utf-8")
 
     @staticmethod
-    def decode_utf8_header(message: str) -> str:
+    def decode_utf8_header(message: bytes) -> str:
         """
         Decode UTF-8 header.
 
         Args:
-            message (str): Raw message string.
+            message (bytes): Raw message bytes.
 
         Returns:
             str: Decoded message string.
@@ -128,13 +153,11 @@ class MessageParser:
         Example:
             >>> decode_utf8_header("?UTF-8?B?4LmA4LiC4LmJ4Liy4LiW<noreply@domain.com>4Li24LiH4Lia4LiZ4LiE4Lit4Lih
             4Lie4Li04Lin")
-            ชื่อ <noreply@domain.com> # "Name <noreply@domain.com>"
+            ชื่อ <noreply@domain.com>
         """
-        message = re.split(r'\\r\\n', message)
-
         decoded_message = ""
-        for line in message:
-            line = line.strip()
+        for line in STRICT_LINE_PATTERN.split(message):
+            line = str(line).strip()
             if line.startswith("=?UTF-8") or line.startswith("=?utf-8"):
                 decoded_lines = decode_header(line)
                 for decoded_line in decoded_lines:
@@ -201,24 +224,22 @@ class MessageParser:
         return int(match.group(1)) if match else None
 
     @staticmethod
-    def uid_from_message(message: str) -> str:
+    def get_uid(message: bytes) -> str:
         """
-        Get UID from raw message string.
+        Get UID from raw message bytes.
 
         Args:
-            message (str): Raw message string.
+            message (bytes): Raw message bytes.
 
         Returns:
             str: UID string.
 
         Example:
-            >>> uid_from_message("b'2394 (UID 2651 FLAGS ... ), b'")
+            >>> get_uid("b'2394 (UID 2651 FLAGS ... ), b'")
             '2651'
         """
         uid_match = UID_PATTERN.search(message)
-        if uid_match:
-            return uid_match.group(1)
-        return ""
+        return uid_match.group(1).decode() if uid_match else ""
 
     @staticmethod
     def body_from_message(message: str) -> str:
@@ -502,89 +523,96 @@ class MessageParser:
         return [(match.start(2), match.group(2), match.end(2)) for match in INLINE_ATTACHMENT_SRC_PATTERN.finditer(message)]
 
     @staticmethod
-    def flags_from_message(message: str) -> list[str]:
+    def get_flags(message: bytes) -> list[str]:
         """
-        Get flags from raw message string.
+        Get flags of `FLAGS` fetch result.
 
         Args:
-            message (str): Raw message string.
+            message (bytes): Raw message bytes.
 
         Returns:
             list[str]: List of flags.
 
         Example:
-            >>> flags_from_message("b'(UID ... FLAGS (\\Seen) ... b'")
-            ['\\Seen']
+            >>> get_flags(b'(UID ... FLAGS (\\Seen \\Flagged) ... b')
+            ['\\Seen', '\\Flagged']
         """
         flags = FLAGS_PATTERN.findall(message)
-        return flags[0].replace("\\\\", "\\").replace(",", "").split(" ") if flags and flags[0] else []
+        return flags[0].decode().split(" ") if flags else []
 
     @staticmethod
-    def headers_from_message(message: str) -> MessageHeaders:
+    def get_headers(message: bytes) -> MessageHeaders:
         """
-        Get headers from raw message string.
+        Get headers of `BODY.PEEK[BODY[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID IN-REPLY-TO REFERENCES)]]`
+        fetch result.
 
         Args:
-            message (str): Raw message string.
+            message (bytes): Raw message bytes.
 
         Returns:
             MessageHeaders: Dictionary of headers.
 
         Example:
-            >>> headers_from_message("b'(UID ... FLAGS (\\Seen) ... To: a@gmail.com\\r\\n Subject: Hello\\r\\n Date: 2023-01-01\\r\\n From: b@gmail.com\\r\\n) ... b'")
-            {'sender': 'a@gmail.com', 'date': '2023-01-01', 'receiver': 'b@gmail.com', 'subject': 'Hello'}
+            >>> headers_from_message("b'(UID ... FLAGS (\\Seen) ... To: a@gmail.com\\r\\n Subject: Hello\\r\\n Date: 2023-01-01\\r\\n From: b@gmail.com\\r\\n...) ... b'")
+            {
+                'subject': 'Hello',
+                'sender': 'a@gmail.com',
+                'receiver': 'b@gmail.com',
+                'cc': ''c@gmail.com',
+                'bcc': ''d@gmail.com',
+                'date': '2023-01-01',
+                'in-reply-to': 'e@gmail.com, f@gmail.com',
+                'message-id': '<caef..@dom.com>',
+                'references': '<5121..@dom.com>'
+            }
         """
+        message_headers: MessageHeaders = {
+            "subject": "",
+            "sender": "",
+            "receivers": "",
+            "cc": "",
+            "bcc": "",
+            "date": "",
+            "in_reply_to": "",
+            "message_id": "",
+            "references": ""
+        }
+
         header_match = HEADERS_PATTERN.search(message)
         if not header_match:
-            return None
+            return message_headers
 
-        sender = date = subject = receiver = ""
         header_match = header_match.group()
 
-        # Date
-        date = DATE_PATTERN.search(header_match)
-        date = date.group(1) if date else ""
-        date = date.strip()
+        for field_type, field_pattern in MESSAGE_HEADER_PATTERN_MAP.items():
+            if field_type == "subject":
+                subject = SUBJECT_PATTERN.search(header_match)
+                subject = MessageParser.decode_utf8_header(subject.group(1)) if subject else ""
+                subject = SPACE_PATTERN.sub(" ", subject)
+                subject = subject.strip()
+                message_headers["subject"] = subject
+            elif field_type in ["references", "in_reply_to", "date", "message_id"]:
+                field = field_pattern.search(header_match)
+                field = str(field.group(1)) if field else ""
+                field = field.strip()
+                message_headers[field_type] = field
+            elif field_type in ["sender", "receivers", "cc", "bcc"]:
+                email_address_match = field_pattern.search(header_match)
+                if email_address_match:
+                    # If `email_address_match` is a "name <email>" like "Alex Wilson <a@gmail.com>"
+                    # then `email_without_name` will be `a@gmail.com` and `decoded_email_address`
+                    # will be `Alex Wilson`if receiver is just a email like "a@gmail.com"
+                    # then `email_without_name` will be None and `email_address_match` will
+                    # be `a@gmail.com`.
+                    email_address_match = email_address_match.group(1)
+                    email_address_match = MessageParser.decode_utf8_header(email_address_match)
+                    email_without_name = TAG_PATTERN.search(email_address_match)
+                    if email_without_name:
+                        email_without_name = email_without_name.group(0)
+                        if not email_without_name in email_address_match:
+                            message_headers[field_type] = email_address_match + " " + email_without_name
 
-        # To / Receiver
-        receiver = RECEIVER_PATTERN.search(header_match)
-        if receiver:
-            # If receiver is a name and email like "Alex Wilson <a@gmail.com>"
-            # then `email_without_name` will be `a@gmail.com` and `decoded_receiver`
-            # will be `Alex Wilson`if receiver is just a email like "a@gmail.com"
-            # then `email_without_name` will be None and `decoded_receiver` will
-            # be `a@gmail.com`.
-            receiver = receiver.group(1)
-            receiver = MessageParser.decode_utf8_header(receiver)
-            email_without_name = NAME_EMAIL_PATTERN.search(receiver)
-            if email_without_name:
-                email_without_name = email_without_name.group(0)
-                if not email_without_name in receiver:
-                    receiver = receiver + " " + email_without_name
-
-        # From / Sender
-        sender = SENDER_PATTERN.search(header_match)
-        if sender:
-            sender = sender.group(1)
-            sender = MessageParser.decode_utf8_header(sender)
-            email_without_name = NAME_EMAIL_PATTERN.search(sender)
-            if email_without_name:
-                email_without_name = email_without_name.group(0)
-                if not email_without_name in sender:
-                    sender = sender + " " + email_without_name
-
-        # Subject
-        subject = SUBJECT_PATTERN.search(header_match)
-        subject = MessageParser.decode_utf8_header(subject.group(1)) if subject else ""
-        subject = SPACE_PATTERN.sub(" ", subject)
-        subject = subject.strip()
-
-        return {
-            "sender": sender or "",
-            "date": date or "",
-            "receiver": receiver or "",
-            "subject": subject or "",
-        }
+        return message_headers
 
 class _HTML2TextParser(BuiltInHTMLParser):
     """

@@ -1255,19 +1255,18 @@ class IMAPManager(imaplib.IMAP4_SSL):
             # or something like that if there is no mailbox selected.
             raise IMAPManagerException("Folder should be selected before fetching flags.")
 
-        status, result = self.uid('FETCH', sequence_set, '(FLAGS)')
+        status, message = self.uid('FETCH', sequence_set, '(FLAGS)')
 
         try:
             flags_list = []
             if status != 'OK':
                 raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`")
 
-            matches = MessageParser.messages(str(result))
-            for match in matches:
-                flags_list.append(Flags(
-                    uid=MessageParser.uid_from_message(match),
-                    flags=MessageParser.flags_from_message(match)
-                ))
+            message = message[1][0]
+            flags_list.append(Flags(
+                uid=MessageParser.get_uid(message),
+                flags=MessageParser.get_flags(message)
+            ))
         except Exception as e:
             raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`") from e
 
@@ -1308,7 +1307,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # Get body and attachments
         body, attachments = "", []
         try:
-            status, message = self.uid('fetch', uid, '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC REPLY-TO IN-REPLY-TO REFERENCES)] BODYSTRUCTURE BODY.PEEK[1])')
+            status, message = self.uid('fetch', uid, '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID IN-REPLY-TO REFERENCES)] BODYSTRUCTURE BODY.PEEK[1])')
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
@@ -1360,6 +1359,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             date=message_headers["date"],
             cc="",
             bcc="",
+            message_id="",
             metadata={
                 "In-Reply-To": "",
                 "References": ""
