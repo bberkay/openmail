@@ -20,7 +20,7 @@ from html.parser import HTMLParser as BuiltInHTMLParser
 Regular expressions, avoid changing
 """
 MESSAGE_PATTERN = re.compile(r'\(UID \d+.*?(?=b\'\d+ \(UID|\Z)')
-SIZE_PATTERN = re.compile(r"RFC822\.SIZE (\d+)")
+SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
 UID_PATTERN = re.compile(rb"UID\s+(\d+)")
 FLEX_LINE_PATTERN = re.compile(rb'(=\r|\.*?r\.*?n)', re.DOTALL)
 STRICT_LINE_PATTERN = re.compile(rb'\r\n')
@@ -206,18 +206,18 @@ class MessageParser:
         return re.findall(MESSAGE_PATTERN, message)
 
     @staticmethod
-    def size_from_message(message: str) -> int | None:
+    def get_size(message: bytes) -> int | None:
         """
-        Get size from raw message string.
+        Get size from `RFC822.SIZE` fetch result.
 
         Args:
-            message (str): Raw message string.
+            message (bytes): Raw message bytes.
 
         Returns:
             int: Size as bytes.
 
         Example:
-            >>> messages("[b'1430 (UID 1534 RFC822.SIZE 42742)']")
+            >>> get_size(b'1430 (UID 1534 RFC822.SIZE 42742)')
             42742
         """
         match = SIZE_PATTERN.search(message)
@@ -525,7 +525,7 @@ class MessageParser:
     @staticmethod
     def get_flags(message: bytes) -> list[str]:
         """
-        Get flags of `FLAGS` fetch result.
+        Get flags from `FLAGS` fetch result.
 
         Args:
             message (bytes): Raw message bytes.
@@ -543,7 +543,7 @@ class MessageParser:
     @staticmethod
     def get_headers(message: bytes) -> MessageHeaders:
         """
-        Get headers of `BODY.PEEK[BODY[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID IN-REPLY-TO REFERENCES)]]`
+        Get headers from `BODY.PEEK[BODY[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID IN-REPLY-TO REFERENCES)]]`
         fetch result.
 
         Args:
