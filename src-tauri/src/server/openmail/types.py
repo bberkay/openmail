@@ -86,6 +86,7 @@ class EmailWithContent():
     bcc: Optional[str] = ""
     flags: Optional[list[str]] = field(default_factory=list)
     attachments: Optional[list[Attachment]] = field(default_factory=list)
+    message_id: Optional[str] = ""
     metadata: Optional[dict] = field(default_factory=dict)
 
     def __getitem__(self, item):
