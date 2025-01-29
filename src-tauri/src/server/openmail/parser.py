@@ -19,6 +19,7 @@ from html.parser import HTMLParser as BuiltInHTMLParser
 """
 General Fetch Constants
 """
+BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+\((.*)", re.DOTALL | re.IGNORECASE)
 UID_PATTERN = re.compile(rb"UID\s+(\d+)")
 SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
 FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
@@ -116,7 +117,9 @@ class MessageParser:
     @staticmethod
     def group_messages(message_list: list[bytes]) -> list[list[bytes]]:
         """
-        Group messages from a raw message list into structured sublists.
+        Group messages of fetch queries like this `(BODY.PEEK[HEADER.FIELDS
+        (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)`
+        into structured sublists.
 
         This function processes a list of raw message bytes and groups them
         into sublists. Each sublist contains related message components,
@@ -167,6 +170,67 @@ class MessageParser:
             result.append(sublist)
 
         return result
+
+    @staticmethod
+    def group_bodystructure(message: bytes) -> list[str]:
+        """
+        Group parts of the `BODYSTRUCTURE` fetch result. Mostly
+        used to find out which part the attachments are in.
+
+        Args:
+            message (bytes):
+
+        Returns:
+            list[str]:
+
+        Example:
+            >>> raw = b'2394 (UID 3000 BODYSTRUCTURE (
+            ...     (("TEXT" "PLAIN" ("CHARSET"
+            ...     "utf-8") NIL NIL "7BIT" 55 2 NIL NIL NIL) (("TEXT" "... ("IMAGE" "PNG"
+            ...     NIL "<b89e7b1f...IL "BASE64" 1704 NIL ("INLINE" ("FILENAME" "red.png"))
+            ...     NIL) "RELATED" ("B... "ALTERNATIVE" ("BOUNDARY" ("IMAGE" "PNG" NIL "bf
+            ...     7f0...1704 NIL ("ATTACHMENT" ("FILENAME" "black.png")) NIL) "MIXED"
+            ...     ("BOUNDARY" "===============3928255875616178789==") NIL NIL)
+            ... )'
+            >>> messages(raw)
+            [
+          		"(
+         			("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "7BIT" 55 2 NIL NIL NIL)
+         			(
+                        ("TEXT" "HTML" ("CHARSET" "utf-8") NIL NIL "QUOTED-PRINTABLE" 450...)
+                        ("IMAGE" "PNG" NIL "<b8.... ("INLINE" ("FILENAME" "red.png")) NIL)
+                        "RELATED" ("BOU....511502==") NIL NIL
+         			)
+         			"ALTERNATIVE" ("BOUN....091==") NIL NIL
+          		)",
+          		"("IMAGE" "PNG" NIL "bf.....4 NIL ("ATTACHMENT" ("FILENAME" "black.png")) NIL)",
+           	]
+        """
+        match = BODYSTRUCTURE_PATTERN.search(message.decode("utf-8"))
+        if not match:
+            return []
+
+        bodystructure_content = match.group(1)
+
+        # Find and convert content of bodystructure:
+        # from this "BODYSTRUCTURE ((TEXT), (IMAGE), (IMAGE))"
+        # to this "(TEXT), (IMAGE), (IMAGE)"
+        bodystructure_content = bodystructure_content[:-2]
+
+        parts = []
+        part = ""
+        p = 0
+        for char in bodystructure_content:
+            part += char
+            if char == "(":
+                p += 1
+            elif char == ")":
+                p -= 1
+            if p == 0 and part and part.startswith("("):
+                parts.append(part)
+                part = ""
+
+        return parts
 
     @staticmethod
     def get_size(message: bytes) -> int | None:
