@@ -321,13 +321,11 @@ def execute_openmail_task_concurrently(
         return results
 
 def check_if_email_client_is_exists(accounts: str) -> Response | bool:
-    accounts = accounts.split(",")
-
-    for account in accounts:
+    for account in accounts.split(","):
         if account not in openmail_clients:
             return Response(
                 success=False,
-                message=f"Email account: {account} is not connected"
+                message=f"Error, {account} is not (or not anymore) connected."
             )
 
     return True
@@ -349,7 +347,7 @@ async def get_mailboxes(
             accounts.split(","),
             lambda client, **params: client.imap.search_emails(**params),
             folder=folder,
-            search=SearchCriteria.parse_raw(search),
+            search=SearchCriteria.parse_raw(search) if search else None,
         )
 
         return Response[list[OpenMailTaskResult]](
@@ -429,8 +427,7 @@ def get_email_content(
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
 
 class SendEmailFormData(BaseModel):
-    #sender: str | tuple[str, str]  # (sender_name, sender_email)
-    sender: str
+    sender: str # Name Surname <namesurname@domain.com> or namesurname@domain.com
     receiver: str  # mail addresses separated by comma
     subject: str
     body: str
@@ -457,25 +454,30 @@ async def convert_attachments(attachments: list[UploadFile]) -> list[Attachment]
 
 @app.post("/send-email")
 async def send_email(
-    formData: Annotated[SendEmailFormData, Form()]
+    form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_client_is_exists(formData.sender)
+        response = check_if_email_client_is_exists(form_data.sender)
         if not response:
             return response
 
-        sender_email = (
-            formData.sender if isinstance(formData.sender, str) else formData.sender[1]
-        )
+        sender = form_data.sender.split("<")
+        sender_email = ""
+        if len(sender) > 1:
+            sender = (sender[0], sender[1])
+            sender_email = sender[1][1:-1]
+        else:
+            sender_email = sender[0]
+
         status, msg = openmail_clients[sender_email].smtp.send_email(
             EmailToSend(
-                sender=formData.sender,
-                receiver=formData.receiver,
-                subject=formData.subject,
-                body=formData.body,
-                cc=formData.cc,
-                bcc=formData.bcc,
-                attachments=await convert_attachments(formData.attachments),
+                sender=form_data.sender,
+                receiver=form_data.receiver,
+                subject=form_data.subject,
+                body=form_data.body,
+                cc=form_data.cc,
+                bcc=form_data.bcc,
+                attachments=await convert_attachments(form_data.attachments),
             )
         )
 
@@ -486,25 +488,25 @@ async def send_email(
 
 @app.post("/reply-email")
 async def reply_email(
-    formData: Annotated[SendEmailFormData, Form()]
+    form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_client_is_exists(formData.sender)
+        response = check_if_email_client_is_exists(form_data.sender)
         if not response:
             return response
 
         sender_email = (
-            formData.sender if isinstance(formData.sender, str) else formData.sender[1]
+            form_data.sender if isinstance(form_data.sender, str) else form_data.sender[1]
         )
         status, msg = openmail_clients[sender_email].smtp.send_email(
             EmailToSend(
-                sender=formData.sender,
-                receiver=formData.receiver,
-                subject=formData.subject,
-                body=formData.body,
-                cc=formData.cc,
-                bcc=formData.bcc,
-                attachments=await convert_attachments(formData.attachments),
+                sender=form_data.sender,
+                receiver=form_data.receiver,
+                subject=form_data.subject,
+                body=form_data.body,
+                cc=form_data.cc,
+                bcc=form_data.bcc,
+                attachments=await convert_attachments(form_data.attachments),
             )
         )
 
@@ -515,25 +517,25 @@ async def reply_email(
 
 @app.post("/forward-email")
 async def forward_email(
-    formData: Annotated[SendEmailFormData, Form()]
+    form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_client_is_exists(formData.sender)
+        response = check_if_email_client_is_exists(form_data.sender)
         if not response:
             return response
 
         sender_email = (
-            formData.sender if isinstance(formData.sender, str) else formData.sender[1]
+            form_data.sender if isinstance(form_data.sender, str) else form_data.sender[1]
         )
         status, msg = openmail_clients[sender_email].smtp.send_email(
             EmailToSend(
-                sender=formData.sender,
-                receiver=formData.receiver,
-                subject=formData.subject,
-                body=formData.body,
-                cc=formData.cc,
-                bcc=formData.bcc,
-                attachments=await convert_attachments(formData.attachments),
+                sender=form_data.sender,
+                receiver=form_data.receiver,
+                subject=form_data.subject,
+                body=form_data.body,
+                cc=form_data.cc,
+                bcc=form_data.bcc,
+                attachments=await convert_attachments(form_data.attachments),
             )
         )
 
