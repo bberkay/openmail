@@ -264,11 +264,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
             or
             (self._encode_folder(folder) if isinstance(folder, str) else folder)
         )
-        return self._parse_command_result(
+
+        result = self._parse_command_result(
             super().select(folder, readonly),
             success_message=f"Successfully selected {folder}",
-            failure_message=f"Could not select {folder}"
+            failure_message=f"Error while selecting folder `{folder}`"
         )
+
+        if not result[0]:
+            raise IMAPManagerException(result[1])
+
+        return result
 
     @override
     def _simple_command(self, name, *args):
@@ -1047,9 +1053,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if not folder:
             folder = Folder.All if search else Folder.Inbox
 
-        status, _ = self.select(folder, readonly=True)
-        if not status:
-            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
+        self.select(folder, readonly=True)
 
         if search:
             search_criteria_query = self.build_search_criteria_query(search).encode("utf-8")
@@ -1105,9 +1109,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if "*" in sequence_set:
             raise ValueError(f"Error sequence_set can not contain `*` while checking emails `{sequence_set}`")
 
-        status, _ = self.select(folder, readonly=True)
-        if not status:
-            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
+        self.select(folder, readonly=True)
 
         status, data = self.uid('search', f"UID {sequence_set}")
         if not status:
@@ -1299,9 +1301,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             occurs while marking the email, the mark operation will be skipped
             without raising an error but it will be logged as a warning.
         """
-        status, _ = self.select(folder, readonly=True)
-        if not status:
-            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
+        self.select(folder, readonly=True)
 
         # Get body and attachments
         body, attachments = "", []
@@ -1394,6 +1394,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
     ):
         """
         """
+        self.select(folder, readonly=True)
+
         status, message = self.uid('FETCH', uid, '(BODYSTRUCTURE)')
         if status != 'OK':
             raise IMAPManagerException(f"Error while fetching body structure of the `{uid}` email in folder `{folder}`: `{status}`")
@@ -1451,9 +1453,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 - A bool indicating whether the email was marked successfully.
                 - A string containing a success message or an error message.
         """
-        status, _ = self.select(folder)
-        if not status:
-            raise IMAPManagerException(f"Error while selecting folder `{folder}`: `{status}`")
+        self.select(folder)
 
         if not mark:
             raise IMAPManagerException("`mark` cannot be empty.")
@@ -1591,9 +1591,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if source_folder == destination_folder:
             return IMAPCommandResult(success=True, message=f"Destination folder `{destination_folder}` is the same as the source folder `{source_folder}`.")
 
-        status, _ = self.select(source_folder)
-        if not status:
-            raise IMAPManagerException(f"Error while selecting folder `{source_folder}`: `{status}`")
+        self.select(source_folder)
 
         succes_msg = f"Email(s) `{sequence_set}` moved successfully from `{source_folder}` to `{destination_folder}`."
         err_msg = f"Failed to move email(s) `{sequence_set}` from `{source_folder}` to `{destination_folder}`."
@@ -1648,9 +1646,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         self._check_folder_names([source_folder, destination_folder])
 
-        status, _ = self.select(source_folder)
-        if not status:
-            raise IMAPManagerException(f"Error while selecting folder `{source_folder}`: `{status}`")
+        self.select(source_folder)
 
         succes_message = f"Email(s) `{sequence_set}` copied successfully from `{source_folder}` to `{destination_folder}`."
         err_msg = f"Failed to copy email(s) `{sequence_set}` from `{source_folder}` to `{destination_folder}`."
@@ -1713,11 +1709,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 f"Error while moving email(s) `{sequence_set}` to trash folder for deletion: `{str(e)}`."
             ) from e
 
-        status, _ = self.select(self._encode_folder(trash_mailbox_name))
-        if not status:
-            raise IMAPManagerException(
-                f"Error while selecting trash folder for deletion: `{status}`."
-            )
+        self.select(self._encode_folder(trash_mailbox_name))
 
         success_msg = f"Email(s) `{sequence_set}` deleted from `{folder}` successfully."
         err_msg = f"There was an error while deleting the email(s) `{sequence_set}` from `{folder}`."
