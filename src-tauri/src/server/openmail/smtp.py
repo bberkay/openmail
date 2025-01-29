@@ -244,7 +244,7 @@ class SMTPManager(smtplib.SMTP):
         position_shift = 0
         inline_attachments: list[Attachment] = []
         inline_attachments_cids = set()
-        for match in MessageParser.inline_attachment_src_from_message(email.body):
+        for match in MessageParser.get_inline_attachment_sources(email.body):
             try:
                 inline_attachment = None
                 src_start, src_value, src_end = match
