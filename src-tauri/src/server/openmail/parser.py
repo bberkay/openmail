@@ -90,13 +90,6 @@ INLINE_ATTACHMENT_DATA_BY_CID_PATTERN = re.compile(
 )
 
 """
-... Body Constants
-"""
-BODY_PATTERN = re.compile(r"BODY\[TEXT\].*?b(.*?)(?=\),\s+\(b\'|$)", re.DOTALL)
-BODY_TEXT_PATTERN = re.compile(r'Content-Type:\s*text/plain;.*?\\r\\n\\r\\n(.*?)(?=\\r\\n\\r\\n--.*?Content-Type|$)', re.DOTALL | re.IGNORECASE)
-BODY_TEXT_ENCODING_PATTERN = re.compile(r'Content-Transfer-Encoding:\s*(.+?)\\r\\n', re.DOTALL | re.IGNORECASE)
-
-"""
 Util Constants
 """
 FLEX_LINE_PATTERN = re.compile(rb'(=\r|\.*?r\.*?n)', re.DOTALL)
@@ -212,53 +205,6 @@ class MessageParser:
         return uid_match.group(1).decode() if uid_match else ""
 
     @staticmethod
-    def get_body(message: bytes) -> str:
-        """
-        Get body from raw message string.
-
-        Args:
-            message (bytes): Raw message string.
-
-        Returns:
-            str: Body string.
-
-        Example:
-            message = b'(UID ... BODY[TEXT]<0.1024>
-            ... Content-Type:text/plain; Hello, World!\\r\\nHow
-            ... are you? ...'
-            >>> body_from_message(message)
-            'Hello, World! How are you?'
-        """
-        body_match = BODY_PATTERN.search(message)
-        body = ""
-        if body_match:
-            body = body_match.group(1)
-
-        body_match = BODY_TEXT_PATTERN.search(body)
-        if not body_match:
-            return ""
-
-        encoding_match = BODY_TEXT_ENCODING_PATTERN.search(body)
-
-        body = body_match.group(1)
-        body = bytes(body, "utf-8").decode("unicode_escape")
-
-        if encoding_match:
-            encoding_match = encoding_match.group(1)
-            if encoding_match == "quoted-printable":
-                body = MessageDecoder.quoted_printable_message(body)
-            elif encoding_match == "base64":
-                body = MessageDecoder.base64_message(body)
-
-        body = LINK_PATTERN.sub(' ', body)
-        body = BRACKET_PATTERN.sub(' ', body)
-        body = FLEX_LINE_PATTERN.sub(' ', body)
-        body = SPECIAL_CHAR_PATTERN.sub(' ', body)
-        body = SPACE_PATTERN.sub(' ', body)
-
-        return body.strip()
-
-    @staticmethod
     def get_attachment_list(message: bytes) -> list[tuple[str, int, str, str]]:
         """
         Get attachments from `BODYSTRUCTURE` fetch result.
@@ -288,7 +234,7 @@ class MessageParser:
         ]
 
     @staticmethod
-    def get_text_plain_body(message: bytes) -> tuple[int, int, bytes] | None:
+    def get_text_plain_body(message: bytes) -> tuple[int, int, str] | None:
         """
         Get plain text from `BODY.PEEK[1]`, `RFC822`, `BODY[TEXT]` etc. fetch results.
 
@@ -318,8 +264,23 @@ class MessageParser:
         if not data_match:
             return None
 
+        body = data_match.group(1)
+        if encoding == "quoted-printable":
+            body = MessageDecoder.quoted_printable_message(body)
+        elif encoding == "base64":
+            body = MessageDecoder.base64_message(body)
+        else:
+            body = body.decode()
+
         data_start, data_end = data_match.span()
-        return data_start, data_end, data_match.group(1)
+
+        body = LINK_PATTERN.sub(' ', body)
+        body = BRACKET_PATTERN.sub(' ', body)
+        body = SPECIAL_CHAR_PATTERN.sub(' ', body)
+        body = SPACE_PATTERN.sub(' ', body)
+        body = body.strip()
+
+        return data_start, data_end, body
 
     @staticmethod
     def get_text_html_body(message: bytes) -> tuple[int, int, str] | None:
@@ -358,11 +319,27 @@ class MessageParser:
                 </html>"
             )
         """
-        text_html_match = BODY_TEXT_HTML_PATTERN.search(message)
-        if not text_html_match:
+        offset_and_encoding_match = BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN.search(message)
+        if not offset_and_encoding_match:
             return None
-        start, end = text_html_match.span()
-        return (int(start), int(end), text_html_match.group(1).decode("utf-8"))
+
+        encoding_start = offset_and_encoding_match.start()
+        encoding = offset_and_encoding_match.group(1) or offset_and_encoding_match.group(2)
+
+        data_match = BODY_TEXT_HTML_DATA_PATTERN.search(message[encoding_start:])
+        if not data_match:
+            return None
+
+        body = data_match.group(1)
+        if encoding == "quoted-printable":
+            body = MessageDecoder.quoted_printable_message(body)
+        elif encoding == "base64":
+            body = MessageDecoder.base64_message(body)
+        else:
+            body = body.decode()
+
+        data_start, data_end = data_match.span()
+        return data_start, data_end, body
 
     @staticmethod
     def get_data_by_cid_from_inline_attachments(message: bytes) -> list[tuple[str, str]]:
@@ -519,23 +496,30 @@ class MessageParser:
 
 
 class MessageDecoder:
+    """
+    `MessageDecoder` class can be used on its own, but its primary purpose is to
+    be used within the `MessageParser` class. It has a structure that ignores errors,
+    deficiencies, or redundancies.
+    """
+
     @staticmethod
-    def quoted_printable_message(message: str) -> str:
+    def quoted_printable_message(message: bytes) -> str:
         """
         Decode quoted-printable message. Ignore errors.
 
         Args:
-            message (str): Raw message string.
+            message (bytes): Raw message string.
 
         Returns:
             str: Decoded message string.
 
         Example:
-            >>> decode_quoted_printable_message("b'(UID ... BODY[TEXT] b'0A=E0=B9=80=E0=B8=A3=E0=B8=B5=E0=B8=A2=
-            E0=B8=9' ... b')")
+            >>> decode_quoted_printable_message(b'(UID ... BODY[TEXT] b'0A=E0=B9=80=E0=B8=A3=E0=B8=B5=E0=B8=A2=
+            E0=B8=9')
             'สวัสดีชาวโลก' # "Hello World" in Thai
         """
         try:
+            message = FLEX_LINE_PATTERN.sub(b"", message)
             decoded_partial_text = quopri.decodestring(message, header=False).decode("utf-8", errors="ignore")
         except Exception as e:
             decoded_partial_text = str(e)
@@ -547,12 +531,12 @@ class MessageDecoder:
         return decoded_partial_text
 
     @staticmethod
-    def base64_message(message: str) -> str:
+    def base64_message(message: bytes) -> str:
         """
         Decode base64 message. Ignores errors.
 
         Args:
-            message (str): Raw message string.
+            message (bytes): Raw message string.
 
         Returns:
             str: Decoded message string.
@@ -562,7 +546,15 @@ class MessageDecoder:
             WsgacOnaW4gdXlndWxh")
             'Hello, World'
         """
-        return base64.b64decode(message[:-(len(message) % 4)]).decode("utf-8")
+        try:
+            message = FLEX_LINE_PATTERN.sub(b"", message)
+            padding = len(message) % 4
+            if padding:
+                message += b'=' * (4 - padding)
+            decoded_text = base64.b64decode(message).decode("utf-8", errors="ignore")
+        except Exception as e:
+            decoded_text = str(e)
+        return decoded_text
 
     @staticmethod
     def utf8_header(message: bytes) -> str:

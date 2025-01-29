@@ -1184,8 +1184,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 uid = MessageParser.get_uid(message[0])
                 message_headers = MessageParser.get_headers(message[1])
 
-                _, _, body = MessageParser.get_text_plain_body(message[0]) or (None, None, b"")
-                body = body.decode("utf-8")
+                _, _, body = MessageParser.get_text_plain_body(message[0]) or (None, None, "")
                 if not body:
                     """
                     #TODO: If text plain body does not exists.
@@ -1213,10 +1212,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     subject=message_headers["subject"],
                     date=message_headers["date"],
                     body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
-                    flags=MessageParser.get_flags(message),
+                    flags=MessageParser.get_flags(message[0]),
                     attachments=[
                         Attachment(name=attachment[0], size=attachment[1], cid=attachment[2], type=attachment[3])
-                        for attachment in MessageParser.get_attachment_list(message)
+                        for attachment in MessageParser.get_attachment_list(message[0])
                     ]
                 ))
         except Exception as e:
