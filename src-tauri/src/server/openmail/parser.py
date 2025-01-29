@@ -178,10 +178,12 @@ class MessageParser:
         used to find out which part the attachments are in.
 
         Args:
-            message (bytes):
+            message (bytes): Raw BODYSTRUCTURE message.
 
         Returns:
-            list[str]:
+            list[str]: A list of strings, where each string represents a grouped
+            BODYSTRUCTURE part. The components are split based on balanced
+            parentheses.
 
         Example:
             >>> raw = b'2394 (UID 3000 BODYSTRUCTURE (
