@@ -1169,7 +1169,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
-                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.512> FLAGS BODYSTRUCTURE)'
+                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)'
             )
 
             if status != 'OK':
@@ -1178,13 +1178,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if not messages or not messages[0]:
                 return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
 
-            messages = MessageParser.messages(str(messages))
+            messages = MessageParser.group_messages(messages)
             messages = messages[::-1]
             for message in messages:
-                uid = MessageParser.uid_from_message(message)
-                message_headers = MessageParser.headers_from_message(message)
+                uid = MessageParser.get_uid(message[0])
+                message_headers = MessageParser.get_headers(message[1])
 
-                body = MessageParser.body_from_message(message)
+                _, _, body = MessageParser.get_text_plain_body(message[0]) or (None, None, b"")
+                body = body.decode("utf-8")
                 if not body:
                     """
                     #TODO: If text plain body does not exists.
@@ -1207,15 +1208,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
                 emails.append(EmailSummary(
                     uid=uid,
-                    sender=message_headers.get("sender"),
-                    receiver=message_headers.get("receiver"),
-                    subject=message_headers.get("subject"),
-                    date=message_headers.get("date"),
+                    sender=message_headers["sender"],
+                    receiver=message_headers["receivers"],
+                    subject=message_headers["subject"],
+                    date=message_headers["date"],
                     body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
-                    flags=MessageParser.flags_from_message(message),
+                    flags=MessageParser.get_flags(message),
                     attachments=[
                         Attachment(name=attachment[0], size=attachment[1], cid=attachment[2], type=attachment[3])
-                        for attachment in MessageParser.attachments_from_message(message)
+                        for attachment in MessageParser.get_attachment_list(message)
                     ]
                 ))
         except Exception as e:
