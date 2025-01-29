@@ -1388,9 +1388,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def download_attachment(self,
         uid: str,
+        folder: str,
         filename: str,
-        cid: str = "",
-        folder: str | Folder = ""
+        cid: str = ""
     ):
         """
         """
