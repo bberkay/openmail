@@ -1272,8 +1272,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return flags_list or []
 
-    def get_email_content(
-        self,
+    def get_email_content(self,
         folder: str,
         uid: str
     ) -> EmailWithContent:
@@ -1288,7 +1287,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             EmailWithContent: Dataclass containing the email content.
 
         Example:
-            >>> get_email_content("INBOX", "1")
+            >>> get_email_content("1", Folder.Inbox)
             EmailWithContent(uid="1", sender="a@gmail.com", ...)
 
         Notes:
@@ -1386,6 +1385,46 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Error while getting size of the `{uid}` email in folder `{folder}`: `{status}`")
 
         return MessageParser.get_size(messages[0])
+
+    def download_attachment(self,
+        uid: str,
+        filename: str,
+        cid: str = "",
+        folder: str | Folder = ""
+    ):
+        """
+        """
+        status, message = self.uid('FETCH', uid, '(BODYSTRUCTURE)')
+        if status != 'OK':
+            raise IMAPManagerException(f"Error while fetching body structure of the `{uid}` email in folder `{folder}`: `{status}`")
+
+        attachment_list = MessageParser.get_attachment_list(message[1][0])
+        target_attachment = [attachment for attachment in attachment_list if attachment[0] == filename][0]
+        target_attachment = Attachment(
+            name=target_attachment[0],
+            size=target_attachment[1],
+            cid=target_attachment[2],
+            type=target_attachment[3]
+        )
+
+        try:
+            target_part = -1
+            for i, part in enumerate(MessageParser.group_bodystructure(message[1][0]), start=1):
+                if all(arg in part for arg in ["FILENAME", filename, cid]):
+                    target_part = i
+
+            if target_part < 0:
+                raise IMAPManagerException(f"Error, target attachment could not found in the email body.")
+
+            status, message = self.uid('FETCH', uid, f'(BODY.PEEK[{target_part}])')
+            if status != 'OK':
+                raise IMAPManagerException(f"Error while fetching attachment part of the `{uid}` email in folder `{folder}`: `{status}`")
+
+            target_attachment.data = message[1][0][1].decode()
+        except:
+            raise IMAPManagerException(f"Error while fetching attachment part of the `{uid}` email in folder `{folder}`: `{status}`")
+
+        return target_attachment
 
     def _mark_email(
         self,
