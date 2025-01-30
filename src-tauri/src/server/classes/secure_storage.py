@@ -6,7 +6,7 @@ import json
 import time
 import ast
 from enum import Enum
-from typing import TypedDict
+from typing import TypedDict, Any, cast
 
 import keyring
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -25,6 +25,14 @@ class AESGCMCipherNotInitializedError(Exception):
 
 class RSACipherNotInitializedError(Exception):
     def __init__(self, msg: str = "RSACipher is not initialized.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
+
+class NoPublicPemFoundError(Exception):
+    def __init__(self, msg: str = "No public pem key has found.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
+
+class NoPrivatePemFoundError(Exception):
+    def __init__(self, msg: str = "No private pem key has found..", *args, **kwargs):
         super().__init__(msg, *args, **kwargs)
 
 class InvalidSecureStorageKeyError(Exception):
@@ -87,10 +95,10 @@ class SecureStorageKeyValueType(str, Enum):
         return self.value
 
 class SecureStorageKeyValue(TypedDict):
-    value: any
+    value: Any
     type: SecureStorageKeyValueType
     created_at: float
-    last_updated_at: float | None
+    last_updated_at: float
 
 """
 Constants
@@ -108,8 +116,8 @@ ROTATE_FAILURE_TTL = ROTATE_KEY_TTL / 2
 
 class SecureStorage:
     _instance = None
-    _cache: SecureStorageCache = None
-    _encryptor: AESGCMCipher = None
+    _cache: SecureStorageCache
+    _encryptor: AESGCMCipher
 
     def __new__(cls):
         if not cls._instance:
@@ -136,18 +144,9 @@ class SecureStorage:
         self._is_key_value_type_valid(key_value_type)
         return SecureStorageKeyValue(
             value=key_value,
-            type=str(key_value_type),
+            type=key_value_type,
             created_at=time.time() if created_at is None else float(created_at),
             last_updated_at=time.time() if last_updated_at is None else float(last_updated_at),
-        )
-
-    def _fill_missing_key_value_dict(self, key_value: SecureStorageKeyValue):
-        self._is_key_value_type_valid(key_value["type"])
-        return SecureStorageKeyValue(
-            value=key_value["value"],
-            type=str(key_value["type"]),
-            created_at=float(key_value["created_at"]) if "created_at" in key_value else time.time(),
-            last_updated_at=float(key_value["last_updated_at"]) if "last_updated_at" in key_value else time.time(),
         )
 
     def _serialize_key_value_dict(self, key_value_dict: SecureStorageKeyValue) -> str:
@@ -160,7 +159,7 @@ class SecureStorage:
         if str(key) not in SECURE_STORAGE_KEY_LIST:
             raise InvalidSecureStorageKeyError(f"Invalid secure storage key: {key}")
 
-    def _is_key_legal(self, key: str | SecureStorageKey) -> bool:
+    def _is_key_legal(self, key: str | SecureStorageKey):
         if str(key) in SECURE_STORAGE_ILLEGAL_KEY_LIST:
             raise IllegalAESGCMCipherAccessError(f"Cannot access legal key list({",".join(SECURE_STORAGE_ILLEGAL_KEY_LIST)})")
 
@@ -176,7 +175,7 @@ class SecureStorage:
         self._is_key_valid(key)
         keyring.delete_password(APP_NAME, key)
 
-    def _init_aesgcm_cipher(self) -> bytes:
+    def _init_aesgcm_cipher(self) -> None:
         key = self._get_password(SecureStorageKey.AESGCMCipherKey)
         if not key:
             key = self._create_key_value_dict(os.urandom(32).hex(), SecureStorageKeyValueType.AESGCMKey)
@@ -201,7 +200,7 @@ class SecureStorage:
         for key_name in SECURE_STORAGE_KEY_LIST:
             try:
                 self._is_key_legal(key_name)
-                key_value = self.get_key_value(key_name, use_cache=False)
+                key_value = self.get_key_value(cast(SecureStorageKey, key_name), use_cache=False)
                 if key_value:
                     temp_store[key_name] = key_value
             except Exception as e:
@@ -211,7 +210,7 @@ class SecureStorage:
             self._delete_password(SecureStorageKey.AESGCMCipherKey)
             self._init_aesgcm_cipher()
             for key_name, key_value in temp_store.items():
-                self.add_key(key_name, key_value)
+                self.update_key(key_name, key_value)
 
             print("AESGCM cipher rotation completed successfully.")
         except Exception as e:
@@ -221,7 +220,7 @@ class SecureStorage:
             self._set_password(SecureStorageKey.AESGCMCipherKey, aesgcm_cipher_key_backup)
             self._init_aesgcm_cipher()
             for key_name, key_value in temp_store.items():
-                self.add_key(key_name, key_value)
+                self.update_key(key_name, key_value)
 
             print("AESGCM cipher rotation completed unsuccessfully.")
             raise e
@@ -235,14 +234,14 @@ class SecureStorage:
         public_pem = self._get_password(SecureStorageKey.PublicPem)
         if not private_pem or not public_pem:
             rsa_cipher = RSACipher()
-            self.add_key(
+            self.update_key(
                 SecureStorageKey.PrivatePem,
                 self._create_key_value_dict(
                     rsa_cipher.get_private_pem(),
                     SecureStorageKeyValueType.RSAKey
                 )
             )
-            self.add_key(
+            self.update_key(
                 SecureStorageKey.PublicPem,
                 self._create_key_value_dict(
                     rsa_cipher.get_public_pem(),
@@ -261,16 +260,18 @@ class SecureStorage:
 
         private_pem_backup = self.get_key_value(SecureStorageKey.PrivatePem, use_cache=False)
         public_pem_backup = self.get_key_value(SecureStorageKey.PublicPem, use_cache=False)
-        if not private_pem_backup or not public_pem_backup:
-            raise RSACipherNotInitializedError
+        if not private_pem_backup:
+            raise NoPrivatePemFoundError
+        if not public_pem_backup:
+            raise NoPublicPemFoundError
 
-        self.add_key(SecureStorageKey.PrivatePemBackup, private_pem_backup)
-        self.add_key(SecureStorageKey.PublicPemBackup, public_pem_backup)
+        self.update_key(SecureStorageKey.PrivatePemBackup, private_pem_backup)
+        self.update_key(SecureStorageKey.PublicPemBackup, public_pem_backup)
 
         temp_store = {}
         for key_name in SECURE_STORAGE_KEY_LIST:
             try:
-                key_value = self.get_key_value(key_name, use_cache=False)
+                key_value = self.get_key_value(cast(SecureStorageKey, key_name), use_cache=False)
                 if key_value and key_value["type"] == SecureStorageKeyValueType.RSAEncryptedKey:
                     temp_store[key_name] = RSACipher().decrypt_password(key_value["value"], private_pem_backup["value"])
             except Exception as e:
@@ -282,23 +283,25 @@ class SecureStorage:
 
             self._init_rsa_cipher()
             new_public_pem = self.get_key_value(SecureStorageKey.PublicPem, use_cache=False)
+            if not new_public_pem:
+                raise NoPublicPemFoundError
             for key_name, key_value in temp_store.items():
                 key_value["value"] = RSACipher().encrypt_password(key_value["value"], new_public_pem["value"])
-                self.add_key(key_name, key_value)
+                self.update_key(key_name, key_value)
 
             print("RSA cipher rotation completed successfully.")
         except Exception as e:
             print("Rotation failed. Restoring RSA cipher key...")
 
             private_pem_backup["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
-            self.add_key(SecureStorageKey.PrivatePem, private_pem_backup)
+            self.update_key(SecureStorageKey.PrivatePem, private_pem_backup)
             public_pem_backup["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
-            self.add_key(SecureStorageKey.PublicPem, public_pem_backup)
+            self.update_key(SecureStorageKey.PublicPem, public_pem_backup)
 
             self._init_rsa_cipher()
             for key_name, key_value in temp_store.items():
                 key_value["value"] = RSACipher().encrypt_password(key_value["value"], public_pem_backup["value"])
-                self.add_key(key_name, key_value)
+                self.update_key(key_name, key_value)
 
             print("RSA cipher rotation completed unsuccessfully.")
             raise e
@@ -309,10 +312,10 @@ class SecureStorage:
 
     def get_key_value(self,
         key_name: SecureStorageKey,
-        associated_data: bytes = None,
+        associated_data: bytes | None = None,
         decrypt: bool = True,
         use_cache: bool = True
-    ) -> SecureStorageKeyValue:
+    ) -> SecureStorageKeyValue | None:
         self._is_key_valid(key_name)
         self._is_key_legal(key_name)
 
@@ -329,23 +332,36 @@ class SecureStorage:
             else:
                 raise AESGCMCipherNotInitializedError
 
-        return self._parse_key_value_dict(key_value)
+        return key_value
 
     def add_key(self,
         key_name: SecureStorageKey,
-        key_value: SecureStorageKeyValue,
-        associated_data: bytes = None
+        value: Any,
+        type: SecureStorageKeyValueType,
+        associated_data: bytes | None = None
     ) -> None:
         if not self._encryptor:
             raise AESGCMCipherNotInitializedError
 
-        self._is_key_valid(key_name)
         self._is_key_legal(key_name)
+
+        key_value = self._create_key_value_dict(value, type)
+        key_value["value"] = self._encryptor.encrypt(key_value["value"], associated_data)
+        self._set_password(key_name, key_value)
+        self._cache.set(key_name, key_value)
+
+    def update_key(self,
+        key_name: SecureStorageKey,
+        key_value: SecureStorageKeyValue,
+        associated_data: bytes | None = None
+    ) -> None:
+        if not self._encryptor:
+            raise AESGCMCipherNotInitializedError
+
+        self.delete_key(key_name)
 
         if "last_updated_at" in key_value:
             key_value["last_updated_at"] = time.time()
-
-        key_value = self._fill_missing_key_value_dict(key_value)
 
         key_value["value"] = self._encryptor.encrypt(key_value["value"], associated_data)
         self._set_password(key_name, key_value)
@@ -365,7 +381,7 @@ class SecureStorage:
 
         for key in SECURE_STORAGE_KEY_LIST:
             try:
-                self._delete_password(key)
+                self._delete_password(cast(SecureStorageKey, key))
             except keyring.errors.PasswordDeleteError:
                 print(f"`{key}` could not found in keyring to delete. Skipping...")
                 pass
@@ -391,7 +407,7 @@ class SecureStorageCache:
     def _is_expired(self, timestamp: float) -> bool:
         return time.time() - timestamp > CACHE_TTL
 
-    def get(self, key: SecureStorageKey) -> any:
+    def get(self, key: SecureStorageKey) -> Any:
         if key not in self._store:
             return None
 
@@ -430,7 +446,7 @@ class AESGCMCipher:
             random_bytes = os.urandom(len(str(key)))
             key = random_bytes.hex()
 
-    def encrypt(self, plain_text: str, associated_data: bytes = None) -> str:
+    def encrypt(self, plain_text: str, associated_data: bytes | None = None) -> str:
         if not isinstance(plain_text, str):
             plain_text = json.dumps(plain_text)
 
@@ -438,7 +454,7 @@ class AESGCMCipher:
         cipher_text = self._cipher.encrypt(nonce, plain_text.encode(), associated_data)
         return base64.b64encode(nonce + cipher_text).decode('utf-8')
 
-    def decrypt(self, encrypted_text: str, associated_data: bytes = None) -> str:
+    def decrypt(self, encrypted_text: str, associated_data: bytes | None = None) -> str:
         if not isinstance(encrypted_text, str):
             encrypted_text = json.dumps(encrypted_text)
 
