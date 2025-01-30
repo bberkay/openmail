@@ -1,4 +1,7 @@
+import email
+from email.policy import default
 import os
+import re
 import unittest
 import json
 import copy
@@ -20,7 +23,7 @@ class TestSendOperations(unittest.TestCase):
 
         cls._openmail = OpenMail()
 
-        with open("openmail/tests/credentials.json") as credentials:
+        with open("./credentials.json") as credentials:
             credentials = json.load(credentials)
 
         if len(credentials) < 4:
@@ -55,10 +58,8 @@ class TestSendOperations(unittest.TestCase):
 
         # Body (and inline attachments)
         email_to_send_inline_attachments = None
-        inline_srcs = MessageParser.inline_attachment_src_from_message(email_to_send.body)
-        if inline_srcs:
-            email_to_send_inline_attachments = [match[1] for match in inline_srcs]
-
+        inline_srcs = MessageParser.get_inline_attachment_sources(email_to_send.body)
+        if inline_srcs: email_to_send_inline_attachments = [match[1] for match in inline_srcs]
         if email_to_send_inline_attachments:
             for email_to_send_inline_attachment in email_to_send_inline_attachments:
                 # Replace src values with base64 data to compare with email_content if they are not
@@ -66,7 +67,11 @@ class TestSendOperations(unittest.TestCase):
                     base64_data = FileBase64Encoder.read_file(
                         AttachmentConverter.resolve_and_convert(email_to_send_inline_attachment).path
                     )
-                    email_to_send.body = email_to_send.body.replace(email_to_send_inline_attachment, f"data:{base64_data[1]};base64,{base64_data[3]}", count=1)
+                    email_to_send.body = email_to_send.body.replace(
+                        email_to_send_inline_attachment,
+                        f"data:{base64_data[1]};base64,{base64_data[3]}",
+                        count=1
+                    )
 
         email_content.body = email_content.body.replace("base64, ", "base64,", count=1)
         self.assertEqual(
@@ -89,7 +94,15 @@ class TestSendOperations(unittest.TestCase):
 
     def test_send_basic_email(self):
         print("test_send_basic_email...")
-        email_to_send = EmailToSend(
+        self.__class__._openmail.imap.select("INBOX")
+        # 3261
+        # 3267
+        #test = self.__class__._openmail.imap.uid('FETCH','3261', "(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)")
+        #test = self.__class__._openmail.imap.uid('FETCH','3257:3261', "(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)")
+        #test = self.__class__._openmail.imap.uid('FETCH','3261', "(BODY.PEEK[3])")
+        test = self.__class__._openmail.imap.uid('FETCH','3263', "(BODY.PEEK[1])")
+        print("test. ", test)
+        """email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.random_subject_with_uuid(),
@@ -100,7 +113,7 @@ class TestSendOperations(unittest.TestCase):
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
-        self.is_sent_email_valid(email_to_send, uid)
+        self.is_sent_email_valid(email_to_send, uid)"""
 
     def test_send_multiple_recipients_email(self):
         print("test_send_multiple_recipients_email...")

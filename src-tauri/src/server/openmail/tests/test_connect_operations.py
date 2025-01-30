@@ -11,7 +11,7 @@ class TestConnectOperations(unittest.TestCase):
         cls.addClassCleanup(cls.cleanup)
 
         cls._openmail = OpenMail()
-        with open("openmail/tests/credentials.json") as credentials:
+        with open("./credentials.json") as credentials:
             cls._credentials = json.load(credentials)
         if len(cls._credentials) < 3:
             raise ValueError("At least 3 credentials are required.")

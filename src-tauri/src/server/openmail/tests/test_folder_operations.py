@@ -16,7 +16,7 @@ class TestFolderOperations(unittest.TestCase):
 
         cls._openmail = OpenMail()
 
-        with open("openmail/tests/credentials.json") as credentials:
+        with open("./credentials.json") as credentials:
             credentials = json.load(credentials)
 
         cls._email = credentials[0]["email"]

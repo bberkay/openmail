@@ -21,7 +21,7 @@ class TestFetchOperations(unittest.TestCase):
 
         cls._openmail = OpenMail()
 
-        with open("openmail/tests/credentials.json") as credentials:
+        with open("./credentials.json") as credentials:
             credentials = json.load(credentials)
 
         if len(credentials) < 3:
