@@ -2,7 +2,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import type { Account, EmailSummary } from "$lib/types";
     import Button from "$lib/ui/Elements/Button";
-    import Email from "../Email/Email.svelte";
+    import Email from "../Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 
     const mailboxController = new MailboxController();
@@ -19,7 +19,7 @@
         const response = await mailboxController.getEmailContent(account, folder, email.uid);
 
         if (response.success && response.data) {
-            showContent(Email, response.data);
+            showContent(Email, {account: account, email: response.data});
         } else {
             alert(response.message);
         }

@@ -1,24 +1,36 @@
 <script lang="ts">
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
     import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
-    import { mount, unmount } from "svelte";
-    import type { Attachment, EmailWithContent } from "$lib/types";
+    import { onMount } from "svelte";
+    import type { Account, Attachment, EmailWithContent } from "$lib/types";
     import { makeSizeHumanReadable } from "$lib/utils";
-    import Spinner from "$lib/ui/Elements/Loader";
+    import Button from "$lib/ui/Elements/Button";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
 
-    let { email }: { email: EmailWithContent } = $props();
+    const mailboxController = new MailboxController();
+
+    interface Props {
+        account: Account;
+        email: EmailWithContent;
+    }
+
+    let {
+        account,
+        email
+    }: Props = $props();
 
     let contentBody: HTMLElement;
     let attachments: HTMLElement;
 
-    $effect(() => {
-        printEmailContent(email);
-    });
-
-    function printEmailContent(email: EmailWithContent): void {
+    onMount(() => {
         contentBody.innerHTML = "";
         attachments.innerHTML = "";
 
+        printBody(email.body);
+    });
+
+    function printBody(body: string): void {
         // Body
         let iframe = document.createElement("iframe");
         contentBody.appendChild(iframe);
@@ -29,39 +41,35 @@
             : iframe.contentDocument;
         if (iframeDoc) {
             iframeDoc.open();
-            iframeDoc.writeln(email.body!);
+            iframeDoc.writeln(body);
             iframeDoc.close();
 
             contentBody.style.height = iframeDoc.body.scrollHeight + "px";
         }
-
-        // Attachment
-        if (Object.hasOwn(email, "attachments")) {
-            email.attachments!.forEach((attachment: Attachment, index: number) => {
-                const link = document.createElement("a");
-                link.classList.add("attachment");
-                link.id = "attachment-" + index;
-                link.href = "#";
-                link.onclick = async () => { downloadFile(link.id, attachment) }
-                link.download = attachment.name;
-                link.innerText = attachment.name + " (" + makeSizeHumanReadable(parseInt(attachment.size)) + ")";
-                attachments.appendChild(link);
-            });
-        }
     }
 
-    async function downloadFile(linkId: string, attachment: Attachment): Promise<void> {
-        const link = document.getElementById(linkId)!;
-        const tempInnerHTML = link.innerHTML;
-        link.innerHTML = "";
-        const loader = mount(Spinner, { target: link });
+    async function downloadAttachment(e: Event): Promise<void> {
+        const target = e.target as HTMLButtonElement;
+        const name = target.getAttribute("data-name")!;
+        const cid = target.getAttribute("data-cid");
 
-        const file = await create(attachment.name, { baseDir: BaseDirectory.Download });
-        await file.write(Uint8Array.from(atob(attachment.data), (char) => char.charCodeAt(0)));
-        await file.close();
+        const response = await mailboxController.downloadAttachment(
+            account,
+            SharedStore.currentFolder!,
+            email.uid,
+            name,
+            cid || undefined
+        );
 
-        unmount(loader);
-        link.innerHTML = tempInnerHTML;
+        if (!response.success) {
+            alert(response.message);
+        } else if (!response.data) {
+            alert("Error, attachment could not be downloaded.");
+        } else {
+            const file = await create(response.data.name, { baseDir: BaseDirectory.Download });
+            await file.write(Uint8Array.from(atob(response.data.data), (char) => char.charCodeAt(0)));
+            await file.close();
+        }
     }
 </script>
 
@@ -78,7 +86,21 @@
     {/if}
 </div>
 <div id="body" bind:this={contentBody}></div>
-<div id="attachments" bind:this={attachments}></div>
+{#if Object.hasOwn(email, "attachments") && email.attachments}
+<div id="attachments" bind:this={attachments}>
+    {#each email.attachments as attachment}
+        <Button.Action
+            class="attachment"
+            download={attachment.name}
+            onclick={downloadAttachment}
+            data-name={attachment.name}
+            data-cid={attachment.cid}
+        >
+            {attachment.name + " (" + makeSizeHumanReadable(parseInt(attachment.size)) + ")"} ⇓
+        </Button.Action>
+    {/each}
+</div>
+{/if}
 
 <style>
     #body:not(:has(iframe)) {
