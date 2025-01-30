@@ -48,7 +48,7 @@
 </Layout>
 
 <hr />
-<pre>{SharedStore.toString()}</pre>
+<pre>{JSON.stringify(SharedStore, null, 4)}</pre>
 
 <style>
     .mailbox {
