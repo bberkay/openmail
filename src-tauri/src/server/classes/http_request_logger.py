@@ -3,13 +3,14 @@ import json
 
 import logging
 from logging.handlers import RotatingFileHandler
+from typing import Any
 
 from utils import make_size_human_readable
 from consts import APP_NAME
 
 from .file_system import FileSystem
 
-MAX_RESPONSE_DATA_LENGTH = 256
+MAX_SUMMARIZED_DATA_LENGTH = 256
 MAX_BYTES_TO_LOG = 1 * 1024 * 1024 # 1 MB
 MAX_BACKUP_COUNT = 5
 
@@ -32,44 +33,44 @@ class HTTPRequestLogger(logging.Logger):
         self.addHandler(stream_handler)
         self.addHandler(file_handler)
 
-    def _censor_data(self, response_data: any) -> str:
-        if not response_data:
+    def _censor(self, data: Any) -> str:
+        if not data:
             return ""
-        if isinstance(response_data, dict):
+        if isinstance(data, dict):
             return {
-                key: (json.dumps(data)[:DATA_PREVIEW_LENGTH] + "*" * CENSOR_TRACE_LENGTH if data else "")
-                for key, data in response_data.items()
+                key: (json.dumps(value)[:DATA_PREVIEW_LENGTH] + "*" * CENSOR_TRACE_LENGTH if value else "")
+                for key, value in data.items()
             }
-        elif isinstance(response_data, list):
-            return "[" + (str(response_data)[1:DATA_PREVIEW_LENGTH] + "*" * CENSOR_TRACE_LENGTH) + "]" if response_data[0] else "[]"
-        elif isinstance(response_data, str):
-            return response_data[:DATA_PREVIEW_LENGTH] + "*" + CENSOR_TRACE_LENGTH
+        elif isinstance(data, list):
+            return "[" + (str(data)[1:DATA_PREVIEW_LENGTH] + "*" * CENSOR_TRACE_LENGTH) + "]" if data[0] else "[]"
+        elif isinstance(data, str):
+            return data[:DATA_PREVIEW_LENGTH] + "*" + CENSOR_TRACE_LENGTH
         return "`response_data` was not censored properly."
 
-    def _summarize_data(self, response_data: any) -> any:
-        if isinstance(response_data, dict):
-            return {key: self._summarize_data(value) for key, value in response_data.items()}
-        elif isinstance(response_data, list):
-            return self._summarize_data(str(response_data))
-        elif isinstance(response_data, str) and len(response_data) >= MAX_RESPONSE_DATA_LENGTH:
-            return response_data[:MAX_RESPONSE_DATA_LENGTH] + '...' + (']' if response_data.startswith('[') else '')
-        return response_data
+    def _summarize(self, data: Any) -> Any:
+        if isinstance(data, dict):
+            return {key: self._summarize(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return self._summarize(str(data))
+        elif isinstance(data, str) and len(data) >= MAX_SUMMARIZED_DATA_LENGTH:
+            return data[:MAX_SUMMARIZED_DATA_LENGTH] + '...' + (']' if data.startswith('[') else '')
+        return data
 
-    def _load_data(self, response_body: bytes) -> any:
+    def _load(self, data: bytes) -> Any:
         try:
-            return json.loads(response_body)
+            return json.loads(data)
         except json.decoder.JSONDecodeError:
-            return response_body.decode("utf-8")
+            return data.decode("utf-8")
 
     def request(self, request, response):
         try:
-            response_data = self._load_data(response._body)
-            if "data" in response_data.keys():
-                response_data["data"] = self._censor_data(response_data["data"])
+            response_data = self._load(response._body)
+            if isinstance(response_data, dict) and "data" in response_data.keys():
+                response_data["data"] = self._censor(response_data["data"])
 
             log_message = (
                 f"{request.method} {request.url} - {response.status_code} - "
-                f"{self._summarize_data(response_data)} - "
+                f"{self._summarize(response_data)} - "
                 f"{make_size_human_readable(int(response.headers.get('content-length')))}"
             )
             if response.status_code >= 400:
