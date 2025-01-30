@@ -1284,8 +1284,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Retrieve full content of a specific email.
 
         Args:
-            uid (str): Unique identifier of the email.
             folder (str): Folder containing the email.
+            uid (str): Unique identifier of the email.
 
         Returns:
             EmailWithContent: Dataclass containing the email content.
