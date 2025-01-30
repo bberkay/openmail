@@ -1,8 +1,8 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import Dropdown from "$lib/ui/Elements/Dropdown";
-    import Button from "$lib/ui/Elements/Button";
+    import * as Dropdown from "$lib/ui/Elements/Dropdown";
+    import * as Button from "$lib/ui/Elements/Button";
     import CreateFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/CreateFolderModal.svelte";
     import RenameFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/RenameFolderModal.svelte";
     import DeleteFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/DeleteFolderModal.svelte";
