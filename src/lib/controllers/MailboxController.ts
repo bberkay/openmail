@@ -201,6 +201,30 @@ export class MailboxController {
         );
     }
 
+    public async downloadAttachment(
+        account: Account,
+        folder: string,
+        uid: string,
+        name: string,
+        cid: string | undefined = undefined
+    ): Promise<GetResponse<GetRoutes.DOWNLOAD_ATTACHMENT>> {
+        return await ApiService.get(
+            SharedStore.server,
+            GetRoutes.DOWNLOAD_ATTACHMENT,
+            {
+                pathParams: {
+                    account: this._get_accounts(account),
+                    folder: folder,
+                    uid: uid,
+                    name: name
+                },
+                queryParams: {
+                    cid: cid
+                }
+            },
+        );
+    }
+
     public async sendEmail(formData: FormData): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,

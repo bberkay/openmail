@@ -1391,7 +1391,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
     def download_attachment(self,
         folder: str,
         uid: str,
-        filename: str,
+        name: str,
         cid: str = ""
     ) -> Attachment:
         """
@@ -1400,7 +1400,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Args:
             folder (str): Folder containing the email.
             uid (str): Unique identifier of the email.
-            filename (str): Name of the attachment file to download.
+            name (str): Name of the attachment file to download.
             cid (str, optional): Content ID of the attachment (default is an empty string).
 
         Returns:
@@ -1422,7 +1422,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Error while fetching body structure of the `{uid}` email in folder `{folder}`: `{status}`")
 
         attachment_list = MessageParser.get_attachment_list(message[1][0])
-        target_attachment = [attachment for attachment in attachment_list if attachment[0] == filename][0]
+        target_attachment = [attachment for attachment in attachment_list if attachment[0] == name][0]
         target_attachment = Attachment(
             name=target_attachment[0],
             size=target_attachment[1],
@@ -1433,7 +1433,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         try:
             target_part = -1
             for i, part in enumerate(MessageParser.group_bodystructure(message[1][0]), start=1):
-                if all(arg in part for arg in ["FILENAME", filename, cid]):
+                if all(arg in part for arg in ["FILENAME", name, cid]):
                     target_part = i
 
             if target_part < 0:

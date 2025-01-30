@@ -1,5 +1,6 @@
 import type {
     Account,
+    Attachment,
     EmailWithContent,
     Mailbox,
     OpenMailTaskResults,
@@ -13,6 +14,7 @@ export enum GetRoutes {
     PAGINATE_MAILBOXES = "/paginate-mailboxes",
     GET_FOLDERS = "/get-folders",
     GET_EMAIL_CONTENT = "/get-email-content",
+    DOWNLOAD_ATTACHMENT = "/download-attachment",
     GET_PUBLIC_KEY = "/get-public-key",
 }
 
@@ -67,6 +69,17 @@ interface GetQueryParams {
             folder: string;
             uid: string;
         };
+    };
+    [GetRoutes.DOWNLOAD_ATTACHMENT]: {
+        pathParams: {
+            account: string;
+            folder: string;
+            uid: string;
+            name: string;
+        };
+        queryParams?: {
+            cid?: string;
+        }
     };
     [GetRoutes.GET_PUBLIC_KEY]: {};
 }
@@ -159,6 +172,7 @@ export interface GetQueryResponse {
     [GetRoutes.PAGINATE_MAILBOXES]: OpenMailTaskResults<Mailbox>;
     [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>;
     [GetRoutes.GET_EMAIL_CONTENT]: EmailWithContent;
+    [GetRoutes.DOWNLOAD_ATTACHMENT]: Attachment;
     [GetRoutes.GET_PUBLIC_KEY]: {
         public_key: string;
     };

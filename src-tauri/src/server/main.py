@@ -426,12 +426,12 @@ def get_email_content(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
 
-@app.get("/download-attachment/{account}/{folder}/{uid}/{filename}")
+@app.get("/download-attachment/{account}/{folder}/{uid}/{name}")
 def download_attachment(
     account: str,
     folder: str,
     uid: str,
-    filename: str,
+    name: str,
     cid: str = ""
 ) -> Response[Attachment]:
     try:
@@ -442,12 +442,12 @@ def download_attachment(
         return Response[Attachment](
             success=True,
             message="Email content fetched successfully.",
-            data=openmail_clients[account].imap.download_attachment(unquote(folder), uid, filename, cid),
+            data=openmail_clients[account].imap.download_attachment(unquote(folder), uid, name, cid),
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
 
-async def convert_attachments(attachments: list[UploadFile]) -> list[Attachment]:
+async def convert_uploadfile_to_attachment(attachments: list[UploadFile]) -> list[Attachment]:
     converted_to_attachment_list = []
     for attachment in attachments:
         data = await attachment.read()
@@ -496,7 +496,7 @@ async def send_email(
                 body=form_data.body,
                 cc=form_data.cc,
                 bcc=form_data.bcc,
-                attachments=await convert_attachments(form_data.attachments),
+                attachments=await convert_uploadfile_to_attachment(form_data.attachments),
             )
         )
 
@@ -525,7 +525,7 @@ async def reply_email(
                 body=form_data.body,
                 cc=form_data.cc,
                 bcc=form_data.bcc,
-                attachments=await convert_attachments(form_data.attachments),
+                attachments=await convert_uploadfile_to_attachment(form_data.attachments),
             )
         )
 
@@ -554,7 +554,7 @@ async def forward_email(
                 body=form_data.body,
                 cc=form_data.cc,
                 bcc=form_data.bcc,
-                attachments=await convert_attachments(form_data.attachments),
+                attachments=await convert_uploadfile_to_attachment(form_data.attachments),
             )
         )
 
