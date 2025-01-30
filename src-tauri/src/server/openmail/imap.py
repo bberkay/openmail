@@ -1011,8 +1011,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         return search_criteria_query.strip()
 
     def search_emails(self,
-        folder: str = None,
-        search: str | SearchCriteria = None
+        folder: str = "",
+        search: str | SearchCriteria = ""
     ) -> IMAPCommandResult:
         """
         Get email uids from a specified folder based on search criteria. Does not
@@ -1391,8 +1391,27 @@ class IMAPManager(imaplib.IMAP4_SSL):
         folder: str,
         filename: str,
         cid: str = ""
-    ):
+    ) -> Attachment:
         """
+        Download an attachment from an email.
+
+        Args:
+            uid (str): Unique identifier of the email.
+            folder (str): Folder containing the email.
+            filename (str): Name of the attachment file to download.
+            cid (str, optional): Content ID of the attachment (default is an empty string).
+
+        Returns:
+            Attachment: An object containing metadata (name, size, CID, type) and data of the attachment.
+
+        Raises:
+            IMAPManagerException: If the body structure of the email cannot be fetched,
+                                  the attachment is not found, or there is an error during the fetching process.
+
+        Example:
+            >>> attachment = download_attachment("1", "INBOX", "example.pdf")
+            >>> print(attachment.name)
+            'example.pdf'
         """
         self.select(folder, readonly=True)
 

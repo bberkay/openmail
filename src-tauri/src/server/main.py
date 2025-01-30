@@ -426,16 +426,26 @@ def get_email_content(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
 
-class SendEmailFormData(BaseModel):
-    sender: str # Name Surname <namesurname@domain.com> or namesurname@domain.com
-    receiver: str  # mail addresses separated by comma
-    subject: str
-    body: str
-    uid: Optional[str] = None
-    cc: Optional[str] = None
-    bcc: Optional[str] = None
-    attachments: list[UploadFile] = []
+@app.get("/download-attachment/{account}/{folder}/{uid}/{filename}")
+def download_attachment(
+    account: str,
+    folder: str,
+    uid: str,
+    filename: str,
+    cid: str = ""
+) -> Response[Attachment]:
+    try:
+        response = check_if_email_client_is_exists(account)
+        if not response:
+            return response
 
+        return Response[Attachment](
+            success=True,
+            message="Email content fetched successfully.",
+            data=openmail_clients[account].imap.download_attachment(uid, unquote(folder), filename, cid),
+        )
+    except Exception as e:
+        return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
 
 async def convert_attachments(attachments: list[UploadFile]) -> list[Attachment]:
     converted_to_attachment_list = []
@@ -451,6 +461,15 @@ async def convert_attachments(attachments: list[UploadFile]) -> list[Attachment]
         )
     return converted_to_attachment_list
 
+class SendEmailFormData(BaseModel):
+    sender: str # Name Surname <namesurname@domain.com> or namesurname@domain.com
+    receiver: str  # mail addresses separated by comma
+    subject: str
+    body: str
+    uid: Optional[str] = None
+    cc: Optional[str] = None
+    bcc: Optional[str] = None
+    attachments: list[UploadFile] = []
 
 @app.post("/send-email")
 async def send_email(
