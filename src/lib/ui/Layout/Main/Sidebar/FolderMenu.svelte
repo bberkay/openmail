@@ -7,9 +7,9 @@
     import RenameFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/RenameFolderModal.svelte";
     import DeleteFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/DeleteFolderModal.svelte";
     import MoveFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/MoveFolderModal.svelte";
-    import Compose from "../Compose/Compose.svelte";
-    import { show as showModal } from "$lib/components/Elements/Modal.svelte";
-    import { showThis as showContent } from "$lib/components/Content.svelte";
+    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
+    import * as Modal from "$lib/ui/Elements/Modal";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 
     /* Constants */
 
@@ -112,11 +112,11 @@
         return folderName;
     }
 
-    function showFolderOperationModal(e: Event, component: any) {
+    function showFolderOperationModal(e: Event, operationModal: any) {
         const target = e.target as HTMLElement;
         const folderNode = target.closest(".folder") as HTMLElement;
         const folderName = folderNode ? getFullFolderPath(folderNode) : null;
-        showModal(component, {
+        Modal.show(operationModal, {
             folderName
         });
     }
