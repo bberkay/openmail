@@ -1169,7 +1169,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             offset_start = (uids_len - 1 if offset_start >= uids_len else offset_start) - 1
             offset_end = uids_len if offset_end >= uids_len else offset_end
 
-            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_start:offset_end]))
+            sequence_set = ",".join(map(str, self._searched_emails.uids[offset_start:offset_end][::-1]))
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
@@ -1177,8 +1177,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             )
 
             if status != 'OK':
-                raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{len(emails)}`: `{status}`")
-
+                raise IMAPManagerException(f"`{sequence_set}` in folder `{self._searched_emails.folder}` could not fetched `{len(emails)}`: `{status}`")
+            print("Mesasge: ", messages)
             if not messages or not messages[0]:
                 return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
 
