@@ -421,7 +421,7 @@ def get_email_content(
         return Response[EmailWithContent](
             success=True,
             message="Email content fetched successfully.",
-            data=openmail_clients[account].imap.get_email_content(uid, unquote(folder)),
+            data=openmail_clients[account].imap.get_email_content(unquote(folder), uid),
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
@@ -442,7 +442,7 @@ def download_attachment(
         return Response[Attachment](
             success=True,
             message="Email content fetched successfully.",
-            data=openmail_clients[account].imap.download_attachment(uid, unquote(folder), filename, cid),
+            data=openmail_clients[account].imap.download_attachment(unquote(folder), uid, filename, cid),
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))

@@ -306,7 +306,7 @@ class TestFetchOperations(unittest.TestCase):
         found_emails = self.__class__._openmail.imap.get_emails(1, 1)
         self.assertEqual(found_emails.total, 1)
 
-        size = self.__class__._openmail.imap.get_email_size(found_emails.emails[0].uid, found_emails.folder)
+        size = self.__class__._openmail.imap.get_email_size(found_emails.folder, found_emails.emails[0].uid)
         self.assertLessEqual(size, 30000)
 
     def test_complex_search_with_larger_than(self):
@@ -319,7 +319,7 @@ class TestFetchOperations(unittest.TestCase):
         found_emails = self.__class__._openmail.imap.get_emails(1, 1)
         self.assertEqual(found_emails.total, 1)
 
-        size = self.__class__._openmail.imap.get_email_size(found_emails.emails[0].uid, found_emails.folder)
+        size = self.__class__._openmail.imap.get_email_size(found_emails.folder, found_emails.emails[0].uid)
         self.assertGreaterEqual(size, 30000)
 
     def test_complex_search_with_include_flags(self):

@@ -1021,7 +1021,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Args:
             folder (str, optional): Folder to search in. If not provided, selected folder
             will be used. If there is no selected folder then `All` folder will be selected
-            if search is not None otherwise `Inbox` will be selected.
+            if search is not None otherwise `Inbox` will be selected. Inbox will be selected
+            if folder and search not provided, if only search provided but folder not provided
+            then fol
             search (str | SearchCriteria, optional): Search criteria. Defaults to "ALL".
 
         Example:
@@ -1365,13 +1367,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
             attachments=attachments
         )
 
-    def get_email_size(self, uid: str, folder: str) -> int | None:
+    def get_email_size(self, folder: str, uid: str) -> int | None:
         """
         Get email size of the given `uid`.
 
         Args:
-            uid (str): Unique identifier of the email.
             folder (str): Folder containing the email.
+            uid (str): Unique identifier of the email.
 
         Returns:
             int: Size of the email as bytes.
@@ -1387,8 +1389,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         return MessageParser.get_size(messages[0])
 
     def download_attachment(self,
-        uid: str,
         folder: str,
+        uid: str,
         filename: str,
         cid: str = ""
     ) -> Attachment:
@@ -1396,8 +1398,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Download an attachment from an email.
 
         Args:
-            uid (str): Unique identifier of the email.
             folder (str): Folder containing the email.
+            uid (str): Unique identifier of the email.
             filename (str): Name of the attachment file to download.
             cid (str, optional): Content ID of the attachment (default is an empty string).
 
