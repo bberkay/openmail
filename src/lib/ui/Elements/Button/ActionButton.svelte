@@ -1,6 +1,6 @@
 <script lang="ts">
     import { mount, unmount, type Snippet } from "svelte";
-    import Spinner from "$lib/ui/Elements/Loader";
+    import { Spinner } from "$lib/ui/Elements/Loader";
 
     interface Props {
         onclick: (((e: Event) => void) | ((e: Event) => Promise<void>)),

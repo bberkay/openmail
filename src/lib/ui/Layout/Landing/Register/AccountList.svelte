@@ -2,7 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import { type Account } from "$lib/types";
-    import Button from "$lib/ui/Elements/Button";
+    import * as Button from "$lib/ui/Elements/Button";
 
     const accountController = new AccountController();
 

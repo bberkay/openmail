@@ -1,7 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder, type Account } from "$lib/types";
-    import Select from "$lib/ui/Elements/Select";
+    import * as Select from "$lib/ui/Elements/Select";
 
     const handleAccount = (selectedAccountEmailAddr: string | null) => {
         if (selectedAccountEmailAddr) {

@@ -3,7 +3,7 @@
     import { AccountController } from "$lib/controllers/AccountController";
     import { type Account } from "$lib/types";
     import Form from "$lib/ui/Elements/Form";
-    import Button from "$lib/ui/Elements/Button";
+    import * as Button from "$lib/ui/Elements/Button";
 
     const accountController = new AccountController();
 

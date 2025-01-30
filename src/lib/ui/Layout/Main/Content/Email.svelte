@@ -5,7 +5,7 @@
     import { onMount } from "svelte";
     import type { Account, Attachment, EmailWithContent } from "$lib/types";
     import { makeSizeHumanReadable } from "$lib/utils";
-    import Button from "$lib/ui/Elements/Button";
+    import * as Button from "$lib/ui/Elements/Button";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
 
     const mailboxController = new MailboxController();

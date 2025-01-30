@@ -4,7 +4,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import Form from "$lib/ui/Elements/Form";
     import Modal from "$lib/ui/Elements/Modal";
-    import Select from "$lib/ui/Elements/Select";
+    import * as Select from "$lib/ui/Elements/Select";
 
     const mailboxController = new MailboxController();
 

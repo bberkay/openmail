@@ -1,12 +1,12 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { Folder, Mark, Account, type SearchCriteria } from "$lib/types";
+    import { Folder, Mark, type Account, type SearchCriteria } from "$lib/types";
     import { debounce, isEmailValid, adjustSizes, convertToIMAPDate, concatValueAndUnit, convertSizeToBytes, isObjEmpty } from "$lib/utils";
     import { Size } from "$lib/utils/types";
-    import Select from "$lib/ui/Elements/Select";
-    import Button from "$lib/ui/Elements/Button";
-    import Input from "$lib/ui/Elements/Input";
+    import * as Select from "$lib/ui/Elements/Select";
+    import * as Button from "$lib/ui/Elements/Button";
+    import * as Input from "$lib/ui/Elements/Input";
 
     /* Constants */
 

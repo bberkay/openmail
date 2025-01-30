@@ -5,7 +5,7 @@
     import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
     import AddAccountForm from "$lib/ui/Layout/Landing/Register/AddAccountForm.svelte";
     import EditAccountForm from "$lib/ui/Layout/Landing/Register/EditAccountForm.svelte";
-    import Button from "$lib/ui/Elements/Button";
+    import * as Button from "$lib/ui/Elements/Button";
 
     const mailboxController = new MailboxController();
 

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { MailboxController } from "$lib/controllers/MailboxController";
     import type { Account, EmailSummary } from "$lib/types";
-    import Button from "$lib/ui/Elements/Button";
+    import * as Button from "$lib/ui/Elements/Button";
     import Email from "../Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 

@@ -1,7 +1,7 @@
 <script lang="ts">
     import {  onMount } from "svelte";
     import { range, getMonths, convertToIMAPDate } from "$lib/utils";
-    import Select from "$lib/ui/Elements/Select";
+    import * as Select from "$lib/ui/Elements/Select";
 
     interface Props {
         placeholder?: string,

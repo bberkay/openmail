@@ -5,13 +5,13 @@
     import Content from "$lib/ui/Layout/Main/Content.svelte";
     import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
     import Navbar from "$lib/ui/Layout/Main/Navbar.svelte";
-    import Account from "$lib/ui/Layout/Navbar/Account.svelte";
-    import SearchBar from "$lib/ui/Layout/Navbar/SearchBar.svelte";
+    import Account from "$lib/ui/Layout/Main/Navbar/Account.svelte";
+    import SearchBar from "$lib/ui/Layout/Main/Navbar/SearchBar.svelte";
     import Sidebar from "$lib/ui/Layout/Main/Sidebar.svelte";
     import FolderMenu from "$lib/ui/Layout/Main/Sidebar/FolderMenu.svelte";
     import Landing from "$lib/ui/Layout/Landing.svelte";
     import Register from "$lib/ui/Layout/Landing/Register.svelte";
-    import Spinner from "$lib/ui/Elements/Loader";
+    import { Spinner } from "$lib/ui/Elements/Loader";
 
     let isLoading: boolean = $derived(SharedStore.server === "");
 </script>

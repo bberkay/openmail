@@ -4,7 +4,7 @@
     import { onMount } from 'svelte';
     import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
     import { createDomObject, makeSizeHumanReadable, isEmailValid } from '$lib/utils';
-    import Select from "$lib/ui/Elements/Select";
+    import * as Select from "$lib/ui/Elements/Select";
     import Form from "$lib/ui/Elements/Form";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
 

@@ -1,10 +1,10 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { EmailSummary, Mark, Mailbox } from "$lib/types";
+    import { type EmailSummary, Mark, type Mailbox } from "$lib/types";
     import InboxItem from "$lib/ui/Layout/Main/Content/Inbox/InboxItem.svelte";
-    import Select from "$lib/ui/Elements/Select";
-    import Button from "$lib/ui/Elements/Button";
+    import * as Select from "$lib/ui/Elements/Select";
+    import * as Button from "$lib/ui/Elements/Button";
 
     /* Constants */
 
@@ -12,7 +12,7 @@
 
     /* Variables */
 
-    let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a: number, b: Mailbox) => a + b.result.total, 0));
+    let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
     let currentOffset = $state(1);
     let emailSelection: string[] = $state([]);
 
