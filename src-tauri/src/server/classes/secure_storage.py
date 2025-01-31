@@ -74,6 +74,9 @@ class SecureStorageKey(str, Enum):
     # RSA Encrypted Keys
     Accounts = "accounts"
 
+    # Test Keys
+    CompleteBackupBeforeTesting = "complete_backup_before_testing"
+
     @classmethod
     def keys(cls) -> list[str]:
         return [key.value for key in cls]
@@ -85,7 +88,8 @@ class SecureStorageKeyValueType(str, Enum):
     AESGCMKey = "aesgcm_key"
     RSAKey = "rsa_key"
     RSAEncryptedKey = "rsa_encrypted_key"
-    CustomKey = "custom_key"
+    PlainKey = "plain_key"
+    TestingKey = "testing_key"
 
     @classmethod
     def keys(cls) -> list[str]:
@@ -104,7 +108,7 @@ class SecureStorageKeyValue(TypedDict):
 Constants
 """
 SECURE_STORAGE_KEY_LIST = SecureStorageKey.keys()
-SECURE_STORAGE_ILLEGAL_KEY_LIST = [
+SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST = [
     SecureStorageKey.AESGCMCipherKey,
     SecureStorageKey.AESGCMCipherKeyBackup
 ]
@@ -160,8 +164,8 @@ class SecureStorage:
             raise InvalidSecureStorageKeyError(f"Invalid secure storage key: {key}")
 
     def _is_key_legal(self, key: str | SecureStorageKey):
-        if str(key) in SECURE_STORAGE_ILLEGAL_KEY_LIST:
-            raise IllegalAESGCMCipherAccessError(f"Cannot access legal key list({",".join(SECURE_STORAGE_ILLEGAL_KEY_LIST)})")
+        if str(key) in SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST:
+            raise IllegalAESGCMCipherAccessError(f"Access to {key} is denied: Legal key list is {",".join(SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST)}")
 
     def _get_password(self, key: SecureStorageKey) -> SecureStorageKeyValue | None:
         self._is_key_valid(key)
