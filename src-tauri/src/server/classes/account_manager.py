@@ -13,11 +13,11 @@ class Account(BaseModel):
     fullname: Optional[str] = None
 
 class AccountWithPassword(Account):
-    encrypted_password: str = None
+    encrypted_password: str = ""
 
 class AccountManager:
     _instance = None
-    _secure_storage: SecureStorage = None
+    _secure_storage: SecureStorage
 
     def __new__(cls):
         if not cls._instance:
@@ -33,16 +33,17 @@ class AccountManager:
         return bool(self.get(emails=email, include_encrypted_passwords=False))
 
     def get(self,
-        emails: str | list[str] | None = None,
+        emails: str | list[str],
         include_encrypted_passwords: bool = True
-    ) -> list[Account] | None:
+    ) -> list[Account] | list[AccountWithPassword] | None:
+        if isinstance(emails, str):
+            emails = [emails]
+
         accounts = self._secure_storage.get_key_value(SecureStorageKey.Accounts)
         if not accounts:
             return []
 
         accounts = json.loads(accounts["value"].replace("'", "\""))
-        if isinstance(emails, str):
-            emails = [emails]
 
         filtered_accounts = []
         for account in accounts:
@@ -55,8 +56,22 @@ class AccountManager:
                 filtered_accounts.append(Account.model_validate(account))
         return filtered_accounts
 
+    def get_all(self,
+        include_encrypted_passwords: bool = True
+    ) -> list[Account] | list[AccountWithPassword] | None:
+        accounts = self._secure_storage.get_key_value(SecureStorageKey.Accounts)
+        if not accounts:
+            return []
+
+        accounts = json.loads(accounts["value"].replace("'", "\""))
+
+        return self.get(
+            [account["email_address"] for account in accounts],
+            include_encrypted_passwords
+        )
+
     def add(self, account: AccountWithPassword) -> None:
-        accounts = self.get()
+        accounts = self.get_all()
         if not accounts:
             accounts = []
 
@@ -64,14 +79,12 @@ class AccountManager:
         accounts.append(account.model_dump())
         self._secure_storage.add_key(
             SecureStorageKey.Accounts,
-            SecureStorageKeyValue(
-                value=accounts,
-                type=SecureStorageKeyValueType.RSAEncryptedKey
-            )
+            accounts,
+            SecureStorageKeyValueType.RSAEncryptedKey
         )
 
     def edit(self, account: Account | AccountWithPassword) -> None:
-        accounts = self.get(include_encrypted_passwords=bool(account.encrypted_password))
+        accounts = self.get_all(include_encrypted_passwords=bool(account.encrypted_password))
         if not accounts:
             return
 
@@ -86,24 +99,20 @@ class AccountManager:
         accounts.append(account.model_dump())
         self._secure_storage.add_key(
             SecureStorageKey.Accounts,
-            SecureStorageKeyValue(
-                value=accounts,
-                type=SecureStorageKeyValueType.RSAEncryptedKey
-            )
+            accounts,
+            SecureStorageKeyValueType.RSAEncryptedKey
         )
 
     def remove(self, email: str) -> None:
-        accounts = self.get()
+        accounts = self.get_all()
         if not accounts:
             return
 
         accounts = [account.model_dump() for account in accounts if account.email_address != email]
         self._secure_storage.add_key(
             SecureStorageKey.Accounts,
-            SecureStorageKeyValue(
-                value=accounts,
-                type=SecureStorageKeyValueType.RSAEncryptedKey
-            )
+            accounts,
+            SecureStorageKeyValueType.RSAEncryptedKey
         )
 
     def remove_all(self) -> None:
