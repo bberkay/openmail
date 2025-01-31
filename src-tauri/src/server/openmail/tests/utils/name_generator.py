@@ -4,7 +4,7 @@ class NameGenerator:
     """Utility class for generating random names"""
 
     @staticmethod
-    def random_name_with_uuid(
+    def name(
         prefix: str,
         count: int = 1,
         all_different: bool = False
@@ -21,9 +21,9 @@ class NameGenerator:
             str: The generated name
 
         Example:
-            >>> NameGenerator.random_name_with_uuid("openmail-test-")
+            >>> NameGenerator.name("openmail-test-")
             'openmail-test-4A2B3C'
-            >>> NameGenerator.random_name_with_uuid("openmail-test-", count=3, all_different=True)
+            >>> NameGenerator.name("openmail-test-", count=3, all_different=True)
             ['openmail-test-4A2B3C', 'openmail-test-5A2B3C', 'openmail-test-6A2B3C']
         """
         ids = []
@@ -35,7 +35,7 @@ class NameGenerator:
         return ids[0] if len(ids) == 1 else ids
 
     @staticmethod
-    def random_folder_name_with_uuid(
+    def folder_name(
         prefix="openmail-folder-test-",
         count: int = 1,
         all_different: bool = False
@@ -53,19 +53,19 @@ class NameGenerator:
             list[str]: A list of generated folder names
 
         Example:
-            >>> NameGenerator.random_folder_name_with_uuid()
+            >>> NameGenerator.folder_name()
             'openmail-folder-test-4A2B3C'
-            >>> NameGenerator.random_folder_name_with_uuid(count=3, all_different=True)
+            >>> NameGenerator.folder_name(count=3, all_different=True)
             ['openmail-folder-test-4A2B3C', 'openmail-folder-test-5A2B3C', 'openmail-folder-test-6A2B3C']
         """
-        return NameGenerator.random_name_with_uuid(
+        return NameGenerator.name(
             prefix,
             count,
             all_different
         )
 
     @staticmethod
-    def random_subject_with_uuid(
+    def subject(
         prefix="openmail-subject-test-",
         count: int = 1,
         all_different: bool = False
@@ -83,19 +83,19 @@ class NameGenerator:
             list[str]: A list of generated subjects
 
         Example:
-            >>> NameGenerator.random_subject_with_uuid()
+            >>> NameGenerator.subject()
             'openmail-subject-test-4A2B3C'
-            >>> NameGenerator.random_subject_with_uuid(count=3, all_different=True)
+            >>> NameGenerator.subject(count=3, all_different=True)
             ['openmail-subject-test-4A2B3C', 'openmail-subject-test-5A2B3C', 'openmail-subject-test-6A2B3C']
         """
-        return NameGenerator.random_name_with_uuid(
+        return NameGenerator.name(
             prefix,
             count,
             all_different
         )
 
     @staticmethod
-    def random_body_with_uuid(
+    def body(
         prefix="openmail-body-test-",
         count: int = 1,
         all_different: bool = False
@@ -113,12 +113,12 @@ class NameGenerator:
             list[str]: A list of generated bodies
 
         Example:
-            >>> NameGenerator.random_body_with_uuid()
+            >>> NameGenerator.body()
             'openmail-body-test-4A2B3C'
-            >>> NameGenerator.random_body_with_uuid(count=3, all_different=True)
+            >>> NameGenerator.body(count=3, all_different=True)
             ['openmail-body-test-4A2B3C', 'openmail-body-test-5A2B3C', 'openmail-body-test-6A2B3C']
         """
-        return NameGenerator.random_name_with_uuid(
+        return NameGenerator.name(
             prefix,
             count,
             all_different

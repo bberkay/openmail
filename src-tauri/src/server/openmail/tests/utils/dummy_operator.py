@@ -48,11 +48,11 @@ class DummyOperator:
         if not parent_folder_name_suffix:
             parent_folder_name_suffix = ""
 
-        folder_name = folder_name_suffix + NameGenerator.random_folder_name_with_uuid()
+        folder_name = folder_name_suffix + NameGenerator.folder_name()
 
         parent_folder_name = None
         if create_parent:
-            parent_folder_name = parent_folder_name_suffix + NameGenerator.random_folder_name_with_uuid()
+            parent_folder_name = parent_folder_name_suffix + NameGenerator.folder_name()
 
         openmail.imap.create_folder(folder_name, parent_folder_name)
         return (folder_name, parent_folder_name) if parent_folder_name else folder_name
@@ -90,13 +90,13 @@ class DummyOperator:
         sender_email = None
         email_to_send = None
         if isinstance(sender_email_or_email_to_send, str):
-            subject = NameGenerator.random_subject_with_uuid()
+            subject = NameGenerator.subject()
             sender_email = sender_email_or_email_to_send
             email_to_send = EmailToSend(
                 sender_email_or_email_to_send,
                 sender_email_or_email_to_send,
                 subject,
-                NameGenerator.random_body_with_uuid()
+                NameGenerator.body()
             )
         else:
             subject = sender_email_or_email_to_send.subject

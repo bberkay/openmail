@@ -105,7 +105,7 @@ class TestSendOperations(unittest.TestCase):
         """email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body="test_send_basic_email"
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -120,7 +120,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._receiver_emails[0:2],
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body="test_send_multiple_recipients_email",
             cc=self.__class__._receiver_emails[2],
             bcc=self.__class__._sender_email,
@@ -137,7 +137,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body=f'''
             <html>
                 <head></head>
@@ -162,7 +162,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body="test_send_email_with_filepath_attachment",
             attachments=[
                 sampleDocumentFiles[0],
@@ -182,7 +182,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body="test_send_email_with_link_attachment",
             attachments=[
                 sampleImageUrls[0],
@@ -203,7 +203,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body="test_send_email_with_all_options_attachment",
             attachments=[
                 sampleImageFiles[0],
@@ -225,7 +225,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body=f'''
             <html>
                 <head></head>
@@ -253,7 +253,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body=f'''
             <html>
                 <head></head>
@@ -281,7 +281,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body=f'''
             <html>
                 <head></head>
@@ -311,7 +311,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body=f'''
             <html>
                 <head></head>
@@ -343,7 +343,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body=f'''
             <html>
                 <head></head>
@@ -376,7 +376,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body=f'''
             <html>
                 <head></head>
@@ -408,7 +408,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = EmailToSend(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             body=f'''
             <html>
                 <head></head>
@@ -436,8 +436,8 @@ class TestSendOperations(unittest.TestCase):
             EmailToSend(
                 sender=self.__class__._sender_email,
                 receiver=self.__class__._sender_email,
-                subject=NameGenerator.random_subject_with_uuid(),
-                body=NameGenerator.random_body_with_uuid(),
+                subject=NameGenerator.subject(),
+                body=NameGenerator.body(),
             )
         )
         self.assertTrue(status)
@@ -449,7 +449,7 @@ class TestSendOperations(unittest.TestCase):
                 sender=self.__class__._sender_email,
                 receiver=self.__class__._sender_email,
                 subject=generate_random_subject_with_uuid(),
-                body=NameGenerator.random_body_with_uuid(),
+                body=NameGenerator.body(),
             )
         )
         self.assertTrue(status)"""

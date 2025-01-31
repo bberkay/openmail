@@ -39,8 +39,8 @@ class TestFetchOperations(unittest.TestCase):
         cls._test_sent_basic_email = EmailToSend(
             sender=cls._sender_email,
             receiver=cls._receiver_emails[0],
-            subject=NameGenerator.random_subject_with_uuid(),
-            body=NameGenerator.random_body_with_uuid(),
+            subject=NameGenerator.subject(),
+            body=NameGenerator.body(),
         )
         cls._test_sent_basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
@@ -52,10 +52,10 @@ class TestFetchOperations(unittest.TestCase):
         cls._test_sent_complex_email = EmailToSend(
             sender=cls._sender_email,
             receiver=cls._receiver_emails,
-            subject=NameGenerator.random_subject_with_uuid(),
+            subject=NameGenerator.subject(),
             cc=cls._receiver_emails[1:],
             bcc=cls._sender_email,
-            body=NameGenerator.random_body_with_uuid(),
+            body=NameGenerator.body(),
             attachments=[SampleDocumentGenerator().as_filepath()]
         )
         cls._test_sent_complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -416,14 +416,14 @@ class TestFetchOperations(unittest.TestCase):
         count = 3
         random_subject_list = []
         for i in range(1, count + 1):
-            random_subject = NameGenerator.random_subject_with_uuid()
+            random_subject = NameGenerator.subject()
             uid = DummyOperator.send_test_email_to_self_and_get_uid(
                 self.__class__._openmail,
                 EmailToSend(
                     sender=self.__class__._sender_email,
                     receiver=self.__class__._sender_email,
                     subject=random_subject,
-                    body=NameGenerator.random_body_with_uuid()
+                    body=NameGenerator.body()
                 )
             )
             uids_list.append(uid)
