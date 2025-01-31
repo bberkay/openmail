@@ -74,9 +74,6 @@ class SecureStorageKey(str, Enum):
     # RSA Encrypted Keys
     Accounts = "accounts"
 
-    # Test Keys
-    CompleteBackupBeforeTesting = "complete_backup_before_testing"
-
     @classmethod
     def keys(cls) -> list[str]:
         return [key.value for key in cls]
@@ -89,7 +86,6 @@ class SecureStorageKeyValueType(str, Enum):
     RSAKey = "rsa_key"
     RSAEncryptedKey = "rsa_encrypted_key"
     PlainKey = "plain_key"
-    TestingKey = "testing_key"
 
     @classmethod
     def keys(cls) -> list[str]:
