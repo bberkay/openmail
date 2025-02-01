@@ -29,6 +29,7 @@ class TestAccountManager(unittest.TestCase):
         ]
 
     def test_is_exists(self):
+        print("test_is_exists...")
         self.__class__._account_manager.remove_all()
 
         test_account = self.__class__._TEST_ACCOUNTS[0]
@@ -39,6 +40,9 @@ class TestAccountManager(unittest.TestCase):
         self.assertTrue(self.__class__._account_manager.is_exists(test_account.email_address))
 
     def test_get_account(self):
+        print("test_get_account...")
+
+        # Şimdi bu testi bir fulleyelim.
         #
         # Tabi bir de imap.py de ki get_emails problemi var dı
         # hatırlarsan UID sequence set çekilmemiş miydi neydi?
@@ -55,6 +59,7 @@ class TestAccountManager(unittest.TestCase):
         )
 
     def test_get_some_accounts(self):
+        print("test_get_some_accounts...")
         self.__class__._account_manager.remove_all()
 
         for test_account in self.__class__._TEST_ACCOUNTS[2:5]:
@@ -68,6 +73,7 @@ class TestAccountManager(unittest.TestCase):
         )
 
     def test_get_all_accounts(self):
+        print("test_get_all_accounts...")
         self.__class__._account_manager.remove_all()
 
         for test_account in self.__class__._TEST_ACCOUNTS:
@@ -79,6 +85,7 @@ class TestAccountManager(unittest.TestCase):
         )
 
     def test_edit_account(self):
+        print("test_edit_account...")
         self.__class__._account_manager.remove_all()
 
         test_account = self.__class__._TEST_ACCOUNTS[0]
@@ -93,6 +100,7 @@ class TestAccountManager(unittest.TestCase):
         self.assertTrue(edited_account and edited_account.fullname == new_fullname)
 
     def test_remove_account(self):
+        print("test_remove_account...")
         self.__class__._account_manager.remove_all()
 
         test_account = self.__class__._TEST_ACCOUNTS[0]
@@ -102,10 +110,12 @@ class TestAccountManager(unittest.TestCase):
         self.assertFalse(self.__class__._account_manager.is_exists(test_account.email_address))
 
     def test_remove_all_accounts(self):
+        print("test_remove_all_accounts...")
         self.__class__._account_manager.remove_all()
         self.assertEqual(len(self.__class__._account_manager.get_all()), 0)
 
     def test_prevent_duplicate_by_add(self):
+        print("test_prevent_duplicate_by_add...")
         self.__class__._account_manager.remove_all()
 
         test_account = self.__class__._TEST_ACCOUNTS[0]
@@ -116,6 +126,7 @@ class TestAccountManager(unittest.TestCase):
             self.__class__._account_manager.add(test_account)
 
     def test_prevent_duplicate_by_edit(self):
+        print("test_prevent_duplicate_by_edit...")
         self.__class__._account_manager.remove_all()
 
         test_account = self.__class__._TEST_ACCOUNTS[0]
@@ -127,6 +138,7 @@ class TestAccountManager(unittest.TestCase):
             self.__class__._account_manager.edit(edit_account)
 
     def test_edit_nonexist(self):
+        print("test_edit_nonexist...")
         self.__class__._account_manager.remove_all()
 
         with self.assertRaises(AccountDoesNotExists):
@@ -135,6 +147,7 @@ class TestAccountManager(unittest.TestCase):
             self.__class__._account_manager.edit(test_account)
 
     def test_remove_nonexist(self):
+        print("test_remove_nonexist...")
         self.__class__._account_manager.remove_all()
         test_account = self.__class__._TEST_ACCOUNTS[0]
         self.__class__._account_manager.remove(test_account)
