@@ -1,7 +1,10 @@
 import unittest
 import json
 
-from classes.account_manager import AccountManager, Account, AccountWithPassword
+from classes.account_manager import AccountAlreadyExists, AccountDoesNotExists
+from utils.name_generator import NameGenerator
+from classes.account_manager import *
+from classes.secure_storage import RSACipher, SecureStorage
 
 class TestAccountManager(unittest.TestCase):
     @classmethod
@@ -9,134 +12,136 @@ class TestAccountManager(unittest.TestCase):
         print("Setting up test `TestAccountManager`...")
         cls.addClassCleanup(cls.cleanup)
 
+        cls._secure_storage = SecureStorage()
+        cls._secure_storage._create_backup()
         cls._account_manager = AccountManager()
 
-    def test_is_exists(self):
-        pass
+        cls._TEST_ACCOUNTS = [
+            AccountWithPassword(
+                email_address=NameGenerator.email_address(),
+                fullname=NameGenerator.fullname(),
+                encrypted_password=RSACipher.encrypt_password(
+                    NameGenerator.password(),
+                    cls._secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
+                )
+            )
+            for i in range(1, 10)
+        ]
 
-    def test_add_account(self):
-        pass
+    def test_is_exists(self):
+        self.__class__._account_manager.remove_all()
+
+        test_account = self.__class__._TEST_ACCOUNTS[0]
+        self.__class__._account_manager.remove(test_account.email_address)
+        self.assertFalse(self.__class__._account_manager.is_exists(test_account.email_address))
+
+        self.__class__._account_manager.add(test_account)
+        self.assertTrue(self.__class__._account_manager.is_exists(test_account.email_address))
 
     def test_get_account(self):
-        pass
+        #
+        # Tabi bir de imap.py de ki get_emails problemi var dı
+        # hatırlarsan UID sequence set çekilmemiş miydi neydi?
+        # bu account bittikten sonra ona bir bakılmalı. Genel
+        # olarak proje tekrardan test edilebilir.
+        self.__class__._account_manager.remove_all()
+
+        test_account = self.__class__._TEST_ACCOUNTS[0]
+        self.__class__._account_manager.add(test_account)
+
+        self.assertEqual(
+            test_account,
+            self.__class__._account_manager.get(test_account)
+        )
+
+    def test_get_some_accounts(self):
+        self.__class__._account_manager.remove_all()
+
+        for test_account in self.__class__._TEST_ACCOUNTS[2:5]:
+            self.__class__._account_manager.add(test_account)
+
+        self.assertCountEqual(
+            self.__class__._TEST_ACCOUNTS[2:5],
+            self.__class__._account_manager.get_some(
+                [test_account.email_address for test_account in self.__class__._TEST_ACCOUNTS[2:5]]
+            )
+        )
 
     def test_get_all_accounts(self):
-        pass
+        self.__class__._account_manager.remove_all()
+
+        for test_account in self.__class__._TEST_ACCOUNTS:
+            self.__class__._account_manager.add(test_account)
+
+        self.assertCountEqual(
+            self.__class__._TEST_ACCOUNTS,
+            self.__class__._account_manager.get_all()
+        )
 
     def test_edit_account(self):
-        pass
+        self.__class__._account_manager.remove_all()
+
+        test_account = self.__class__._TEST_ACCOUNTS[0]
+        self.__class__._account_manager.add(test_account)
+
+        new_fullname = NameGenerator().fullname
+        self.__class__._account_manager.edit(Account(
+            email_address=test_account.email_address,
+            fullname=new_fullname
+        ))
+        edited_account = self.__class__._account_manager.get(test_account.email_address)
+        self.assertTrue(edited_account and edited_account.fullname == new_fullname)
 
     def test_remove_account(self):
-        pass
+        self.__class__._account_manager.remove_all()
+
+        test_account = self.__class__._TEST_ACCOUNTS[0]
+        self.__class__._account_manager.add(test_account)
+
+        self.__class__._account_manager.remove(test_account.email_address)
+        self.assertFalse(self.__class__._account_manager.is_exists(test_account.email_address))
 
     def test_remove_all_accounts(self):
-        pass
+        self.__class__._account_manager.remove_all()
+        self.assertEqual(len(self.__class__._account_manager.get_all()), 0)
 
-    def test_add_duplicate(self):
-        pass
+    def test_prevent_duplicate_by_add(self):
+        self.__class__._account_manager.remove_all()
+
+        test_account = self.__class__._TEST_ACCOUNTS[0]
+        self.__class__._account_manager.add(test_account)
+
+        with self.assertRaises(AccountAlreadyExists):
+            test_account = self.__class__._TEST_ACCOUNTS[0]
+            self.__class__._account_manager.add(test_account)
+
+    def test_prevent_duplicate_by_edit(self):
+        self.__class__._account_manager.remove_all()
+
+        test_account = self.__class__._TEST_ACCOUNTS[0]
+        self.__class__._account_manager.add(test_account)
+
+        with self.assertRaises(AccountAlreadyExists):
+            edit_account = self.__class__._TEST_ACCOUNTS[1]
+            edit_account.email_address = test_account.email_address
+            self.__class__._account_manager.edit(edit_account)
 
     def test_edit_nonexist(self):
-        pass
+        self.__class__._account_manager.remove_all()
 
-    def test_clear(self):
-        pass
+        with self.assertRaises(AccountDoesNotExists):
+            test_account = self.__class__._TEST_ACCOUNTS[0]
+            test_account.fullname = NameGenerator.fullname()
+            self.__class__._account_manager.edit(test_account)
 
-    def test_destroy(self):
-        pass
-
-    def test_login(self):
-        print("test_login...")
-        failed_accounts = []
-        for credential in self.__class__._credentials:
-            status, message = self.__class__._openmail.connect(
-                credential["email"],
-                credential["password"]
-            )
-
-            if status:
-                print(f"Successfully logged in {credential["email"]}")
-            else:
-                failed_accounts.append({"email": credential["email"], "status": status, "message": message})
-
-            self.__class__._openmail.disconnect()
-
-        if len(failed_accounts) > 0:
-            self.fail(f"There were accounts that could not be logged in: {failed_accounts}")
-
-    def test_login_with_nonascii_email(self):
-        print("test_login_with_nonascii_email...")
-        failed_accounts = []
-        for credential in self.__class__._credentials:
-            if not contains_non_ascii(credential["email"]):
-                print(f"{credential["email"]} does not include nonascii character. Skipping...")
-                continue
-
-            status, message = self.__class__._openmail.connect(
-                credential["email"],
-                credential["password"]
-            )
-
-            if status:
-                print(f"Successfully logged in {credential["email"]}")
-            else:
-                failed_accounts.append({"email": credential["email"], "status": status, "message": message})
-
-            self.__class__._openmail.disconnect()
-
-        if len(failed_accounts) > 0:
-            self.fail(f"There were accounts that could not be logged in: {failed_accounts}")
-
-    def test_login_with_nonascii_password(self):
-        print("test_login_with_nonascii_password...")
-        failed_accounts = []
-        for credential in self.__class__._credentials:
-            if not contains_non_ascii(credential["password"]):
-                print(f"{credential["email"]} does not include nonascii character. Skipping...")
-                continue
-
-            status, message = self.__class__._openmail.connect(
-                credential["email"],
-                credential["password"]
-            )
-
-            if status:
-                print(f"Successfully logged in {credential["email"]}")
-            else:
-                failed_accounts.append({"email": credential["email"], "status": status, "message": message})
-
-            self.__class__._openmail.disconnect()
-
-        if len(failed_accounts) > 0:
-            self.fail(f"There were accounts that could not be logged in: {failed_accounts}")
-
-    def test_logout(self):
-        print("test_logout...")
-        logged_in_failed_accounts = []
-        logged_out_failed_accounts = []
-        for credential in self.__class__._credentials:
-            status, message = self.__class__._openmail.connect(
-                credential["email"],
-                credential["password"]
-            )
-
-            if status:
-                print(f"Successfully logged in {credential["email"]}")
-            else:
-                logged_in_failed_accounts.append({"email": credential["email"], "status": status, "message": message})
-
-            status, message = self.__class__._openmail.disconnect()
-            if status:
-                print(f"Successfully logged out from {credential["email"]}")
-            else:
-                logged_out_failed_accounts.append({"email": credential["email"], "status": status, "message": message})
-
-        if len(logged_in_failed_accounts) > 0:
-            self.fail(f"There were accounts that could not be logged in: {logged_in_failed_accounts}")
-
-        if len(logged_out_failed_accounts) > 0:
-            self.fail(f"There were accounts that could not be logged out: {logged_out_failed_accounts}")
+    def test_remove_nonexist(self):
+        self.__class__._account_manager.remove_all()
+        test_account = self.__class__._TEST_ACCOUNTS[0]
+        self.__class__._account_manager.remove(test_account)
 
     @classmethod
     def cleanup(cls):
-        print("Cleaning up test `TestConnectOperations`...")
-        cls._openmail.disconnect()
+        print("Cleaning up test `TestAccountManager`...")
+        cls._account_manager.remove_all()
+        cls._secure_storage._load_backup()
+        cls._secure_storage._delete_backup()
