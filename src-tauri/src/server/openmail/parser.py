@@ -81,6 +81,8 @@ BODY_TEXT_HTML_DATA_PATTERN = re.compile(
     rb'Content-Type:\s*text/html.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
     re.DOTALL | re.IGNORECASE
 )
+# ATTACHMENT_LIST_PATTERN alternative:
+# r'\("([^"]+)"\s+"([^"]+)".*?"([^"]+)".*?"[^"]+"\s+(\d+).*?\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\).*?\)',
 ATTACHMENT_LIST_PATTERN = re.compile(
     r'\("([^"]+)"\s+"([^"]+)"\s+NIL\s+"([^"]+)"\s+NIL\s+"[^"]+"\s+(\d+)\s+NIL\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+NIL\)',
     re.DOTALL | re.IGNORECASE
