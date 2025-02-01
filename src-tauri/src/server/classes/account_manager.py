@@ -6,6 +6,17 @@ from pydantic import BaseModel
 from .secure_storage import SecureStorage, SecureStorageKey, SecureStorageKeyValue, SecureStorageKeyValueType
 
 """
+Errors
+"""
+class AccountAlreadyExists(Exception):
+    def __init__(self, msg: str = "Account already exists.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
+
+class AccountDoesNotExists(Exception):
+    def __init__(self, msg: str = "Account does not exists.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
+
+"""
 Enums, Types
 """
 class Account(BaseModel):
@@ -30,15 +41,33 @@ class AccountManager:
         self.clear()
 
     def is_exists(self, email: str) -> bool:
-        return bool(self.get(emails=email, include_encrypted_passwords=False))
+        return bool(self.get(email_address=email, include_password=False))
 
     def get(self,
-        emails: str | list[str],
-        include_encrypted_passwords: bool = True
-    ) -> list[Account] | list[AccountWithPassword] | None:
-        if isinstance(emails, str):
-            emails = [emails]
+        email_address: str,
+        include_password: bool = True
+    ) -> Account | AccountWithPassword | None:
+        accounts = self._secure_storage.get_key_value(SecureStorageKey.Accounts)
+        if not accounts:
+            return None
 
+        accounts = json.loads(accounts["value"].replace("'", "\""))
+
+        target_account = None
+        for account in accounts:
+            if account["email_address"] != email_address:
+                continue
+
+            if include_password:
+                target_account = AccountWithPassword.model_validate(account)
+            else:
+                target_account = Account.model_validate(account)
+        return target_account
+
+    def get_some(self,
+        email_addresses: list[str],
+        include_passwords: bool = True
+    ) -> list[Account] | list[AccountWithPassword] | None:
         accounts = self._secure_storage.get_key_value(SecureStorageKey.Accounts)
         if not accounts:
             return []
@@ -47,17 +76,17 @@ class AccountManager:
 
         filtered_accounts = []
         for account in accounts:
-            if emails and account["email_address"] not in emails:
+            if email_addresses and account["email_address"] not in email_addresses:
                 continue
 
-            if include_encrypted_passwords:
+            if include_passwords:
                 filtered_accounts.append(AccountWithPassword.model_validate(account))
             else:
                 filtered_accounts.append(Account.model_validate(account))
         return filtered_accounts
 
     def get_all(self,
-        include_encrypted_passwords: bool = True
+        include_passwords: bool = True
     ) -> list[Account] | list[AccountWithPassword] | None:
         accounts = self._secure_storage.get_key_value(SecureStorageKey.Accounts)
         if not accounts:
@@ -65,12 +94,15 @@ class AccountManager:
 
         accounts = json.loads(accounts["value"].replace("'", "\""))
 
-        return self.get(
+        return self.get_some(
             [account["email_address"] for account in accounts],
-            include_encrypted_passwords
+            include_passwords
         )
 
     def add(self, account: AccountWithPassword) -> None:
+        if self.is_exists(account.email_address):
+            raise AccountAlreadyExists
+
         accounts = self.get_all()
         if not accounts:
             accounts = []
@@ -84,7 +116,10 @@ class AccountManager:
         )
 
     def edit(self, account: Account | AccountWithPassword) -> None:
-        accounts = self.get_all(include_encrypted_passwords=bool(account.encrypted_password))
+        if not self.is_exists(account.email_address):
+            raise AccountDoesNotExists
+
+        accounts = self.get_all(include_passwords=bool(account.encrypted_password))
         if not accounts:
             return
 
