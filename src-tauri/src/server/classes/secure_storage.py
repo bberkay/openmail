@@ -73,6 +73,7 @@ class SecureStorageKey(str, Enum):
 
     # Plain
     CompleteBackup = "complete_backup"
+    TestKey = "test_key"
 
     @classmethod
     def keys(cls) -> list[str]:
@@ -135,16 +136,14 @@ class SecureStorage:
 
     def _create_key_value_dict(self,
         value: Any,
-        type: SecureStorageKeyValueType,
-        created_at: float | None = None,
-        last_updated_at: float | None = None
+        type: SecureStorageKeyValueType
     ) -> SecureStorageKeyValue:
         self._is_key_value_type_valid(type)
         return SecureStorageKeyValue(
             value=value,
             type=type,
-            created_at=time.time() if created_at is None else float(created_at),
-            last_updated_at=time.time() if last_updated_at is None else float(last_updated_at),
+            created_at=time.time(),
+            last_updated_at=time.time(),
         )
 
     def _serialize_key_value_dict(self, key_value_dict: SecureStorageKeyValue) -> str:
@@ -445,12 +444,14 @@ class SecureStorage:
     def clear(self) -> None:
         self._cache.destroy()
 
-    def destroy(self) -> None:
+    def destroy(self, /, destroy_backup: bool = False) -> None:
         if self._cache:
             self._cache.destroy()
 
         for key in SECURE_STORAGE_KEY_LIST:
             try:
+                if not destroy_backup and key == SecureStorageKey.CompleteBackup:
+                    continue
                 self._delete_password(cast(SecureStorageKey, key))
             except keyring.errors.PasswordDeleteError:
                 print(f"`{key}` could not found in keyring to delete. Skipping...")
@@ -611,10 +612,12 @@ class RSACipher:
 __all__ = [
     "SecureStorage",
     "SecureStorageKey",
+    "SecureStorageKeyValueType",
     "AESGCMCipher",
     "RSACipher",
     "RSACipherNotInitializedError",
     "AESGCMCipherNotInitializedError",
     "InvalidSecureStorageKeyError",
+    "InvalidSecureStorageKeyValueTypeError",
     "IllegalAESGCMCipherAccessError"
 ]
