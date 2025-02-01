@@ -2,12 +2,7 @@ import unittest
 import json
 from typing import cast
 
-from classes.secure_storage import SECURE_STORAGE_KEY_LIST, SecureStorage, SecureStorageKey, RSACipher, SecureStorageKeyValueType
-from consts import APP_NAME
-
-import keyring
-
-COMPLETE_BACKUP_BEFORE_TESTING = "complete_backup_before_testing"
+from classes.secure_storage import *
 
 class TestSecureStorage(unittest.TestCase):
     @classmethod
@@ -16,20 +11,7 @@ class TestSecureStorage(unittest.TestCase):
         print("Setting up test `TestSecureStorage`...")
         cls.addClassCleanup(cls.cleanup)
         cls._secure_storage = SecureStorage()
-
-        keyring.set_password(
-            APP_NAME,
-            COMPLETE_BACKUP_BEFORE_TESTING,
-            [
-                {
-                    "key_name": key_name,
-                    "key_value":
-                        cls._secure_storage.get_key_value(
-                            cast(SecureStorageKey, key_name)
-                        )
-                } for key_name in SECURE_STORAGE_KEY_LIST
-            ]
-        )
+        cls._secure_storage._create_backup()
 
     def test_add_key(self):
         pass
@@ -70,16 +52,5 @@ class TestSecureStorage(unittest.TestCase):
     @classmethod
     def cleanup(cls):
         print("Cleaning up test `TestSecureStorage`...")
-        complete_backup_before_testing = keyring.get_password(
-            APP_NAME,
-            COMPLETE_BACKUP_BEFORE_TESTING
-        )
-        if not complete_backup_before_testing:
-            raise Exception("Error: Backup could not found.")
-
-        for key_name in SECURE_STORAGE_KEY_LIST + [COMPLETE_BACKUP_BEFORE_TESTING]:
-            keyring.delete_password(APP_NAME, key_name)
-
-        for data in complete_backup_before_testing:
-            data = json.loads(data)
-            keyring.set_password(APP_NAME, data["key_name"], data["key_value"])
+        cls._secure_storage._load_backup()
+        cls._secure_storage._delete_backup()
