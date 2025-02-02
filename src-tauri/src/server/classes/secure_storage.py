@@ -39,22 +39,16 @@ class InvalidSecureStorageKeyError(Exception):
     def __init__(self, msg: str = "Invalid secure storage key.", *args, **kwargs):
         super().__init__(msg, *args, **kwargs)
 
+class IllegalSecureStorageKeyError(Exception):
+    def __init__(self, msg: str = "Illegal secure storage key access.", *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
+
 class InvalidSecureStorageKeyValueError(Exception):
     def __init__(self, msg: str = "Invalid secure storage key value.", *args, **kwargs):
         super().__init__(msg, *args, **kwargs)
 
 class InvalidSecureStorageKeyValueTypeError(Exception):
     def __init__(self, msg: str = "Invalid secure storage key value type.", *args, **kwargs):
-        super().__init__(msg, *args, **kwargs)
-
-class IllegalAESGCMCipherAccessError(Exception):
-    def __init__(self,
-        msg: str = """Illegal AESGCMCipher access.
-        Only accessible through `_get_password`, `_set_password`
-        and/or `_delete_password`.""",
-        *args,
-        **kwargs
-    ):
         super().__init__(msg, *args, **kwargs)
 
 """
@@ -158,7 +152,7 @@ class SecureStorage:
 
     def _is_key_legal(self, key: str | SecureStorageKey):
         if str(key) in SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST:
-            raise IllegalAESGCMCipherAccessError(f"Access to {key} is denied: Legal key list is {",".join(SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST)}")
+            raise IllegalSecureStorageKeyError(f"Access to {key} is denied: Legal key list is {",".join(SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST)}")
 
     def _get_password(self, key: SecureStorageKey) -> SecureStorageKeyValue | None:
         self._is_key_valid(key)
@@ -617,9 +611,9 @@ __all__ = [
     "RSACipher",
     "RSACipherNotInitializedError",
     "AESGCMCipherNotInitializedError",
+    "IllegalSecureStorageKeyError",
     "InvalidSecureStorageKeyError",
     "InvalidSecureStorageKeyValueTypeError",
-    "IllegalAESGCMCipherAccessError",
     "NoPublicPemFoundError",
     "NoPrivatePemFoundError",
 ]

@@ -4,6 +4,8 @@ import json
 from typing import cast
 
 from classes.secure_storage import *
+from classes.secure_storage import SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST
+from classes.secure_storage import SECURE_STORAGE_KEY_LIST
 
 class TestSecureStorage(unittest.TestCase):
     @classmethod
@@ -64,11 +66,17 @@ class TestSecureStorage(unittest.TestCase):
 
     def test_get_invalid_key_value(self):
         print("test_get_invalid_key_value...")
-        pass
+        with self.assertRaises(InvalidSecureStorageKeyError):
+            self.__class__._secure_storage.get_key_value(
+                "invalidkey",
+            )
 
     def test_get_illegal_key_value(self):
         print("test_get_illegal_key_value...")
-        pass
+        with self.assertRaises(IllegalSecureStorageKeyError):
+            self.__class__._secure_storage.get_key_value(
+                SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST[0]
+            )
 
     def test_add_key(self):
         print("test_add_key...")
@@ -102,7 +110,12 @@ class TestSecureStorage(unittest.TestCase):
 
     def test_add_illegal_key(self):
         print("test_add_illegal_key...")
-        pass
+        with self.assertRaises(IllegalSecureStorageKeyError):
+            self.__class__._secure_storage.add_key(
+                SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST[0],
+                "123",
+                SecureStorageKeyValueType.Plain
+            )
 
     def test_add_invalid_key_value_type(self):
         print("test_add_invalid_key_value_type...")
@@ -277,15 +290,54 @@ class TestSecureStorage(unittest.TestCase):
 
     def test_update_invalid_key(self):
         print("test_update_invalid_key...")
-        pass
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            "123",
+            SecureStorageKeyValueType.Plain,
+        )
+
+        time.sleep(1)
+
+        with self.assertRaises(InvalidSecureStorageKeyError):
+            self.__class__._secure_storage.update_key(
+                "invalidkey",
+                "4568",
+                SecureStorageKeyValueType.Plain,
+            )
 
     def test_update_illegal_key(self):
         print("test_update_illegal_key...")
-        pass
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            "123",
+            SecureStorageKeyValueType.Plain,
+        )
+
+        time.sleep(1)
+
+        with self.assertRaises(IllegalSecureStorageKeyError):
+            self.__class__._secure_storage.update_key(
+                SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST[0],
+                "4568",
+                SecureStorageKeyValueType.Plain,
+            )
 
     def test_update_invalid_key_value_type(self):
         print("test_update_invalid_key_value_type...")
-        pass
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            "123",
+            SecureStorageKeyValueType.Plain,
+        )
+
+        time.sleep(1)
+
+        with self.assertRaises(InvalidSecureStorageKeyValueTypeError):
+            self.__class__._secure_storage.update_key(
+                SecureStorageKey.TestKey,
+                "4568",
+                "invalidkeyvaluetype",
+            )
 
     def test_aesgcm_encryption_decryption_on_update(self):
         print("test_aesgcm_encryption_decryption_on_update...")
@@ -419,10 +471,17 @@ class TestSecureStorage(unittest.TestCase):
         ]
         self.assertTrue(all(value is None for value in key_values))
 
-    def test_delete_nonexists_key(self):
-        print("test_delete_nonexists_key...")
+    def test_delete_invalid_key(self):
+        print("test_delete_invalid_key...")
         with self.assertRaises(InvalidSecureStorageKeyError):
-            self.__class__._secure_storage.delete_key("nonexistskey")
+            self.__class__._secure_storage.delete_key("invalidkey")
+
+    def test_delete_illegal_key(self):
+        print("test_delete_illegal_key...")
+        with self.assertRaises(IllegalSecureStorageKeyError):
+            self.__class__._secure_storage.delete_key(
+                SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST[0]
+            )
 
     def test_clear(self):
         print("test_clear...")
