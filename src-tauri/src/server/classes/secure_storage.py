@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 
-from utils import safe_json_loads
+from utils import random_id, safe_json_loads
 from consts import APP_NAME
 
 """
@@ -66,7 +66,7 @@ class SecureStorageKey(str, Enum):
     Accounts = "accounts"
 
     # Plain
-    CompleteBackup = "complete_backup"
+    Backups = "backups"
     TestKey = "test_key"
 
     @classmethod
@@ -96,10 +96,11 @@ class SecureStorageKeyValue(TypedDict):
 """
 Constants
 """
+MAX_BACKUP_COUNT = 5
 SECURE_STORAGE_KEY_LIST = SecureStorageKey.keys()
 SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST = [
     SecureStorageKey.AESGCMCipherKey,
-    SecureStorageKey.CompleteBackup
+    SecureStorageKey.Backups
 ]
 
 # TTL in seconds
@@ -143,8 +144,8 @@ class SecureStorage:
     def _serialize_key_value_dict(self, key_value_dict: SecureStorageKeyValue) -> str:
         return json.dumps(key_value_dict)
 
-    def _parse_key_value_dict(self, key_value: str) -> SecureStorageKeyValue | None:
-        return safe_json_loads(key_value)
+    def _parse_key_value_dict(self, key_value: str) -> SecureStorageKeyValue:
+        return cast(SecureStorageKeyValue, safe_json_loads(key_value))
 
     def _is_key_valid(self, key: str | SecureStorageKey):
         if str(key) not in SECURE_STORAGE_KEY_LIST:
@@ -166,56 +167,118 @@ class SecureStorage:
         self._is_key_valid(key)
         keyring.delete_password(APP_NAME, key)
 
+    def _create_backup_id(self) -> str:
+        return f"backup_id_{random_id()}"
+
     def _create_backup(self) -> None:
-        # Check out _load_backup to see complete_backup value
-        # structure.
+        # Check out `_load_backup` method to see the structure
+        # of the `SecureStorageKey.Backups`
+        backups = self._get_password(SecureStorageKey.Backups)
+        if backups and len(backups["value"]) + 1 > MAX_BACKUP_COUNT:
+            backups["value"] = sorted(backups["value"], key=lambda x: x["backup_created_at"])[1:]
+
         self._set_password(
-            SecureStorageKey.CompleteBackup,
-            self._create_key_value_dict(
-                [
+            SecureStorageKey.Backups,
+            SecureStorageKeyValue(
+                value=(backups["value"] if backups else []) + [
                     {
-                        "key_name": key,
-                        "key_value": self._get_password(
-                            cast(SecureStorageKey, key)
-                        )
+                        "backup_id": self._create_backup_id(),
+                        "backup_data": [
+                            {
+                                "key_name": key,
+                                "key_value": self._get_password(cast(SecureStorageKey, key))
+                            } for key in SECURE_STORAGE_KEY_LIST if key != SecureStorageKey.Backups
+                        ],
+                        "backup_created_at": time.time()
                     }
-                    for key in SECURE_STORAGE_KEY_LIST if key != SecureStorageKey.CompleteBackup
                 ],
-                SecureStorageKeyValueType.Plain
+                type=SecureStorageKeyValueType.Plain,
+                created_at=backups["created_at"] if backups else time.time(),
+                last_updated_at=time.time()
             )
         )
 
-    def _load_backup(self) -> None:
-        complete_backup = self._get_password(SecureStorageKey.CompleteBackup)
-        if not complete_backup:
-            raise Exception("Error: Backup could not found.")
+        del backups
 
-        self.destroy()
+    def _load_backup(self, backup_id: str) -> None:
+        # Value of `SecureStorageKey.Backups`:
+        # {
+        #     value: [
+        #         {
+        #             "backup_id": "backup_id_1",
+        #             "backup_data": [
+        #                 {
+        #                   "key_name": SecureStorageKey.AESGCMCipherKey
+        #                   "key_value": {
+        #                       "value": "123",
+        #                       "type": SecureStorageKeyType.Plain,
+        #                       "created_at": "...",
+        #                       "last_updated_at": "..."
+        #                    }
+        #                 }
+        #             ],
+        #            "backup_created_at": "..."
+        #         }
+        #     ],
+        #     type: SecureStorageKeyValueType.Plain,
+        #     created_at: "...",
+        #     last_updated_at: "..."
+        # }
+        backups = self._get_password(SecureStorageKey.Backups)
+        if not backups:
+            raise Exception("Error: There are no any backup saved.")
 
-        """
-        Structure of `complete_backup`:
-        {
-            value: [
-                {
-                    "key_name": SecureStorageKey.AESGCMCipherKey
-                    "key_value": {
-                        "value": "123",
-                        "type": SecureStorageKeyType.Plain,
-                        "created_at": "...",
-                        "last_updated_at": "..."
-                    }
-                }
-            ],
-            type: SecureStorageKeyValueType.Plain,
-            created_at: "...",
-            last_updated_at: "..."
-        }
-        """
-        for data in complete_backup["value"]:
-            self._set_password(data["key_name"], data["key_value"])
+        backups = backups["value"]
+        backup_found = False
+        for backup in backups:
+            if backup["backup_id"] == backup_id:
+                backup_found = True
+                self.destroy()
+                for data in backup["backup_data"]:
+                    self._set_password(data["key_name"], data["key_value"])
+                break
 
-    def _delete_backup(self) -> None:
-        self._delete_password(SecureStorageKey.CompleteBackup)
+        if not backup_found:
+            raise Exception(f"Error: There is no backup that's id is `{backup_id}`.")
+
+        del backups
+
+    def _delete_backup(self, backup_id: str) -> None:
+        backups = self._get_password(SecureStorageKey.Backups)
+        if not backups:
+            return
+
+        self._set_password(
+            SecureStorageKey.Backups,
+            SecureStorageKeyValue(
+                value=[backup for backup in backups["value"] if backup["backup_id"] != backup_id],
+                type=SecureStorageKeyValueType.Plain,
+                created_at=backups["created_at"],
+                last_updated_at=time.time()
+            )
+        )
+
+        del backups
+
+    def _delete_all_backups(self) -> None:
+        self._delete_password(SecureStorageKey.Backups)
+
+    def _delete_all_backups_except_last_one(self) -> None:
+        backups = self._get_password(SecureStorageKey.Backups)
+        if not backups:
+            return
+
+        self._set_password(
+            SecureStorageKey.Backups,
+            SecureStorageKeyValue(
+                value=backups["value"][1:],
+                type=SecureStorageKeyValueType.Plain,
+                created_at=backups["created_at"],
+                last_updated_at=time.time()
+            )
+        )
+
+        del backups
 
     def _init_aesgcm_cipher(self) -> None:
         key = self._get_password(SecureStorageKey.AESGCMCipherKey)
@@ -449,6 +512,7 @@ class SecureStorage:
             except keyring.errors.PasswordDeleteError:
                 print(f"`{key}` could not found in keyring to delete. Skipping...")
                 pass
+
 
 class SecureStorageCache:
     class CachedData(TypedDict):

@@ -1,5 +1,7 @@
 import re
 import json
+import random
+import time
 
 def is_email_valid(email: str) -> bool:
     return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
@@ -16,7 +18,12 @@ def make_size_human_readable(size: int | None) -> str:
     else:
         return f"{size / 1024 / 1024 / 1024:.2f} GB"
 
-def safe_json_loads(value: any) -> any:
+def random_id() -> str:
+    epoch_time = int(time.time() * 1000)
+    random_part = random.randint(1000, 9999)
+    return f"{epoch_time}{random_part}"
+
+def safe_json_loads(value: str) -> dict | list | str:
     try:
         return json.loads(value)
     except (json.JSONDecodeError, TypeError):
