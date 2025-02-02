@@ -44,6 +44,9 @@ class TestSecureStorage(unittest.TestCase):
 
         current_key_values = []
         for key in SECURE_STORAGE_KEY_LIST:
+            if key == SecureStorageKey.CompleteBackup:
+                continue
+
             key_value = self.__class__._secure_storage._get_password(key)
             current_key_values.append({
                 "key_name": key,
@@ -57,7 +60,7 @@ class TestSecureStorage(unittest.TestCase):
 
         self.assertCountEqual(
             current_key_values,
-            json.loads(found_key_value["value"])
+            found_key_value["value"]
         )
 
         # Check Cache
@@ -75,6 +78,8 @@ class TestSecureStorage(unittest.TestCase):
 
         pre_load_backup_key_values = []
         for key in SECURE_STORAGE_KEY_LIST:
+            if key == SecureStorageKey.CompleteBackup:
+                continue
             key_value = self.__class__._secure_storage._get_password(key)
             pre_load_backup_key_values.append({
                 "key_name": key,
@@ -93,6 +98,8 @@ class TestSecureStorage(unittest.TestCase):
 
         post_load_backup_key_values = []
         for key in SECURE_STORAGE_KEY_LIST:
+            if key == SecureStorageKey.CompleteBackup:
+                continue
             key_value = self.__class__._secure_storage._get_password(key)
             post_load_backup_key_values.append({
                 "key_name": key,

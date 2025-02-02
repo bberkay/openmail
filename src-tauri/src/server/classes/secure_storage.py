@@ -179,7 +179,7 @@ class SecureStorage:
                             cast(SecureStorageKey, key)
                         )
                     }
-                    for key in SECURE_STORAGE_KEY_LIST
+                    for key in SECURE_STORAGE_KEY_LIST if key != SecureStorageKey.CompleteBackup
                 ],
                 SecureStorageKeyValueType.Plain
             )
@@ -212,7 +212,6 @@ class SecureStorage:
         }
         """
         for data in complete_backup["value"]:
-            data = json.loads(data)
             self._set_password(data["key_name"], data["key_value"])
 
     def _delete_backup(self) -> None:
