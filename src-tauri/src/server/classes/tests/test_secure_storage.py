@@ -60,9 +60,46 @@ class TestSecureStorage(unittest.TestCase):
             json.loads(found_key_value["value"])
         )
 
+        # Check Cache
+        self.assertIsNotNone(self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey))
+
     def test_load_backup(self):
         print("test_load_backup...")
-        pass
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            NameGenerator.email_address(),
+            SecureStorageKeyValueType.Plain
+        )
+
+        time.sleep(1)
+
+        pre_load_backup_key_values = []
+        for key in SECURE_STORAGE_KEY_LIST:
+            key_value = self.__class__._secure_storage._get_password(key)
+            pre_load_backup_key_values.append({
+                "key_name": key,
+                "key_value": key_value
+            })
+
+        self.__class__._secure_storage._create_backup()
+        self.__class__._secure_storage.delete_key(SecureStorageKey.TestKey)
+        self.__class__._secure_storage._load_backup()
+
+        post_load_backup_key_values = []
+        for key in SECURE_STORAGE_KEY_LIST:
+            key_value = self.__class__._secure_storage._get_password(key)
+            post_load_backup_key_values.append({
+                "key_name": key,
+                "key_value": key_value
+            })
+
+        self.assertCountEqual(
+            pre_load_backup_key_values,
+            post_load_backup_key_values
+        )
+
+        # Check Cache
+        self.assertIsNone(self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey))
 
     def test_delete_backup(self):
         print("test_delete_backup...")
