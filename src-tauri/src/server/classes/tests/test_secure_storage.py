@@ -29,6 +29,18 @@ class TestSecureStorage(unittest.TestCase):
             1
         )
 
+    def test_create_backup(self):
+        print("test_create_backup...")
+        pass
+
+    def test_load_backup(self):
+        print("test_load_backup...")
+        pass
+
+    def test_delete_backup(self):
+        print("test_delete_backup...")
+        pass
+
     def test_get_key_value(self):
         print("test_get_key_value...")
         test_key_value = {
@@ -49,6 +61,14 @@ class TestSecureStorage(unittest.TestCase):
         self.assertEqual(found_key_value["type"], test_key_value["type"])
 
         self.check_cache()
+
+    def test_get_invalid_key_value(self):
+        print("test_get_invalid_key_value...")
+        pass
+
+    def test_get_illegal_key_value(self):
+        print("test_get_illegal_key_value...")
+        pass
 
     def test_add_key(self):
         print("test_add_key...")
@@ -71,22 +91,26 @@ class TestSecureStorage(unittest.TestCase):
 
         self.check_cache()
 
-    def test_add_nonexists_key(self):
-        print("test_add_nonexists_key...")
+    def test_add_invalid_key(self):
+        print("test_add_invalid_key...")
         with self.assertRaises(InvalidSecureStorageKeyError):
             self.__class__._secure_storage.add_key(
-                "nonexistskey",
+                "invalidkey",
                 "1234",
                 SecureStorageKeyValueType.Plain,
             )
 
-    def test_add_nonexists_key_value_type(self):
-        print("test_add_nonexists_key_value_type...")
+    def test_add_illegal_key(self):
+        print("test_add_illegal_key...")
+        pass
+
+    def test_add_invalid_key_value_type(self):
+        print("test_add_invalid_key_value_type...")
         with self.assertRaises(InvalidSecureStorageKeyValueTypeError):
             self.__class__._secure_storage.add_key(
                 SecureStorageKey.TestKey,
                 "1234",
-                "nonexistskeyvaluetype",
+                "invalidkeyvaluetype",
             )
 
     def test_override_by_add(self):
@@ -250,6 +274,18 @@ class TestSecureStorage(unittest.TestCase):
         self.assertGreater(last_key_value["last_updated_at"], first_test_key_value["last_updated_at"])
 
         self.check_cache()
+
+    def test_update_invalid_key(self):
+        print("test_update_invalid_key...")
+        pass
+
+    def test_update_illegal_key(self):
+        print("test_update_illegal_key...")
+        pass
+
+    def test_update_invalid_key_value_type(self):
+        print("test_update_invalid_key_value_type...")
+        pass
 
     def test_aesgcm_encryption_decryption_on_update(self):
         print("test_aesgcm_encryption_decryption_on_update...")
