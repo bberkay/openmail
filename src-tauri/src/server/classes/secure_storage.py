@@ -170,19 +170,20 @@ class SecureStorage:
     def _create_backup_id(self) -> str:
         return f"backup_id_{random_id()}"
 
-    def _create_backup(self) -> None:
+    def _create_backup(self) -> str:
         # Check out `_load_backup` method to see the structure
         # of the `SecureStorageKey.Backups`
         backups = self._get_password(SecureStorageKey.Backups)
         if backups and len(backups["value"]) + 1 > MAX_BACKUP_COUNT:
             backups["value"] = sorted(backups["value"], key=lambda x: x["backup_created_at"])[1:]
 
+        backup_id = self._create_backup_id()
         self._set_password(
             SecureStorageKey.Backups,
             SecureStorageKeyValue(
                 value=(backups["value"] if backups else []) + [
                     {
-                        "backup_id": self._create_backup_id(),
+                        "backup_id": backup_id,
                         "backup_data": [
                             {
                                 "key_name": key,
@@ -199,6 +200,7 @@ class SecureStorage:
         )
 
         del backups
+        return backup_id
 
     def _load_backup(self, backup_id: str) -> None:
         # Value of `SecureStorageKey.Backups`:
