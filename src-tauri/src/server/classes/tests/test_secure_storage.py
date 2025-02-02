@@ -34,7 +34,31 @@ class TestSecureStorage(unittest.TestCase):
 
     def test_create_backup(self):
         print("test_create_backup...")
-        pass
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            NameGenerator.email_address(),
+            SecureStorageKeyValueType.Plain
+        )
+
+        time.sleep(1)
+
+        current_key_values = []
+        for key in SECURE_STORAGE_KEY_LIST:
+            key_value = self.__class__._secure_storage._get_password(key)
+            current_key_values.append({
+                "key_name": key,
+                "key_value": key_value
+            })
+
+        self.__class__._secure_storage._create_backup()
+        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.CompleteBackup)
+        if not found_key_value:
+            self.fail(f"{SecureStorageKey.CompleteBackup}'s value could not found.")
+
+        self.assertCountEqual(
+            current_key_values,
+            json.loads(found_key_value["value"])
+        )
 
     def test_load_backup(self):
         print("test_load_backup...")
