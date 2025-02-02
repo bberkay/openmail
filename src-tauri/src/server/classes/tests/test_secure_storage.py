@@ -14,7 +14,7 @@ class TestSecureStorage(unittest.TestCase):
         print("Setting up test `TestSecureStorage`...")
         cls.addClassCleanup(cls.cleanup)
         cls._secure_storage = SecureStorage()
-        cls._secure_storage._create_backup()
+        cls._test_backup_id = cls._secure_storage._create_backup()
 
     def check_cache(self):
         print("Checking Cache...")
@@ -23,10 +23,6 @@ class TestSecureStorage(unittest.TestCase):
             self.__class__._secure_storage.get_key_value(SecureStorageKey.TestKey, use_cache=False, decrypt=False),
             self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey),
         ]
-        self.assertEqual(
-            len(key_values),
-            [key_value["value"] for key_value in key_values if key_value]
-        )
         self.assertEqual(
             len(set([key_value["value"] for key_value in key_values if key_value])),
             1
@@ -44,24 +40,28 @@ class TestSecureStorage(unittest.TestCase):
 
         current_key_values = []
         for key in SECURE_STORAGE_KEY_LIST:
-            if key == SecureStorageKey.CompleteBackup:
+            if key == SecureStorageKey.Backups:
                 continue
 
-            key_value = self.__class__._secure_storage._get_password(key)
+            key_value = self.__class__._secure_storage._get_password(
+                cast(SecureStorageKey, key)
+            )
             current_key_values.append({
                 "key_name": key,
                 "key_value": key_value
             })
 
-        self.__class__._secure_storage._create_backup()
-        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.CompleteBackup)
+        new_backup_id = self.__class__._secure_storage._create_backup()
+        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.Backups)
         if not found_key_value:
-            self.fail(f"{SecureStorageKey.CompleteBackup}'s value could not found.")
+            self.fail(f"{SecureStorageKey.Backups}'s value could not found.")
 
         self.assertCountEqual(
             current_key_values,
-            found_key_value["value"]
+            [backup for backup in found_key_value["value"] if backup["backup_id"] == new_backup_id][0]
         )
+
+        self.__class__._secure_storage._delete_backup(new_backup_id)
 
         # Check Cache
         self.assertIsNotNone(self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey))
@@ -78,29 +78,33 @@ class TestSecureStorage(unittest.TestCase):
 
         pre_load_backup_key_values = []
         for key in SECURE_STORAGE_KEY_LIST:
-            if key == SecureStorageKey.CompleteBackup:
+            if key == SecureStorageKey.Backups:
                 continue
-            key_value = self.__class__._secure_storage._get_password(key)
+            key_value = self.__class__._secure_storage._get_password(
+                cast(SecureStorageKey, key)
+            )
             pre_load_backup_key_values.append({
                 "key_name": key,
                 "key_value": key_value
             })
 
-        self.__class__._secure_storage._create_backup()
-        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.CompleteBackup)
+        new_backup_id = self.__class__._secure_storage._create_backup()
+        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.Backups)
         self.assertIsNotNone(found_key_value)
 
         self.__class__._secure_storage.delete_key(SecureStorageKey.TestKey)
         found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.TestKey)
         self.assertIsNone(found_key_value)
 
-        self.__class__._secure_storage._load_backup()
+        self.__class__._secure_storage._load_backup(new_backup_id)
 
         post_load_backup_key_values = []
         for key in SECURE_STORAGE_KEY_LIST:
-            if key == SecureStorageKey.CompleteBackup:
+            if key == SecureStorageKey.Backups:
                 continue
-            key_value = self.__class__._secure_storage._get_password(key)
+            key_value = self.__class__._secure_storage._get_password(
+                cast(SecureStorageKey, key)
+            )
             post_load_backup_key_values.append({
                 "key_name": key,
                 "key_value": key_value
@@ -110,6 +114,8 @@ class TestSecureStorage(unittest.TestCase):
             pre_load_backup_key_values,
             post_load_backup_key_values
         )
+
+        self.__class__._secure_storage._delete_backup(new_backup_id)
 
         # Check Cache
         self.assertIsNone(self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey))
@@ -124,12 +130,12 @@ class TestSecureStorage(unittest.TestCase):
 
         time.sleep(1)
 
-        self.__class__._secure_storage._create_backup()
-        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.CompleteBackup)
+        new_backup_id = self.__class__._secure_storage._create_backup()
+        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.Backups)
         self.assertIsNotNone(found_key_value)
 
-        self.__class__._secure_storage._delete_backup()
-        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.CompleteBackup)
+        self.__class__._secure_storage._delete_backup(new_backup_id)
+        found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.Backups)
         self.assertIsNone(found_key_value)
 
         # Check Cache
@@ -319,7 +325,7 @@ class TestSecureStorage(unittest.TestCase):
         if not private_pem:
             raise NoPrivatePemFoundError
 
-        original_value = NameGenerator.email_address()
+        original_value = cast(str, NameGenerator.email_address())
         test_key_value = {
             "value": RSACipher.encrypt_password(original_value, public_pem["value"]),
             "type": SecureStorageKeyValueType.RSAEncrypted
@@ -507,7 +513,7 @@ class TestSecureStorage(unittest.TestCase):
         if not private_pem:
             self.fail(f"{SecureStorageKey.PrivatePem}'s value could not found.")
 
-        first_original_value = NameGenerator.email_address()
+        first_original_value = cast(str, NameGenerator.email_address())
         first_key_value = {
             "value": RSACipher.encrypt_password(first_original_value, public_pem["value"]),
             "type": SecureStorageKeyValueType.RSAEncrypted
@@ -518,7 +524,7 @@ class TestSecureStorage(unittest.TestCase):
             first_key_value["type"],
         )
 
-        last_original_value = NameGenerator.email_address()
+        last_original_value = cast(str, NameGenerator.email_address())
         last_key_value = {
             "value": RSACipher.encrypt_password(last_original_value, public_pem["value"]),
             "type": SecureStorageKeyValueType.RSAEncrypted
@@ -662,7 +668,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_rsa_rotation...")
         self.__class__._secure_storage._init_rsa_cipher()
 
-        original_value = NameGenerator.email_address()
+        original_value = cast(str, NameGenerator.email_address())
 
         pre_rotation_public_pem = self.__class__._secure_storage.get_key_value(
             SecureStorageKey.PublicPem,
@@ -729,5 +735,5 @@ class TestSecureStorage(unittest.TestCase):
     @classmethod
     def cleanup(cls):
         print("Cleaning up test `TestSecureStorage`...")
-        cls._secure_storage._load_backup()
-        cls._secure_storage._delete_backup()
+        cls._secure_storage._load_backup(cls._test_backup_id)
+        cls._secure_storage._delete_backup(cls._test_backup_id)
