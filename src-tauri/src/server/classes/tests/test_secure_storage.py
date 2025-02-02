@@ -58,7 +58,7 @@ class TestSecureStorage(unittest.TestCase):
 
         self.assertCountEqual(
             current_key_values,
-            [backup for backup in found_key_value["value"] if backup["backup_id"] == new_backup_id][0]
+            [backup for backup in found_key_value["value"] if backup["backup_id"] == new_backup_id][0]["backup_data"]
         )
 
         self.__class__._secure_storage._delete_backup(new_backup_id)
@@ -132,11 +132,23 @@ class TestSecureStorage(unittest.TestCase):
 
         new_backup_id = self.__class__._secure_storage._create_backup()
         found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.Backups)
-        self.assertIsNotNone(found_key_value)
+        if not found_key_value:
+            self.fail(f"{SecureStorageKey.Backups}'s value could not found after creating new backup.")
+
+        self.assertIn(
+            new_backup_id,
+            [backup["backup_id"] for backup in found_key_value["value"]]
+        )
 
         self.__class__._secure_storage._delete_backup(new_backup_id)
         found_key_value = self.__class__._secure_storage._get_password(SecureStorageKey.Backups)
-        self.assertIsNone(found_key_value)
+        if not found_key_value:
+            self.fail(f"{SecureStorageKey.Backups}'s value could not found after deleting backup.")
+
+        self.assertNotIn(
+            new_backup_id,
+            [backup["backup_id"] for backup in found_key_value["value"]]
+        )
 
         # Check Cache
         self.assertIsNotNone(self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey))

@@ -267,7 +267,7 @@ class SecureStorage:
 
     def _delete_all_backups_except_last_one(self) -> None:
         backups = self._get_password(SecureStorageKey.Backups)
-        if not backups:
+        if not backups or len(backups["value"]) < 2:
             return
 
         self._set_password(
