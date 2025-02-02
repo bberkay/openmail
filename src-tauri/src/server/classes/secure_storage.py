@@ -506,7 +506,7 @@ class SecureStorage:
 
         for key in SECURE_STORAGE_KEY_LIST:
             try:
-                if not destroy_backup and key == SecureStorageKey.CompleteBackup:
+                if not destroy_backup and key == SecureStorageKey.Backups:
                     continue
                 self._delete_password(cast(SecureStorageKey, key))
             except keyring.errors.PasswordDeleteError:
