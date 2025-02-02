@@ -478,7 +478,7 @@ class SecureStorageCache:
     def _is_expired(self, timestamp: float) -> bool:
         return time.time() - timestamp > CACHE_TTL
 
-    def get(self, key: SecureStorageKey) -> Any:
+    def get(self, key: SecureStorageKey) -> SecureStorageKeyValue | None:
         if key not in self._store:
             return None
 
@@ -619,5 +619,7 @@ __all__ = [
     "AESGCMCipherNotInitializedError",
     "InvalidSecureStorageKeyError",
     "InvalidSecureStorageKeyValueTypeError",
-    "IllegalAESGCMCipherAccessError"
+    "IllegalAESGCMCipherAccessError",
+    "NoPublicPemFoundError",
+    "NoPrivatePemFoundError",
 ]
