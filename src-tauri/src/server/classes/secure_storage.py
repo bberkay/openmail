@@ -331,8 +331,7 @@ class SecureStorage:
             for key_name in temp_store.keys():
                 temp_store[key_name] = None
             del temp_store
-
-        return is_rotate_succesful, is_restoration_succesful
+            return is_rotate_succesful, is_restoration_succesful
 
     def _restore_aesgcm_cipher(self) -> bool:
         is_restoration_succesful = True
@@ -341,7 +340,7 @@ class SecureStorage:
 
             aesgcm_cipher_key = self._get_password(SecureStorageKey.AESGCMCipherKey)
             if not aesgcm_cipher_key:
-                raise AESGCMCipherNotInitializedError(f"AESGCMCipher not initialized properly after loading backup.")
+                raise AESGCMCipherNotInitializedError(f"{SecureStorageKey.AESGCMCipherKey} not initialized properly after loading backup.")
 
             aesgcm_cipher_key["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
             self._set_password(SecureStorageKey.AESGCMCipherKey, aesgcm_cipher_key)
@@ -377,8 +376,11 @@ class SecureStorage:
             elif public_pem["last_updated_at"] + ROTATE_KEY_TTL < time.time():
                 self._rotate_rsa_cipher()
 
-    def _rotate_rsa_cipher(self) -> None:
+    def _rotate_rsa_cipher(self) -> tuple[bool, bool]:
         print("Rotating RSA cipher...")
+        is_rotate_succesful = True
+        is_restoration_succesful = False
+
         self.clear()
         pre_rsa_rotation_backup = self._create_backup()
 
@@ -390,7 +392,8 @@ class SecureStorage:
             try:
                 key_value = self.get_key_value(cast(SecureStorageKey, key_name), use_cache=False)
                 if key_value and key_value["type"] == SecureStorageKeyValueType.RSAEncrypted:
-                    temp_store[key_name] = RSACipher().decrypt_password(key_value["value"], private_pem["value"])
+                    key_value["value"] = RSACipher().decrypt_password(key_value["value"], private_pem["value"])
+                    temp_store[key_name] = key_value
             except Exception as e:
                 print(f"`{key_name}` value could not be retrieved. Skipping...")
 
@@ -411,13 +414,27 @@ class SecureStorage:
             print("RSA cipher rotation completed successfully.")
         except Exception as e:
             print(f"Rotation failed: `{str(e)}` ----> Restoring RSA cipher key...")
-
+            is_rotate_succesful = False
             self._load_backup(pre_rsa_rotation_backup)
+            is_restoration_succesful = self._restore_rsa_cipher()
+            print("RSA cipher rotation completed unsuccessfully.")
+            raise e
+        finally:
+            self._delete_backup(pre_rsa_rotation_backup)
+            for key_name in temp_store.keys():
+                temp_store[key_name] = None
+            del temp_store
+            return is_rotate_succesful, is_restoration_succesful
+
+    def _restore_rsa_cipher(self) -> bool:
+        is_restoration_succesful = True
+        try:
+            print("Restoring RSA Cipher...")
 
             # Load old private pem
             private_pem = self._get_password(SecureStorageKey.PrivatePem)
             if not private_pem:
-                raise NoPrivatePemFoundError
+                raise NoPrivatePemFoundError(f"{SecureStorageKey.PrivatePem} not initialized properly after loading backup")
             private_pem["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
             self.update_key(
                 SecureStorageKey.PrivatePem,
@@ -429,7 +446,7 @@ class SecureStorage:
             # Load old public pem
             public_pem = self._get_password(SecureStorageKey.PublicPem)
             if not public_pem:
-                raise NoPublicPemFoundError
+                raise NoPublicPemFoundError(f"{SecureStorageKey.PublicPem} not initialized properly after loading backup")
             public_pem["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
             self.update_key(
                 SecureStorageKey.PublicPem,
@@ -437,14 +454,13 @@ class SecureStorage:
                 private_pem["type"],
                 keep_last_update_at_same=True
             )
-
-            print("RSA cipher rotation completed unsuccessfully.")
-            raise e
+            self._init_rsa_cipher()
+            print("RSA cipher restored succesfully.")
+        except Exception as e:
+            is_restoration_succesful = False
+            print(f"RSA Rotation restoration failed: `{str(e)}`")
         finally:
-            self._delete_backup(pre_rsa_rotation_backup)
-            for key_name in temp_store.keys():
-                temp_store[key_name] = None
-            del temp_store
+            return is_restoration_succesful
 
     def get_key_value(self,
         key_name: SecureStorageKey,
