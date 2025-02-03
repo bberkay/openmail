@@ -690,13 +690,13 @@ class TestSecureStorage(unittest.TestCase):
 
         aesgcm_rotation_result, aesgcm_restoration_result = self.__class__._secure_storage._rotate_aesgcm_cipher()
 
-        post_rotation_aesgcm_key = self.__class__._secure_storage._get_password(SecureStorageKey.AESGCMCipherKey)
-        if not post_rotation_aesgcm_key:
-            self.fail(f"Post-Rotation {SecureStorageKey.AESGCMCipherKey}'s value could not found.")
-
         if aesgcm_rotation_result:
             # Is rotation really successful?
+            post_rotation_aesgcm_key = self.__class__._secure_storage._get_password(SecureStorageKey.AESGCMCipherKey)
+            if not post_rotation_aesgcm_key:
+                self.fail(f"Post-Rotation {SecureStorageKey.AESGCMCipherKey}'s value could not found.")
             self.assertNotEqual(pre_rotation_aesgcm_key["value"], post_rotation_aesgcm_key["value"])
+
             # Imitiate restoration
             self.__class__._secure_storage._load_backup(pre_rotation_restoration_backup)
             aesgcm_restoration_result = self.__class__._secure_storage._restore_aesgcm_cipher()
@@ -752,7 +752,8 @@ class TestSecureStorage(unittest.TestCase):
             test_key_value["type"],
         )
 
-        self.__class__._secure_storage._rotate_rsa_cipher()
+        rsa_rotation_result, _ = self.__class__._secure_storage._rotate_rsa_cipher()
+        self.assertTrue(rsa_rotation_result)
 
         post_rotation_public_pem = self.__class__._secure_storage.get_key_value(
             SecureStorageKey.PublicPem,
@@ -768,7 +769,7 @@ class TestSecureStorage(unittest.TestCase):
         if not post_rotation_private_pem:
             self.fail(f"Post-Rotation {SecureStorageKey.PrivatePem}'s value could not found.")
 
-        # Is rotation successful?
+        # Is rotation really successful?
         self.assertNotEqual(pre_rotation_public_pem["value"], post_rotation_public_pem["value"])
         self.assertNotEqual(pre_rotation_private_pem["value"], post_rotation_private_pem["value"])
 
@@ -778,6 +779,99 @@ class TestSecureStorage(unittest.TestCase):
         )
         if not found_key_value:
             self.fail(f"{SecureStorageKey.TestKey}'s value could not found.")
+
+        self.assertEqual(
+            original_value,
+            RSACipher.decrypt_password(
+                found_key_value["value"],
+                post_rotation_private_pem["value"]
+            )
+        )
+
+    def test_rsa_rotation_restoration(self):
+        print("test_rsa_rotation_restoration...")
+        self.__class__._secure_storage._init_rsa_cipher()
+
+        original_value = cast(str, NameGenerator.email_address())
+
+        pre_rotation_public_pem = self.__class__._secure_storage.get_key_value(
+            SecureStorageKey.PublicPem,
+            use_cache=False
+        )
+        if not pre_rotation_public_pem:
+            self.fail(f"Pre-Rotation {SecureStorageKey.PublicPem}'s value could not found.")
+
+        pre_rotation_private_pem = self.__class__._secure_storage.get_key_value(
+            SecureStorageKey.PrivatePem,
+            use_cache=False
+        )
+        if not pre_rotation_private_pem:
+            self.fail(f"Pre-Rotation {SecureStorageKey.PrivatePem}'s value could not found.")
+
+        test_key_value = {
+            "value": RSACipher.encrypt_password(original_value, pre_rotation_public_pem["value"]),
+            "type": SecureStorageKeyValueType.RSAEncrypted
+        }
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            test_key_value["value"],
+            test_key_value["type"],
+        )
+
+        pre_rotation_restoration_backup = self.__class__._secure_storage._create_backup()
+        rsa_rotation_result, rsa_restoration_result = self.__class__._secure_storage._rotate_rsa_cipher()
+
+        if rsa_rotation_result:
+            # Is rotation really successful?
+            post_rotation_public_pem = self.__class__._secure_storage.get_key_value(
+                SecureStorageKey.PublicPem,
+                use_cache=False
+            )
+            if not post_rotation_public_pem:
+                self.fail(f"Post-Rotation {SecureStorageKey.PublicPem}'s value could not found.")
+
+            post_rotation_private_pem = self.__class__._secure_storage.get_key_value(
+                SecureStorageKey.PrivatePem,
+                use_cache=False
+            )
+            if not post_rotation_private_pem:
+                self.fail(f"Post-Rotation {SecureStorageKey.PrivatePem}'s value could not found.")
+
+            self.assertNotEqual(pre_rotation_public_pem["value"], post_rotation_public_pem["value"])
+            self.assertNotEqual(pre_rotation_private_pem["value"], post_rotation_private_pem["value"])
+
+            # Imitiate restoration
+            self.__class__._secure_storage._load_backup(pre_rotation_restoration_backup)
+            rsa_restoration_result = self.__class__._secure_storage._restore_rsa_cipher()
+            self.assertTrue(rsa_restoration_result)
+        else:
+            self.assertTrue(rsa_restoration_result)
+
+        # get pems again after restoration
+        post_rotation_public_pem = self.__class__._secure_storage.get_key_value(
+            SecureStorageKey.PublicPem,
+            use_cache=False
+        )
+        if not post_rotation_public_pem:
+            self.fail(f"Post-Rotation-Restoration {SecureStorageKey.PublicPem}'s value could not found.")
+
+        post_rotation_private_pem = self.__class__._secure_storage.get_key_value(
+            SecureStorageKey.PrivatePem,
+            use_cache=False
+        )
+        if not post_rotation_private_pem:
+            self.fail(f"Post-Rotation-Restoration {SecureStorageKey.PrivatePem}'s value could not found.")
+
+        # Is restoration really successful?
+        self.assertEqual(pre_rotation_public_pem["value"], post_rotation_public_pem["value"])
+        self.assertEqual(pre_rotation_private_pem["value"], post_rotation_private_pem["value"])
+
+        found_key_value = self.__class__._secure_storage.get_key_value(
+            SecureStorageKey.TestKey,
+            use_cache=False
+        )
+        if not found_key_value:
+            self.fail(f"Post-Rotation-Restoration {SecureStorageKey.TestKey}'s value could not found.")
 
         self.assertEqual(
             original_value,
