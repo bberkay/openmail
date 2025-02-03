@@ -48,10 +48,6 @@ class TestAccountManager(unittest.TestCase):
     def test_get_account(self):
         print("test_get_account...")
 
-        # Tabi bir de imap.py de ki get_emails problemi var dı
-        # hatırlarsan UID sequence set çekilmemiş miydi neydi?
-        # bu account bittikten sonra ona bir bakılmalı. Genel
-        # olarak proje tekrardan test edilebilir.
         self.__class__._account_manager.remove_all()
 
         test_account = self.__class__._TEST_ACCOUNTS[0]
