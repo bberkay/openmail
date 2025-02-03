@@ -49,17 +49,15 @@ class AccountManager:
             return None
 
         accounts = json.loads(accounts["value"].replace("'", "\""))
-
-        target_account = None
         for account in accounts:
             if account["email_address"] != email_address:
                 continue
-
             if include_password:
-                target_account = AccountWithPassword.model_validate(account)
+                return AccountWithPassword.model_validate(account)
             else:
-                target_account = Account.model_validate(account)
-        return target_account
+                return Account.model_validate(account)
+
+        return None
 
     def get_some(self,
         email_addresses: list[str],
@@ -113,10 +111,12 @@ class AccountManager:
         )
 
     def edit(self, account: Account | AccountWithPassword) -> None:
+        """Edit account by email address"""
         if not self.is_exists(account.email_address):
             raise AccountDoesNotExists
 
-        accounts = self.get_all(include_passwords=bool(account.encrypted_password))
+        include_passwords = isinstance(account, AccountWithPassword) and bool(account.encrypted_password)
+        accounts = self.get_all(include_passwords=include_passwords)
         if not accounts:
             return
 
