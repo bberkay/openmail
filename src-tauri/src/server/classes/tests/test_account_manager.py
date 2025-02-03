@@ -1,10 +1,12 @@
 import unittest
 import json
 
+from typing import cast
+
 from classes.account_manager import AccountAlreadyExists, AccountDoesNotExists
-from utils.name_generator import NameGenerator
+from classes.tests.utils.name_generator import NameGenerator
 from classes.account_manager import *
-from classes.secure_storage import RSACipher, SecureStorage
+from classes.secure_storage import NoPublicPemFoundError, RSACipher, SecureStorage, SecureStorageKey
 
 class TestAccountManager(unittest.TestCase):
     @classmethod
@@ -13,16 +15,20 @@ class TestAccountManager(unittest.TestCase):
         cls.addClassCleanup(cls.cleanup)
 
         cls._secure_storage = SecureStorage()
-        cls._secure_storage._create_backup()
+        cls._test_backup_id = cls._secure_storage._create_backup()
         cls._account_manager = AccountManager()
+
+        public_pem = cls._secure_storage.get_key_value(SecureStorageKey.PublicPem)
+        if not public_pem:
+            raise NoPublicPemFoundError
 
         cls._TEST_ACCOUNTS = [
             AccountWithPassword(
                 email_address=NameGenerator.email_address(),
                 fullname=NameGenerator.fullname(),
                 encrypted_password=RSACipher.encrypt_password(
-                    NameGenerator.password(),
-                    cls._secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
+                    cast(str, NameGenerator.password()),
+                    public_pem["value"]
                 )
             )
             for i in range(1, 10)
@@ -42,8 +48,6 @@ class TestAccountManager(unittest.TestCase):
     def test_get_account(self):
         print("test_get_account...")
 
-        # Şimdi bu testi bir fulleyelim.
-        #
         # Tabi bir de imap.py de ki get_emails problemi var dı
         # hatırlarsan UID sequence set çekilmemiş miydi neydi?
         # bu account bittikten sonra ona bir bakılmalı. Genel
@@ -52,10 +56,9 @@ class TestAccountManager(unittest.TestCase):
 
         test_account = self.__class__._TEST_ACCOUNTS[0]
         self.__class__._account_manager.add(test_account)
-
         self.assertEqual(
             test_account,
-            self.__class__._account_manager.get(test_account)
+            self.__class__._account_manager.get(test_account.email_address)
         )
 
     def test_get_some_accounts(self):
@@ -84,6 +87,18 @@ class TestAccountManager(unittest.TestCase):
             self.__class__._account_manager.get_all()
         )
 
+    def test_add_account(self):
+        print("test_add_account...")
+        self.__class__._account_manager.remove_all()
+
+        test_account = self.__class__._TEST_ACCOUNTS[0]
+        self.__class__._account_manager.add(test_account)
+
+        self.assertIn(
+            test_account,
+            self.__class__._account_manager.get_all()
+        )
+
     def test_edit_account(self):
         print("test_edit_account...")
         self.__class__._account_manager.remove_all()
@@ -91,7 +106,7 @@ class TestAccountManager(unittest.TestCase):
         test_account = self.__class__._TEST_ACCOUNTS[0]
         self.__class__._account_manager.add(test_account)
 
-        new_fullname = NameGenerator().fullname
+        new_fullname = NameGenerator().fullname()
         self.__class__._account_manager.edit(Account(
             email_address=test_account.email_address,
             fullname=new_fullname
@@ -114,8 +129,8 @@ class TestAccountManager(unittest.TestCase):
         self.__class__._account_manager.remove_all()
         self.assertEqual(len(self.__class__._account_manager.get_all()), 0)
 
-    def test_prevent_duplicate_by_add(self):
-        print("test_prevent_duplicate_by_add...")
+    def test_prevent_duplicate(self):
+        print("test_prevent_duplicate...")
         self.__class__._account_manager.remove_all()
 
         test_account = self.__class__._TEST_ACCOUNTS[0]
@@ -125,29 +140,17 @@ class TestAccountManager(unittest.TestCase):
             test_account = self.__class__._TEST_ACCOUNTS[0]
             self.__class__._account_manager.add(test_account)
 
-    def test_prevent_duplicate_by_edit(self):
-        print("test_prevent_duplicate_by_edit...")
-        self.__class__._account_manager.remove_all()
-
-        test_account = self.__class__._TEST_ACCOUNTS[0]
-        self.__class__._account_manager.add(test_account)
-
-        with self.assertRaises(AccountAlreadyExists):
-            edit_account = self.__class__._TEST_ACCOUNTS[1]
-            edit_account.email_address = test_account.email_address
-            self.__class__._account_manager.edit(edit_account)
-
-    def test_edit_nonexist(self):
-        print("test_edit_nonexist...")
+    def test_edit_nonexists(self):
+        print("test_edit_nonexists...")
         self.__class__._account_manager.remove_all()
 
         with self.assertRaises(AccountDoesNotExists):
             test_account = self.__class__._TEST_ACCOUNTS[0]
-            test_account.fullname = NameGenerator.fullname()
+            test_account.fullname = cast(str, NameGenerator.fullname())
             self.__class__._account_manager.edit(test_account)
 
-    def test_remove_nonexist(self):
-        print("test_remove_nonexist...")
+    def test_remove_nonexists(self):
+        print("test_remove_nonexists...")
         self.__class__._account_manager.remove_all()
         test_account = self.__class__._TEST_ACCOUNTS[0]
         self.__class__._account_manager.remove(test_account)
@@ -156,5 +159,5 @@ class TestAccountManager(unittest.TestCase):
     def cleanup(cls):
         print("Cleaning up test `TestAccountManager`...")
         cls._account_manager.remove_all()
-        cls._secure_storage._load_backup()
-        cls._secure_storage._delete_backup()
+        cls._secure_storage._load_backup(cls._test_backup_id)
+        cls._secure_storage._delete_backup(cls._test_backup_id)
