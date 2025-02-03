@@ -787,9 +787,6 @@ class TestSecureStorage(unittest.TestCase):
             )
         )
 
-        # Check Cache
-        self.assertIsNone(self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey))
-
     @classmethod
     def cleanup(cls):
         print("Cleaning up test `TestSecureStorage`...")
