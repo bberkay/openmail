@@ -398,12 +398,11 @@ class SecureStorage:
                 print(f"`{key_name}` value could not be retrieved. Skipping...")
 
         try:
+            # Create new public, private pem
             self.delete_key(SecureStorageKey.PrivatePem)
             self.delete_key(SecureStorageKey.PublicPem)
-
-            # Create new public, private pem
             self._init_rsa_cipher()
-            # Re-encrypt decrpyted passwords.
+
             public_pem = self.get_key_value(SecureStorageKey.PublicPem, use_cache=False)
             if not public_pem:
                 raise NoPublicPemFoundError
@@ -432,7 +431,7 @@ class SecureStorage:
             print("Restoring RSA Cipher...")
 
             # Load old private pem
-            private_pem = self._get_password(SecureStorageKey.PrivatePem)
+            private_pem = self.get_key_value(SecureStorageKey.PrivatePem)
             if not private_pem:
                 raise NoPrivatePemFoundError(f"{SecureStorageKey.PrivatePem} not initialized properly after loading backup")
             private_pem["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
@@ -444,17 +443,16 @@ class SecureStorage:
             )
 
             # Load old public pem
-            public_pem = self._get_password(SecureStorageKey.PublicPem)
+            public_pem = self.get_key_value(SecureStorageKey.PublicPem)
             if not public_pem:
                 raise NoPublicPemFoundError(f"{SecureStorageKey.PublicPem} not initialized properly after loading backup")
             public_pem["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
             self.update_key(
                 SecureStorageKey.PublicPem,
                 public_pem["value"],
-                private_pem["type"],
+                public_pem["type"],
                 keep_last_update_at_same=True
             )
-            self._init_rsa_cipher()
             print("RSA cipher restored succesfully.")
         except Exception as e:
             is_restoration_succesful = False
