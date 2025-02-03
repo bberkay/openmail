@@ -38,12 +38,13 @@ http_request_logger = HTTPRequestLogger()
 T = TypeVar("T")
 
 def create_and_idle_openmail_clients():
-    accounts: list[AccountWithPassword] = account_manager.get()
+    accounts: list[AccountWithPassword] = account_manager.get_all()
     if not accounts:
         return
 
     for account in accounts:
         try:
+            print(f"Connecting to {account.email_address}...")
             openmail_clients[account.email_address] = OpenMail()
             status, _ = openmail_clients[account.email_address].connect(
                 account.email_address,
@@ -151,16 +152,15 @@ class GetAccountsData(BaseModel):
 @app.get("/get-accounts")
 def get_accounts() -> Response[GetAccountsData]:
     try:
-        all_accounts = account_manager.get(include_encrypted_passwords=False)
-        email_to_account = {account.email_address: account for account in all_accounts}
-
+        all_accounts = account_manager.get_all(include_passwords=False)
         connected_accounts = []
-        if openmail_clients:
-            connected_accounts = [email_to_account[email_address] for email_address in openmail_clients.keys()]
-
-        failed_accounts = []
-        if failed_openmail_clients:
-            failed_accounts = [email_to_account[email_address] for email_address in failed_openmail_clients]
+        failed_accounts =[]
+        if all_accounts:
+            email_to_account = {account.email_address: account for account in all_accounts}
+            if openmail_clients:
+                connected_accounts = [email_to_account[email_address] for email_address in openmail_clients.keys()]
+            if failed_openmail_clients:
+                failed_accounts = [email_to_account[email_address] for email_address in failed_openmail_clients]
 
         return Response[GetAccountsData](
             success=True,
@@ -258,8 +258,10 @@ def edit_account(
             ))
 
             openmail_clients[request.email_address] = openmail_client
-            failed_openmail_clients.remove(request.email_address)
-
+            try:
+                failed_openmail_clients.remove(request.email_address)
+            except ValueError:
+                pass
         return Response(
             success=True,
             message="Account successfully edited"
