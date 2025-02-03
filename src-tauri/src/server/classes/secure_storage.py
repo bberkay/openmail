@@ -226,6 +226,7 @@ class SecureStorage:
         #     created_at: "...",
         #     last_updated_at: "..."
         # }
+        print(f"Backup {backup_id} is loading...")
         backups = self._get_password(SecureStorageKey.Backups)
         if not backups:
             raise Exception("Error: There are no any backup saved.")
@@ -244,6 +245,7 @@ class SecureStorage:
             raise Exception(f"Error: There is no backup that's id is `{backup_id}`.")
 
         del backups
+        print(f"Backup {backup_id} has been loaded.")
 
     def _delete_backup(self, backup_id: str) -> None:
         backups = self._get_password(SecureStorageKey.Backups)
@@ -293,17 +295,20 @@ class SecureStorage:
             if key["last_updated_at"] + ROTATE_KEY_TTL < time.time():
                 self._rotate_aesgcm_cipher()
 
-    def _rotate_aesgcm_cipher(self) -> None:
+    def _rotate_aesgcm_cipher(self) -> tuple[bool, bool]:
         print("Rotating AESGCM cipher...")
-        self.clear()
-        self._create_backup()
+        is_rotate_succesful = True
+        is_restoration_succesful = False
 
-        temp_store = {}
+        self.clear()
+        pre_aesgcm_rotation_backup_id = self._create_backup()
+
+        temp_store: dict[SecureStorageKey, SecureStorageKeyValue] = {}
         for key_name in SECURE_STORAGE_KEY_LIST:
             try:
                 key_value = self.get_key_value(cast(SecureStorageKey, key_name), use_cache=False)
                 if key_value:
-                    temp_store[key_name] = key_value
+                    temp_store[cast(SecureStorageKey, key_name)] = key_value
             except Exception as e:
                 print(f"`{key_name}` value could not be retrieved. Skipping...")
 
@@ -311,26 +316,42 @@ class SecureStorage:
             self._delete_password(SecureStorageKey.AESGCMCipherKey)
             self._init_aesgcm_cipher()
             for key_name, key_value in temp_store.items():
-                self.update_key(key_name, key_value["value"], key_value["type"])
+                self.update_key(key_name, key_value["value"], key_value["type"], keep_last_update_at_same=True)
 
             print("AESGCM cipher rotation completed successfully.")
         except Exception as e:
-            print("Rotation failed. Restoring AESGCM cipher key...")
-
-            self._load_backup()
-            aesgcm_cipher_key = self._get_password(SecureStorageKey.AESGCMCipherKey)
-            if not aesgcm_cipher_key:
-                raise AESGCMCipherNotInitializedError
-            aesgcm_cipher_key["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
-            self._set_password(SecureStorageKey.AESGCMCipherKey, aesgcm_cipher_key)
-
+            print(f"AESGCM Rotation failed: `{str(e)}` ----> Restoring AESGCM cipher key...")
+            is_rotate_succesful = False
+            self._load_backup(pre_aesgcm_rotation_backup_id)
+            is_restoration_succesful = self._restore_aesgcm_cipher()
             print("AESGCM cipher rotation completed unsuccessfully.")
             raise e
         finally:
-            self._delete_backup()
+            self._delete_backup(pre_aesgcm_rotation_backup_id)
             for key_name in temp_store.keys():
                 temp_store[key_name] = None
             del temp_store
+
+        return is_rotate_succesful, is_restoration_succesful
+
+    def _restore_aesgcm_cipher(self) -> bool:
+        is_restoration_succesful = True
+        try:
+            print("Restoring AESGCM cipher...")
+
+            aesgcm_cipher_key = self._get_password(SecureStorageKey.AESGCMCipherKey)
+            if not aesgcm_cipher_key:
+                raise AESGCMCipherNotInitializedError(f"AESGCMCipher not initialized properly after loading backup.")
+
+            aesgcm_cipher_key["last_updated_at"] = time.time() - ROTATE_FAILURE_TTL
+            self._set_password(SecureStorageKey.AESGCMCipherKey, aesgcm_cipher_key)
+            self._init_aesgcm_cipher()
+            print("AESGCM cipher restored succesfully.")
+        except Exception as e:
+            is_restoration_succesful = False
+            print(f"AESGCM Rotation restoration failed: `{str(e)}`")
+        finally:
+            return is_restoration_succesful
 
     def _init_rsa_cipher(self) -> None:
         # No need to use get_key_value because that will decrypt pems
@@ -359,7 +380,7 @@ class SecureStorage:
     def _rotate_rsa_cipher(self) -> None:
         print("Rotating RSA cipher...")
         self.clear()
-        self._create_backup()
+        pre_rsa_rotation_backup = self._create_backup()
 
         temp_store = {}
         private_pem = self.get_key_value(SecureStorageKey.PrivatePem, use_cache=False)
@@ -385,13 +406,13 @@ class SecureStorage:
                 raise NoPublicPemFoundError
             for key_name, key_value in temp_store.items():
                 key_value["value"] = RSACipher().encrypt_password(key_value["value"], public_pem["value"])
-                self.update_key(key_name, key_value["value"], key_value["type"])
+                self.update_key(key_name, key_value["value"], key_value["type"], keep_last_update_at_same=True)
 
             print("RSA cipher rotation completed successfully.")
         except Exception as e:
-            print("Rotation failed. Restoring RSA cipher key...")
+            print(f"Rotation failed: `{str(e)}` ----> Restoring RSA cipher key...")
 
-            self._load_backup()
+            self._load_backup(pre_rsa_rotation_backup)
 
             # Load old private pem
             private_pem = self._get_password(SecureStorageKey.PrivatePem)
@@ -420,7 +441,7 @@ class SecureStorage:
             print("RSA cipher rotation completed unsuccessfully.")
             raise e
         finally:
-            self._delete_backup()
+            self._delete_backup(pre_rsa_rotation_backup)
             for key_name in temp_store.keys():
                 temp_store[key_name] = None
             del temp_store
@@ -476,7 +497,7 @@ class SecureStorage:
         if not self._encryptor:
             raise AESGCMCipherNotInitializedError
 
-        key_value = self.get_key_value(key_name)
+        key_value = self.get_key_value(key_name, decrypt=False)
         created_at = time.time()
         last_updated_at = time.time()
         if key_value:
@@ -544,6 +565,7 @@ class SecureStorageCache:
         store_data: SecureStorageCache.CachedData = self._store[key]
         if self._is_expired(store_data["created_at"]):
             self.delete(key)
+            return None
 
         return copy.deepcopy(store_data["data"])
 
