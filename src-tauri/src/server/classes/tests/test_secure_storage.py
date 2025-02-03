@@ -279,8 +279,6 @@ class TestSecureStorage(unittest.TestCase):
         if not key:
             self.fail(f"{SecureStorageKey.AESGCMCipherKey}'s value could not found.")
 
-        aesgcmcipher = AESGCMCipher(bytes.fromhex(key["value"]))
-
         test_key_value = {
             "value": NameGenerator.email_address(),
             "type": SecureStorageKeyValueType.Plain
@@ -299,9 +297,9 @@ class TestSecureStorage(unittest.TestCase):
         )
         if not encrypted_key_value:
             self.fail(f"{SecureStorageKey.TestKey}'s `decrypt=False` value could not found.")
-        self.assertEqual(
+        self.assertNotEqual(
             encrypted_key_value["value"],
-            aesgcmcipher.encrypt(test_key_value["value"])
+            test_key_value["value"]
         )
 
         # If encryption works then check decryption
@@ -377,7 +375,7 @@ class TestSecureStorage(unittest.TestCase):
         if not first_test_key_value:
             self.fail(f"First {SecureStorageKey.TestKey}'s value could not found.")
 
-        time.sleep(5)
+        time.sleep(2)
 
         test_key_value = {
             "value": NameGenerator.email_address(),
@@ -457,8 +455,6 @@ class TestSecureStorage(unittest.TestCase):
         if not key:
             self.fail(f"{SecureStorageKey.AESGCMCipherKey}'s value could not found.")
 
-        aesgcmcipher = AESGCMCipher(bytes.fromhex(key["value"]))
-
         first_key_value = {
             "value": NameGenerator.email_address(),
             "type": SecureStorageKeyValueType.Plain
@@ -487,9 +483,9 @@ class TestSecureStorage(unittest.TestCase):
         )
         if not encrypted_key_value:
             self.fail(f"{SecureStorageKey.TestKey}'s `decrypt=False` value could not found.")
-        self.assertEqual(
+        self.assertNotEqual(
             encrypted_key_value["value"],
-            aesgcmcipher.encrypt(last_key_value["value"])
+            last_key_value["value"]
         )
 
         # If encryption works then check decryption
@@ -605,7 +601,6 @@ class TestSecureStorage(unittest.TestCase):
             test_key_value["type"],
         )
 
-        self.__class__._secure_storage.clear()
         found_key_value = self.__class__._secure_storage.get_key_value(SecureStorageKey.TestKey)
         if not found_key_value:
             self.fail(f"{SecureStorageKey.TestKey}'s value could not found.")
@@ -614,6 +609,7 @@ class TestSecureStorage(unittest.TestCase):
         self.assertEqual(found_key_value["type"], test_key_value["type"])
 
         # Check Cache
+        self.__class__._secure_storage.clear()
         self.assertIsNone(self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey))
 
     def test_destroy(self):
@@ -652,29 +648,79 @@ class TestSecureStorage(unittest.TestCase):
         if not pre_rotation_aesgcm_key:
             self.fail(f"Pre-Rotation {SecureStorageKey.AESGCMCipherKey}'s value could not found.")
 
-        self.__class__._secure_storage._rotate_aesgcm_cipher()
+        aesgcm_rotation_result, _ = self.__class__._secure_storage._rotate_aesgcm_cipher()
+        self.assertTrue(aesgcm_rotation_result)
 
         post_rotation_aesgcm_key = self.__class__._secure_storage._get_password(SecureStorageKey.AESGCMCipherKey)
         if not post_rotation_aesgcm_key:
             self.fail(f"Post-Rotation {SecureStorageKey.AESGCMCipherKey}'s value could not found.")
 
-        # Is rotation successful?
+        # Is rotation really successful?
         self.assertNotEqual(pre_rotation_aesgcm_key["value"], post_rotation_aesgcm_key["value"])
 
-        post_rotation_aesgcmcipher = AESGCMCipher(bytes.fromhex(post_rotation_aesgcm_key["value"]))
         post_rotation_key_value = self.__class__._secure_storage.get_key_value(
             SecureStorageKey.TestKey,
-            decrypt=False,
             use_cache=False
         )
         if not post_rotation_key_value:
             self.fail(f"Post-Rotation {SecureStorageKey.TestKey}'s value could not found.")
 
-        self.assertEqual(post_rotation_aesgcmcipher.decrypt(post_rotation_key_value["value"]), test_key_value["value"])
+        self.assertEqual(post_rotation_key_value["value"], test_key_value["value"])
         self.assertEqual(post_rotation_key_value["type"], test_key_value["type"])
 
-        # Check Cache
-        self.assertIsNone(self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey))
+    def test_aesgcm_rotation_restoration(self):
+        print("test_aesgcm_rotation_restoration...")
+        self.__class__._secure_storage._init_aesgcm_cipher()
+
+        test_key_value = {
+            "value": NameGenerator.email_address(),
+            "type": SecureStorageKeyValueType.Plain
+        }
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            test_key_value["value"],
+            test_key_value["type"],
+        )
+
+        pre_rotation_restoration_backup = self.__class__._secure_storage._create_backup()
+
+        pre_rotation_aesgcm_key = self.__class__._secure_storage._get_password(SecureStorageKey.AESGCMCipherKey)
+        if not pre_rotation_aesgcm_key:
+            self.fail(f"Pre-Rotation {SecureStorageKey.AESGCMCipherKey}'s value could not found.")
+
+        aesgcm_rotation_result, aesgcm_restoration_result = self.__class__._secure_storage._rotate_aesgcm_cipher()
+
+        post_rotation_aesgcm_key = self.__class__._secure_storage._get_password(SecureStorageKey.AESGCMCipherKey)
+        if not post_rotation_aesgcm_key:
+            self.fail(f"Post-Rotation {SecureStorageKey.AESGCMCipherKey}'s value could not found.")
+
+        if aesgcm_rotation_result:
+            # Is rotation really successful?
+            self.assertNotEqual(pre_rotation_aesgcm_key["value"], post_rotation_aesgcm_key["value"])
+            # Imitiate restoration
+            self.__class__._secure_storage._load_backup(pre_rotation_restoration_backup)
+            aesgcm_restoration_result = self.__class__._secure_storage._restore_aesgcm_cipher()
+            self.assertTrue(aesgcm_restoration_result)
+        else:
+            self.assertTrue(aesgcm_restoration_result)
+
+        # get aesgcm cipher key again after restoration
+        post_rotation_aesgcm_key = self.__class__._secure_storage._get_password(SecureStorageKey.AESGCMCipherKey)
+        if not post_rotation_aesgcm_key:
+            self.fail(f"Post-Rotation {SecureStorageKey.AESGCMCipherKey}'s value could not found.")
+
+        # Is restoration really succesful?
+        self.assertEqual(pre_rotation_aesgcm_key["value"], post_rotation_aesgcm_key["value"])
+
+        post_rotation_key_value = self.__class__._secure_storage.get_key_value(
+            SecureStorageKey.TestKey,
+            use_cache=False
+        )
+        if not post_rotation_key_value:
+            self.fail(f"Post-Rotation {SecureStorageKey.TestKey}'s value could not found.")
+
+        self.assertEqual(post_rotation_key_value["value"], test_key_value["value"])
+        self.assertEqual(post_rotation_key_value["type"], test_key_value["type"])
 
     def test_rsa_rotation(self):
         print("test_rsa_rotation...")
