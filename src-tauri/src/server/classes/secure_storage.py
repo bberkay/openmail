@@ -164,8 +164,12 @@ class SecureStorage:
         keyring.set_password(APP_NAME, key, self._serialize_key_value_dict(value))
 
     def _delete_password(self, key: SecureStorageKey) -> None:
-        self._is_key_valid(key)
-        keyring.delete_password(APP_NAME, key)
+        try:
+            self._is_key_valid(key)
+            keyring.delete_password(APP_NAME, key)
+        except keyring.errors.PasswordDeleteError:
+            print(f"`{key}` could not found in keyring to delete. Skipping...")
+            pass
 
     def _create_backup_id(self) -> str:
         return f"backup_id_{random_id()}"
@@ -542,13 +546,9 @@ class SecureStorage:
             self._cache.destroy()
 
         for key in SECURE_STORAGE_KEY_LIST:
-            try:
-                if not destroy_backup and key == SecureStorageKey.Backups:
-                    continue
-                self._delete_password(cast(SecureStorageKey, key))
-            except keyring.errors.PasswordDeleteError:
-                print(f"`{key}` could not found in keyring to delete. Skipping...")
-                pass
+            if not destroy_backup and key == SecureStorageKey.Backups:
+                continue
+            self._delete_password(cast(SecureStorageKey, key))
 
 
 class SecureStorageCache:
