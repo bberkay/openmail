@@ -34,8 +34,10 @@
 
 <AccountList bind:editingAccount={editingAccount}/>
 
+{#if SharedStore.accounts.length > 0}
 <div>
     <Button.Action onclick={initMailboxes}>
         Continue To Inbox
     </Button.Action>
 </div>
+{/if}

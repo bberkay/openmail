@@ -103,23 +103,30 @@ export class MailboxController {
 
         if (response.success && response.data) {
             const standardFolderList = Object.values(Folder).map(
-                (folder) => folder.trim().toLowerCase() + ":",
+                (folder) => folder.trim() + ":",
             );
 
             // Extract standard and custom folders from data
             response.data.forEach((account) => {
                 // Standard folders
-                const standardFolders = SharedStore.standardFolders.find(
+                let standardFolders = SharedStore.standardFolders.find(
                     item => item.email_address === account.email_address
-                );
-                if (!standardFolders)
-                    return;
+                )
+
+                if (!standardFolders) {
+                    SharedStore.standardFolders = [
+                        {
+                            "email_address": account.email_address,
+                            "result": []
+                        }
+                    ];
+                    standardFolders = SharedStore.standardFolders[0];
+                }
 
                 standardFolderList.forEach((standardFolder) => {
                     const matchedFolder = account.result.find((currentFolder) =>
                         currentFolder
                             .trim()
-                            .toLowerCase()
                             .startsWith(standardFolder),
                     );
                     if (matchedFolder) {
@@ -128,11 +135,19 @@ export class MailboxController {
                 });
 
                 // Custom folders
-                const customFolders = SharedStore.customFolders.find(
+                let customFolders = SharedStore.customFolders.find(
                     item => item.email_address === account.email_address
                 );
-                if (!customFolders)
-                    return;
+
+                if (!customFolders) {
+                    SharedStore.customFolders = [
+                        {
+                            "email_address": account.email_address,
+                            "result": []
+                        }
+                    ];
+                    customFolders = SharedStore.customFolders[0];
+                }
 
                 customFolders.result = account.result.filter(
                     (currentFolder) => {
