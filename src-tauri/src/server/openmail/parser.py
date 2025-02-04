@@ -12,7 +12,7 @@ header fields.
 import base64
 import re
 import quopri
-from typing import Iterator, Match, TypedDict
+from typing import Iterator, Match, NotRequired, Optional, TypedDict, get_type_hints
 from email.header import decode_header
 from html.parser import HTMLParser as BuiltInHTMLParser
 
@@ -29,37 +29,46 @@ Header Constants
 """
 HEADERS_PATTERN = re.compile(rb"BODY\[HEADER\.FIELDS.*?\r\n\r\n", re.DOTALL | re.IGNORECASE)
 SUBJECT_PATTERN = re.compile(rb'Subject:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-SENDER_PATTERN = re.compile(rb'From:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-RECEIVERS_PATTERN = re.compile(rb'To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
+FROM_PATTERN = re.compile(rb'From:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
+TO_PATTERN = re.compile(rb'To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
+DATE_PATTERN = re.compile(rb'Date:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
 CC_PATTERN = re.compile(rb'Cc:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
 BCC_PATTERN = re.compile(rb'Bcc:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
+IN_REPLY_TO_PATTERN = re.compile(rb'In-Reply-To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
 REFERENCES_PATTERN = re.compile(rb'References:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
 MESSAGE_ID_PATTERN = re.compile(rb'Message-ID:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-IN_REPLY_TO_PATTERN = re.compile(rb'In-Reply-To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-DATE_PATTERN = re.compile(rb'Date:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
+LIST_UNSUBSCRIBE_PATTERN= re.compile(rb'List-Unsubscribe:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
+CONTENT_TYPE_PATTERN = re.compile(rb'Content-Type:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
+CONTENT_TRANSFER_ENCODING_PATTERN = re.compile(rb'Content-Transfer-Encoding:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
 
 class MessageHeaders(TypedDict):
     """Header fields of a email message."""
+    content_type: str
+    content_transfer_encoding: NotRequired[str]
     subject: str
     sender: str
-    receivers: str
+    receiver: str
     date: str
-    cc: str
-    bcc: str
-    in_reply_to: str
-    message_id: str
-    references: str
+    cc: NotRequired[str]
+    bcc: NotRequired[str]
+    message_id: NotRequired[str]
+    in_reply_to: NotRequired[str]
+    references: NotRequired[str]
+    list_unsubscribe: NotRequired[str]
 
 MESSAGE_HEADER_PATTERN_MAP = {
+    "content_type": CONTENT_TYPE_PATTERN,
+    "content_transfer_encoding": CONTENT_TRANSFER_ENCODING_PATTERN,
     "subject": SUBJECT_PATTERN,
-    "sender": SENDER_PATTERN,
-    "receivers": RECEIVERS_PATTERN,
+    "sender": FROM_PATTERN,
+    "receiver": TO_PATTERN,
     "date": DATE_PATTERN,
     "cc": CC_PATTERN,
     "bcc": BCC_PATTERN,
-    "in_reply_to": IN_REPLY_TO_PATTERN,
     "message_id": MESSAGE_ID_PATTERN,
-    "references": REFERENCES_PATTERN
+    "in_reply_to": IN_REPLY_TO_PATTERN,
+    "references": REFERENCES_PATTERN,
+    "list_unsubscribe": LIST_UNSUBSCRIBE_PATTERN
 }
 
 """
@@ -81,10 +90,8 @@ BODY_TEXT_HTML_DATA_PATTERN = re.compile(
     rb'Content-Type:\s*text/html.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
     re.DOTALL | re.IGNORECASE
 )
-# ATTACHMENT_LIST_PATTERN alternative:
-# r'\("([^"]+)"\s+"([^"]+)".*?"([^"]+)".*?"[^"]+"\s+(\d+).*?\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\).*?\)',
 ATTACHMENT_LIST_PATTERN = re.compile(
-    r'\("([^"]+)"\s+"([^"]+)"\s+NIL\s+"([^"]+)"\s+NIL\s+"[^"]+"\s+(\d+)\s+NIL\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+NIL\)',
+    r'\("([^"]+)"\s+"([^"]+)"\s+[^\s"]+\s+"([^"]+)"\s+[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+[^\s"]+\)',
     re.DOTALL | re.IGNORECASE
 )
 INLINE_ATTACHMENT_DATA_BY_CID_PATTERN = re.compile(
@@ -96,7 +103,7 @@ INLINE_ATTACHMENT_DATA_BY_CID_PATTERN = re.compile(
 Util Constants
 """
 FLEX_LINE_PATTERN = re.compile(rb'(=\r|\.*?r\.*?n)', re.DOTALL)
-STRICT_LINE_PATTERN = re.compile(rb'\r\n')
+STRICT_LINE_PATTERN = re.compile(r'\r\n')
 TAG_PATTERN = re.compile(r'<[^>]+>')
 TAG_CLEANING_PATTERN = re.compile(r'^<|>$')
 SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>\(]')
@@ -125,7 +132,8 @@ class MessageParser:
 
         This function processes a list of raw message bytes and groups them
         into sublists. Each sublist contains related message components,
-        ending with the byte `b')'`.
+        ending with the byte `b')'` and if it is not found message_list[0]
+        will be returned.
 
         Args:
             message_list (list[bytes]): A list of raw message byte strings
@@ -148,17 +156,20 @@ class MessageParser:
             >>> messages(raw)
             [
                 [
-                    (b'2394 (UID 2651 FLAGS ... )),
-                    (b'BODY[HEADER.FIELDS]\r\nFrom:a@domain.com')
+                    b'2394 (UID 2651 FLAGS ... ),
+                    b'BODY[HEADER.FIELDS]\r\nFrom:a@domain.com'
                 ],
                 [
-                    (b'2395 (UID 2651 FLAGS ... )),
-                    (b'BODY[HEADER.FIELDS]\r\nFrom:b@domain.com')
+                    b'2395 (UID 2651 FLAGS ... ),
+                    b'BODY[HEADER.FIELDS]\r\nFrom:b@domain.com'
                 ]
             ]
         """
         result = []
         sublist = []
+
+        if b')' not in message_list:
+            return message_list[0]
 
         for item in message_list:
             if item == b')':
@@ -166,7 +177,7 @@ class MessageParser:
                     result.append(sublist)
                     sublist = []
             else:
-                sublist.append(item)
+                sublist.extend(item)
 
         if sublist:
             result.append(sublist)
@@ -332,23 +343,7 @@ class MessageParser:
         if not data_match:
             return None
 
-        body = data_match.group(1)
-        if encoding == "quoted-printable":
-            body = MessageDecoder.quoted_printable_message(body)
-        elif encoding == "base64":
-            body = MessageDecoder.base64_message(body)
-        else:
-            body = body.decode()
-
-        data_start, data_end = data_match.span()
-
-        body = LINK_PATTERN.sub(' ', body)
-        body = BRACKET_PATTERN.sub(' ', body)
-        body = SPECIAL_CHAR_PATTERN.sub(' ', body)
-        body = SPACE_PATTERN.sub(' ', body)
-        body = body.strip()
-
-        return data_start, data_end, body
+        return *data_match.span(), MessageDecoder.body(data_match.group(1), encoding, True)
 
     @staticmethod
     def get_text_html_body(message: bytes) -> tuple[int, int, str] | None:
@@ -398,16 +393,7 @@ class MessageParser:
         if not data_match:
             return None
 
-        body = data_match.group(1)
-        if encoding == "quoted-printable":
-            body = MessageDecoder.quoted_printable_message(body)
-        elif encoding == "base64":
-            body = MessageDecoder.base64_message(body)
-        else:
-            body = body.decode()
-
-        data_start, data_end = data_match.span()
-        return data_start, data_end, body
+        return *data_match.span(), MessageDecoder.body(data_match.group(1), encoding)
 
     @staticmethod
     def get_data_by_cid_from_inline_attachments(message: bytes) -> list[tuple[str, str]]:
@@ -517,50 +503,91 @@ class MessageParser:
         message_headers: MessageHeaders = {
             "subject": "",
             "sender": "",
-            "receivers": "",
-            "cc": "",
-            "bcc": "",
-            "date": "",
-            "in_reply_to": "",
-            "message_id": "",
-            "references": ""
+            "receiver": "",
+            "date": ""
         }
 
         header_match = HEADERS_PATTERN.search(message)
-        if not header_match:
-            return message_headers
-
-        header_match = header_match.group()
+        if header_match:
+            header_match = header_match.group()
+        else:
+            header_match = message
 
         for field_type, field_pattern in MESSAGE_HEADER_PATTERN_MAP.items():
-            if field_type == "subject":
-                subject = SUBJECT_PATTERN.search(header_match)
-                subject = MessageDecoder.utf8_header(subject.group(1)) if subject else ""
-                subject = SPACE_PATTERN.sub(" ", subject)
-                subject = subject.strip()
-                message_headers["subject"] = subject
-            elif field_type in ["references", "in_reply_to", "date", "message_id"]:
-                field = field_pattern.search(header_match)
-                field = str(field.group(1)) if field else ""
-                field = field.strip()
-                message_headers[field_type] = field
-            elif field_type in ["sender", "receivers", "cc", "bcc"]:
-                email_address_match = field_pattern.search(header_match)
-                if email_address_match:
-                    # If `email_address_match` is a "name <email>" like "Alex Wilson <a@gmail.com>"
-                    # then `email_without_name` will be `a@gmail.com` and `decoded_email_address`
-                    # will be `Alex Wilson`if receiver is just a email like "a@gmail.com"
-                    # then `email_without_name` will be None and `email_address_match` will
-                    # be `a@gmail.com`.
-                    email_address_match = email_address_match.group(1)
-                    email_address_match = MessageDecoder.utf8_header(email_address_match)
-                    email_without_name = TAG_PATTERN.search(email_address_match)
-                    if email_without_name:
-                        email_without_name = email_without_name.group(0)
-                        if not email_without_name in email_address_match:
-                            message_headers[field_type] = email_address_match + " " + email_without_name
+            field = field_pattern.search(header_match)
+            field = field.group(1).decode() if field else ""
+            field = MessageDecoder.utf8_header(field)
+            field = SPACE_PATTERN.sub(" ", field)
+            field = field.strip()
+
+            # Special cases
+            if field_type in ["sender", "receivers", "cc", "bcc"]:
+                field = field.replace('"', '')
+
+            message_headers[field_type] = field
 
         return message_headers
+
+    @staticmethod
+    def parse(message: list[bytes], *, choose_plain_body=True):
+        """
+        Parse a grouped email message into structured data.
+
+        This function takes a grouped message (a list of byte strings) generated
+        by `group_messages` and extracts the headers, body, flags, and attachments.
+        It handles both plain text and HTML bodies, and decodes the message
+        appropriately based on its content type and encoding.
+
+        Args:
+            message (list[bytes]): A grouped list of message byte components
+                                (result of `group_messages`).
+            choose_plain_body (bool, optional): If True, prefers plain text
+                                                body over HTML. Defaults to True.
+
+        Returns:
+            dict: Parsed email content including UID, body, flags, attachments, and headers.
+
+        Example:
+            >>> raw_email_message = [
+            ...     b'2394 (UID 2651 FLAGS (\\Seen))',
+            ...     b'BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)]\r\nFrom:a@domain.com\r\nTo:b@domain.com',
+            ...     b'BODY[TEXT]\r\nHello, this is a test email.',
+            ...     b')'
+            ... ]
+            >>> messages = MessageParser.group_messages(raw_email_message)
+            >>> for message in messages:
+            ...     print(MessageParser.parse(message))
+            {
+                'uid': '2651',
+                'body': 'Hello, this is a test email.',
+                'flags': ['\\Seen'],
+                'attachments': [],
+                'subject': 'Test Subject',
+                'sender': 'a@domain.com',
+                'receiver': 'b@domain.com',
+                'date': '1 Jan 1970 12:00:00 +0300',
+            }
+        """
+        headers = MessageParser.get_headers(message[3]) if len(message) > 2 else None
+
+        body = None
+        if "multipart" not in headers["content_type"]:
+            body = MessageDecoder.body(message[1], headers["content_transfer_encoding"].lower(), True)
+        else:
+            if choose_plain_body:
+                body = MessageParser.get_text_plain_body(message[1])
+            if not body:
+                body = MessageParser.get_text_html_body(message[1])
+
+        return {
+            "uid": MessageParser.get_uid(message[0]),
+            "body": body,
+            "flags": MessageParser.get_flags(message[0]),
+            "attachments": [
+                Attachment(name=attachment[0], size=attachment[1], cid=attachment[2], type=attachment[3])
+                for attachment in MessageParser.get_attachment_list(message[0])
+            ]
+        } | headers
 
 
 class MessageDecoder:
@@ -625,24 +652,24 @@ class MessageDecoder:
         return decoded_text
 
     @staticmethod
-    def utf8_header(message: bytes) -> str:
+    def utf8_header(message: str) -> str:
         """
         Decode UTF-8 header.
 
         Args:
-            message (bytes): Raw message bytes.
+            message (str): Raw message string.
 
         Returns:
             str: Decoded message string.
 
         Example:
-            >>> decode_utf8_header("?UTF-8?B?4LmA4LiC4LmJ4Liy4LiW<noreply@domain.com>4Li24LiH4Lia4LiZ4LiE4Lit4Lih
+            >>> utf8_header("?UTF-8?B?4LmA4LiC4LmJ4Liy4LiW<noreply@domain.com>4Li24LiH4Lia4LiZ4LiE4Lit4Lih
             4Lie4Li04Lin")
             ชื่อ <noreply@domain.com>
         """
         decoded_message = ""
         for line in STRICT_LINE_PATTERN.split(message):
-            line = str(line).strip()
+            line = line.strip()
             if line.startswith("=?UTF-8") or line.startswith("=?utf-8"):
                 decoded_lines = decode_header(line)
                 for decoded_line in decoded_lines:
@@ -673,6 +700,48 @@ class MessageDecoder:
         except (UnicodeDecodeError, ValueError):
             return message
 
+    @staticmethod
+    def body(message: bytes, encoding: str = "", sanitize: bool = False) -> str:
+        """
+        Decode and optionally sanitize the message body.
+
+        This method decodes the provided message bytes using the specified encoding.
+        Supported encodings are `quoted-printable` and `base64`. If no encoding is provided,
+        it defaults to UTF-8 decoding. When `sanitize` is set to `True`, it removes links,
+        brackets, special characters, and extra spaces to clean the message content.
+
+        Args:
+            message (bytes): Raw message content in bytes.
+            encoding (str, optional): The encoding type of the message. Supported values are
+                "quoted-printable", "base64", or an empty string for plain text. Defaults to "".
+            sanitize (bool, optional): If `True`, applies sanitization to remove unnecessary
+                characters such as links, brackets, and special symbols. Defaults to `False`.
+
+        Returns:
+            str: Decoded (and optionally sanitized) message content.
+
+        Example:
+            >>> body(b"SGVsbG8gV29ybGQh", encoding="base64", sanitize=False)
+            'Hello World!'
+
+            >>> body(b"Visit our site: https://example.com", sanitize=True)
+            'Visit our site'
+        """
+        if encoding == "quoted-printable":
+            body = MessageDecoder.quoted_printable_message(body)
+        elif encoding == "base64":
+            body = MessageDecoder.base64_message(body)
+        else:
+            body = body.decode()
+
+        if sanitize:
+            body = LINK_PATTERN.sub(' ', body)
+            body = BRACKET_PATTERN.sub(' ', body)
+            body = SPECIAL_CHAR_PATTERN.sub(' ', body)
+            body = SPACE_PATTERN.sub(' ', body)
+            body = body.strip()
+
+        return body
 
 class _HTML2TextParser(BuiltInHTMLParser):
     """
