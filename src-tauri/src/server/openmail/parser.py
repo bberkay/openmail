@@ -102,7 +102,7 @@ INLINE_ATTACHMENT_DATA_BY_CID_PATTERN = re.compile(
 """
 Util Constants
 """
-FLEX_LINE_PATTERN = re.compile(rb'(=\r|\.*?r\.*?n)', re.DOTALL)
+FLEX_LINE_PATTERN = re.compile(r'(=\r|\.*?r\.*?n)', re.DOTALL)
 STRICT_LINE_PATTERN = re.compile(r'\r\n')
 TAG_PATTERN = re.compile(r'<[^>]+>')
 TAG_CLEANING_PATTERN = re.compile(r'^<|>$')
@@ -598,12 +598,12 @@ class MessageDecoder:
     """
 
     @staticmethod
-    def quoted_printable_message(message: bytes) -> str:
+    def quoted_printable_message(message: str | bytes) -> str:
         """
         Decode quoted-printable message. Ignore errors.
 
         Args:
-            message (bytes): Raw message string.
+            message (str | bytes): Raw message string or bytes.
 
         Returns:
             str: Decoded message string.
@@ -613,8 +613,11 @@ class MessageDecoder:
             E0=B8=9')
             'สวัสดีชาวโลก' # "Hello World" in Thai
         """
+        if isinstance(message, bytes):
+            message = message.decode()
+
         try:
-            message = FLEX_LINE_PATTERN.sub(b"", message)
+            message = FLEX_LINE_PATTERN.sub("", message)
             decoded_partial_text = quopri.decodestring(message, header=False).decode("utf-8", errors="ignore")
         except Exception as e:
             decoded_partial_text = str(e)
@@ -626,12 +629,12 @@ class MessageDecoder:
         return decoded_partial_text
 
     @staticmethod
-    def base64_message(message: bytes) -> str:
+    def base64_message(message: str | bytes) -> str:
         """
         Decode base64 message. Ignores errors.
 
         Args:
-            message (bytes): Raw message string.
+            message (str | bytes): Raw message string or bytes.
 
         Returns:
             str: Decoded message string.
@@ -641,23 +644,26 @@ class MessageDecoder:
             WsgacOnaW4gdXlndWxh")
             'Hello, World'
         """
+        if isinstance(message, bytes):
+            message = message.decode()
+
         try:
-            message = FLEX_LINE_PATTERN.sub(b"", message)
+            message = FLEX_LINE_PATTERN.sub("", message)
             padding = len(message) % 4
             if padding:
-                message += b'=' * (4 - padding)
+                message += '=' * (4 - padding)
             decoded_text = base64.b64decode(message).decode("utf-8", errors="ignore")
         except Exception as e:
             decoded_text = str(e)
         return decoded_text
 
     @staticmethod
-    def utf8_header(message: str) -> str:
+    def utf8_header(message: str | bytes) -> str:
         """
         Decode UTF-8 header.
 
         Args:
-            message (str): Raw message string.
+            message (str | bytes): Raw message string or bytes.
 
         Returns:
             str: Decoded message string.
@@ -667,6 +673,9 @@ class MessageDecoder:
             4Lie4Li04Lin")
             ชื่อ <noreply@domain.com>
         """
+        if isinstance(message, bytes):
+            message = message.decode()
+
         decoded_message = ""
         for line in STRICT_LINE_PATTERN.split(message):
             line = line.strip()
@@ -680,12 +689,12 @@ class MessageDecoder:
         return decoded_message.strip()
 
     @staticmethod
-    def filename(message: str) -> str:
+    def filename(message: str | bytes) -> str:
         """
         Decode filename.
 
         Args:
-            message (str): Raw message string.
+            message (str | bytes): Raw message string or bytes.
 
         Returns:
             str: Decoded message string.
@@ -694,6 +703,9 @@ class MessageDecoder:
             >>> decode_filename("['g\\xc3\\xbcnl\\xc3\\xbck rapor.pdf']")
             ['günlük rapor.pdf'] # "Daily Report.pdf" in Turkish
         """
+        if isinstance(message, bytes):
+            message = message.decode()
+
         try:
             decoded = bytes(message, "utf-8").decode("unicode_escape").encode("latin1").decode("utf-8")
             return decoded
@@ -701,7 +713,7 @@ class MessageDecoder:
             return message
 
     @staticmethod
-    def body(message: bytes, encoding: str = "", sanitize: bool = False) -> str:
+    def body(message: str | bytes, encoding: str = "", sanitize: bool = False) -> str:
         """
         Decode and optionally sanitize the message body.
 
@@ -711,7 +723,7 @@ class MessageDecoder:
         brackets, special characters, and extra spaces to clean the message content.
 
         Args:
-            message (bytes): Raw message content in bytes.
+            message (bytes | str): Raw message string or bytes.
             encoding (str, optional): The encoding type of the message. Supported values are
                 "quoted-printable", "base64", or an empty string for plain text. Defaults to "".
             sanitize (bool, optional): If `True`, applies sanitization to remove unnecessary
@@ -727,21 +739,22 @@ class MessageDecoder:
             >>> body(b"Visit our site: https://example.com", sanitize=True)
             'Visit our site'
         """
+        if isinstance(message, bytes):
+            message = message.decode()
+
         if encoding == "quoted-printable":
-            body = MessageDecoder.quoted_printable_message(body)
+            message = MessageDecoder.quoted_printable_message(message)
         elif encoding == "base64":
-            body = MessageDecoder.base64_message(body)
-        else:
-            body = body.decode()
+            message = MessageDecoder.base64_message(message)
 
         if sanitize:
-            body = LINK_PATTERN.sub(' ', body)
-            body = BRACKET_PATTERN.sub(' ', body)
-            body = SPECIAL_CHAR_PATTERN.sub(' ', body)
-            body = SPACE_PATTERN.sub(' ', body)
-            body = body.strip()
+            message = LINK_PATTERN.sub(' ', message)
+            message = BRACKET_PATTERN.sub(' ', message)
+            message = SPECIAL_CHAR_PATTERN.sub(' ', message)
+            message = SPACE_PATTERN.sub(' ', message)
+            message = message.strip()
 
-        return body
+        return message
 
 class _HTML2TextParser(BuiltInHTMLParser):
     """
