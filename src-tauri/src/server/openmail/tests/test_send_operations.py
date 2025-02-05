@@ -7,7 +7,7 @@ import json
 import copy
 
 from openmail import OpenMail
-from openmail.types import Attachment, EmailToSend, EmailWithContent, Folder
+from openmail.types import Attachment, DraftEmail, CompleteEmail, Folder
 from openmail.parser import MessageParser
 from openmail.encoder import FileBase64Encoder
 from openmail.converter import AttachmentConverter
@@ -35,7 +35,7 @@ class TestSendOperations(unittest.TestCase):
 
         cls._sent_test_email_uids = []
 
-    def is_sent_email_valid(self, email_to_send: EmailToSend, uid: str):
+    def is_sent_email_valid(self, email_to_send: DraftEmail, uid: str):
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(Folder.Inbox, uid))
         email_content = self.__class__._openmail.imap.get_email_content(Folder.Inbox, uid)
 
@@ -99,10 +99,18 @@ class TestSendOperations(unittest.TestCase):
         # 3267
         #test = self.__class__._openmail.imap.uid('FETCH','3261', "(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)")
         #test = self.__class__._openmail.imap.uid('FETCH','3257:3261', "(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)")
-        #test = self.__class__._openmail.imap.uid('FETCH','3261', "(BODY.PEEK[3])")
-        test = self.__class__._openmail.imap.uid('FETCH','3263', "(BODY.PEEK[1])")
+        status, result = self.__class__._openmail.imap.uid('FETCH','3261', "(BODYSTRUCTURE)")
+        print("result: ", result)
+        test = MessageParser.group_bodystructure(result[0])
+        #test = self.__class__._openmail.imap.uid(
+        #    'FETCH',
+        #    '3280',
+        #    '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE LIST-UNSUBSCRIBE ' \
+        #    'CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] BODY.PEEK[TEXT]<0.1024> ' \
+        #    'FLAGS BODYSTRUCTURE RFC822.SIZE)'
+        #)
         print("test. ", test)
-        """email_to_send = EmailToSend(
+        """email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -117,7 +125,7 @@ class TestSendOperations(unittest.TestCase):
 
     def test_send_multiple_recipients_email(self):
         print("test_send_multiple_recipients_email...")
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._receiver_emails[0:2],
             subject=NameGenerator.subject(),
@@ -134,7 +142,7 @@ class TestSendOperations(unittest.TestCase):
 
     def test_send_html_email(self):
         print("test_send_html_email...")
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -159,7 +167,7 @@ class TestSendOperations(unittest.TestCase):
     def test_send_email_with_filepath_attachment(self):
         print("test_send_email_with_filepath_attachment...")
         sampleDocumentFiles = SampleDocumentGenerator().as_filepath(count=2, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -179,7 +187,7 @@ class TestSendOperations(unittest.TestCase):
     def test_send_email_with_link_attachment(self):
         print("test_send_email_with_link_attachment...")
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -200,7 +208,7 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_all_option_attachment...")
         sampleImageFiles = SampleImageGenerator().as_filepath(count=2, all_different=True)
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -222,7 +230,7 @@ class TestSendOperations(unittest.TestCase):
     def test_send_email_with_inline_path_attachment(self):
         print("test_send_email_with_inline_path_attachment...")
         sampleImageFiles = SampleImageGenerator().as_filepath(count=2, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -250,7 +258,7 @@ class TestSendOperations(unittest.TestCase):
     def test_send_email_with_inline_link_attachment(self):
         print("test_send_email_with_inline_link_attachment...")
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -278,7 +286,7 @@ class TestSendOperations(unittest.TestCase):
     def test_send_email_with_inline_base64_attachment(self):
         print("test_send_email_with_inline_base64_attachment...")
         sampleImageFiles = SampleImageGenerator().as_base64(count=2, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -308,7 +316,7 @@ class TestSendOperations(unittest.TestCase):
         sampleBase64Images = SampleImageGenerator().as_base64(count=2, all_different=True)
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
         sampleImagePaths = SampleImageGenerator().as_filepath(count=2, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -340,7 +348,7 @@ class TestSendOperations(unittest.TestCase):
     def test_send_email_with_both_attachment_and_inline_attachment(self):
         print("test_send_email_with_both_attachment_and_inline_attachment...")
         sampleImages = SampleImageGenerator().as_filepath(count=4, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -373,7 +381,7 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_duplicate_attachments...")
         sampleDocument1 = SampleImageGenerator().as_filepath(count=1, all_different=True)
         sampleDocument2 = SampleDocumentGenerator().as_filepath(count=1, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -405,7 +413,7 @@ class TestSendOperations(unittest.TestCase):
     def test_send_email_with_large_attachment(self):
         print("test_send_email_with_large_attachment...")
         sampleVideo = SampleVideoGenerator().as_filepath(count=1, all_different=True)
-        email_to_send = EmailToSend(
+        email_to_send = DraftEmail(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject(),
@@ -433,7 +441,7 @@ class TestSendOperations(unittest.TestCase):
     """def test_reply_email(self):
         print("test_reply_email...")
         status, _ = self.__class__._smtp.reply_email(
-            EmailToSend(
+            DraftEmail(
                 sender=self.__class__._sender_email,
                 receiver=self.__class__._sender_email,
                 subject=NameGenerator.subject(),
@@ -445,7 +453,7 @@ class TestSendOperations(unittest.TestCase):
     def test_forward_email(self):
         print("test_forward_email...")
         status, _ = self.__class__._smtp.forward_email(
-            EmailToSend(
+            DraftEmail(
                 sender=self.__class__._sender_email,
                 receiver=self.__class__._sender_email,
                 subject=generate_random_subject_with_uuid(),

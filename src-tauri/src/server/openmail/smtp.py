@@ -32,7 +32,7 @@ from .parser import HTMLParser, MessageParser
 from .encoder import FileBase64Encoder
 from .converter import AttachmentConverter
 from .utils import extract_domain, choose_positive, extract_username
-from .types import EmailToSend, Attachment
+from .types import DraftEmail, Attachment
 
 """
 Exceptions
@@ -192,12 +192,12 @@ class SMTPManager(smtplib.SMTP):
         except Exception as e:
             raise SMTPManagerException(f"Error, email prepared but could not be sent: {str(e)}") from e
 
-    def send_email(self, email: EmailToSend) -> SMTPCommandResult:
+    def send_email(self, email: DraftEmail) -> SMTPCommandResult:
         """
         Send an email with optional attachments and metadata.
 
         Args:
-            email (EmailToSend): The email to be sent.
+            email (DraftEmail): The email to be sent.
 
         Returns:
             SMTPCommandResult: A tuple containing:
@@ -331,12 +331,12 @@ class SMTPManager(smtplib.SMTP):
 
         return self.send_message(msg)
 
-    def reply_email(self, email: EmailToSend) -> SMTPCommandResult:
+    def reply_email(self, email: DraftEmail) -> SMTPCommandResult:
         """
         Reply to an existing email. Uses the `send_email` method internally.
 
         Args:
-            email (EmailToSend): The email to be replied to.
+            email (DraftEmail): The email to be replied to.
 
         Returns:
             SMTPCommandResult: A tuple containing:
@@ -364,13 +364,13 @@ class SMTPManager(smtplib.SMTP):
 
         return status, message
 
-    def forward_email(self, email: EmailToSend) -> SMTPCommandResult:
+    def forward_email(self, email: DraftEmail) -> SMTPCommandResult:
         """
         Forward an existing email to new recipients. Uses the `send_email`
         method internally.
 
         Args:
-            email (EmailToSend): The email to be forwarded.
+            email (DraftEmail): The email to be forwarded.
 
         Returns:
             SMTPCommandResult: A tuple containing:

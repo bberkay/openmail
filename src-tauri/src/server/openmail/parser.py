@@ -530,7 +530,7 @@ class MessageParser:
         return message_headers
 
     @staticmethod
-    def parse(message: list[bytes], *, choose_plain_body=True) -> BasicEmail:
+    def parse(message: list[bytes], *, choose_plain_body=True):
         """
         Parse a grouped email message into structured data.
 
