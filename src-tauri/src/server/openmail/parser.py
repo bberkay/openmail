@@ -12,7 +12,7 @@ header fields.
 import base64
 import re
 import quopri
-from typing import Iterator, Match, NotRequired, Optional, TypedDict, get_type_hints
+from typing import Iterator, Match, NotRequired, Optional, TypedDict
 from email.header import decode_header
 from html.parser import HTMLParser as BuiltInHTMLParser
 
@@ -132,7 +132,7 @@ class MessageParser:
 
         This function processes a list of raw message bytes and groups them
         into sublists. Each sublist contains related message components,
-        ending with the byte `b')'` and if it is not found message_list[0]
+        ending with the byte `b')'` and if it is not found [message_list]
         will be returned.
 
         Args:
@@ -169,7 +169,7 @@ class MessageParser:
         sublist = []
 
         if b')' not in message_list:
-            return message_list[0]
+            return [message_list]
 
         for item in message_list:
             if item == b')':
@@ -477,7 +477,8 @@ class MessageParser:
     @staticmethod
     def get_headers(message: bytes) -> MessageHeaders:
         """
-        Get headers from `BODY.PEEK[BODY[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID IN-REPLY-TO REFERENCES)]]`
+        Get headers from `BODY.PEEK[BODY[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID
+        IN-REPLY-TO REFERENCES CONTENT-TYPE CONTENT-TRANSFER-ENCODING)]]`
         fetch result.
 
         Args:
@@ -487,20 +488,20 @@ class MessageParser:
             MessageHeaders: Dictionary of headers.
 
         Example:
-            >>> headers_from_message(b'(UID ... FLAGS (\\Seen) ... To: a@gmail.com\\r\\n Subject: Hello\\r\\n Date: 2023-01-01\\r\\n From: b@gmail.com\\r\\n...) ... b')
+            >>> headers_from_message(b'(UID ... FLAGS (\\Seen) ... To: a@gmail.com\r\n Subject: Hello
+            ... \r\nDate: 2023-01-01\r\n From: b@gmail.com\\r\\n...) ... b')
             {
+                "content_type": "text/plain; charset=utf-8",
                 'subject': 'Hello',
                 'sender': 'a@gmail.com',
                 'receiver': 'b@gmail.com',
-                'cc': ''c@gmail.com',
-                'bcc': ''d@gmail.com',
-                'date': '2023-01-01',
-                'in-reply-to': 'e@gmail.com, f@gmail.com',
-                'message-id': '<caef..@dom.com>',
+                ...
+                'message_id': '<caef..@dom.com>',
                 'references': '<5121..@dom.com>'
             }
         """
         message_headers: MessageHeaders = {
+            "content_type": "",
             "subject": "",
             "sender": "",
             "receiver": "",
@@ -521,7 +522,7 @@ class MessageParser:
             field = field.strip()
 
             # Special cases
-            if field_type in ["sender", "receivers", "cc", "bcc"]:
+            if field_type in ["sender", "receiver", "cc", "bcc"]:
                 field = field.replace('"', '')
 
             message_headers[field_type] = field
@@ -529,7 +530,7 @@ class MessageParser:
         return message_headers
 
     @staticmethod
-    def parse(message: list[bytes], *, choose_plain_body=True):
+    def parse(message: list[bytes], *, choose_plain_body=True) -> BasicEmail:
         """
         Parse a grouped email message into structured data.
 
@@ -568,16 +569,21 @@ class MessageParser:
                 'date': '1 Jan 1970 12:00:00 +0300',
             }
         """
-        headers = MessageParser.get_headers(message[3]) if len(message) > 2 else None
+        headers = MessageParser.get_headers(message[3]) if len(message) > 2 else {}
 
-        body = None
-        if "multipart" not in headers["content_type"]:
-            body = MessageDecoder.body(message[1], headers["content_transfer_encoding"].lower(), True)
-        else:
+        body = ""
+        if headers and "multipart" not in headers["content_type"]:
+            body = MessageDecoder.body(
+                message[1],
+                headers["content_transfer_encoding"].lower() if "content_transfer_encoding" in headers else "",
+                True
+            )
+
+        if not body:
             if choose_plain_body:
-                body = MessageParser.get_text_plain_body(message[1])
-            if not body:
-                body = MessageParser.get_text_html_body(message[1])
+                body = MessageParser.get_text_plain_body(message[1]) or MessageParser.get_text_html_body(message[1])
+            else:
+                body = MessageParser.get_text_html_body(message[1]) or MessageParser.get_text_plain_body(message[1])
 
         return {
             "uid": MessageParser.get_uid(message[0]),
@@ -755,6 +761,7 @@ class MessageDecoder:
             message = message.strip()
 
         return message
+
 
 class _HTML2TextParser(BuiltInHTMLParser):
     """
