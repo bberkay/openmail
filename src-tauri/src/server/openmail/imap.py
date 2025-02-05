@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from .parser import MessageParser, HTMLParser
 from .utils import add_quotes_if_str, extract_domain, choose_positive
 from .utils import truncate_text, contains_non_ascii
-from .types import SearchCriteria, Attachment, Mailbox, BasicEmail, EmailWithContent, Flags, Mark, Folder
+from .types import SearchCriteria, Attachment, Mailbox, BasicEmail, CompleteEmail, Flags, Mark, Folder
 
 """
 Exceptions
@@ -1199,7 +1199,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     get email content de yapılan şey, ancak bunu partial olarak da alamayız çünkü düzgün decode edilmez
                     o yüzden şöyle bir fikir var:
                         - Önce bodystructrue alınabilir oradan text plain, text html vs. alınır.
-                    2- BasicEmail, EmailWithContent isimleri değişmeli. İlk bunlar bir değişsin
+                    2- BasicEmail, CompleteEmail isimleri değişmeli. İlk bunlar bir değişsin
                     3- parser.py de ki parse return type hinting yapılmalı. Bu zaten bodystructrue muhabbeti gelince değişir
                     o yüzden en son bu gelsin.
                     """
@@ -1228,7 +1228,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
     def get_email_content(self,
         folder: str,
         uid: str
-    ) -> EmailWithContent:
+    ) -> CompleteEmail:
         """
         Retrieve full content of a specific email.
 
@@ -1237,11 +1237,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
             uid (str): Unique identifier of the email.
 
         Returns:
-            EmailWithContent: Dataclass containing the email content.
+            CompleteEmail: Dataclass containing the email content.
 
         Example:
             >>> get_email_content("1", Folder.Inbox)
-            EmailWithContent(uid="1", sender="a@gmail.com", ...)
+            CompleteEmail(uid="1", sender="a@gmail.com", ...)
 
         Notes:
             - Replaces inline attachments with data URLs to display them inline
@@ -1298,7 +1298,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from e
 
-        return EmailWithContent(
+        return CompleteEmail(
             uid=uid,
             sender=message_headers["sender"],
             receiver=message_headers["receiver"],
@@ -1419,7 +1419,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if status != 'OK':
             raise IMAPManagerException(f"Error while fetching body structure of the `{uid}` email in folder `{folder}`: `{status}`")
 
-        attachment_list = MessageParser.get_attachment_list(message[1][0])
+        attachment_list = MessageParser.get_attachment_list(message[0])
         target_attachment = [attachment for attachment in attachment_list if attachment[0] == name][0]
         target_attachment = Attachment(
             name=target_attachment[0],
@@ -1430,7 +1430,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         try:
             target_part = -1
-            for i, part in enumerate(MessageParser.group_bodystructure(message[1][0]), start=1):
+            for i, part in enumerate(MessageParser.group_bodystructure(message[0]), start=1):
                 if all(arg in part for arg in ["FILENAME", name, cid]):
                     target_part = i
 
@@ -1441,7 +1441,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if status != 'OK':
                 raise IMAPManagerException(f"Error while fetching attachment part of the `{uid}` email in folder `{folder}`: `{status}`")
 
-            target_attachment.data = message[1][0][1].decode()
+            target_attachment.data = message[0][1].decode()
         except:
             raise IMAPManagerException(f"Error while fetching attachment part of the `{uid}` email in folder `{folder}`: `{status}`")
 
