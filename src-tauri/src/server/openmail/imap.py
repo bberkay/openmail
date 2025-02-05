@@ -29,10 +29,10 @@ from ssl import SSLContext
 from types import MappingProxyType
 from dataclasses import dataclass
 
-from .parser import MessageParser
+from .parser import MessageParser, HTMLParser
 from .utils import add_quotes_if_str, extract_domain, choose_positive
 from .utils import truncate_text, contains_non_ascii
-from .types import SearchCriteria, Attachment, Mailbox, EmailSummary, EmailWithContent, Flags, Mark, Folder
+from .types import SearchCriteria, Attachment, Mailbox, BasicEmail, EmailWithContent, Flags, Mark, Folder
 
 """
 Exceptions
@@ -83,7 +83,8 @@ Custom consts
 """
 GET_EMAILS_OFFSET_START = 1
 GET_EMAILS_OFFSET_END = 10
-BODY_SHORT_THRESHOLD = 100
+SHORT_BODY_MAX_LENGTH = 100 # Character count
+SHORT_BODY_TEXT_CHUNK_SIZE = 4096 # in bytes
 MAX_FOLDER_NAME_LENGTH = 1024
 CONN_TIMEOUT = 30 # 30 seconds
 IDLE_TIMEOUT = 30 * 60 # 30 minutes
@@ -1139,7 +1140,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Example:
             >>> get_emails(1, 2)
-            Mailbox(folder='INBOX', emails=[EmailSummary(uid="1", sender="a@gmail.com", ...), EmailSummary(uid="2", sender="b@gmail.com", ...)], total=2)
+            Mailbox(folder='INBOX', emails=[BasicEmail(uid="1", sender="a@gmail.com", ...), BasicEmail(uid="2", sender="b@gmail.com", ...)], total=2)
         """
         if not self._searched_emails or not self._searched_emails.uids or not self._searched_emails.uids[0]:
             raise IMAPManagerException("No emails have been searched yet. Call `search_emails` first.")
@@ -1173,12 +1174,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
-                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)'
+                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE LIST-UNSUBSCRIBE ' \
+                f'CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] BODY.PEEK[TEXT]<0.{SHORT_BODY_TEXT_CHUNK_SIZE}> ' \
+                'FLAGS BODYSTRUCTURE)'
             )
 
             if status != 'OK':
                 raise IMAPManagerException(f"`{sequence_set}` in folder `{self._searched_emails.folder}` could not fetched `{len(emails)}`: `{status}`")
-            print("Mesasge: ", messages)
+
             if not messages or not messages[0]:
                 return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
 
@@ -1186,36 +1189,31 @@ class IMAPManager(imaplib.IMAP4_SSL):
             messages = messages[::-1]
             for message in messages:
                 uid = MessageParser.get_uid(message[0])
-                message_headers = MessageParser.get_headers(message[1])
+                message_headers = MessageParser.get_headers(message[3])
 
-                _, _, body = MessageParser.get_text_plain_body(message[0]) or (None, None, "")
+                _, _, body = MessageParser.get_text_plain_body(message[1]) or (None, None, "")
                 if not body:
                     """
-                    #TODO: If text plain body does not exists.
-                    1. Get the content-type and rfc.size in the header fields and parse them
-                    2. If the body is just text html then check the size and get half of the
-                    html content with ThreadPoolExecutor(learn the threadpoolexecuter).
-                        status, complete_text = self.uid('FETCH', uid, '(BODY.PEEK[1])')
-                        if status == 'OK':
-                            msg = email.message_from_bytes(_text[0][1])
-                            for part in msg.walk():
-                                if part.get_content_type() == 'text/html':
-                                    body = part.get_payload(decode=True).decode('utf-8')
-                                    # use html.parser instead of bs4
-                                    #body = BeautifulSoup(body, "html.parser").get_text(" ", strip=True)
-                                    print("body: ", body)
-                                    #body = re.sub(r'<br\s*/?>', '', body).strip() if body != b'' else ""
-                                    #body = re.sub(r'[\n\r\t]+| +', ' ', body).strip()
+                    Şuan şöyle bir olay var:
+                    1- eğer body.peek[1] alıyorsak, inline elemanlardan gelir ve bu çok fazla veri demek ki bu zaten
+                    get email content de yapılan şey, ancak bunu partial olarak da alamayız çünkü düzgün decode edilmez
+                    o yüzden şöyle bir fikir var:
+                        - Önce bodystructrue alınabilir oradan text plain, text html vs. alınır.
+                    2- BasicEmail, EmailWithContent isimleri değişmeli. İlk bunlar bir değişsin
+                    3- parser.py de ki parse return type hinting yapılmalı. Bu zaten bodystructrue muhabbeti gelince değişir
+                    o yüzden en son bu gelsin.
                     """
-                    pass
+                    status, complete_text = self.uid('FETCH', uid, '(BODY.PEEK[1])')
+                    if status == 'OK':
+                        body = HTMLParser.parse(complete_text[0].decode())
 
-                emails.append(EmailSummary(
+                emails.append(BasicEmail(
                     uid=uid,
                     sender=message_headers["sender"],
-                    receiver=message_headers["receivers"],
+                    receiver=message_headers["receiver"],
                     subject=message_headers["subject"],
                     date=message_headers["date"],
-                    body_short=truncate_text(body, BODY_SHORT_THRESHOLD),
+                    body=truncate_text(body, SHORT_BODY_MAX_LENGTH),
                     flags=MessageParser.get_flags(message[0]),
                     attachments=[
                         Attachment(name=attachment[0], size=attachment[1], cid=attachment[2], type=attachment[3])
@@ -1226,55 +1224,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{len(emails)}`") from e
 
         return Mailbox(folder=self._searched_emails.folder, emails=emails, total=uids_len)
-
-    def get_email_flags(self, sequence_set: str) -> list[Flags]:
-        """
-        Retrieve flags associated with a specific email.
-
-        Args:
-            sequence_set (str): The sequence set of the email to fetch flags for.
-
-        Returns:
-            list[Flags]: A list of Flags objects representing the flags associated with the email.
-
-        Example:
-            >>> get_email_flags("1")
-            [Flags(uid="1", flags=["\\Seen", "\\Answered"])]
-            >>> get_email_flags("1,2,3")
-            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
-            >>> get_email_flags("1:3")
-            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
-            >>> get_email_flags("1,3:4")
-            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="3", flags=["\\Flagged"]), Flags(uid="4", flags=["\\Flagged"])]
-            >>> get_email_flags("1:*") # In this case, mailbox has 3 emails
-            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
-            >>> get_email_flags("1,3:*") # In this case, mailbox has 4 emails
-            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="3", flags=["\\Flagged"]), Flags(uid="4", flags=["\\Flagged"])]
-
-        References:
-            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
-        """
-        if self.state != "SELECTED":
-            # Since uid's are unique within each mailbox, we can't just select INBOX
-            # or something like that if there is no mailbox selected.
-            raise IMAPManagerException("Folder should be selected before fetching flags.")
-
-        status, message = self.uid('FETCH', sequence_set, '(FLAGS)')
-
-        try:
-            flags_list = []
-            if status != 'OK':
-                raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`")
-
-            message = message[1][0]
-            flags_list.append(Flags(
-                uid=MessageParser.get_uid(message),
-                flags=MessageParser.get_flags(message)
-            ))
-        except Exception as e:
-            raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`") from e
-
-        return flags_list or []
 
     def get_email_content(self,
         folder: str,
@@ -1352,7 +1301,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         return EmailWithContent(
             uid=uid,
             sender=message_headers["sender"],
-            receiver=message_headers["receivers"],
+            receiver=message_headers["receiver"],
             subject=message_headers["subject"],
             body=body,
             date=message_headers["date"],
@@ -1366,6 +1315,55 @@ class IMAPManager(imaplib.IMAP4_SSL):
             flags=self.get_email_flags(uid)[0].flags or [],
             attachments=attachments
         )
+
+    def get_email_flags(self, sequence_set: str) -> list[Flags]:
+        """
+        Retrieve flags associated with a specific email.
+
+        Args:
+            sequence_set (str): The sequence set of the email to fetch flags for.
+
+        Returns:
+            list[Flags]: A list of Flags objects representing the flags associated with the email.
+
+        Example:
+            >>> get_email_flags("1")
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"])]
+            >>> get_email_flags("1,2,3")
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
+            >>> get_email_flags("1:3")
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
+            >>> get_email_flags("1,3:4")
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="3", flags=["\\Flagged"]), Flags(uid="4", flags=["\\Flagged"])]
+            >>> get_email_flags("1:*") # In this case, mailbox has 3 emails
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="2", flags=["\\Answered"]), Flags(uid="3", flags=["\\Flagged"])]
+            >>> get_email_flags("1,3:*") # In this case, mailbox has 4 emails
+            [Flags(uid="1", flags=["\\Seen", "\\Answered"]), Flags(uid="3", flags=["\\Flagged"]), Flags(uid="4", flags=["\\Flagged"])]
+
+        References:
+            https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
+        """
+        if self.state != "SELECTED":
+            # Since uid's are unique within each mailbox, we can't just select INBOX
+            # or something like that if there is no mailbox selected.
+            raise IMAPManagerException("Folder should be selected before fetching flags.")
+
+        status, message = self.uid('FETCH', sequence_set, '(FLAGS)')
+
+        try:
+            flags_list = []
+            if status != 'OK':
+                raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`")
+
+            message = message[1][0]
+            flags_list.append(Flags(
+                uid=MessageParser.get_uid(message),
+                flags=MessageParser.get_flags(message)
+            ))
+        except Exception as e:
+            raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`") from e
+
+        return flags_list or []
 
     def get_email_size(self, folder: str, uid: str) -> int | None:
         """
