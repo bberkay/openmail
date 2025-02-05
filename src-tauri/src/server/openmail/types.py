@@ -48,44 +48,22 @@ class SearchCriteria():
             return raw
 
 @dataclass
-class EmailSummary():
-    """Represents an email summary."""
-    uid: str
-    sender: str | Tuple[str, str]
-    receiver: str
-    date: str
-    subject: str
-    body_short: str
-    flags: Optional[list[str]] = field(default_factory=list)
-    attachments: Optional[list[Attachment]] = field(default_factory=list)
-
-@dataclass
-class Attachment():
-    """Represents an email attachment."""
-    path: Optional[str] = None
-    name: Optional[str] = None
-    size: Optional[int] = None
-    type: Optional[str] = None
-    data: Optional[str] = None
-    cid: Optional[str] = None
-
-    def keys(self):
-        """Returns a list of all field names in the dataclass instance."""
-        return [field.name for field in fields(self)]
-
-@dataclass
-class EmailWithContent():
-    """Represents an email with its content."""
+class BasicEmail():
+    """Represents a basic email."""
     uid: str
     sender: str | Tuple[str, str]
     receiver: str
     date: str
     subject: str
     body: str
-    cc: Optional[str] = ""
-    bcc: Optional[str] = ""
     flags: Optional[list[str]] = field(default_factory=list)
     attachments: Optional[list[Attachment]] = field(default_factory=list)
+
+@dataclass
+class CompleteEmail(BasicEmail):
+    """Represents an email with its content."""
+    cc: Optional[str] = ""
+    bcc: Optional[str] = ""
     message_id: Optional[str] = ""
     metadata: Optional[dict] = field(default_factory=dict)
 
@@ -98,7 +76,7 @@ class EmailWithContent():
         return [field.name for field in fields(self)]
 
 @dataclass
-class EmailToSend():
+class DraftEmail():
     """
     Represents an email to be sent/replied/forwarded.
     If the email is being replied or forwarded, the
@@ -129,7 +107,7 @@ class EmailToSend():
 class Mailbox():
     """Represents the mailbox's contents."""
     folder: str
-    emails: list[EmailSummary]
+    emails: list[BasicEmail]
     total: int
 
 @dataclass
@@ -137,6 +115,21 @@ class Flags():
     """Represents an email's flags."""
     uid: str
     flags: list[str]
+
+@dataclass
+class Attachment():
+    """Represents an email attachment."""
+    path: Optional[str] = None
+    name: Optional[str] = None
+    size: Optional[int] = None
+    type: Optional[str] = None
+    data: Optional[str] = None
+    cid: Optional[str] = None
+
+    def keys(self):
+        """Returns a list of all field names in the dataclass instance."""
+        return [field.name for field in fields(self)]
+
 
 """
 Enums
@@ -185,7 +178,7 @@ class Folder(str, Enum):
 
 __all__ = [
     "SearchCriteria",
-    "EmailSummary",
+    "BasicEmail",
     "Attachment",
     "EmailWithContent",
     "EmailToSend",
