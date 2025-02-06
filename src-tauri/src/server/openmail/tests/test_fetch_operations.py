@@ -2,15 +2,19 @@ import os
 import json
 import math
 import time
+from typing import cast
 import unittest
 
 from openmail import OpenMail
 from openmail.imap import Mark, Folder
 from openmail.types import Draft, SearchCriteria
+from openmail.parser import HTMLParser, MessageParser
+from openmail.encoder import FileBase64Encoder
+from openmail.converter import AttachmentConverter
 
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
-from .utils.sample_file_generator import SampleDocumentGenerator
+from .utils.sample_file_generator import SampleDocumentGenerator, SampleImageGenerator
 
 class TestFetchOperations(unittest.TestCase):
 
@@ -55,7 +59,18 @@ class TestFetchOperations(unittest.TestCase):
             subject=NameGenerator.subject(),
             cc=cls._receiver_emails[1:],
             bcc=cls._sender_email,
-            body=NameGenerator.body(),
+            body=f'''
+            <html>
+                <head></head>
+                <body>
+                    <hr/>
+                    {NameGenerator.body()}
+                    <i>test_fetch_email_operation</i>
+                    <img src="{SampleImageGenerator().as_filepath(count=1)}"/>
+                    <hr/>
+                </body>
+            </html>
+            ''',
             attachments=[SampleDocumentGenerator().as_filepath()]
         )
         cls._test_sent_complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -359,16 +374,34 @@ class TestFetchOperations(unittest.TestCase):
             self.__class__._test_sent_complex_email.subject
         )
 
-        # Body, TODO: PLAIN TEXT TEST
-        self.assertEqual(
-            email_content.body,
-            self.__class__._test_sent_complex_email.body
-        )
+        # Body (and inline attachments if body is html)
+        complex_email_body = self.__class__._test_sent_complex_email.body
+        if HTMLParser.is_html(complex_email_body):
+            # Replace cids in `email_to_send` with base64 data to compare
+            # with `email_content`
+            inline_srcs = MessageParser.get_inline_attachment_sources(complex_email_body)
+            if inline_srcs:
+                email_to_send_inline_attachments = [match[1] for match in inline_srcs]
+                if email_to_send_inline_attachments:
+                    for email_to_send_inline_attachment in email_to_send_inline_attachments:
+                        if not email_to_send_inline_attachment.startswith("data:"):
+                            base64_data = FileBase64Encoder.read_file(
+                                cast(str, AttachmentConverter.resolve_and_convert(
+                                    email_to_send_inline_attachment
+                                ).path)
+                            )
+                            email_to_send_body = complex_email_body.replace(
+                                email_to_send_inline_attachment,
+                                f"data:{base64_data[1]};base64,{base64_data[3]}",
+                                count=1
+                            )
+                    email_content.body = email_content.body.replace("base64, ", "base64,", count=1)
+                    complex_email_body = complex_email_body.replace("\r", "").replace("\n", "")
+                    email_content.body = email_content.body.replace("\r", "").replace("\n", "")
 
-        # TODO: Inline Attachments
-        self.assertCountEqual(
-            [os.path.basename(attachment) for attachment in self.__class__._test_sent_complex_email.attachments],
-            [attachment.name for attachment in email_content.attachments]
+        self.assertEqual(
+            complex_email_body,
+            email_content.body,
         )
 
         # Attachments
@@ -397,6 +430,10 @@ class TestFetchOperations(unittest.TestCase):
             ) or 0,
             0
         )
+
+    def test_download_attachment(self):
+        print("test_download_attachment...")
+
 
     def test_search_in_custom_folder(self):
         print("test_search_in_custom_folder...")
