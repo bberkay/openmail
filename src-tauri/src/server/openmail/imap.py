@@ -1257,7 +1257,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # Get body and attachments
         body, attachments = "", []
         try:
-            status, message = self.uid('fetch', uid, '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID IN-REPLY-TO REFERENCES)] BODYSTRUCTURE BODY.PEEK[1])')
+            status, message = self.uid('fetch', uid, '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID IN-REPLY-TO REFERENCES)] BODYSTRUCTURE BODY[1])')
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
@@ -1429,15 +1429,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         )
 
         try:
-            target_part = -1
-            for i, part in enumerate(MessageParser.group_bodystructure(message[0]), start=1):
-                if all(arg in part for arg in ["FILENAME", name, cid]):
-                    target_part = i
-
-            if target_part < 0:
+            target_part = MessageParser.get_part(message[0], ["FILENAME", '"' + name + '"', cid])
+            if not target_part:
                 raise IMAPManagerException(f"Error, target attachment could not found in the email body.")
 
-            status, message = self.uid('FETCH', uid, f'(BODY.PEEK[{target_part}])')
+            status, message = self.uid('FETCH', uid, f'(BODY[{target_part}])')
             if status != 'OK':
                 raise IMAPManagerException(f"Error while fetching attachment part of the `{uid}` email in folder `{folder}`: `{status}`")
 

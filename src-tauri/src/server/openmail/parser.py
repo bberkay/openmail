@@ -185,67 +185,110 @@ class MessageParser:
         return result
 
     @staticmethod
-    def group_bodystructure(message: bytes) -> list[str]:
+    def get_part(message: bytes, keywords: list[str]) -> str | None:
         """
-        Group parts of the `BODYSTRUCTURE` fetch result. Mostly
-        used to find out which part the attachments are in.
+        Extracts the part number from the BODYSTRUCTURE of an email message that matches the provided keywords.
+
+        This method parses the BODYSTRUCTURE response from an IMAP server to locate the specific part
+        of the message containing the desired content, such as attachments or specific MIME types.
 
         Args:
-            message (bytes): Raw BODYSTRUCTURE message.
+            message (bytes): Raw BODYSTRUCTURE message in bytes, typically from an IMAP fetch response.
+            keywords (list[str]): List of keywords to match within the BODYSTRUCTURE, e.g., MIME types or filenames.
 
         Returns:
-            list[str]: A list of strings, where each string represents a grouped
-            BODYSTRUCTURE part. The components are split based on balanced
-            parentheses.
+            str | None: The part number of the message matching the keywords, formatted as a string (e.g., "1", "2.1").
+                        Returns None if no matching part is found.
 
         Example:
-            >>> raw = b'2394 (UID 3000 BODYSTRUCTURE (
-            ...     (("TEXT" "PLAIN" ("CHARSET"
+            >>> get_part(
+            ...     b'2394 (UID 3000 BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET"
             ...     "utf-8") NIL NIL "7BIT" 55 2 NIL NIL NIL) (("TEXT" "... ("IMAGE" "PNG"
             ...     NIL "<b89e7b1f...IL "BASE64" 1704 NIL ("INLINE" ("FILENAME" "red.png"))
             ...     NIL) "RELATED" ("B... "ALTERNATIVE" ("BOUNDARY" ("IMAGE" "PNG" NIL "bf
             ...     7f0...1704 NIL ("ATTACHMENT" ("FILENAME" "black.png")) NIL) "MIXED"
-            ...     ("BOUNDARY" "===============3928255875616178789==") NIL NIL)
-            ... )'
-            >>> messages(raw)
-            [
-          		"(
-         			("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "7BIT" 55 2 NIL NIL NIL)
-         			(
-                        ("TEXT" "HTML" ("CHARSET" "utf-8") NIL NIL "QUOTED-PRINTABLE" 450...)
-                        ("IMAGE" "PNG" NIL "<b8.... ("INLINE" ("FILENAME" "red.png")) NIL)
-                        "RELATED" ("BOU....511502==") NIL NIL
-         			)
-         			"ALTERNATIVE" ("BOUN....091==") NIL NIL
-          		)",
-          		"("IMAGE" "PNG" NIL "bf.....4 NIL ("ATTACHMENT" ("FILENAME" "black.png")) NIL)",
-           	]
+            ...     ("BOUNDARY" "===============3928255875616178789==") NIL NIL),
+            ...     ["FILENAME", '"black.png"']
+            ... )
+            "2"
+            >>> get_part(
+            ...     b'2394 (UID 3000 BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET"
+            ...     "utf-8") NIL NIL "7BIT" 55 2 NIL NIL NIL) (("TEXT" "... ("IMAGE" "PNG"
+            ...     NIL "<b89e7b1f...IL "BASE64" 1704 NIL ("INLINE" ("FILENAME" "red.png"))
+            ...     NIL) "RELATED" ("B... "ALTERNATIVE" ("BOUNDARY" ("IMAGE" "PNG" NIL "bf
+            ...     ... NIL NIL),
+            ...     ["TEXT", 'HTML']
+            ... )
+            "1.2.1"
+            >>> get_part(
+            ...     b'2496 (UID 3271 BODYSTRUCTURE ("TEXT" "HTML" ("CHARSET" "UTF-8") ... NIL))',
+            ...     ["TEXT", "HTML"]
+            ... )
+            "1"
+            >>> get_part(
+            ...     b'2498 (UID 3273 BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "UTF-8") ... NIL))',
+            ...     ["TEXT", "PLAIN"]
+            ... )
+            "1"
         """
-        match = BODYSTRUCTURE_PATTERN.search(message.decode("utf-8"))
-        if not match:
-            return []
+        message = BODYSTRUCTURE_PATTERN.search(message.decode("utf-8"))
+        if not message:
+            return None
 
-        bodystructure_content = match.group(1)
+        message = message.group(1)
+        # Delete last two paranthesis
+        message = message[:-2]
 
-        # Find and convert content of bodystructure:
-        # from this "BODYSTRUCTURE ((TEXT), (IMAGE), (IMAGE))"
-        # to this "(TEXT), (IMAGE), (IMAGE)"
-        bodystructure_content = bodystructure_content[:-2]
+        if message[0] != "(":
+            if  all(True if keyword in message else False for keyword in keywords):
+                return "1"
+            else:
+                return None
 
-        parts = []
-        part = ""
-        p = 0
-        for char in bodystructure_content:
-            part += char
+        i = 0
+        block = ""
+        stack = []
+        is_found = False
+        start = 0
+        for char in message:
+            if char == '(':
+                stack.append(i)
+            elif char == ')':
+                start = stack.pop()
+                block = message[start: i + 1]
+                if block:
+                    if all(True if keyword in block else False for keyword in keywords):
+                        is_found = True
+                        break
+            i += 1
+
+        if not is_found:
+            return None
+
+        part = "0"
+        i = 0
+        s = 0
+        while i <= start:
+            prev = message[i - 1] if i > 0 else None
+            char = message[i]
+            next = message[i + 1] if i + 1 <= start else None
             if char == "(":
-                p += 1
+                s += 1
+                inc = int(part[-1]) + 1
+                if prev == ")":
+                    part = part[:-1]
+                    part += str(inc)
+                elif next == "(":
+                    part = str(inc)
+                elif prev == "(":
+                    part += ".1"
             elif char == ")":
-                p -= 1
-            if p == 0 and part and part.startswith("("):
-                parts.append(part)
-                part = ""
+                s -= 1
+                if s == 0:
+                    part = part[0]
+            i += 1
 
-        return parts
+        return part
 
     @staticmethod
     def get_size(message: bytes) -> int | None:
