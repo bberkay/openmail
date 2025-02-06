@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from .parser import MessageDecoder, MessageParser, HTMLParser
 from .utils import add_quotes_if_str, extract_domain, choose_positive
 from .utils import truncate_text, contains_non_ascii
-from .types import SearchCriteria, Attachment, Mailbox, BasicEmail, CompleteEmail, Flags, Mark, Folder
+from .types import SearchCriteria, Attachment, Mailbox, Email, Flags, Mark, Folder
 
 """
 Exceptions
@@ -1140,7 +1140,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Example:
             >>> get_emails(1, 2)
-            Mailbox(folder='INBOX', emails=[BasicEmail(uid="1", sender="a@gmail.com", ...), BasicEmail(uid="2", sender="b@gmail.com", ...)], total=2)
+            Mailbox(folder='INBOX', emails=[Email(uid="1", sender="a@gmail.com", ...), Email(uid="2", sender="b@gmail.com", ...)], total=2)
         """
         if not self._searched_emails or not self._searched_emails.uids or not self._searched_emails.uids[0]:
             raise IMAPManagerException("No emails have been searched yet. Call `search_emails` first.")
@@ -1174,8 +1174,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
-                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE ' \
-                'LIST-UNSUBSCRIBE)] FLAGS BODYSTRUCTURE)'
+                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC ' \
+                'MESSAGE-ID IN-REPLY-TO REFERENCES LIST-UNSUBSCRIBE)] FLAGS ' \
+                'BODYSTRUCTURE)'
             )
 
             if status != 'OK':
@@ -1210,18 +1211,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         sanitize="html" not in content_type
                     )
 
-                emails.append(BasicEmail(
+                emails.append(Email(
+                    **headers,
                     uid=uid,
-                    sender=headers["sender"],
-                    receiver=headers["receiver"],
-                    subject=headers["subject"],
-                    date=headers["date"],
                     body=truncate_text(body, SHORT_BODY_MAX_LENGTH),
                     flags=MessageParser.get_flags(message[0]),
                     attachments=[
                         Attachment(name=attachment[0], size=attachment[1], cid=attachment[2], type=attachment[3])
                         for attachment in MessageParser.get_attachment_list(message[0])
-                    ]
+                    ],
                 ))
         except Exception as e:
             raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{len(emails)}`") from e
@@ -1231,7 +1229,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
     def get_email_content(self,
         folder: str,
         uid: str
-    ) -> CompleteEmail:
+    ) -> Email:
         """
         Retrieve full content of a specific email.
 
@@ -1260,7 +1258,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # Get body and attachments
         body, attachments = "", []
         try:
-            status, message = self.uid('fetch', uid, '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID IN-REPLY-TO REFERENCES)] BODYSTRUCTURE BODY[1])')
+            status, message = self.uid(
+                'fetch',
+                uid,
+                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC ' \
+                'MESSAGE-ID IN-REPLY-TO REFERENCES LIST-UNSUBSCRIBE)] FLAGS ' \
+                'BODYSTRUCTURE BODY[1])'
+            )
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
@@ -1298,20 +1302,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from e
 
-        return CompleteEmail(
+        return Email(
+            **headers,
             uid=uid,
-            sender=headers["sender"],
-            receiver=headers["receiver"],
-            subject=headers["subject"],
             body=body,
-            date=headers["date"],
-            cc=headers["cc"],
-            bcc=headers["bcc"],
-            message_id=headers["message_id"],
-            metadata={
-                "In-Reply-To": headers["in_reply_to"],
-                "References": headers["references"]
-            },
             flags=self.get_email_flags(uid)[0].flags or [],
             attachments=attachments
         )

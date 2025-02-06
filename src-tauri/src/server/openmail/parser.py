@@ -567,7 +567,7 @@ class MessageParser:
                 'references': '<5121..@dom.com>'
             }
         """
-        message_headers: MessageHeaders = {
+        headers: MessageHeaders = {
             "subject": "",
             "sender": "",
             "receiver": "",
@@ -591,9 +591,9 @@ class MessageParser:
             if field_type in ["sender", "receiver", "cc", "bcc"]:
                 field = field.replace('"', '')
 
-            message_headers[field_type] = field
+            headers[field_type] = field
 
-        return message_headers
+        return headers
 
 
 class MessageDecoder:

@@ -48,7 +48,7 @@ class SearchCriteria():
             return raw
 
 @dataclass
-class BasicEmail():
+class Email():
     """Represents a basic email."""
     uid: str
     sender: str | Tuple[str, str]
@@ -56,16 +56,14 @@ class BasicEmail():
     date: str
     subject: str
     body: str
-    flags: Optional[list[str]] = field(default_factory=list)
-    attachments: Optional[list[Attachment]] = field(default_factory=list)
-
-@dataclass
-class CompleteEmail(BasicEmail):
-    """Represents an email with its content."""
     cc: Optional[str] = ""
     bcc: Optional[str] = ""
     message_id: Optional[str] = ""
-    metadata: Optional[dict] = field(default_factory=dict)
+    flags: Optional[list[str]] = field(default_factory=list)
+    attachments: Optional[list[Attachment]] = field(default_factory=list)
+    in_reply_to: Optional[str] = ""
+    references: Optional[str] = ""
+    list_unsubscribe: Optional[str] = ""
 
     def __getitem__(self, item):
         """Allows dictionary-like access to dataclass attributes."""
@@ -107,7 +105,7 @@ class DraftEmail():
 class Mailbox():
     """Represents the mailbox's contents."""
     folder: str
-    emails: list[BasicEmail]
+    emails: list[Email]
     total: int
 
 @dataclass
@@ -178,9 +176,8 @@ class Folder(str, Enum):
 
 __all__ = [
     "SearchCriteria",
-    "BasicEmail",
+    "Email",
     "Attachment",
-    "CompleteEmail",
     "DraftEmail",
     "Mailbox",
     "Flags",
