@@ -32,7 +32,7 @@ HEADERS_PATTERN = re.compile(rb"BODY\[HEADER\.FIELDS.*?\r\n\r\n", re.DOTALL | re
 class MessageHeaders(TypedDict):
     """Header fields of a email message."""
     content_type: str
-    content_transfer_encoding: NotRequired[str]
+    content_transfer_encoding: str
     subject: str
     sender: str
     receiver: str
@@ -79,7 +79,7 @@ BODY_TEXT_HTML_DATA_PATTERN = re.compile(
     re.DOTALL | re.IGNORECASE
 )
 ATTACHMENT_LIST_PATTERN = re.compile(
-    r'\("([^"]+)"\s+"([^"]+)"\s+[^\s"]+\s+"([^"]+)"\s+[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+[^\s"]+\)',
+    r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+[^\s"]+\)',
     re.DOTALL | re.IGNORECASE
 )
 INLINE_ATTACHMENT_DATA_BY_CID_PATTERN = re.compile(
@@ -374,7 +374,11 @@ class MessageParser:
         if not data_match:
             return None
 
-        return *data_match.span(), MessageDecoder.body(data_match.group(1), encoding, True)
+        return *data_match.span(), MessageDecoder.body(
+            data_match.group(1),
+            encoding=encoding.decode(),
+            sanitize=True
+        )
 
     @staticmethod
     def get_text_html_body(message: bytes) -> tuple[int, int, str] | None:
@@ -533,6 +537,7 @@ class MessageParser:
         """
         message_headers: MessageHeaders = {
             "content_type": "",
+            "content_transfer_encoding": "",
             "subject": "",
             "sender": "",
             "receiver": "",
@@ -750,7 +755,7 @@ class MessageDecoder:
             return message
 
     @staticmethod
-    def body(message: str | bytes, encoding: str = "", sanitize: bool = False) -> str:
+    def body(message: str | bytes, /, *, encoding: str = "", sanitize: bool = False) -> str:
         """
         Decode and optionally sanitize the message body.
 
