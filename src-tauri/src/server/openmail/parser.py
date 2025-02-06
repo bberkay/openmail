@@ -31,8 +31,6 @@ HEADERS_PATTERN = re.compile(rb"BODY\[HEADER\.FIELDS.*?\r\n\r\n", re.DOTALL | re
 
 class MessageHeaders(TypedDict):
     """Header fields of a email message."""
-    content_type: str
-    content_transfer_encoding: str
     subject: str
     sender: str
     receiver: str
@@ -45,8 +43,6 @@ class MessageHeaders(TypedDict):
     list_unsubscribe: NotRequired[str]
 
 MESSAGE_HEADER_PATTERN_MAP = {
-    "content_type": re.compile(rb'Content-Type:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "content_transfer_encoding": re.compile(rb'Content-Transfer-Encoding:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
     "subject": re.compile(rb'Subject:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
     "sender": re.compile(rb'From:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
     "receiver": re.compile(rb'To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
@@ -62,6 +58,12 @@ MESSAGE_HEADER_PATTERN_MAP = {
 """
 Body Constants
 """
+CONTENT_TYPE_AND_ENCODING_PATTERN = re.compile(
+    rb'(?:\r\nContent-Type:\s*([\w\/\-\+]+).*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
+    rb'(?:\r\nContent-Transfer-Encoding:\s*([\w\-]+).*?\r\nContent-Type:\s*([\w\/\-\+]+))|' \
+    rb'(?:\r\nContent-Type:\s*([\w\/\-\+]+))',
+    re.DOTALL | re.IGNORECASE
+)
 BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN = re.compile(
     rb'(?:Content-Type:\s*text/plain.*?Content-Transfer-Encoding:\s*(\w+))|(?:Content-Transfer-Encoding:\s*(\w+).*?Content-Type:\s*text/plain)|(?:Content-Type:\s*text/plain)',
     re.DOTALL | re.IGNORECASE
@@ -344,6 +346,36 @@ class MessageParser:
         ]
 
     @staticmethod
+    def get_content_type_and_encoding(message: bytes) -> tuple[str, str]:
+        """
+        Extracts the Content-Type and Content-Transfer-Encoding headers from an email message.
+
+        Args:
+            message (bytes): The raw email message in bytes.
+
+        Returns:
+            tuple[str, str]: Content-Type and Content-Transfer-Encoding values
+            as (content_type, encoding)
+
+        Example:
+            >>> message = b'''
+            ...     ...Content-Type: text/plain; charset="utf-8"
+            ...     \r\nContent-Transfer-Encoding: quoted-printable
+            ...     \r\n...\r\n\r\ntest_send_email_with_attachment
+            ...     _and_inline_attachment\r\n\r\nContent-Type...
+            ... '''
+            >>> get_content_type_encoding(message)
+            ('text/plain', 'quoted-printable')
+        """
+        match = CONTENT_TYPE_AND_ENCODING_PATTERN.search(message)
+        if match:
+            content_type = match.group(1) or match.group(4) or match.group(5) or b""
+            encoding = match.group(2) or match.group(3) or b""
+            return content_type.decode(), encoding.decode()
+
+        return "", ""
+
+    @staticmethod
     def get_text_plain_body(message: bytes) -> tuple[int, int, str] | None:
         """
         Get plain text from `BODY.PEEK[1]`, `RFC822`, `BODY[TEXT]` etc. fetch results.
@@ -513,7 +545,7 @@ class MessageParser:
     def get_headers(message: bytes) -> MessageHeaders:
         """
         Get headers from `BODY.PEEK[BODY[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID
-        IN-REPLY-TO REFERENCES CONTENT-TYPE CONTENT-TRANSFER-ENCODING)]]`
+        IN-REPLY-TO REFERENCES)]]`
         fetch result.
 
         Args:
@@ -536,8 +568,6 @@ class MessageParser:
             }
         """
         message_headers: MessageHeaders = {
-            "content_type": "",
-            "content_transfer_encoding": "",
             "subject": "",
             "sender": "",
             "receiver": "",
@@ -564,72 +594,6 @@ class MessageParser:
             message_headers[field_type] = field
 
         return message_headers
-
-    @staticmethod
-    def parse(message: list[bytes], *, choose_plain_body=True):
-        """
-        Parse a grouped email message into structured data.
-
-        This function takes a grouped message (a list of byte strings) generated
-        by `group_messages` and extracts the headers, body, flags, and attachments.
-        It handles both plain text and HTML bodies, and decodes the message
-        appropriately based on its content type and encoding.
-
-        Args:
-            message (list[bytes]): A grouped list of message byte components
-                                (result of `group_messages`).
-            choose_plain_body (bool, optional): If True, prefers plain text
-                                                body over HTML. Defaults to True.
-
-        Returns:
-            dict: Parsed email content including UID, body, flags, attachments, and headers.
-
-        Example:
-            >>> raw_email_message = [
-            ...     b'2394 (UID 2651 FLAGS (\\Seen))',
-            ...     b'BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)]\r\nFrom:a@domain.com\r\nTo:b@domain.com',
-            ...     b'BODY[TEXT]\r\nHello, this is a test email.',
-            ...     b')'
-            ... ]
-            >>> messages = MessageParser.group_messages(raw_email_message)
-            >>> for message in messages:
-            ...     print(MessageParser.parse(message))
-            {
-                'uid': '2651',
-                'body': 'Hello, this is a test email.',
-                'flags': ['\\Seen'],
-                'attachments': [],
-                'subject': 'Test Subject',
-                'sender': 'a@domain.com',
-                'receiver': 'b@domain.com',
-                'date': '1 Jan 1970 12:00:00 +0300',
-            }
-        """
-        headers = MessageParser.get_headers(message[3]) if len(message) > 2 else {}
-
-        body = ""
-        if headers and "multipart" not in headers["content_type"]:
-            body = MessageDecoder.body(
-                message[1],
-                headers["content_transfer_encoding"].lower() if "content_transfer_encoding" in headers else "",
-                True
-            )
-
-        if not body:
-            if choose_plain_body:
-                body = MessageParser.get_text_plain_body(message[1]) or MessageParser.get_text_html_body(message[1])
-            else:
-                body = MessageParser.get_text_html_body(message[1]) or MessageParser.get_text_plain_body(message[1])
-
-        return {
-            "uid": MessageParser.get_uid(message[0]),
-            "body": body,
-            "flags": MessageParser.get_flags(message[0]),
-            "attachments": [
-                Attachment(name=attachment[0], size=attachment[1], cid=attachment[2], type=attachment[3])
-                for attachment in MessageParser.get_attachment_list(message[0])
-            ]
-        } | headers
 
 
 class MessageDecoder:

@@ -29,7 +29,7 @@ from ssl import SSLContext
 from types import MappingProxyType
 from dataclasses import dataclass
 
-from .parser import MessageParser, HTMLParser
+from .parser import MessageDecoder, MessageParser, HTMLParser
 from .utils import add_quotes_if_str, extract_domain, choose_positive
 from .utils import truncate_text, contains_non_ascii
 from .types import SearchCriteria, Attachment, Mailbox, BasicEmail, CompleteEmail, Flags, Mark, Folder
@@ -1174,8 +1174,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
-                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE LIST-UNSUBSCRIBE ' \
-                'CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] FLAGS BODYSTRUCTURE)'
+                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE ' \
+                'LIST-UNSUBSCRIBE)] FLAGS BODYSTRUCTURE)'
             )
 
             if status != 'OK':
@@ -1188,30 +1188,34 @@ class IMAPManager(imaplib.IMAP4_SSL):
             messages = messages[::-1]
             for message in messages:
                 uid = MessageParser.get_uid(message[0])
-                message_headers = MessageParser.get_headers(message[3])
+                headers = MessageParser.get_headers(message[1])
 
-                _, _, body = MessageParser.get_text_plain_body(message[1]) or (None, None, "")
+                body_part = (
+                    MessageParser.get_part(message[0], ["TEXT", "PLAIN"])
+                    or
+                    MessageParser.get_part(message[0], ["TEXT", "HTML"])
+                )
+                if not body_part:
+                    body_part = "1"
+
+                _, body = self.uid("FETCH", uid, f"(BODY.PEEK[{body_part}] BODY.PEEK[{body_part}.MIME])")
                 if not body:
-                    """
-                    Şuan şöyle bir olay var:
-                    1- eğer body.peek[1] alıyorsak, inline elemanlardan gelir ve bu çok fazla veri demek ki bu zaten
-                    get email content de yapılan şey, ancak bunu partial olarak da alamayız çünkü düzgün decode edilmez
-                    o yüzden şöyle bir fikir var:
-                        - Önce bodystructrue alınabilir oradan text plain, text html vs. alınır.
-                    2- BasicEmail, CompleteEmail isimleri değişmeli. İlk bunlar bir değişsin
-                    3- parser.py de ki parse return type hinting yapılmalı. Bu zaten bodystructrue muhabbeti gelince değişir
-                    o yüzden en son bu gelsin.
-                    """
-                    status, complete_text = self.uid('FETCH', uid, '(BODY.PEEK[1])')
-                    if status == 'OK':
-                        body = HTMLParser.parse(complete_text[0].decode())
+                    body = ""
+                else:
+                    body = MessageParser.group_messages(body)[0]
+                    content_type, encoding = MessageParser.get_content_type_and_encoding(body[3])
+                    body = MessageDecoder.body(
+                        body[1],
+                        encoding=encoding,
+                        sanitize="html" not in content_type
+                    )
 
                 emails.append(BasicEmail(
                     uid=uid,
-                    sender=message_headers["sender"],
-                    receiver=message_headers["receiver"],
-                    subject=message_headers["subject"],
-                    date=message_headers["date"],
+                    sender=headers["sender"],
+                    receiver=headers["receiver"],
+                    subject=headers["subject"],
+                    date=headers["date"],
                     body=truncate_text(body, SHORT_BODY_MAX_LENGTH),
                     flags=MessageParser.get_flags(message[0]),
                     attachments=[
@@ -1260,10 +1264,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
-            # Parse headers
-            message_headers = MessageParser.get_headers(message[0])
-
-            # Parse attachments from bodystructure
+            headers = MessageParser.get_headers(message[0])
             for attachment in MessageParser.get_attachment_list(message[0][0]):
                 attachments.append(Attachment(
                     name=attachment[0],
@@ -1299,17 +1300,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return CompleteEmail(
             uid=uid,
-            sender=message_headers["sender"],
-            receiver=message_headers["receiver"],
-            subject=message_headers["subject"],
+            sender=headers["sender"],
+            receiver=headers["receiver"],
+            subject=headers["subject"],
             body=body,
-            date=message_headers["date"],
-            cc=message_headers["cc"],
-            bcc=message_headers["bcc"],
-            message_id=message_headers["message_id"],
+            date=headers["date"],
+            cc=headers["cc"],
+            bcc=headers["bcc"],
+            message_id=headers["message_id"],
             metadata={
-                "In-Reply-To": message_headers["in_reply_to"],
-                "References": message_headers["references"]
+                "In-Reply-To": headers["in_reply_to"],
+                "References": headers["references"]
             },
             flags=self.get_email_flags(uid)[0].flags or [],
             attachments=attachments
