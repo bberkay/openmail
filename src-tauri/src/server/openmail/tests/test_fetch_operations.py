@@ -387,6 +387,17 @@ class TestFetchOperations(unittest.TestCase):
             )[0].flags
         )
 
+    def test_get_email_size(self):
+        print("test_get_email_size...")
+
+        self.assertGreater(
+            self.__class__._openmail._imap.get_email_size(
+                Folder.Inbox,
+                self.__class__._test_sent_complex_email.uid
+            ) or 0,
+            0
+        )
+
     def test_search_in_custom_folder(self):
         print("test_search_in_custom_folder...")
 
