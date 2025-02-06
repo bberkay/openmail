@@ -28,18 +28,6 @@ FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
 Header Constants
 """
 HEADERS_PATTERN = re.compile(rb"BODY\[HEADER\.FIELDS.*?\r\n\r\n", re.DOTALL | re.IGNORECASE)
-SUBJECT_PATTERN = re.compile(rb'Subject:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-FROM_PATTERN = re.compile(rb'From:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-TO_PATTERN = re.compile(rb'To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-DATE_PATTERN = re.compile(rb'Date:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-CC_PATTERN = re.compile(rb'Cc:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-BCC_PATTERN = re.compile(rb'Bcc:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-IN_REPLY_TO_PATTERN = re.compile(rb'In-Reply-To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-REFERENCES_PATTERN = re.compile(rb'References:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-MESSAGE_ID_PATTERN = re.compile(rb'Message-ID:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-LIST_UNSUBSCRIBE_PATTERN= re.compile(rb'List-Unsubscribe:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-CONTENT_TYPE_PATTERN = re.compile(rb'Content-Type:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
-CONTENT_TRANSFER_ENCODING_PATTERN = re.compile(rb'Content-Transfer-Encoding:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
 
 class MessageHeaders(TypedDict):
     """Header fields of a email message."""
@@ -57,18 +45,18 @@ class MessageHeaders(TypedDict):
     list_unsubscribe: NotRequired[str]
 
 MESSAGE_HEADER_PATTERN_MAP = {
-    "content_type": CONTENT_TYPE_PATTERN,
-    "content_transfer_encoding": CONTENT_TRANSFER_ENCODING_PATTERN,
-    "subject": SUBJECT_PATTERN,
-    "sender": FROM_PATTERN,
-    "receiver": TO_PATTERN,
-    "date": DATE_PATTERN,
-    "cc": CC_PATTERN,
-    "bcc": BCC_PATTERN,
-    "message_id": MESSAGE_ID_PATTERN,
-    "in_reply_to": IN_REPLY_TO_PATTERN,
-    "references": REFERENCES_PATTERN,
-    "list_unsubscribe": LIST_UNSUBSCRIBE_PATTERN
+    "content_type": re.compile(rb'Content-Type:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "content_transfer_encoding": re.compile(rb'Content-Transfer-Encoding:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "subject": re.compile(rb'Subject:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "sender": re.compile(rb'From:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "receiver": re.compile(rb'To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "date": re.compile(rb'Date:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "cc": re.compile(rb'Cc:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "bcc": re.compile(rb'Bcc:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "message_id": re.compile(rb'Message-ID:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "in_reply_to": re.compile(rb'In-Reply-To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "references": re.compile(rb'References:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
+    "list_unsubscribe": re.compile(rb'List-Unsubscribe:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
 }
 
 """
@@ -202,7 +190,7 @@ class MessageParser:
 
         Example:
             >>> get_part(
-            ...     b'2394 (UID 3000 BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET"
+            ...     b'... BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET"
             ...     "utf-8") NIL NIL "7BIT" 55 2 NIL NIL NIL) (("TEXT" "... ("IMAGE" "PNG"
             ...     NIL "<b89e7b1f...IL "BASE64" 1704 NIL ("INLINE" ("FILENAME" "red.png"))
             ...     NIL) "RELATED" ("B... "ALTERNATIVE" ("BOUNDARY" ("IMAGE" "PNG" NIL "bf
@@ -212,7 +200,7 @@ class MessageParser:
             ... )
             "2"
             >>> get_part(
-            ...     b'2394 (UID 3000 BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET"
+            ...     b'... BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET"
             ...     "utf-8") NIL NIL "7BIT" 55 2 NIL NIL NIL) (("TEXT" "... ("IMAGE" "PNG"
             ...     NIL "<b89e7b1f...IL "BASE64" 1704 NIL ("INLINE" ("FILENAME" "red.png"))
             ...     NIL) "RELATED" ("B... "ALTERNATIVE" ("BOUNDARY" ("IMAGE" "PNG" NIL "bf
@@ -221,12 +209,12 @@ class MessageParser:
             ... )
             "1.2.1"
             >>> get_part(
-            ...     b'2496 (UID 3271 BODYSTRUCTURE ("TEXT" "HTML" ("CHARSET" "UTF-8") ... NIL))',
+            ...     b'... BODYSTRUCTURE ("TEXT" "HTML" ("CHARSET" "UTF-8") ... NIL))',
             ...     ["TEXT", "HTML"]
             ... )
             "1"
             >>> get_part(
-            ...     b'2498 (UID 3273 BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "UTF-8") ... NIL))',
+            ...     b'... BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "UTF-8") ... NIL))',
             ...     ["TEXT", "PLAIN"]
             ... )
             "1"
@@ -236,8 +224,6 @@ class MessageParser:
             return None
 
         message = message.group(1)
-        # Delete last two paranthesis
-        message = message[:-2]
 
         if message[0] != "(":
             if  all(True if keyword in message else False for keyword in keywords):
@@ -254,6 +240,8 @@ class MessageParser:
             if char == '(':
                 stack.append(i)
             elif char == ')':
+                if not stack:
+                    return None
                 start = stack.pop()
                 block = message[start: i + 1]
                 if block:

@@ -1175,8 +1175,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 'FETCH',
                 sequence_set,
                 '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE LIST-UNSUBSCRIBE ' \
-                f'CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] BODY.PEEK[TEXT]<0.{SHORT_BODY_TEXT_CHUNK_SIZE}> ' \
-                'FLAGS BODYSTRUCTURE)'
+                'CONTENT-TYPE CONTENT-TRANSFER-ENCODING)] FLAGS BODYSTRUCTURE)'
             )
 
             if status != 'OK':
