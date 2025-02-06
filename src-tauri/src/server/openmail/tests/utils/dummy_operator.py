@@ -3,7 +3,7 @@ import time
 from openmail import OpenMail
 from openmail.smtp import SMTPManagerException
 from openmail.imap import IMAPManagerException
-from openmail.types import DraftEmail, SearchCriteria, Folder
+from openmail.types import Draft, SearchCriteria, Folder
 from openmail.tests.utils.name_generator import NameGenerator
 
 class DummyOperator:
@@ -60,14 +60,14 @@ class DummyOperator:
     @staticmethod
     def send_test_email_to_self_and_get_uid(
         openmail: OpenMail,
-        sender_email_or_email_to_send: str | DraftEmail
+        sender_email_or_email_to_send: str | Draft
     ) -> str:
         """
         Sends a test email to self and returns the UID of the sent email.
 
         Args:
             openmail (OpenMail): An instance of the OpenMail class.
-            sender_email_or_email_to_send (str | DraftEmail): The email address or DraftEmail object to send the test email.
+            sender_email_or_email_to_send (str | Draft): The email address or Draft object to send the test email.
 
         Returns:
             str: The UID of the sent email.
@@ -75,7 +75,7 @@ class DummyOperator:
         Example:
             >>> OpenMailDummyOperator.send_test_email_to_self_and_get_uid(openmail, "someone@domain.com")
             '1'
-            >>> OpenMailDummyOperator.send_test_email_to_self_and_get_uid(openmail, DraftEmail(
+            >>> OpenMailDummyOperator.send_test_email_to_self_and_get_uid(openmail, Draft(
             ...     sender="someone@domain.com",
             ...     receiver="someone@domain.com",
             ...     subject="test subject",
@@ -92,7 +92,7 @@ class DummyOperator:
         if isinstance(sender_email_or_email_to_send, str):
             subject = NameGenerator.subject()
             sender_email = sender_email_or_email_to_send
-            email_to_send = DraftEmail(
+            email_to_send = Draft(
                 sender_email_or_email_to_send,
                 sender_email_or_email_to_send,
                 subject,

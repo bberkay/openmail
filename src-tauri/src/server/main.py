@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from openmail import OpenMail
-from openmail.types import DraftEmail, Attachment, CompleteEmail, SearchCriteria
+from openmail.types import Draft, Attachment, Email, SearchCriteria
 from openmail.imap import Folder, Mark
 
 from classes.account_manager import AccountManager, Account, AccountWithPassword
@@ -414,13 +414,13 @@ def get_email_content(
     account: str,
     folder: str,
     uid: str
-) -> Response[CompleteEmail]:
+) -> Response[Email]:
     try:
         response = check_if_email_client_is_exists(account)
         if not response:
             return response
 
-        return Response[CompleteEmail](
+        return Response[Email](
             success=True,
             message="Email content fetched successfully.",
             data=openmail_clients[account].imap.get_email_content(unquote(folder), uid),
@@ -491,7 +491,7 @@ async def send_email(
             sender_email = sender[0]
 
         status, msg = openmail_clients[sender_email].smtp.send_email(
-            DraftEmail(
+            Draft(
                 sender=form_data.sender,
                 receiver=form_data.receiver,
                 subject=form_data.subject,
@@ -520,7 +520,7 @@ async def reply_email(
             form_data.sender if isinstance(form_data.sender, str) else form_data.sender[1]
         )
         status, msg = openmail_clients[sender_email].smtp.send_email(
-            DraftEmail(
+            Draft(
                 sender=form_data.sender,
                 receiver=form_data.receiver,
                 subject=form_data.subject,
@@ -549,7 +549,7 @@ async def forward_email(
             form_data.sender if isinstance(form_data.sender, str) else form_data.sender[1]
         )
         status, msg = openmail_clients[sender_email].smtp.send_email(
-            DraftEmail(
+            Draft(
                 sender=form_data.sender,
                 receiver=form_data.receiver,
                 subject=form_data.subject,

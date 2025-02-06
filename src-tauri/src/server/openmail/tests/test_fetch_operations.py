@@ -6,7 +6,7 @@ import unittest
 
 from openmail import OpenMail
 from openmail.imap import Mark, Folder
-from openmail.types import DraftEmail, SearchCriteria
+from openmail.types import Draft, SearchCriteria
 
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
@@ -36,7 +36,7 @@ class TestFetchOperations(unittest.TestCase):
         print(f"Connected to {cls._sender_email}...")
 
         # Send Basic Test Email
-        cls._test_sent_basic_email = DraftEmail(
+        cls._test_sent_basic_email = Draft(
             sender=cls._sender_email,
             receiver=cls._receiver_emails[0],
             subject=NameGenerator.subject(),
@@ -49,7 +49,7 @@ class TestFetchOperations(unittest.TestCase):
         cls._sent_test_email_uids.append(cls._test_sent_basic_email.uid)
 
         # Send Complex Text Email
-        cls._test_sent_complex_email = DraftEmail(
+        cls._test_sent_complex_email = Draft(
             sender=cls._sender_email,
             receiver=cls._receiver_emails,
             subject=NameGenerator.subject(),
@@ -419,7 +419,7 @@ class TestFetchOperations(unittest.TestCase):
             random_subject = NameGenerator.subject()
             uid = DummyOperator.send_test_email_to_self_and_get_uid(
                 self.__class__._openmail,
-                DraftEmail(
+                Draft(
                     sender=self.__class__._sender_email,
                     receiver=self.__class__._sender_email,
                     subject=random_subject,

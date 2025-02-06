@@ -1140,7 +1140,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Example:
             >>> get_emails(1, 2)
-            Mailbox(folder='INBOX', emails=[Email(uid="1", sender="a@gmail.com", ...), Email(uid="2", sender="b@gmail.com", ...)], total=2)
+            Mailbox(folder='INBOX', emails=[Email(uid="1", sender="a@gmail.com", ...),
+            Email(uid="2", sender="b@gmail.com", ...)], total=2)
         """
         if not self._searched_emails or not self._searched_emails.uids or not self._searched_emails.uids[0]:
             raise IMAPManagerException("No emails have been searched yet. Call `search_emails` first.")
@@ -1217,7 +1218,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     body=truncate_text(body, SHORT_BODY_MAX_LENGTH),
                     flags=MessageParser.get_flags(message[0]),
                     attachments=[
-                        Attachment(name=attachment[0], size=attachment[1], cid=attachment[2], type=attachment[3])
+                        Attachment(
+                            name=attachment[0],
+                            size=attachment[1],
+                            cid=attachment[2],
+                            type=attachment[3]
+                        )
                         for attachment in MessageParser.get_attachment_list(message[0])
                     ],
                 ))
@@ -1238,11 +1244,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
             uid (str): Unique identifier of the email.
 
         Returns:
-            CompleteEmail: Dataclass containing the email content.
+            Email: Dataclass containing the email content.
 
         Example:
             >>> get_email_content("1", Folder.Inbox)
-            CompleteEmail(uid="1", sender="a@gmail.com", ...)
+            Email(uid="1", sender="a@gmail.com", ...)
 
         Notes:
             - Replaces inline attachments with data URLs to display them inline
@@ -1268,8 +1274,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
-            headers = MessageParser.get_headers(message[0])
-            for attachment in MessageParser.get_attachment_list(message[0][0]):
+            message = MessageParser.group_messages(message)[0]
+            headers = MessageParser.get_headers(message[5])
+            flags = MessageParser.get_flags(message[0])
+            for attachment in MessageParser.get_attachment_list(message[4]):
                 attachments.append(Attachment(
                     name=attachment[0],
                     size=attachment[1],
@@ -1277,13 +1285,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     type=attachment[3],
                 ))
 
-            # Parse body(get html or text if body has not html part and inline attachments).
-            message = message[1][1]
-            start, end, body = MessageParser.get_text_html_body(message) or MessageParser.get_text_plain_body(message) or 0, 0, ""
-            if body: message = message[:start] + message[end:]
+            start, end, body = (
+                MessageParser.get_text_html_body(message[1])
+                or
+                MessageParser.get_text_plain_body(message[1])
+                or -1, -1, ""
+            )
+            if body:
+                message[1] = message[1][:start] + message[1][end:]
 
             try:
-                for cid, data in MessageParser.get_data_by_cid_from_inline_attachments(message):
+                for cid, data in MessageParser.get_cid_and_data_of_inline_attachments(message[1]):
                     i = 0
                     while i < len(attachments):
                         if attachments[i].cid == cid:
@@ -1306,7 +1318,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             **headers,
             uid=uid,
             body=body,
-            flags=self.get_email_flags(uid)[0].flags or [],
+            flags=flags,
             attachments=attachments
         )
 
@@ -1598,7 +1610,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._check_folder_names([source_folder, destination_folder])
 
         if source_folder == destination_folder:
-            return IMAPCommandResult(success=True, message=f"Destination folder `{destination_folder}` is the same as the source folder `{source_folder}`.")
+            return IMAPCommandResult(
+                success=True,
+                message=f"Destination folder `{destination_folder}` is the same as the source folder `{source_folder}`."
+            )
 
         self.select(source_folder)
 

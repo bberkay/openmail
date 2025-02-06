@@ -74,7 +74,7 @@ class Email():
         return [field.name for field in fields(self)]
 
 @dataclass
-class DraftEmail():
+class Draft():
     """
     Represents an email to be sent/replied/forwarded.
     If the email is being replied or forwarded, the
@@ -178,7 +178,7 @@ __all__ = [
     "SearchCriteria",
     "Email",
     "Attachment",
-    "DraftEmail",
+    "Draft",
     "Mailbox",
     "Flags",
     "Folder",

@@ -23,6 +23,12 @@ BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+\((.*)", re.DOTALL | re.IGN
 UID_PATTERN = re.compile(rb"UID\s+(\d+)")
 SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
 FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
+ATTACHMENT_LIST_PATTERN = re.compile(
+    r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+' \
+    r'[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("[^"]+"\s+\("FILENAME"\s+' \
+    r'"([^"]+)"\)\)\s+[^\s"]+\)',
+    re.DOTALL | re.IGNORECASE
+)
 
 """
 Header Constants
@@ -65,11 +71,15 @@ CONTENT_TYPE_AND_ENCODING_PATTERN = re.compile(
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:Content-Type:\s*text/plain.*?Content-Transfer-Encoding:\s*(\w+))|(?:Content-Transfer-Encoding:\s*(\w+).*?Content-Type:\s*text/plain)|(?:Content-Type:\s*text/plain)',
+    rb'(?:Content-Type:\s*text/plain.*?Content-Transfer-Encoding:\s*(\w+))|' \
+    rb'(?:Content-Transfer-Encoding:\s*(\w+).*?Content-Type:\s*text/plain)|' \
+    rb'(?:Content-Type:\s*text/plain)',
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:Content-Type:\s*text/html.*?Content-Transfer-Encoding:\s*(\w+))|(?:Content-Transfer-Encoding:\s*(\w+).*?Content-Type:\s*text/html)|(?:Content-Type:\s*text/html)',
+    rb'(?:Content-Type:\s*text/html.*?Content-Transfer-Encoding:\s*(\w+))|' \
+    rb'(?:Content-Transfer-Encoding:\s*(\w+).*?Content-Type:\s*text/html)|' \
+    rb'(?:Content-Type:\s*text/html)',
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_PLAIN_DATA_PATTERN = re.compile(
@@ -80,11 +90,7 @@ BODY_TEXT_HTML_DATA_PATTERN = re.compile(
     rb'Content-Type:\s*text/html.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
     re.DOTALL | re.IGNORECASE
 )
-ATTACHMENT_LIST_PATTERN = re.compile(
-    r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("[^"]+"\s+\("FILENAME"\s+"([^"]+)"\)\)\s+[^\s"]+\)',
-    re.DOTALL | re.IGNORECASE
-)
-INLINE_ATTACHMENT_DATA_BY_CID_PATTERN = re.compile(
+INLINE_ATTACHMENT_CID_AND_DATA_PATTERN = re.compile(
     rb'Content-ID: <(.*?)>.*?\r\n\r\n(.*?)\r\n\r\n',
     re.DOTALL
 )
@@ -234,7 +240,7 @@ class MessageParser:
                 return None
 
         i = 0
-        block = ""
+        block: str = ""
         stack = []
         is_found = False
         start = 0
@@ -281,7 +287,7 @@ class MessageParser:
         return part
 
     @staticmethod
-    def get_size(message: bytes) -> int | None:
+    def get_size(message: bytes) -> int:
         """
         Get size from `RFC822.SIZE` fetch result.
 
@@ -296,7 +302,7 @@ class MessageParser:
             42742
         """
         match = SIZE_PATTERN.search(message)
-        return int(match.group(1)) if match else None
+        return int(match.group(1)) if match else -1
 
     @staticmethod
     def get_uid(message: bytes) -> str:
@@ -460,10 +466,13 @@ class MessageParser:
         if not data_match:
             return None
 
-        return *data_match.span(), MessageDecoder.body(data_match.group(1), encoding)
+        return (
+            *data_match.span(),
+            MessageDecoder.body(data_match.group(1), encoding=encoding.decode())
+        )
 
     @staticmethod
-    def get_data_by_cid_from_inline_attachments(message: bytes) -> list[tuple[str, str]]:
+    def get_cid_and_data_of_inline_attachments(message: bytes) -> list[tuple[str, str]]:
         """
         Get inline attachments' data from `BODY.PEEK[1]`, `RFC822`, `BODY.PEEK[TEXT]` etc. fetch results.
 
@@ -489,7 +498,7 @@ class MessageParser:
                 ("2b07dc3482f143180e8e78d5f9428d67", "iVBORw0KGgoAAAANSUhEUgAAAnQAAAFxCAYAAAD6TDXhAAAABHNC..."),
             ]
         """
-        cid_and_data_match = INLINE_ATTACHMENT_DATA_BY_CID_PATTERN.findall(message)
+        cid_and_data_match = INLINE_ATTACHMENT_CID_AND_DATA_PATTERN.findall(message)
         return [(cid.decode(), data.decode()) for cid, data in cid_and_data_match] if cid_and_data_match else []
 
     @staticmethod
