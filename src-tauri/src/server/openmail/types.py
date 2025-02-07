@@ -117,10 +117,10 @@ class Flags():
 @dataclass
 class Attachment():
     """Represents an email attachment."""
+    name: str
+    size: int
+    type: str
     path: Optional[str] = None
-    name: Optional[str] = None
-    size: Optional[int] = None
-    type: Optional[str] = None
     data: Optional[str] = None
     cid: Optional[str] = None
 

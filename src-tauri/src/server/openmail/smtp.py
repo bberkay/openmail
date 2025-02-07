@@ -249,10 +249,7 @@ class SMTPManager(smtplib.SMTP):
                 inline_attachment = None
                 src_start, src_value, src_end = match
                 src_start, src_end = src_start + position_shift, src_end + position_shift
-                if src_value.startswith("data:"):
-                    inline_attachment = AttachmentConverter.from_base64(src_value)
-                else:
-                    inline_attachment = AttachmentConverter.resolve_and_convert(src_value)
+                inline_attachment = AttachmentConverter.resolve_and_convert(src_value)
 
                 if inline_attachment.size > MAX_INLINE_IMAGE_SIZE:
                     raise SMTPManagerException("Inline image size exceeds the maximum allowed size.")
