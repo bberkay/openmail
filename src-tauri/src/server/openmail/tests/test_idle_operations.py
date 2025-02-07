@@ -64,7 +64,7 @@ class TestIdleOperations(unittest.TestCase):
                     print("connect result2: ", result2)
                     if result2[0]:
                         time.sleep(3)
-                        self.__class__._openmail.idle()
+                        self.__class__._openmail.imap.idle()
                         time.sleep(5)
                         result4 = self.__class__._openmail.imap.get_folders()
                         print("get folder test4: ", result4)
