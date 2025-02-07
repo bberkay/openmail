@@ -310,8 +310,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             return super()._simple_command(name, *args)
 
         # Leaving IDLE mode if needed
+        was_idle_before_call = self._is_idle
         try:
-            was_idle_before_call = self._is_idle
             if was_idle_before_call:
                 self.done()
         except Exception as e:
@@ -351,8 +351,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def _parse_command_result(self,
         result: tuple[str, list[bytes | None]],
-        success_message: str = None,
-        failure_message: str = None
+        success_message: str = "",
+        failure_message: str = ""
     ) -> IMAPCommandResult:
         """
         Parses the result of an IMAP command and returns a structured response.
