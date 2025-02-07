@@ -44,7 +44,6 @@ class IMAPManagerLoggedOutException(IMAPManagerException):
     """Custom exception for when the IMAPManager is logged out
     while trying to perform an action that requires authentication."""
 
-
 """
 Types, that are only used in this module
 """

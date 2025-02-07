@@ -10,8 +10,8 @@ Dependencies:
 Author: <berkaykayaforbusiness@outlook.com>
 License: MIT
 """
-from .imap import IMAPManager
-from .smtp import SMTPManager
+from .imap import IMAPManager, IMAPManagerException
+from .smtp import SMTPManager, SMTPManagerException
 
 class OpenMail:
     """
@@ -32,13 +32,17 @@ class OpenMail:
         self._smtp = None
 
     @property
-    def imap(self) -> IMAPManager | None:
+    def imap(self) -> IMAPManager:
         """Get the IMAPManager instance."""
+        if not self._imap:
+            raise IMAPManagerException("IMAP connection is not established. Please call the 'connect' method first.")
         return self._imap
 
     @property
-    def smtp(self) -> SMTPManager | None:
+    def smtp(self) -> SMTPManager:
         """Get the SMTPManager instance."""
+        if not self._smtp:
+            raise SMTPManagerException("SMTP connection is not established. Please call the 'connect' method first.")
         return self._smtp
 
     def connect(

@@ -300,7 +300,6 @@ class SMTPManager(smtplib.SMTP):
             generated_attachment_cids = set()
             for attachment in email.attachments:
                 try:
-                    attachment = AttachmentConverter.resolve_and_convert(attachment)
                     if attachment.cid in generated_attachment_cids:
                         print("Duplicate attachments found. Skipping MIME attachment.")
                         continue
@@ -346,7 +345,7 @@ class SMTPManager(smtplib.SMTP):
         try:
             email_to_reply = copy.copy(email)
             email_to_reply.subject = "Re: " + email.subject
-            email_to_reply.metadata = email_to_reply.metadata | {
+            email_to_reply.metadata = (email_to_reply.metadata or {}) | {
                 "In-Reply-To": email.uid,
                 "References": email.uid
             }
@@ -380,7 +379,7 @@ class SMTPManager(smtplib.SMTP):
         try:
             email_to_forward = copy.copy(email)
             email_to_forward.subject = "Fwd: " + email.subject
-            email_to_forward.metadata = email_to_forward.metadata | {
+            email_to_forward.metadata = (email_to_forward.metadata or {}) | {
                 "In-Reply-To": email.uid,
                 "References": email.uid
             }
