@@ -123,12 +123,11 @@ class TestFetchOperations(unittest.TestCase):
 
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(
             Folder.Inbox,
-            self.__class__._test_sent_basic_email.uid
+            cast(str, self.__class__._test_sent_basic_email.uid)
         ))
         self.assertFalse(self.__class__._openmail.imap.is_email_exists(
             new_created_empty_test_folder,
-            self.__class__._test_sent_basic_email.uid
-
+            cast(str, self.__class__._test_sent_basic_email.uid)
         ))
 
     def test_build_search_criteria_query_multiple_or_with_even_length_lists(self):
@@ -188,7 +187,7 @@ class TestFetchOperations(unittest.TestCase):
     def test_basic_search_with_sender(self):
         print("test_basic_search_with_sender...")
 
-        self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.sender)
+        self.__class__._openmail.imap.search_emails(search=cast(str, self.__class__._test_sent_basic_email.sender))
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(found_emails.total, 1)
         self.assertIn(self.__class__._test_sent_basic_email.sender, found_emails.emails[0].sender)
@@ -196,7 +195,7 @@ class TestFetchOperations(unittest.TestCase):
     def test_basic_search_with_receiver(self):
         print("test_basic_search_with_receiver...")
 
-        self.__class__._openmail.imap.search_emails(search=self.__class__._test_sent_basic_email.receiver)
+        self.__class__._openmail.imap.search_emails(search=cast(str, self.__class__._test_sent_basic_email.receiver))
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(found_emails.total, 1)
         self.assertIn(self.__class__._test_sent_basic_email.receiver, found_emails.emails[0].receiver)
@@ -223,7 +222,7 @@ class TestFetchOperations(unittest.TestCase):
         print("test_complex_search_with_multiple_receiver...")
 
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            receivers=self.__class__._test_sent_complex_email.receiver,
+            receivers=cast(list[str], self.__class__._test_sent_complex_email.receiver),
         ))
 
         found_emails = self.__class__._openmail.imap.get_emails()
@@ -238,27 +237,7 @@ class TestFetchOperations(unittest.TestCase):
         print("test_complex_search_with_cc...")
 
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            cc=self.__class__._test_sent_complex_email.cc,
-        ))
-
-        found_emails = self.__class__._openmail.imap.get_emails()
-        self.assertGreaterEqual(found_emails.total, 1)
-
-        email_content = self.__class__._openmail._imap.get_email_content(
-            found_emails.folder,
-            found_emails.emails[0].uid
-        )
-
-        self.assertCountEqual(
-            [email.strip() for email in email_content.cc.split(",")],
-            self.__class__._test_sent_complex_email.cc
-        )
-
-    def test_complex_search_with_bcc(self):
-        print("test_complex_search_with_bcc...")
-
-        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            bcc=self.__class__._test_sent_complex_email.bcc,
+            cc=cast(list[str], self.__class__._test_sent_complex_email.cc),
         ))
 
         found_emails = self.__class__._openmail.imap.get_emails()
@@ -268,10 +247,30 @@ class TestFetchOperations(unittest.TestCase):
             found_emails.folder,
             found_emails.emails[0].uid
         )
+        assert email_content.cc
+        self.assertCountEqual(
+            [email.strip() for email in email_content.cc.split(",")],
+            cast(list[str], self.__class__._test_sent_complex_email.cc)
+        )
 
+    def test_complex_search_with_bcc(self):
+        print("test_complex_search_with_bcc...")
+
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            bcc=[cast(str, self.__class__._test_sent_complex_email.bcc)],
+        ))
+
+        found_emails = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(found_emails.total, 1)
+
+        email_content = self.__class__._openmail.imap.get_email_content(
+            found_emails.folder,
+            found_emails.emails[0].uid
+        )
+        assert email_content.bcc
         self.assertIn(
             [email.strip() for email in email_content.bcc.split(",")],
-            self.__class__._test_sent_complex_email.bcc
+            cast(str, self.__class__._test_sent_complex_email.bcc)
         )
 
     def test_complex_search_with_include(self):
@@ -309,6 +308,7 @@ class TestFetchOperations(unittest.TestCase):
 
         found_emails = self.__class__._openmail.imap.get_emails(1, 1)
         self.assertEqual(found_emails.total, 1)
+        assert found_emails.emails[0].attachments is not None
         self.assertGreaterEqual(len(found_emails.emails[0].attachments), 1)
 
     def test_complex_search_with_smaller_than(self):
@@ -322,6 +322,7 @@ class TestFetchOperations(unittest.TestCase):
         self.assertEqual(found_emails.total, 1)
 
         size = self.__class__._openmail.imap.get_email_size(found_emails.folder, found_emails.emails[0].uid)
+        assert size is not None
         self.assertLessEqual(size, 30000)
 
     def test_complex_search_with_larger_than(self):
@@ -335,6 +336,7 @@ class TestFetchOperations(unittest.TestCase):
         self.assertEqual(found_emails.total, 1)
 
         size = self.__class__._openmail.imap.get_email_size(found_emails.folder, found_emails.emails[0].uid)
+        assert size is not None
         self.assertGreaterEqual(size, 30000)
 
     def test_complex_search_with_include_flags(self):
@@ -346,6 +348,7 @@ class TestFetchOperations(unittest.TestCase):
 
         found_emails = self.__class__._openmail.imap.get_emails(1, 1)
         self.assertGreaterEqual(found_emails.total, 1)
+        assert found_emails.emails[0].flags is not None
         self.assertIn(Mark.Flagged, found_emails.emails[0].flags)
         self.assertIn(Mark.Seen, found_emails.emails[0].flags)
 
@@ -367,7 +370,7 @@ class TestFetchOperations(unittest.TestCase):
 
         email_content = self.__class__._openmail.imap.get_email_content(
             Folder.Inbox,
-            self.__class__._test_sent_complex_email.uid
+            cast(str, self.__class__._test_sent_complex_email.uid)
         )
 
         # Recipients
@@ -421,6 +424,9 @@ class TestFetchOperations(unittest.TestCase):
         if not "attachments" in email_content.keys() or not email_content.attachments:
             self.fail("There is no attachment in `email_content`")
 
+        if not self.__class__._test_sent_complex_email.attachments:
+            self.fail("There is no attachment in `test_sent_complex_email`.")
+
         self.assertCountEqual(
             [attachment.name for attachment in self.__class__._test_sent_complex_email.attachments],
             [attachment.name for attachment in email_content.attachments]
@@ -438,7 +444,7 @@ class TestFetchOperations(unittest.TestCase):
                 if attachment.name == found_attachment.name:
                     target_attachment = attachment
 
-            self.assertIsNotNone(target_attachment)
+            assert target_attachment is not None
             self.assertIsNotNone(target_attachment.data)
             self.assertIsNotNone(found_attachment.data)
             self.assertEqual(
@@ -451,8 +457,8 @@ class TestFetchOperations(unittest.TestCase):
 
         self.assertIn(
             Mark.Flagged,
-            self.__class__._openmail._imap.get_email_flags(
-                self.__class__._test_sent_complex_email.uid
+            self.__class__._openmail.imap.get_email_flags(
+                cast(str, self.__class__._test_sent_complex_email.uid)
             )[0].flags
         )
 
@@ -460,18 +466,21 @@ class TestFetchOperations(unittest.TestCase):
         print("test_get_email_size...")
 
         self.assertGreater(
-            self.__class__._openmail._imap.get_email_size(
+            self.__class__._openmail.imap.get_email_size(
                 Folder.Inbox,
-                self.__class__._test_sent_complex_email.uid
+                cast(str, self.__class__._test_sent_complex_email.uid)
             ) or 0,
             0
         )
 
     def test_download_attachment(self):
         print("test_download_attachment...")
+        if not self.__class__._test_sent_complex_email.attachments:
+            self.fail("There is no attachment in `test_sent_complex_email`.")
+
         email_content = self.__class__._openmail.imap.get_email_content(
             Folder.Inbox,
-            self.__class__._test_sent_complex_email.uid
+            cast(str, self.__class__._test_sent_complex_email.uid)
         )
 
         if not "attachments" in email_content.keys() or not email_content.attachments:
@@ -494,7 +503,7 @@ class TestFetchOperations(unittest.TestCase):
                 if attachment.name == found_attachment.name:
                     target_attachment = attachment
 
-            self.assertIsNotNone(target_attachment)
+            assert target_attachment is not None
             self.assertIsNotNone(target_attachment.data)
             self.assertIsNotNone(found_attachment.data)
             self.assertEqual(
