@@ -2,10 +2,12 @@
 This module contains the types used in the OpenMail module.
 """
 from __future__ import annotations
+import json
 from enum import Enum
 from typing import Optional, Sequence, Tuple
 from dataclasses import dataclass, field, fields
-import json
+
+from .converter import AttachmentConverter
 
 @dataclass
 class SearchCriteria():
@@ -128,6 +130,10 @@ class Attachment():
         """Returns a list of all field names in the dataclass instance."""
         return [field.name for field in fields(self)]
 
+    @classmethod
+    def create(cls, path: str) -> Attachment:
+        """Create an attachment object with given file path."""
+        return AttachmentConverter.resolve_and_convert(path)
 
 """
 Enums
