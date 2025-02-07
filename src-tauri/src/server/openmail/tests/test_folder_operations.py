@@ -293,7 +293,7 @@ class TestFolderOperations(unittest.TestCase):
         folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-ü-")
         self.__class__._created_test_folders.append(folder_name)
 
-        new_folder_name = NameGenerator.folder_name("openmail-folder-test-ç-")
+        new_folder_name = NameGenerator.folder_name("openmail-folder-test-ç-")[0]
         status, msg = self.__class__._openmail.imap.rename_folder(folder_name, new_folder_name)
 
         self.assertTrue(status, msg)
