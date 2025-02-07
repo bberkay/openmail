@@ -19,10 +19,6 @@ class SampleFileGenerator(ABC):
     def as_url(self, count:int = 1, all_different: bool = False) -> list[str]:
         pass
 
-    @abstractmethod
-    def as_base64(self, count:int = 1, all_different: bool = False) -> list[str]:
-        pass
-
 class FileGenerator:
     """Class for generating sample files."""
 
