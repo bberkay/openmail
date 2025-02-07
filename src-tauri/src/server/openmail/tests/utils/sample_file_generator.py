@@ -64,7 +64,7 @@ class FileGenerator:
             if not all_different or random_child not in choices:
                 choices.append(os.path.join(folder_path, random_child))
 
-        return choices if len(choices) > 1 else choices[0]
+        return choices
 
     @staticmethod
     def as_url(
@@ -130,7 +130,7 @@ class FileGenerator:
             if not all_different or random_line not in choices:
                 choices.append(random_line)
 
-        return choices if len(choices) > 1 else choices[0]
+        return choices
 
     @staticmethod
     def as_base64(files: str | list[str]) -> list[str]:

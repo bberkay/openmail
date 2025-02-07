@@ -7,8 +7,6 @@ from enum import Enum
 from typing import Optional, Sequence, Tuple
 from dataclasses import dataclass, field, fields
 
-from .converter import AttachmentConverter
-
 @dataclass
 class SearchCriteria():
     """
@@ -133,11 +131,6 @@ class Attachment():
     def keys(self):
         """Returns a list of all field names in the dataclass instance."""
         return [field.name for field in fields(self)]
-
-    @classmethod
-    def create(cls, path: str) -> Attachment:
-        """Create an attachment object with given file path."""
-        return AttachmentConverter.resolve_and_convert(path)
 
 """
 Enums

@@ -182,8 +182,8 @@ class TestSendOperations(unittest.TestCase):
             subject=NameGenerator.subject()[0],
             body="test_send_email_with_filepath_attachment",
             attachments=[
-                Attachment.create(sampleDocumentFiles[0]),
-                Attachment.create(sampleDocumentFiles[1]),
+                AttachmentConverter.resolve_and_convert(sampleDocumentFiles[0]),
+                AttachmentConverter.resolve_and_convert(sampleDocumentFiles[1]),
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -202,8 +202,8 @@ class TestSendOperations(unittest.TestCase):
             subject=NameGenerator.subject()[0],
             body="test_send_email_with_link_attachment",
             attachments=[
-                Attachment.create(sampleImageUrls[0]),
-                Attachment.create(sampleImageUrls[1]),
+                AttachmentConverter.resolve_and_convert(sampleImageUrls[0]),
+                AttachmentConverter.resolve_and_convert(sampleImageUrls[1]),
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -223,10 +223,10 @@ class TestSendOperations(unittest.TestCase):
             subject=NameGenerator.subject()[0],
             body="test_send_email_with_all_options_attachment",
             attachments=[
-                Attachment.create(sampleImageFiles[0]),
-                Attachment.create(sampleImageUrls[0]),
-                Attachment.create(sampleImageFiles[1]),
-                Attachment.create(sampleImageUrls[1]),
+                AttachmentConverter.resolve_and_convert(sampleImageFiles[0]),
+                AttachmentConverter.resolve_and_convert(sampleImageUrls[0]),
+                AttachmentConverter.resolve_and_convert(sampleImageFiles[1]),
+                AttachmentConverter.resolve_and_convert(sampleImageUrls[1]),
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -375,8 +375,8 @@ class TestSendOperations(unittest.TestCase):
             </html>
             ''',
             attachments=[
-                Attachment.create(sampleImages[2]),
-                Attachment.create(sampleImages[3]),
+                AttachmentConverter.resolve_and_convert(sampleImages[2]),
+                AttachmentConverter.resolve_and_convert(sampleImages[3]),
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -408,8 +408,8 @@ class TestSendOperations(unittest.TestCase):
             </html>
             ''',
             attachments=[
-                Attachment.create(sampleDocument2),
-                Attachment.create(sampleDocument2)
+                AttachmentConverter.resolve_and_convert(sampleDocument2),
+                AttachmentConverter.resolve_and_convert(sampleDocument2)
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -437,7 +437,7 @@ class TestSendOperations(unittest.TestCase):
             </html>
             ''',
             attachments=[
-                Attachment.create(sampleVideo)
+                AttachmentConverter.resolve_and_convert(sampleVideo)
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(

@@ -71,7 +71,7 @@ class TestFetchOperations(unittest.TestCase):
                 </body>
             </html>
             ''',
-            attachments=[Attachment.create(SampleDocumentGenerator().as_filepath()[0])]
+            attachments=[AttachmentConverter.resolve_and_convert(SampleDocumentGenerator().as_filepath()[0])]
         )
         cls._test_sent_complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,

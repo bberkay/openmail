@@ -31,7 +31,7 @@ class NameGenerator:
             if not all_different or unique_id not in ids:
                 ids.append(unique_id)
 
-        return ids[0] if len(ids) == 1 else ids
+        return ids
 
     @staticmethod
     def folder_name(
