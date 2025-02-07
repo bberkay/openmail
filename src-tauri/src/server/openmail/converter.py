@@ -47,6 +47,22 @@ def generate_cid_from_data(data: str | bytes, length: int = 32) -> str:
         data.encode("utf-8") if isinstance(data, str) else data
     ).hexdigest()[:length]
 
+def generate_name_from_data(data: str | bytes, length: int = 16) -> str:
+    """
+    Creates a name from the given data.
+
+    Args:
+        data (str|bytes): The data to generate the content ID from.
+
+    Returns:
+        str: The generated name.
+    """
+    if length <= 0:
+        raise ValueError("Name length must be greater than 0.")
+
+    # TODO: Implement its own logic if needed.
+    return generate_cid_from_data(data, length)
+
 class AttachmentConverter:
     """A static class for converting file paths, urls, etc. to `Attachment` objects."""
 
@@ -200,7 +216,7 @@ class AttachmentConverter:
             )
         elif uncomplete_attachment.data is not None:
             return Attachment(
-                name=uncomplete_attachment.name,
+                name=uncomplete_attachment.name or generate_name_from_data(uncomplete_attachment.data),
                 path=uncomplete_attachment.path,
                 type=uncomplete_attachment.type or get_mime_type_from_base64(uncomplete_attachment.data),
                 size=uncomplete_attachment.size or len(uncomplete_attachment.data),
@@ -234,7 +250,7 @@ class AttachmentConverter:
         """
         mime_type = get_mime_type_from_base64(base64_data)
         return Attachment(
-            name=None,
+            name=generate_name_from_data(base64_data),
             size=len(base64_data),
             type=mime_type,
             path=None,
