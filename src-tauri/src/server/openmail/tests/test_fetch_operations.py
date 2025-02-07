@@ -349,6 +349,10 @@ class TestFetchOperations(unittest.TestCase):
         self.assertIn(Mark.Flagged, found_emails.emails[0].flags)
         self.assertIn(Mark.Seen, found_emails.emails[0].flags)
 
+    def test_get_emails(self):
+        print("test_get_emails...")
+        pass
+
     def test_get_email_content(self):
         print("test_get_email_content...")
 
@@ -405,10 +409,33 @@ class TestFetchOperations(unittest.TestCase):
         )
 
         # Attachments
+        if not "attachments" in email_content.keys() or not email_content.attachments:
+            self.fail("There is no attachment in `email_content`")
+
         self.assertCountEqual(
-            [os.path.basename(attachment) for attachment in self.__class__._test_sent_complex_email.attachments],
+            [attachment.name for attachment in self.__class__._test_sent_complex_email.attachments],
             [attachment.name for attachment in email_content.attachments]
         )
+        for attachment in email_content.attachments:
+            found_attachment = self.__class__._openmail.imap.download_attachment(
+                Folder.Inbox,
+                email_content.uid,
+                attachment.name,
+                attachment.cid or ""
+            )
+
+            target_attachment = None
+            for attachment in self.__class__._test_sent_complex_email.attachments:
+                if attachment.name == found_attachment.name:
+                    target_attachment = attachment
+
+            self.assertIsNotNone(target_attachment)
+            self.assertIsNotNone(target_attachment.data)
+            self.assertIsNotNone(found_attachment.data)
+            self.assertEqual(
+                target_attachment.data,
+                found_attachment.data
+            )
 
     def test_get_email_flags(self):
         print("test_get_email_flags...")
@@ -433,7 +460,38 @@ class TestFetchOperations(unittest.TestCase):
 
     def test_download_attachment(self):
         print("test_download_attachment...")
+        email_content = self.__class__._openmail.imap.get_email_content(
+            Folder.Inbox,
+            self.__class__._test_sent_complex_email.uid
+        )
 
+        if not "attachments" in email_content.keys() or not email_content.attachments:
+            self.fail("There is no attachment in `email_content`")
+
+        self.assertCountEqual(
+            [attachment.name for attachment in self.__class__._test_sent_complex_email.attachments],
+            [attachment.name for attachment in email_content.attachments]
+        )
+        for attachment in email_content.attachments:
+            found_attachment = self.__class__._openmail.imap.download_attachment(
+                Folder.Inbox,
+                email_content.uid,
+                attachment.name,
+                attachment.cid or ""
+            )
+
+            target_attachment = None
+            for attachment in self.__class__._test_sent_complex_email.attachments:
+                if attachment.name == found_attachment.name:
+                    target_attachment = attachment
+
+            self.assertIsNotNone(target_attachment)
+            self.assertIsNotNone(target_attachment.data)
+            self.assertIsNotNone(found_attachment.data)
+            self.assertEqual(
+                target_attachment.data,
+                found_attachment.data
+            )
 
     def test_search_in_custom_folder(self):
         print("test_search_in_custom_folder...")

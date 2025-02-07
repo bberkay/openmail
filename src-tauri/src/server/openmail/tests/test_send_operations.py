@@ -90,13 +90,30 @@ class TestSendOperations(unittest.TestCase):
             if not "attachments" in email_content.keys() or not email_content.attachments:
                 self.fail("There is no attachment in `email_content`")
 
-            found_attachments = [attachment.name for attachment in email_content.attachments]
-            for sent_attachment in email_to_send.attachments:
-                if isinstance(sent_attachment, Attachment):
-                    if "name" in sent_attachment.keys() and sent_attachment.name:
-                        self.assertIn(os.path.basename(sent_attachment.name), found_attachments)
-                else:
-                    self.assertIn(os.path.basename(sent_attachment), found_attachments)
+            self.assertCountEqual(
+                [attachment.name for attachment in email_to_send.attachments],
+                [attachment.name for attachment in email_content.attachments]
+            )
+            for attachment in email_content.attachments:
+                found_attachment = self.__class__._openmail.imap.download_attachment(
+                    Folder.Inbox,
+                    email_content.uid,
+                    attachment.name,
+                    attachment.cid or ""
+                )
+
+                target_attachment = None
+                for attachment in email_to_send.attachments:
+                    if attachment.name == found_attachment.name:
+                        target_attachment = attachment
+
+                self.assertIsNotNone(target_attachment)
+                self.assertIsNotNone(target_attachment.data)
+                self.assertIsNotNone(found_attachment.data)
+                self.assertEqual(
+                    target_attachment.data,
+                    found_attachment.data
+                )
 
     def test_send_basic_email(self):
         print("test_send_basic_email...")
