@@ -126,6 +126,10 @@ class Attachment():
     data: Optional[str] = None
     cid: Optional[str] = None
 
+    def __getitem__(self, item):
+        """Allows dictionary-like access to dataclass attributes."""
+        return getattr(self, item)
+
     def keys(self):
         """Returns a list of all field names in the dataclass instance."""
         return [field.name for field in fields(self)]

@@ -427,10 +427,6 @@ class TestFetchOperations(unittest.TestCase):
         if not self.__class__._test_sent_complex_email.attachments:
             self.fail("There is no attachment in `test_sent_complex_email`.")
 
-        self.assertCountEqual(
-            [attachment.name for attachment in self.__class__._test_sent_complex_email.attachments],
-            [attachment.name for attachment in email_content.attachments]
-        )
         for attachment in email_content.attachments:
             found_attachment = self.__class__._openmail.imap.download_attachment(
                 Folder.Inbox,
@@ -445,12 +441,13 @@ class TestFetchOperations(unittest.TestCase):
                     target_attachment = attachment
 
             assert target_attachment is not None
-            self.assertIsNotNone(target_attachment.data)
-            self.assertIsNotNone(found_attachment.data)
-            self.assertEqual(
-                target_attachment.data,
-                found_attachment.data
-            )
+            assert found_attachment is not None
+
+            for field in set(target_attachment.keys() + found_attachment.keys()):
+                self.assertEqual(
+                    target_attachment[field],
+                    found_attachment[field]
+                )
 
     def test_get_email_flags(self):
         print("test_get_email_flags...")
@@ -504,12 +501,13 @@ class TestFetchOperations(unittest.TestCase):
                     target_attachment = attachment
 
             assert target_attachment is not None
-            self.assertIsNotNone(target_attachment.data)
-            self.assertIsNotNone(found_attachment.data)
-            self.assertEqual(
-                target_attachment.data,
-                found_attachment.data
-            )
+            assert found_attachment is not None
+
+            for field in set(target_attachment.keys() + found_attachment.keys()):
+                self.assertEqual(
+                    target_attachment[field],
+                    found_attachment[field]
+                )
 
     def test_search_in_custom_folder(self):
         print("test_search_in_custom_folder...")

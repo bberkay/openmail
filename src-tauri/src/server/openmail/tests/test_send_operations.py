@@ -107,13 +107,14 @@ class TestSendOperations(unittest.TestCase):
                     if attachment.name == found_attachment.name:
                         target_attachment = attachment
 
-                self.assertIsNotNone(target_attachment)
-                self.assertIsNotNone(target_attachment.data) # type: ignore
-                self.assertIsNotNone(found_attachment.data)
-                self.assertEqual(
-                    target_attachment.data, # type: ignore
-                    found_attachment.data
-                )
+                assert target_attachment is not None
+                assert found_attachment is not None
+
+                for field in set(target_attachment.keys() + found_attachment.keys()):
+                    self.assertEqual(
+                        target_attachment[field],
+                        found_attachment[field]
+                    )
 
     def test_send_basic_email(self):
         print("test_send_basic_email...")

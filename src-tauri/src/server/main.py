@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import concurrent.futures
 from urllib.parse import unquote
-from typing import Annotated, Callable, Generic, Optional, TypeVar
+from typing import Annotated, Callable, Generic, Optional, TypeVar, cast
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -22,7 +22,7 @@ from openmail.imap import Folder, Mark
 from classes.account_manager import AccountManager, Account, AccountWithPassword
 from classes.file_system import FileSystem
 from classes.http_request_logger import HTTPRequestLogger
-from classes.secure_storage import SecureStorage, SecureStorageKey, RSACipher
+from classes.secure_storage import SecureStorage, SecureStorageKey, RSACipher, SecureStorageKeyValue
 from classes.port_scanner import PortScanner
 
 from consts import TRUSTED_HOSTS
@@ -38,7 +38,7 @@ http_request_logger = HTTPRequestLogger()
 T = TypeVar("T")
 
 def create_and_idle_openmail_clients():
-    accounts: list[AccountWithPassword] = account_manager.get_all()
+    accounts: list[AccountWithPassword] = cast(list[AccountWithPassword], account_manager.get_all())
     if not accounts:
         return
 
@@ -50,7 +50,7 @@ def create_and_idle_openmail_clients():
                 account.email_address,
                 RSACipher.decrypt_password(
                     account.encrypted_password,
-                    secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
+                    cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
                 )
             )
             print(f"Connected to {account.email_address}")
@@ -71,7 +71,7 @@ def reconnect_and_idle_logged_out_openmail_clients():
                     email_address,
                     RSACipher.decrypt_password(
                         accounts[0].encrypted_password,
-                        secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
+                        cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
                     )
                 )
                 print(f"Reconnected to {email_address}")
@@ -116,6 +116,7 @@ async def catch_request_for_logging(request: Request, call_next):
         async for chunk in response.body_iterator:
             response_body += chunk
             return response_body
+        return response_body
 
     response = await call_next(request)
     response._body = await get_response_body(response)
@@ -141,7 +142,7 @@ async def get_public_key() -> Response[GetPublicKeyData]:
         success=True,
         message="Public key fetched successfully",
         data=GetPublicKeyData(
-            public_key=secure_storage.get_key_value(SecureStorageKey.PublicPem)["value"]
+            public_key=cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PublicPem))["value"]
         )
     )
 
@@ -194,7 +195,7 @@ def add_account(
             request.email_address,
             RSACipher.decrypt_password(
                 request.encrypted_password,
-                secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
+                cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
             )
         )
 
@@ -244,7 +245,7 @@ def edit_account(
                 request.email_address,
                 RSACipher.decrypt_password(
                     request.encrypted_password,
-                    secure_storage.get_key_value(SecureStorageKey.PrivatePem)["value"]
+                    cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
                 )
             )
 
