@@ -16,7 +16,7 @@ class DummyOperator:
         folder_name_suffix: str | None = None,
         create_parent: bool = False,
         parent_folder_name_suffix: str | None = None,
-    ) -> str | tuple[str, str]:
+    ) -> tuple[str, str]:
         """
         Creates a test folder and returns its name.
 
@@ -29,11 +29,11 @@ class DummyOperator:
             to create. If not provided and create_parent is True, a random name will be generated.
 
         Returns:
-            str: The name of the created folder.
+            tuple[str, str]: The name of the created folder and it's parent.
 
         Example:
             >>> OpenMailDummyOperator.create_test_folder_and_get_name(openmail)
-            'openmail-folder-test-uuid'
+            ('openmail-folder-test-uuid', '') # (Child folder, Parent folder)
             >>> OpenMailDummyOperator.create_test_folder_and_get_name(openmail, create_parent=True)
             ('openmail-folder-test-uuid', 'openmail-folder-test-uuid') # (Child folder, Parent folder)
             >>> OpenMailDummyOperator.create_test_folder_and_get_name(
@@ -51,12 +51,12 @@ class DummyOperator:
 
         folder_name = folder_name_suffix + NameGenerator.folder_name()[0]
 
-        parent_folder_name = None
+        parent_folder_name = ""
         if create_parent:
             parent_folder_name = parent_folder_name_suffix + NameGenerator.folder_name()[0]
 
         openmail.imap.create_folder(folder_name, parent_folder_name)
-        return (folder_name, parent_folder_name) if parent_folder_name else folder_name
+        return (folder_name, parent_folder_name)
 
     @staticmethod
     def send_test_email_to_self_and_get_uid(
@@ -116,8 +116,8 @@ class DummyOperator:
             folder=Folder.Inbox,
             search=SearchCriteria(
                 subject=subject,
-                senders=[sender_email],
-                receivers=[sender_email]
+                senders=[sender_email if isinstance(sender_email, str) else sender_email[1]],
+                receivers=[sender_email if isinstance(sender_email, str) else sender_email[1]]
             )
         )
         if not status:

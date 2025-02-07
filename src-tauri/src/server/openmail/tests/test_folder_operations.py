@@ -133,8 +133,8 @@ class TestFolderOperations(unittest.TestCase):
 
     def test_move_folder_operation(self):
         print("test_move_folder_operation...")
-        folder_name1 = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
-        folder_name2 = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        folder_name1, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        folder_name2, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(folder_name1)
 
         status, msg = self.__class__._openmail.imap.move_folder(folder_name1, folder_name2)
@@ -151,7 +151,7 @@ class TestFolderOperations(unittest.TestCase):
     def test_move_folder_with_subfolders_operation(self):
         print("test_move_folder_with_subfolders_operation...")
         _, parent_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-", create_parent=True)
-        target_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-")
+        target_folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-")
         self.__class__._created_test_folders.append(parent_folder)
 
         status, msg = self.__class__._openmail.imap.move_folder(parent_folder, target_folder_name)
@@ -169,7 +169,7 @@ class TestFolderOperations(unittest.TestCase):
     def test_move_child_folder_operation(self):
         print("test_move_child_folder_operation...")
         folder_name, parent_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-", create_parent=True)
-        target_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-")
+        target_folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-")
         self.__class__._created_test_folders.append(parent_folder)
 
         status, msg = self.__class__._openmail.imap.move_folder(f"{parent_folder}/{folder_name}", target_folder_name)
@@ -202,8 +202,8 @@ class TestFolderOperations(unittest.TestCase):
 
     def test_move_nonascii_folder_operation(self):
         print("test_move_nonascii_folder_operation...")
-        folder_name1 = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-ü-")
-        folder_name2 = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-ç-")
+        folder_name1, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-ü-")
+        folder_name2, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-ç-")
         self.__class__._created_test_folders.append(folder_name1)
 
         status, msg = self.__class__._openmail.imap.move_folder(folder_name1, folder_name2)
@@ -219,7 +219,7 @@ class TestFolderOperations(unittest.TestCase):
 
     def test_delete_folder_operation(self):
         print("test_delete_folder_operation...")
-        folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(folder_name)
 
         status, msg = self.__class__._openmail.imap.delete_folder(folder_name)
@@ -243,7 +243,7 @@ class TestFolderOperations(unittest.TestCase):
 
     def test_rename_folder_operation(self):
         print("test_rename_folder_operation...")
-        folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(folder_name)
 
         new_folder_name = NameGenerator.folder_name()[0]
@@ -290,7 +290,7 @@ class TestFolderOperations(unittest.TestCase):
 
     def test_rename_nonascii_folder_operation(self):
         print("test_rename_nonascii_folder_operation...")
-        folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-ü-")
+        folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-ü-")
         self.__class__._created_test_folders.append(folder_name)
 
         new_folder_name = NameGenerator.folder_name("openmail-folder-test-ç-")

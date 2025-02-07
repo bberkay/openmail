@@ -97,7 +97,7 @@ class TestEmailOperations(unittest.TestCase):
         print("test_move_email_operation...")
 
         print("Creating new folder to move email to...")
-        new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        new_folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(new_folder_name)
 
         print(f"Sending new email to move to {new_folder_name}...")
@@ -123,7 +123,7 @@ class TestEmailOperations(unittest.TestCase):
         print("test_move_multiple_email_operation...")
 
         print("Creating new folder to move email to...")
-        new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        new_folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(new_folder_name)
 
         print(f"Sending new emails to move to {new_folder_name}...")
@@ -154,7 +154,7 @@ class TestEmailOperations(unittest.TestCase):
         print("test_copy_email_operation...")
 
         print("Creating new folder to copy email to...")
-        new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        new_folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(new_folder_name)
 
         print(f"Sending new email to copy to {new_folder_name}...")
@@ -180,7 +180,7 @@ class TestEmailOperations(unittest.TestCase):
         print("test_copy_multiple_email_operation...")
 
         print("Creating new folder to copy email to...")
-        new_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        new_folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(new_folder_name)
 
         print(f"Sending new emails to copy to {new_folder_name}...")

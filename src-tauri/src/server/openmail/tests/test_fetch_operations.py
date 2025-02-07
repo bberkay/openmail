@@ -118,7 +118,7 @@ class TestFetchOperations(unittest.TestCase):
     def test_is_email_exists(self):
         print("test_is_email_exists...")
 
-        new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        new_created_empty_test_folder, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
 
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(
@@ -505,7 +505,7 @@ class TestFetchOperations(unittest.TestCase):
     def test_search_in_custom_folder(self):
         print("test_search_in_custom_folder...")
 
-        new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        new_created_empty_test_folder, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
 
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._sender_email)
@@ -524,7 +524,7 @@ class TestFetchOperations(unittest.TestCase):
     def test_fetch_with_pagination(self):
         print("test_fetch_with_pagination...")
 
-        new_created_empty_test_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
+        new_created_empty_test_folder, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(new_created_empty_test_folder)
 
         uids_list = []
