@@ -19,13 +19,19 @@ from html.parser import HTMLParser as BuiltInHTMLParser
 """
 General Fetch Constants
 """
-BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+\((.*)", re.DOTALL | re.IGNORECASE)
 UID_PATTERN = re.compile(rb"UID\s+(\d+)")
 SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
 FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
+BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+\((.*)", re.DOTALL | re.IGNORECASE)
 ATTACHMENT_LIST_PATTERN = re.compile(
     r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+' \
-    r'[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("[^"]+"\s+\("FILENAME"\s+' \
+    r'[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("ATTACHMENT"\s+\("FILENAME"\s+' \
+    r'"([^"]+)"\)\)\s+[^\s"]+\)',
+    re.DOTALL | re.IGNORECASE
+)
+INLINE_ATTACHMENT_LIST_PATTERN = re.compile(
+    r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+' \
+    r'[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("INLINE"\s+\("FILENAME"\s+' \
     r'"([^"]+)"\)\)\s+[^\s"]+\)',
     re.DOTALL | re.IGNORECASE
 )
@@ -334,8 +340,9 @@ class MessageParser:
             list[tuple[str, int, str, str]]: List of attachments as (filename, size, cid, mimetype/subtype)
 
         Example:
-            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\") ... INLINE (FILENAME \"banner.jpg\") b')
-            [("file.txt", 1029, "bcida...", "APPLICATION/TXT"), ("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
+            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\")
+            ... INLINE (FILENAME \"banner.jpg\") b')
+            [("file.txt", 1029, "bcida...", "APPLICATION/TXT")]
         """
         attachment_list = ATTACHMENT_LIST_PATTERN.findall(message.decode())
         if not attachment_list or not attachment_list[0]:
@@ -349,6 +356,36 @@ class MessageParser:
                 f"{match[0]}/{match[1]}".lower()
             )
             for match in attachment_list
+        ]
+
+    @staticmethod
+    def get_inline_attachment_list(message: bytes) -> list[tuple[str, int, str, str]]:
+        """
+        Get inline attachments from `BODYSTRUCTURE` fetch result.
+
+        Args:
+            message (str): Raw message bytes.
+
+        Returns:
+            list[tuple[str, int, str, str]]: List of inline attachments as (filename, size, cid, mimetype/subtype)
+
+        Example:
+            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\")
+            ... INLINE (FILENAME \"banner.jpg\") b')
+            [("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
+        """
+        inline_attachment_list = INLINE_ATTACHMENT_LIST_PATTERN.findall(message.decode())
+        if not inline_attachment_list or not inline_attachment_list[0]:
+            return []
+
+        return [
+            (
+                match[4],
+                int(match[3]),
+                TAG_CLEANING_PATTERN.sub('', match[2]),
+                f"{match[0]}/{match[1]}".lower()
+            )
+            for match in inline_attachment_list
         ]
 
     @staticmethod
