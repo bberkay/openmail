@@ -351,7 +351,16 @@ class TestFetchOperations(unittest.TestCase):
 
     def test_get_emails(self):
         print("test_get_emails...")
-        pass
+        self.__class__._openmail.imap.search_emails()
+        mailbox = self.__class__._openmail.imap.get_emails()
+        self.assertGreater(mailbox.total, 0)
+        self.assertEqual(mailbox.folder, Folder.Inbox)
+        for email in mailbox.emails:
+            self.assertIsNotNone(email.uid)
+            self.assertIsNotNone(email.sender)
+            self.assertIsNotNone(email.receiver)
+            self.assertIsNotNone(email.subject)
+            self.assertIsNotNone(email.body)
 
     def test_get_email_content(self):
         print("test_get_email_content...")
