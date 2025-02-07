@@ -108,10 +108,10 @@ class TestSendOperations(unittest.TestCase):
                         target_attachment = attachment
 
                 self.assertIsNotNone(target_attachment)
-                self.assertIsNotNone(target_attachment.data)
+                self.assertIsNotNone(target_attachment.data) # type: ignore
                 self.assertIsNotNone(found_attachment.data)
                 self.assertEqual(
-                    target_attachment.data,
+                    target_attachment.data, # type: ignore
                     found_attachment.data
                 )
 
@@ -120,7 +120,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body="test_send_basic_email"
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -135,7 +135,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._receiver_emails[0:2],
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body="test_send_multiple_recipients_email",
             cc=self.__class__._receiver_emails[2],
             bcc=self.__class__._sender_email,
@@ -152,13 +152,13 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body=f'''
             <html>
                 <head></head>
                 <body>
                     <hr/>
-                    {NameGenerator.body()}
+                    {NameGenerator.body()[0]}
                     <i>test_send_html_email</i>
                     <hr/>
                 </body>
@@ -178,11 +178,11 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body="test_send_email_with_filepath_attachment",
             attachments=[
-                sampleDocumentFiles[0],
-                Attachment(path=sampleDocumentFiles[1]),
+                Attachment.create(sampleDocumentFiles[0]),
+                Attachment.create(sampleDocumentFiles[1]),
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -198,11 +198,11 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body="test_send_email_with_link_attachment",
             attachments=[
-                sampleImageUrls[0],
-                Attachment(path=sampleImageUrls[1]),
+                Attachment.create(sampleImageUrls[0]),
+                Attachment.create(sampleImageUrls[1]),
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -219,13 +219,13 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body="test_send_email_with_all_options_attachment",
             attachments=[
-                sampleImageFiles[0],
-                sampleImageUrls[0],
-                Attachment(path=sampleImageFiles[1]),
-                Attachment(path=sampleImageUrls[1]),
+                Attachment.create(sampleImageFiles[0]),
+                Attachment.create(sampleImageUrls[0]),
+                Attachment.create(sampleImageFiles[1]),
+                Attachment.create(sampleImageUrls[1]),
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -241,7 +241,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body=f'''
             <html>
                 <head></head>
@@ -269,7 +269,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body=f'''
             <html>
                 <head></head>
@@ -297,7 +297,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body=f'''
             <html>
                 <head></head>
@@ -327,7 +327,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body=f'''
             <html>
                 <head></head>
@@ -359,7 +359,7 @@ class TestSendOperations(unittest.TestCase):
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body=f'''
             <html>
                 <head></head>
@@ -374,8 +374,8 @@ class TestSendOperations(unittest.TestCase):
             </html>
             ''',
             attachments=[
-                sampleImages[2],
-                Attachment(path=sampleImages[3]),
+                Attachment.create(sampleImages[2]),
+                Attachment.create(sampleImages[3]),
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -387,12 +387,12 @@ class TestSendOperations(unittest.TestCase):
 
     def test_send_email_with_duplicate_attachments(self):
         print("test_send_email_with_duplicate_attachments...")
-        sampleDocument1 = SampleImageGenerator().as_filepath(count=1, all_different=True)
-        sampleDocument2 = SampleDocumentGenerator().as_filepath(count=1, all_different=True)
+        sampleImage1 = SampleImageGenerator().as_filepath()[0]
+        sampleDocument2 = SampleDocumentGenerator().as_filepath()[0]
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body=f'''
             <html>
                 <head></head>
@@ -400,15 +400,15 @@ class TestSendOperations(unittest.TestCase):
                     <hr/>
                     <i>test_send_email_with_duplicate_attachments</i>
                     <br>
-                    <img src="{sampleDocument1}"/>
-                    <img src="{sampleDocument1}"/>
+                    <img src="{sampleImage1}"/>
+                    <img src="{sampleImage1}"/>
                     <hr/>
                 </body>
             </html>
             ''',
             attachments=[
-                sampleDocument2,
-                Attachment(path=sampleDocument2)
+                Attachment.create(sampleDocument2),
+                Attachment.create(sampleDocument2)
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -420,11 +420,11 @@ class TestSendOperations(unittest.TestCase):
 
     def test_send_email_with_large_attachment(self):
         print("test_send_email_with_large_attachment...")
-        sampleVideo = SampleVideoGenerator().as_filepath(count=1, all_different=True)
+        sampleVideo = SampleVideoGenerator().as_filepath()[0]
         email_to_send = Draft(
             sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             body=f'''
             <html>
                 <head></head>
@@ -436,7 +436,7 @@ class TestSendOperations(unittest.TestCase):
             </html>
             ''',
             attachments=[
-                Attachment(path=sampleVideo)
+                Attachment.create(sampleVideo)
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
@@ -452,8 +452,8 @@ class TestSendOperations(unittest.TestCase):
             Draft(
                 sender=self.__class__._sender_email,
                 receiver=self.__class__._sender_email,
-                subject=NameGenerator.subject(),
-                body=NameGenerator.body(),
+                subject=NameGenerator.subject()[0],
+                body=NameGenerator.body()[0],
             )
         )
         self.assertTrue(status)
@@ -465,7 +465,7 @@ class TestSendOperations(unittest.TestCase):
                 sender=self.__class__._sender_email,
                 receiver=self.__class__._sender_email,
                 subject=generate_random_subject_with_uuid(),
-                body=NameGenerator.body(),
+                body=NameGenerator.body()[0],
             )
         )
         self.assertTrue(status)"""

@@ -24,10 +24,10 @@ class TestAccountManager(unittest.TestCase):
 
         cls._TEST_ACCOUNTS = [
             AccountWithPassword(
-                email_address=NameGenerator.email_address(),
-                fullname=NameGenerator.fullname(),
+                email_address=NameGenerator.email_address()[0],
+                fullname=NameGenerator.fullname()[0],
                 encrypted_password=RSACipher.encrypt_password(
-                    cast(str, NameGenerator.password()),
+                    NameGenerator.password()[0],
                     public_pem["value"]
                 )
             )
@@ -142,7 +142,7 @@ class TestAccountManager(unittest.TestCase):
 
         with self.assertRaises(AccountDoesNotExists):
             test_account = self.__class__._TEST_ACCOUNTS[0]
-            test_account.fullname = cast(str, NameGenerator.fullname())
+            test_account.fullname = NameGenerator.fullname()[0]
             self.__class__._account_manager.edit(test_account)
 
     def test_remove_nonexists(self):

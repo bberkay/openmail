@@ -1,4 +1,5 @@
 import uuid
+from typing import overload
 
 class NameGenerator:
     """Utility class for generating random names"""
@@ -8,7 +9,7 @@ class NameGenerator:
         prefix: str,
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate a random name with UUID
 
@@ -18,11 +19,9 @@ class NameGenerator:
             all_different (bool, optional): If True, generate unique names. Defaults to False.
 
         Returns:
-            str: The generated name
+            list[str]: A list of generated names.
 
         Example:
-            >>> NameGenerator.name("openmail-test-")
-            'openmail-test-4A2B3C'
             >>> NameGenerator.name("openmail-test-", count=3, all_different=True)
             ['openmail-test-4A2B3C', 'openmail-test-5A2B3C', 'openmail-test-6A2B3C']
         """
@@ -39,7 +38,7 @@ class NameGenerator:
         prefix="openmail-folder-test-",
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate a random folder name with given prefix
         and random UUID
@@ -53,8 +52,6 @@ class NameGenerator:
             list[str]: A list of generated folder names
 
         Example:
-            >>> NameGenerator.folder_name()
-            'openmail-folder-test-4A2B3C'
             >>> NameGenerator.folder_name(count=3, all_different=True)
             ['openmail-folder-test-4A2B3C', 'openmail-folder-test-5A2B3C', 'openmail-folder-test-6A2B3C']
         """
@@ -69,7 +66,7 @@ class NameGenerator:
         prefix="openmail-subject-test-",
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate a random subject with given prefix
         and random UUID
@@ -83,8 +80,6 @@ class NameGenerator:
             list[str]: A list of generated subjects
 
         Example:
-            >>> NameGenerator.subject()
-            'openmail-subject-test-4A2B3C'
             >>> NameGenerator.subject(count=3, all_different=True)
             ['openmail-subject-test-4A2B3C', 'openmail-subject-test-5A2B3C', 'openmail-subject-test-6A2B3C']
         """
@@ -99,7 +94,7 @@ class NameGenerator:
         prefix="openmail-body-test-",
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate a random body with given prefix
         and random UUID
@@ -113,8 +108,6 @@ class NameGenerator:
             list[str]: A list of generated bodies
 
         Example:
-            >>> NameGenerator.body()
-            'openmail-body-test-4A2B3C'
             >>> NameGenerator.body(count=3, all_different=True)
             ['openmail-body-test-4A2B3C', 'openmail-body-test-5A2B3C', 'openmail-body-test-6A2B3C']
         """

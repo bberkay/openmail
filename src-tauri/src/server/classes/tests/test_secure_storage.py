@@ -32,7 +32,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_create_backup...")
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
-            NameGenerator.email_address(),
+            NameGenerator.email_address()[0],
             SecureStorageKeyValueType.Plain
         )
 
@@ -70,7 +70,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_load_backup...")
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
-            NameGenerator.email_address(),
+            NameGenerator.email_address()[0],
             SecureStorageKeyValueType.Plain
         )
 
@@ -124,7 +124,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_delete_backup...")
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
-            NameGenerator.email_address(),
+            NameGenerator.email_address()[0],
             SecureStorageKeyValueType.Plain
         )
 
@@ -156,7 +156,7 @@ class TestSecureStorage(unittest.TestCase):
     def test_get_key_value(self):
         print("test_get_key_value...")
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -191,7 +191,7 @@ class TestSecureStorage(unittest.TestCase):
     def test_add_key(self):
         print("test_add_key...")
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -214,7 +214,7 @@ class TestSecureStorage(unittest.TestCase):
         with self.assertRaises(InvalidSecureStorageKeyError):
             self.__class__._secure_storage.add_key(
                 "invalidkey",
-                NameGenerator.email_address(),
+                NameGenerator.email_address()[0],
                 SecureStorageKeyValueType.Plain,
             )
 
@@ -223,7 +223,7 @@ class TestSecureStorage(unittest.TestCase):
         with self.assertRaises(IllegalSecureStorageKeyError):
             self.__class__._secure_storage.add_key(
                 SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST[0],
-                NameGenerator.email_address(),
+                NameGenerator.email_address()[0],
                 SecureStorageKeyValueType.Plain
             )
 
@@ -232,14 +232,14 @@ class TestSecureStorage(unittest.TestCase):
         with self.assertRaises(InvalidSecureStorageKeyValueTypeError):
             self.__class__._secure_storage.add_key(
                 SecureStorageKey.TestKey,
-                NameGenerator.email_address(),
+                NameGenerator.email_address()[0],
                 "invalidkeyvaluetype",
             )
 
     def test_override_by_add(self):
         print("test_override_by_add...")
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -254,7 +254,7 @@ class TestSecureStorage(unittest.TestCase):
         time.sleep(3)
 
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -280,7 +280,7 @@ class TestSecureStorage(unittest.TestCase):
             self.fail(f"{SecureStorageKey.AESGCMCipherKey}'s value could not found.")
 
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -335,7 +335,7 @@ class TestSecureStorage(unittest.TestCase):
         if not private_pem:
             raise NoPrivatePemFoundError
 
-        original_value = cast(str, NameGenerator.email_address())
+        original_value = cast(str, NameGenerator.email_address()[0])
         test_key_value = {
             "value": RSACipher.encrypt_password(original_value, public_pem["value"]),
             "type": SecureStorageKeyValueType.RSAEncrypted
@@ -363,7 +363,7 @@ class TestSecureStorage(unittest.TestCase):
     def test_update_key(self):
         print("test_update_key...")
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -378,7 +378,7 @@ class TestSecureStorage(unittest.TestCase):
         time.sleep(2)
 
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.update_key(
@@ -400,7 +400,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_update_invalid_key...")
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
-            NameGenerator.email_address(),
+            NameGenerator.email_address()[0],
             SecureStorageKeyValueType.Plain,
         )
 
@@ -409,7 +409,7 @@ class TestSecureStorage(unittest.TestCase):
         with self.assertRaises(InvalidSecureStorageKeyError):
             self.__class__._secure_storage.update_key(
                 "invalidkey",
-                NameGenerator.email_address(),
+                NameGenerator.email_address()[0],
                 SecureStorageKeyValueType.Plain,
             )
 
@@ -417,7 +417,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_update_illegal_key...")
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
-            NameGenerator.email_address(),
+            NameGenerator.email_address()[0],
             SecureStorageKeyValueType.Plain,
         )
 
@@ -426,7 +426,7 @@ class TestSecureStorage(unittest.TestCase):
         with self.assertRaises(IllegalSecureStorageKeyError):
             self.__class__._secure_storage.update_key(
                 SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST[0],
-                NameGenerator.email_address(),
+                NameGenerator.email_address()[0],
                 SecureStorageKeyValueType.Plain,
             )
 
@@ -434,7 +434,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_update_invalid_key_value_type...")
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
-            NameGenerator.email_address(),
+            NameGenerator.email_address()[0],
             SecureStorageKeyValueType.Plain,
         )
 
@@ -443,7 +443,7 @@ class TestSecureStorage(unittest.TestCase):
         with self.assertRaises(InvalidSecureStorageKeyValueTypeError):
             self.__class__._secure_storage.update_key(
                 SecureStorageKey.TestKey,
-                NameGenerator.email_address(),
+                NameGenerator.email_address()[0],
                 "invalidkeyvaluetype",
             )
 
@@ -456,7 +456,7 @@ class TestSecureStorage(unittest.TestCase):
             self.fail(f"{SecureStorageKey.AESGCMCipherKey}'s value could not found.")
 
         first_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -466,7 +466,7 @@ class TestSecureStorage(unittest.TestCase):
         )
 
         last_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.update_key(
@@ -521,7 +521,7 @@ class TestSecureStorage(unittest.TestCase):
         if not private_pem:
             self.fail(f"{SecureStorageKey.PrivatePem}'s value could not found.")
 
-        first_original_value = cast(str, NameGenerator.email_address())
+        first_original_value = cast(str, NameGenerator.email_address()[0])
         first_key_value = {
             "value": RSACipher.encrypt_password(first_original_value, public_pem["value"]),
             "type": SecureStorageKeyValueType.RSAEncrypted
@@ -532,7 +532,7 @@ class TestSecureStorage(unittest.TestCase):
             first_key_value["type"],
         )
 
-        last_original_value = cast(str, NameGenerator.email_address())
+        last_original_value = cast(str, NameGenerator.email_address()[0])
         last_key_value = {
             "value": RSACipher.encrypt_password(last_original_value, public_pem["value"]),
             "type": SecureStorageKeyValueType.RSAEncrypted
@@ -561,7 +561,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_delete_key...")
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
-            NameGenerator.email_address(),
+            NameGenerator.email_address()[0],
             SecureStorageKeyValueType.Plain,
         )
 
@@ -592,7 +592,7 @@ class TestSecureStorage(unittest.TestCase):
     def test_clear(self):
         print("test_clear...")
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -615,7 +615,7 @@ class TestSecureStorage(unittest.TestCase):
     def test_destroy(self):
         print("test_destroy...")
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -635,7 +635,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage._init_aesgcm_cipher()
 
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -673,7 +673,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage._init_aesgcm_cipher()
 
         test_key_value = {
-            "value": NameGenerator.email_address(),
+            "value": NameGenerator.email_address()[0],
             "type": SecureStorageKeyValueType.Plain
         }
         self.__class__._secure_storage.add_key(
@@ -726,7 +726,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_rsa_rotation...")
         self.__class__._secure_storage._init_rsa_cipher()
 
-        original_value = cast(str, NameGenerator.email_address())
+        original_value = cast(str, NameGenerator.email_address()[0])
 
         pre_rotation_public_pem = self.__class__._secure_storage.get_key_value(
             SecureStorageKey.PublicPem,
@@ -792,7 +792,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_rsa_rotation_restoration...")
         self.__class__._secure_storage._init_rsa_cipher()
 
-        original_value = cast(str, NameGenerator.email_address())
+        original_value = cast(str, NameGenerator.email_address()[0])
 
         pre_rotation_public_pem = self.__class__._secure_storage.get_key_value(
             SecureStorageKey.PublicPem,

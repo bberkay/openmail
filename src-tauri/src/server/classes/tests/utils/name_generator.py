@@ -9,7 +9,7 @@ class NameGenerator:
         suffix: str = "",
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate a random name with UUID
 
@@ -20,11 +20,9 @@ class NameGenerator:
             all_different (bool, optional): If True, generate unique names. Defaults to False.
 
         Returns:
-            str: The generated name
+            list[str]: A list of generated names.
 
         Example:
-            >>> NameGenerator.name("alex")
-            'alex4A2B3C'
             >>> NameGenerator.name("alex", "domain", count=3, all_different=True)
             ['alex4A2B3Cdomain', 'alex5A2B3Cdomain', 'alex6A2B3Cdomain']
         """
@@ -41,7 +39,7 @@ class NameGenerator:
         prefix="alex",
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate a random email address with given prefix
         and random UUID
@@ -55,8 +53,6 @@ class NameGenerator:
             list[str]: A list of generated folder names
 
         Example:
-            >>> NameGenerator.email_address("fullname")
-            'name4A2B3C@domain.com'
             >>> NameGenerator.email_address(count=3, all_different=True)
             ['name4A2B3C@domain.com', 'name5A2B3C@domain.com', 'name6A2B3C@domain.com']
         """
@@ -72,7 +68,7 @@ class NameGenerator:
         prefix="Full Name ",
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate a random fullname with given prefix
         and random UUID
@@ -86,8 +82,6 @@ class NameGenerator:
             list[str]: A list of generated subjects
 
         Example:
-            >>> NameGenerator.fullname()
-            'Full Name 4A2B3C'
             >>> NameGenerator.fullname(count=3, all_different=True)
             ['Full Name 4A2B3C', 'Full Name 5A2B3C', 'Full Name 6A2B3C']
         """
@@ -103,7 +97,7 @@ class NameGenerator:
         prefix="psw-",
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate a random password with given prefix
         and random UUID
@@ -117,8 +111,6 @@ class NameGenerator:
             list[str]: A list of generated bodies
 
         Example:
-            >>> NameGenerator.password()
-            'psw-4A2B3C'
             >>> NameGenerator.password(count=3, all_different=True)
             ['psw-4A2B3C', 'psw-5A2B3C', 'psw-6A2B3C']
         """

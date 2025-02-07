@@ -1,4 +1,5 @@
 import time
+from typing import cast
 
 from openmail import OpenMail
 from openmail.smtp import SMTPManagerException
@@ -48,11 +49,11 @@ class DummyOperator:
         if not parent_folder_name_suffix:
             parent_folder_name_suffix = ""
 
-        folder_name = folder_name_suffix + NameGenerator.folder_name()
+        folder_name = folder_name_suffix + NameGenerator.folder_name()[0]
 
         parent_folder_name = None
         if create_parent:
-            parent_folder_name = parent_folder_name_suffix + NameGenerator.folder_name()
+            parent_folder_name = parent_folder_name_suffix + NameGenerator.folder_name()[0]
 
         openmail.imap.create_folder(folder_name, parent_folder_name)
         return (folder_name, parent_folder_name) if parent_folder_name else folder_name
@@ -86,17 +87,17 @@ class DummyOperator:
         print("Sending test email...")
 
         uid = None
-        subject = None
+        subject = ""
         sender_email = None
         email_to_send = None
         if isinstance(sender_email_or_email_to_send, str):
-            subject = NameGenerator.subject()
+            subject = cast(str, NameGenerator.subject()[0])
             sender_email = sender_email_or_email_to_send
             email_to_send = Draft(
                 sender_email_or_email_to_send,
                 sender_email_or_email_to_send,
                 subject,
-                NameGenerator.body()
+                NameGenerator.body()[0]
             )
         else:
             subject = sender_email_or_email_to_send.subject

@@ -30,7 +30,7 @@ class TestFolderOperations(unittest.TestCase):
 
         random_folder_names = []
         for i in range(1, 11):
-            bisect.insort(random_folder_names, NameGenerator.folder_name())
+            bisect.insort(random_folder_names, NameGenerator.folder_name()[0])
 
         folder_structure = [
             f"{random_folder_names[0]}",
@@ -82,7 +82,7 @@ class TestFolderOperations(unittest.TestCase):
 
     def test_create_folder_operation(self):
         print("test_create_folder_operation...")
-        folder_name = NameGenerator.folder_name()
+        folder_name = NameGenerator.folder_name()[0]
 
         status, msg = self.__class__._openmail.imap.create_folder(folder_name)
 
@@ -102,11 +102,11 @@ class TestFolderOperations(unittest.TestCase):
         )
 
         status, msg = self.__class__._openmail.imap.create_folder(folder_name, parent_folder_name)
-
         self.assertTrue(status, msg)
-        self.__class__._created_test_folders.append(created_folder_name)
 
         created_folder_name = f"{parent_folder_name}/{folder_name}"
+        self.__class__._created_test_folders.append(created_folder_name)
+
         self.assertIn(
             created_folder_name,
             self.__class__._openmail.imap.get_folders()
@@ -121,11 +121,11 @@ class TestFolderOperations(unittest.TestCase):
         )
 
         status, msg = self.__class__._openmail.imap.create_folder(folder_name, parent_folder_name)
-
         self.assertTrue(status, msg)
-        self.__class__._created_test_folders.append(created_folder_name)
 
         created_folder_name = f"{parent_folder_name}/{folder_name}"
+        self.__class__._created_test_folders.append(created_folder_name)
+
         self.assertIn(
             created_folder_name,
             self.__class__._openmail.imap.get_folders()
@@ -246,7 +246,7 @@ class TestFolderOperations(unittest.TestCase):
         folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail)
         self.__class__._created_test_folders.append(folder_name)
 
-        new_folder_name = NameGenerator.folder_name()
+        new_folder_name = NameGenerator.folder_name()[0]
         status, msg = self.__class__._openmail.imap.rename_folder(folder_name, new_folder_name)
 
         self.assertTrue(status, msg)
@@ -261,7 +261,7 @@ class TestFolderOperations(unittest.TestCase):
         folder_name, parent_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, create_parent=True)
         self.__class__._created_test_folders.append(parent_folder_name)
 
-        new_folder_name = NameGenerator.folder_name()
+        new_folder_name = NameGenerator.folder_name()[0]
         status, msg = self.__class__._openmail.imap.rename_folder(f"{parent_folder_name}/{folder_name}", new_folder_name)
 
         self.assertTrue(status, msg)
@@ -278,7 +278,7 @@ class TestFolderOperations(unittest.TestCase):
         _, parent_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, create_parent=True)
         self.__class__._created_test_folders.append(parent_folder_name)
 
-        new_parent_folder_name = NameGenerator.folder_name()
+        new_parent_folder_name = NameGenerator.folder_name()[0]
         status, msg = self.__class__._openmail.imap.rename_folder(parent_folder_name, new_parent_folder_name)
 
         self.assertTrue(status, msg)

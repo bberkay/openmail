@@ -7,7 +7,7 @@ import unittest
 
 from openmail import OpenMail
 from openmail.imap import Mark, Folder
-from openmail.types import Draft, SearchCriteria
+from openmail.types import Attachment, Draft, SearchCriteria
 from openmail.parser import HTMLParser, MessageParser
 from openmail.encoder import FileBase64Encoder
 from openmail.converter import AttachmentConverter
@@ -43,8 +43,8 @@ class TestFetchOperations(unittest.TestCase):
         cls._test_sent_basic_email = Draft(
             sender=cls._sender_email,
             receiver=cls._receiver_emails[0],
-            subject=NameGenerator.subject(),
-            body=NameGenerator.body(),
+            subject=NameGenerator.subject()[0],
+            body=NameGenerator.body()[0],
         )
         cls._test_sent_basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
@@ -56,7 +56,7 @@ class TestFetchOperations(unittest.TestCase):
         cls._test_sent_complex_email = Draft(
             sender=cls._sender_email,
             receiver=cls._receiver_emails,
-            subject=NameGenerator.subject(),
+            subject=NameGenerator.subject()[0],
             cc=cls._receiver_emails[1:],
             bcc=cls._sender_email,
             body=f'''
@@ -64,21 +64,21 @@ class TestFetchOperations(unittest.TestCase):
                 <head></head>
                 <body>
                     <hr/>
-                    {NameGenerator.body()}
+                    {NameGenerator.body()[0]}
                     <i>test_fetch_email_operation</i>
                     <img src="{SampleImageGenerator().as_filepath(count=1)}"/>
                     <hr/>
                 </body>
             </html>
             ''',
-            attachments=[SampleDocumentGenerator().as_filepath()]
+            attachments=[Attachment.create(SampleDocumentGenerator().as_filepath()[0])]
         )
         cls._test_sent_complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
             cls._test_sent_complex_email
         )
-        cls._openmail._imap.mark_email(Mark.Seen, cls._test_sent_complex_email.uid, Folder.Inbox)
-        cls._openmail._imap.mark_email(Mark.Flagged, cls._test_sent_complex_email.uid, Folder.Inbox)
+        cls._openmail.imap.mark_email(Mark.Seen, cls._test_sent_complex_email.uid, Folder.Inbox)
+        cls._openmail.imap.mark_email(Mark.Flagged, cls._test_sent_complex_email.uid, Folder.Inbox)
 
         cls._sent_test_email_uids.extend(cls._test_sent_complex_email.uid)
 
@@ -531,14 +531,14 @@ class TestFetchOperations(unittest.TestCase):
         count = 3
         random_subject_list = []
         for i in range(1, count + 1):
-            random_subject = NameGenerator.subject()
+            random_subject = NameGenerator.subject()[0]
             uid = DummyOperator.send_test_email_to_self_and_get_uid(
                 self.__class__._openmail,
                 Draft(
                     sender=self.__class__._sender_email,
                     receiver=self.__class__._sender_email,
                     subject=random_subject,
-                    body=NameGenerator.body()
+                    body=NameGenerator.body()[0]
                 )
             )
             uids_list.append(uid)
