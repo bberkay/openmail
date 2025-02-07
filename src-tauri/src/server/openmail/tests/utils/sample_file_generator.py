@@ -2,6 +2,7 @@ import random
 import os
 import base64
 import mimetypes
+from abc import ABC, abstractmethod
 
 """
 Constants
@@ -9,18 +10,28 @@ Constants
 IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "ico", "raw", "heic", "heif", "apng", "avif"]
 MIMETYPE_GUESS_FAILBACK = "application/octet-stream"
 
-class SampleFileGenerator:
-    """Base class for generating sample files."""
-
-    def __init__(self) -> None:
+class SampleFileGenerator(ABC):
+    @abstractmethod
+    def as_filepath(self, count:int = 1, all_different: bool = False) -> list[str]:
         pass
 
+    @abstractmethod
+    def as_url(self, count:int = 1, all_different: bool = False) -> list[str]:
+        pass
+
+    @abstractmethod
+    def as_base64(self, count:int = 1, all_different: bool = False) -> list[str]:
+        pass
+
+class FileGenerator:
+    """Class for generating sample files."""
+
+    @staticmethod
     def as_filepath(
-        self,
         media_type: str,
         count: int = 1,
         all_different: bool = False
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate sample files from a folder.
 
@@ -31,15 +42,9 @@ class SampleFileGenerator:
             Defaults to False.
 
         Returns:
-            list[str] | str: A list of file paths or a single file URL if count is 1.
+            list[str]: A list of file paths.
 
         Example:
-            >>> SampleFileGenerator.as_filepath(
-            ...    "images",
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            '/path/to/image1.jpg'
             >>> SampleFileGenerator.as_filepath(
             ...    "images",
             ...    count=3,
@@ -65,13 +70,13 @@ class SampleFileGenerator:
 
         return choices if len(choices) > 1 else choices[0]
 
+    @staticmethod
     def as_url(
-        self,
         ext_type: str | list[str] | None = None,
         count: int = 1,
         all_different: bool = False,
         excluded_ext_type: str | list[str] | None = None
-    ) -> list[str] | str:
+    ) -> list[str]:
         """
         Generate sample files from URLs.
 
@@ -82,15 +87,9 @@ class SampleFileGenerator:
             excluded_ext_type (str | list[str] | None, optional): The file extensions to exclude. Defaults to None.
 
         Returns:
-            list[str] | str: A list of file URLs or a single file URL if count is 1.
+            list[str]: A list of file URLs.
 
         Example:
-            >>> SampleFileGenerator.as_url(
-            ...    ext_type="jpg",
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            'https://example.com/image1.jpg'
             >>> SampleFileGenerator.as_url(
             ...    ext_type=["jpg", "jpeg"],
             ...    count=3,
@@ -137,7 +136,8 @@ class SampleFileGenerator:
 
         return choices if len(choices) > 1 else choices[0]
 
-    def as_base64(self, files: str | list[str]) -> list[str] | str:
+    @staticmethod
+    def as_base64(files: str | list[str]) -> list[str]:
         """
         Convert sample files to base64-encoded strings.
 
@@ -145,12 +145,9 @@ class SampleFileGenerator:
             files (str | list[str]): The file paths or URLs to convert.
 
         Returns:
-            list[str] | str: A list of base64-encoded strings or a single
-            base64-encoded string.
+            list[str]: A list of base64-encoded strings.
 
         Example:
-            >>> SampleFileGenerator.as_base64("/path/to/file.txt")
-            "data:text/plain;base64,SGVsbG8sIHdvcmxkIQ=="
             >>> SampleFileGenerator.as_base64([
             ...    "/path/to/file1.txt",
             ...    "/path/to/file2.txt"
@@ -165,12 +162,10 @@ class SampleFileGenerator:
             return "data:" + (mimetypes.guess_type(file_path)[0] or MIMETYPE_GUESS_FAILBACK) + ";base64,"
 
         if isinstance(files, str):
-            with open(file_path, "rb") as f:
-                return create_base64_header(file_path) + base64.b64encode(f.read()).decode("utf-8")
+            files = [files]
 
         base64_strings = []
         for file_path in files:
-            mime_type = (mimetypes.guess_type(file_path)[0] or MIMETYPE_GUESS_FAILBACK)
             with open(file_path, "rb") as f:
                 base64_strings.append(
                     create_base64_header(file_path) + base64.b64encode(f.read()).decode("utf-8")
@@ -184,7 +179,7 @@ class SampleImageGenerator(SampleFileGenerator):
     def __init__(self) -> None:
         super().__init__()
 
-    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str] | str:
+    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
         Generate sample images from a folder.
 
@@ -193,15 +188,9 @@ class SampleImageGenerator(SampleFileGenerator):
             all_different (bool, optional): If True, generate unique images. Defaults to False.
 
         Returns:
-            list[str] | str: A list of image file paths or a single image file path if count
-            is 1.
+            list[str] | str: A list of image file paths.
 
         Example:
-            >>> SampleImageGenerator.as_filepath(
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            '/path/to/image1.jpg'
             >>> SampleImageGenerator.as_filepath(
             ...    count=3,
             ...    all_different=True
@@ -212,9 +201,9 @@ class SampleImageGenerator(SampleFileGenerator):
                 '/path/to/image3.jpg'
             ]
         """
-        return super().as_filepath("images", count, all_different)
+        return FileGenerator().as_filepath("images", count, all_different)
 
-    def as_url(self, count: int = 1, all_different: bool = False) -> list[str] | str:
+    def as_url(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
         Generate sample images from URLs.
 
@@ -223,14 +212,9 @@ class SampleImageGenerator(SampleFileGenerator):
             all_different (bool, optional): If True, generate unique images. Defaults to False.
 
         Returns:
-            list[str] | str: A list of image URLs or a single image URL if count is 1.
+            list[str] | str: A list of image URLs.
 
         Example:
-            >>> SampleImageGenerator.as_url(
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            'https://example.com/image1.jpg'
             >>> SampleImageGenerator.as_url(
             ...    count=3,
             ...    all_different=True
@@ -241,9 +225,9 @@ class SampleImageGenerator(SampleFileGenerator):
                 'https://example.com/image3.jpg'
             ]
         """
-        return super().as_url(IMAGE_EXTENSIONS, count, all_different)
+        return FileGenerator().as_url(IMAGE_EXTENSIONS, count, all_different)
 
-    def as_base64(self, count: int = 1, all_different: bool = False) -> list[str] | str:
+    def as_base64(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
         Convert sample images to base64-encoded strings.
 
@@ -252,14 +236,9 @@ class SampleImageGenerator(SampleFileGenerator):
             all_different (bool, optional): If True, generate unique images. Defaults to False.
 
         Returns:
-            list[str] | str: A list of base64-encoded strings or a single base64-encoded string.
+            list[str]: A list of base64-encoded strings.
 
         Example:
-            >>> SampleImageGenerator.as_base64(
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            'data:image/jpeg;base64,SGVsbG8sIHdvcmxkIQ=='
             >>> SampleImageGenerator.as_base64(
             ...    count=3,
             ...    all_different=True
@@ -270,16 +249,13 @@ class SampleImageGenerator(SampleFileGenerator):
                 'data:image/jpeg;base64,SGVsbG8sIHdvcmxkIQ=='
             ]
         """
-        return super().as_base64(SampleImageGenerator().as_filepath(count, all_different))
+        return FileGenerator().as_base64(SampleImageGenerator().as_filepath(count, all_different))
 
 
 class SampleDocumentGenerator(SampleFileGenerator):
     """Generates sample documents."""
 
-    def __init__(self) -> None:
-        super().__init__()
-
-    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str] | str:
+    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
         Generate sample documents from a folder.
 
@@ -288,14 +264,9 @@ class SampleDocumentGenerator(SampleFileGenerator):
             all_different (bool, optional): If True, generate unique documents. Defaults to False.
 
         Returns:
-            list[str] | str: A list of document file paths or a single document file path if count is 1.
+            list[str]: A list of document file paths.
 
         Example:
-            >>> SampleDocumentGenerator.as_filepath(
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            '/path/to/document1.docx'
             >>> SampleDocumentGenerator.as_filepath(
             ...    count=3,
             ...    all_different=True
@@ -306,9 +277,9 @@ class SampleDocumentGenerator(SampleFileGenerator):
                 '/path/to/document3.docx'
             ]
         """
-        return super().as_filepath("docs", count, all_different)
+        return FileGenerator().as_filepath("docs", count, all_different)
 
-    def as_url(self, count: int = 1, all_different: bool = False) -> list[str] | str:
+    def as_url(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
         Generate sample documents from URLs.
 
@@ -317,14 +288,9 @@ class SampleDocumentGenerator(SampleFileGenerator):
             all_different (bool, optional): If True, generate unique documents. Defaults to False.
 
         Returns:
-            list[str] | str: A list of document URLs or a single document URL if count is 1.
+            list[str]: A list of document URLs.
 
         Example:
-            >>> SampleDocumentGenerator.as_url(
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            'https://example.com/document1.docx'
             >>> SampleDocumentGenerator.as_url(
             ...    count=3,
             ...    all_different=True
@@ -335,16 +301,13 @@ class SampleDocumentGenerator(SampleFileGenerator):
                 'https://example.com/document3.docx'
             ]
         """
-        return super().as_url(None, count, all_different, excluded_ext_type=IMAGE_EXTENSIONS)
+        return FileGenerator().as_url(None, count, all_different, excluded_ext_type=IMAGE_EXTENSIONS)
 
 
 class SampleVideoGenerator(SampleFileGenerator):
     """Generates sample videos."""
 
-    def __init__(self) -> None:
-        super().__init__()
-
-    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str] | str:
+    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
         Generate sample videos from a folder.
 
@@ -353,14 +316,9 @@ class SampleVideoGenerator(SampleFileGenerator):
             all_different (bool, optional): If True, generate unique videos. Defaults to False.
 
         Returns:
-            list[str] | str: A list of video file paths or a single video file path if count is 1.
+            list[str]: A list of video file paths.
 
         Example:
-            >>> SampleVideoGenerator().as_filepath(
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            '/path/to/video1.mp4'
             >>> SampleVideoGenerator().as_filepath(
             ...    count=3,
             ...    all_different=True
@@ -371,9 +329,9 @@ class SampleVideoGenerator(SampleFileGenerator):
                 '/path/to/video3.mp4',
             ]
         """
-        return super().as_filepath("videos", count, all_different)
+        return FileGenerator().as_filepath("videos", count, all_different)
 
-    def as_url(self, count: int = 1, all_different: bool = False) -> list[str] | str:
+    def as_url(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
         Generate sample videos from URLs.
 
@@ -382,14 +340,9 @@ class SampleVideoGenerator(SampleFileGenerator):
             all_different (bool, optional): If True, generate unique videos. Defaults to False.
 
         Returns:
-            list[str] | str: A list of video URLs or a single video URL if count is 1.
+            list[str]: A list of video URLs.
 
         Example:
-            >>> SampleVideoGenerator().as_url(
-            ...    count=1,
-            ...    all_different=False
-            ... )
-            'https://example.com/video1.mp4'
             >>> SampleVideoGenerator().as_url(
             ...    count=3,
             ...    all_different=True
@@ -400,4 +353,4 @@ class SampleVideoGenerator(SampleFileGenerator):
                 'https://example.com/video3.mp4',
             ]
         """
-        return super().as_url(None, count, all_different, excluded_ext_type=IMAGE_EXTENSIONS)
+        return FileGenerator().as_url(None, count, all_different, excluded_ext_type=IMAGE_EXTENSIONS)
