@@ -1262,7 +1262,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self.select(folder, readonly=True)
 
         # Get body and attachments
-        body, attachments = "", []
+        body, inline_attachments = "", []
         try:
             status, message = self.uid(
                 'fetch',
@@ -1275,10 +1275,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
             message = MessageParser.group_messages(message)[0]
-            headers = MessageParser.get_headers(message[5])
+            headers = MessageParser.get_headers(message[3])
             flags = MessageParser.get_flags(message[0])
-            for attachment in MessageParser.get_attachment_list(message[4]):
-                attachments.append(Attachment(
+            for attachment in MessageParser.get_inline_attachment_list(message[2]):
+                inline_attachments.append(Attachment(
                     name=attachment[0],
                     size=attachment[1],
                     cid=attachment[2],
@@ -1297,13 +1297,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
             try:
                 for cid, data in MessageParser.get_cid_and_data_of_inline_attachments(message[1]):
                     i = 0
-                    while i < len(attachments):
-                        if attachments[i].cid == cid:
+                    while i < len(inline_attachments):
+                        if inline_attachments[i].cid == cid:
                             body = body.replace(
-                                f'cid:{attachments[i].cid}',
-                                f'data:{attachments[i].type};base64,{data}'
+                                f'cid:{inline_attachments[i].cid}',
+                                f'data:{inline_attachments[i].type};base64,{data}'
                             )
-                            del attachments[i]
+                            del inline_attachments[i]
                         else:
                             i += 1
             except Exception as e:
@@ -1319,7 +1319,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
             uid=uid,
             body=body,
             flags=flags,
-            attachments=attachments
+            attachments=[
+                Attachment(
+                    name=attachment[0],
+                    size=attachment[1],
+                    cid=attachment[2],
+                    type=attachment[3]
+                )
+                for attachment in MessageParser.get_attachment_list(message[2])
+            ]
         )
 
     def get_email_flags(self, sequence_set: str) -> list[Flags]:
