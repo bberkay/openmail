@@ -1261,7 +1261,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self.select(folder, readonly=True)
 
         # Get body and attachments
-        body, inline_attachments = "", []
+        body = ""
+        inline_attachments = []
         try:
             status, message = self.uid(
                 'fetch',
@@ -1284,32 +1285,35 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     type=attachment[3],
                 ))
 
-            start, end, body = (
+            body = (
                 MessageParser.get_text_html_body(message[1])
                 or
                 MessageParser.get_text_plain_body(message[1])
-                or -1, -1, ""
+                or
+                ""
             )
-            if body:
-                message[1] = message[1][:start] + message[1][end:]
 
-            try:
-                for cid, data in MessageParser.get_cid_and_data_of_inline_attachments(message[1]):
-                    i = 0
-                    while i < len(inline_attachments):
-                        if inline_attachments[i].cid == cid:
-                            body = body.replace(
-                                f'cid:{inline_attachments[i].cid}',
-                                f'data:{inline_attachments[i].type};base64,{data}'
-                            )
-                            del inline_attachments[i]
-                        else:
-                            i += 1
-            except Exception as e:
-                # If there is a problem with inline attachments
-                # just ignore them.
-                print(f"An error occurred while replacing inline attachments: `{str(e)}` of email `{uid}`'s content in folder `{folder}`.")
-                pass
+            if body:
+                start, end, body = body
+                try:
+                    for cid, data in MessageParser.get_cid_and_data_of_inline_attachments(
+                        message[1][:start] + message[1][end:]
+                    ):
+                        i = 0
+                        while i < len(inline_attachments):
+                            if inline_attachments[i].cid == cid:
+                                body = body.replace(
+                                    f'cid:{inline_attachments[i].cid}',
+                                    f'data:{inline_attachments[i].type};base64,{data}'
+                                )
+                                del inline_attachments[i]
+                            else:
+                                i += 1
+                except Exception as e:
+                    # If there is a problem with inline attachments
+                    # just ignore them.
+                    print(f"An error occurred while replacing inline attachments: `{str(e)}` of email `{uid}`'s content in folder `{folder}`.")
+                    pass
         except Exception as e:
             raise IMAPManagerException(f"There was a problem with getting email `{uid}`'s content in folder `{folder}`: `{str(e)}`") from e
 
