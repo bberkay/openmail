@@ -251,5 +251,5 @@ class TestEmailOperations(unittest.TestCase):
         for folder_name in cls._created_test_folders:
             cls._openmail.imap.delete_folder(folder_name, True)
         if cls._sent_test_email_uids:
-            cls._openmail.imap.delete_email(Folder.Inbox, ",".join(cls._sent_test_email_uids))
+            cls._openmail.imap.delete_email(Folder.Inbox, ",".join(sorted(cls._sent_test_email_uids, key=int)))
         cls._openmail.disconnect()
