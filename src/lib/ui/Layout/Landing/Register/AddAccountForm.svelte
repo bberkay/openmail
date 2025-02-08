@@ -32,7 +32,7 @@
             </div>
         <div>
             <label for="fullname">Fullname (Optional)</label><br>
-            <input type="text" name="fullname" id="fullname" autocomplete="off" value="Test 42"><br>
+            <input type="text" name="fullname" id="fullname" autocomplete="off" value=""><br>
             <small style="font-style:italic;margin-top:5px;">Enter your fullname to be displayed in the email.</small>
             </div>
         <button type="submit" id="add-account-btn">Add Account</button>
