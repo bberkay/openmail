@@ -55,16 +55,16 @@ class MessageHeaders(TypedDict):
     list_unsubscribe: NotRequired[str]
 
 MESSAGE_HEADER_PATTERN_MAP = {
-    "subject": re.compile(rb'Subject:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "sender": re.compile(rb'From:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "receiver": re.compile(rb'To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "date": re.compile(rb'Date:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "cc": re.compile(rb'Cc:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "bcc": re.compile(rb'Bcc:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "message_id": re.compile(rb'Message-ID:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "in_reply_to": re.compile(rb'In-Reply-To:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "references": re.compile(rb'References:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE),
-    "list_unsubscribe": re.compile(rb'List-Unsubscribe:\s+([^\r\n]+)', re.DOTALL | re.IGNORECASE)
+    "subject": re.compile(rb'Subject:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "sender": re.compile(rb'From:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "receiver": re.compile(rb'To:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "date": re.compile(rb'Date:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "cc": re.compile(rb'Cc:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "bcc": re.compile(rb'Bcc:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "message_id": re.compile(rb'Message-ID:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "in_reply_to": re.compile(rb'In-Reply-To:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "references": re.compile(rb'References:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "list_unsubscribe": re.compile(rb'List-Unsubscribe:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
 }
 
 """
