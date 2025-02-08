@@ -1210,6 +1210,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         encoding=encoding,
                         sanitize="html" not in content_type
                     )
+                    if "html" in content_type: body = HTMLParser.parse(body)
 
                 emails.append(Email(
                     **headers,
