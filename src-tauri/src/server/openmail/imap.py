@@ -1274,6 +1274,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
 
+            if not message or not message[0]:
+                raise ValueError(f"No email found with {uid} uid.")
+
             message = MessageParser.group_messages(message)[0]
             headers = MessageParser.get_headers(message[3])
             flags = MessageParser.get_flags(message[0])
