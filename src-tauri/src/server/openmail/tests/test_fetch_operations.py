@@ -1,3 +1,4 @@
+import base64
 import copy
 import os
 import json
@@ -72,7 +73,10 @@ class TestFetchOperations(unittest.TestCase):
                 </body>
             </html>
             ''',
-            attachments=[AttachmentConverter.resolve_and_convert(SampleDocumentGenerator().as_filepath()[0])]
+            attachments=[
+                AttachmentConverter.resolve_and_convert(filepath)
+                for filepath in SampleImageGenerator().as_filepath(2, True)
+            ]
         )
         cls._test_sent_complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
@@ -366,17 +370,6 @@ class TestFetchOperations(unittest.TestCase):
             self.assertIsNotNone(email.subject)
             self.assertIsNotNone(email.body)
 
-    def test_get_deneme(self):
-        print("test_get_deneme...")
-        #self.__class__._openmail.imap.search_emails()
-        #mailbox = self.__class__._openmail.imap.get_emails()
-        #print("mailbox: ", mailbox)
-        email_content = self.__class__._openmail.imap.get_email_content(
-            Folder.Inbox,
-            "3285"
-        )
-        print("email_content: ", email_content)
-
     def test_get_email_content(self):
         print("test_get_email_content...")
 
@@ -433,35 +426,35 @@ class TestFetchOperations(unittest.TestCase):
         )
 
         # Attachments
+        if not self.__class__._test_sent_complex_email.attachments:
+            self.fail("There is no attachment in `test_sent_complex_email`.")
+
         if not "attachments" in email_content.keys() or not email_content.attachments:
             self.fail("There is no attachment in `email_content`")
-
-        if not self.__class__._test_sent_complex_email.attachments:
-            self.fail("Attachment(s) found in `email_to_send`, but no attachment detected in `email_content`.")
 
         self.assertCountEqual(
             [attachment.name for attachment in self.__class__._test_sent_complex_email.attachments],
             [attachment.name for attachment in email_content.attachments]
         )
-        for attachment in email_content.attachments:
+        for attachment in self.__class__._test_sent_complex_email.attachments:
             found_attachment = self.__class__._openmail.imap.download_attachment(
                 Folder.Inbox,
-                email_content.uid,
+                cast(str, self.__class__._test_sent_complex_email.uid),
                 attachment.name,
                 attachment.cid or ""
             )
 
-            target_attachment = None
-            for attachment in self.__class__._test_sent_complex_email.attachments:
-                if attachment.name == found_attachment.name:
-                    target_attachment = attachment
-
-            assert target_attachment is not None
             assert found_attachment is not None
+            assert found_attachment.data is not None
 
-            for field in set(target_attachment.keys() + found_attachment.keys()):
+            if isinstance(attachment.data, bytes):
+                attachment.data = base64.b64encode(attachment.data).decode('utf-8')
+
+            found_attachment.data = found_attachment.data.replace("\r\n", "")
+
+            for field in ["name", "type", "cid", "data"]:
                 self.assertEqual(
-                    target_attachment[field],
+                    attachment[field],
                     found_attachment[field]
                 )
 
@@ -503,25 +496,25 @@ class TestFetchOperations(unittest.TestCase):
             [attachment.name for attachment in self.__class__._test_sent_complex_email.attachments],
             [attachment.name for attachment in email_content.attachments]
         )
-        for attachment in email_content.attachments:
+        for attachment in self.__class__._test_sent_complex_email.attachments:
             found_attachment = self.__class__._openmail.imap.download_attachment(
                 Folder.Inbox,
-                email_content.uid,
+                cast(str, self.__class__._test_sent_complex_email.uid),
                 attachment.name,
                 attachment.cid or ""
             )
 
-            target_attachment = None
-            for attachment in self.__class__._test_sent_complex_email.attachments:
-                if attachment.name == found_attachment.name:
-                    target_attachment = attachment
-
-            assert target_attachment is not None
             assert found_attachment is not None
+            assert found_attachment.data is not None
 
-            for field in set(target_attachment.keys() + found_attachment.keys()):
+            if isinstance(attachment.data, bytes):
+                attachment.data = base64.b64encode(attachment.data).decode('utf-8')
+
+            found_attachment.data = found_attachment.data.replace("\r\n", "")
+
+            for field in ["name", "type", "cid", "data"]:
                 self.assertEqual(
-                    target_attachment[field],
+                    attachment[field],
                     found_attachment[field]
                 )
 
