@@ -85,8 +85,6 @@ class TestAccountManager(unittest.TestCase):
 
     def test_add_account(self):
         print("test_add_account...")
-        self.__class__._account_manager.remove_all()
-
         test_account = self.__class__._TEST_ACCOUNTS[0]
         self.__class__._account_manager.add(test_account)
 
@@ -95,10 +93,14 @@ class TestAccountManager(unittest.TestCase):
             self.__class__._account_manager.get_all()
         )
 
+        accounts = self.__class__._account_manager.get_all()
+        self.assertEqual(
+            len(set(account.email_address for account in accounts)),
+            len([account.email_address for account in accounts])
+        )
+
     def test_edit_account(self):
         print("test_edit_account...")
-        self.__class__._account_manager.remove_all()
-
         test_account = self.__class__._TEST_ACCOUNTS[0]
         self.__class__._account_manager.add(test_account)
 
@@ -109,6 +111,12 @@ class TestAccountManager(unittest.TestCase):
         ))
         edited_account = self.__class__._account_manager.get(test_account.email_address)
         self.assertTrue(edited_account and edited_account.fullname == new_fullname)
+
+        accounts = self.__class__._account_manager.get_all()
+        self.assertEqual(
+            len(set(account.email_address for account in accounts)),
+            len([account.email_address for account in accounts])
+        )
 
     def test_remove_account(self):
         print("test_remove_account...")
