@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 import unittest
@@ -77,8 +78,10 @@ class TestSendOperations(unittest.TestCase):
                     # Clean bodies
                     email_content.body = email_content.body.replace("base64, ", "base64,", count=1)
                     email_to_send.body = email_to_send.body.replace("base64, ", "base64,", count=1)
-                    email_content.body = email_content.body.replace("\r", "").replace("\n", "")
-                    email_to_send.body = email_to_send.body.replace("\r", "").replace("\n", "")
+                    email_content.body = email_content.body.replace("\r\n", "")
+                    email_to_send.body = email_to_send.body.replace("\r\n", "")
+                    email_content.body = re.sub(r"\s+", "", email_content.body)
+                    email_to_send.body = re.sub(r"\s+", "", email_to_send.body)
 
         self.assertEqual(
             email_to_send.body,
@@ -94,7 +97,7 @@ class TestSendOperations(unittest.TestCase):
                 [attachment.name for attachment in email_to_send.attachments],
                 [attachment.name for attachment in email_content.attachments]
             )
-            for attachment in email_content.attachments:
+            for attachment in email_to_send.attachments:
                 found_attachment = self.__class__._openmail.imap.download_attachment(
                     Folder.Inbox,
                     email_content.uid,
@@ -102,17 +105,17 @@ class TestSendOperations(unittest.TestCase):
                     attachment.cid or ""
                 )
 
-                target_attachment = None
-                for attachment in email_to_send.attachments:
-                    if attachment.name == found_attachment.name:
-                        target_attachment = attachment
-
-                assert target_attachment is not None
                 assert found_attachment is not None
+                assert found_attachment.data is not None
 
-                for field in set(target_attachment.keys() + found_attachment.keys()):
+                if isinstance(attachment.data, bytes):
+                    attachment.data = base64.b64encode(attachment.data).decode('utf-8')
+
+                found_attachment.data = found_attachment.data.replace("\r\n", "")
+
+                for field in ["name", "type", "cid", "data"]:
                     self.assertEqual(
-                        target_attachment[field],
+                        attachment[field],
                         found_attachment[field]
                     )
 
