@@ -71,41 +71,40 @@ MESSAGE_HEADER_PATTERN_MAP = {
 Body Constants
 """
 CONTENT_TYPE_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:\r\nContent-Type:\s*([\w\/\-\+]+)(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
-    rb'(?:\r\nContent-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Type:\s*([\w\/\-\+]+))|' \
-    rb'(?:\r\nContent-Type:\s*([\w\/\-\+]+))',
+    rb'(?:(?:^|\r\n)Content-Type:\s*([\w\/\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|'
+    rb'(?:(?:^|\r\n)Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Type:\s*([\w\/\-]+))|'
+    rb'(?:(?:^|\r\n)Content-Type:\s*([\w\/\-]+))',
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:Content-Type:\s*text/plain(?:(?!\r\n\r\n).)*?Content-Transfer-Encoding:\s*([\w\-]+))|' \
-    rb'(?:Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?Content-Type:\s*text/plain)|' \
-    rb'(?:Content-Type:\s*text/plain)',
+    rb'(?:(?:^|\r\n)Content-Type:\s*text/plain(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
+    rb'(?:(?:^|\r\n)Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Type:\s*text/plain)|' \
+    rb'(?:(?:^|\r\n)Content-Type:\s*text/plain)',
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:Content-Type:\s*text/html(?:(?!\r\n\r\n).)*?Content-Transfer-Encoding:\s*([\w\-]+))|' \
-    rb'(?:Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?Content-Type:\s*text/html)|' \
-    rb'(?:Content-Type:\s*text/html)',
+    rb'(?:(?:^|\r\n)Content-Type:\s*text/html(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
+    rb'(?:(?:^|\r\n)Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Type:\s*text/html)|' \
+    rb'(?:(?:^|\r\n)Content-Type:\s*text/html)',
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_PLAIN_DATA_PATTERN = re.compile(
-    rb'Content-Type:\s*text/plain.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
+    rb'(?:^|\r\n)Content-Type:\s*text/plain.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_HTML_DATA_PATTERN = re.compile(
-    rb'Content-Type:\s*text/html.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
+    rb'(?:^|\r\n)Content-Type:\s*text/html.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
     re.DOTALL | re.IGNORECASE
 )
 INLINE_ATTACHMENT_CID_AND_DATA_PATTERN = re.compile(
-    rb'Content-ID: <(.*?)>.*?\r\n\r\n(.*?)\r\n\r\n',
+    rb'(?:^|\r\n)Content-ID: <(.*?)>.*?\r\n\r\n(.*?)\r\n\r\n',
     re.DOTALL
 )
 
 """
 Util Constants
 """
-FLEX_LINE_PATTERN = re.compile(r'(=\r|\.*?r\.*?n)', re.DOTALL)
-STRICT_LINE_PATTERN = re.compile(r'\r\n')
+LINE_PATTERN = re.compile(r'\r\n')
 TAG_PATTERN = re.compile(r'<[^>]+>')
 TAG_CLEANING_PATTERN = re.compile(r'^<|>$')
 SPECIAL_CHAR_PATTERN = re.compile(r'[+\-*/\\|=<>\(]')
@@ -669,15 +668,10 @@ class MessageDecoder:
             message = message.decode()
 
         try:
-            message = FLEX_LINE_PATTERN.sub("", message)
             decoded_partial_text = quopri.decodestring(message, header=False).decode("utf-8", errors="ignore")
         except Exception as e:
             decoded_partial_text = str(e)
 
-        # If the decoded string ends with "')", remove the last two characters
-        # this is occurs when the message is not complete.
-        if not "('" in decoded_partial_text:
-            decoded_partial_text = decoded_partial_text.endswith("')") and decoded_partial_text[:-2] or decoded_partial_text
         return decoded_partial_text
 
     @staticmethod
@@ -700,7 +694,6 @@ class MessageDecoder:
             message = message.decode()
 
         try:
-            message = FLEX_LINE_PATTERN.sub("", message)
             padding = len(message) % 4
             if padding:
                 message += '=' * (4 - padding)
@@ -729,7 +722,7 @@ class MessageDecoder:
             message = message.decode()
 
         decoded_message = ""
-        for line in STRICT_LINE_PATTERN.split(message):
+        for line in LINE_PATTERN.split(message):
             line = line.strip()
             if line.startswith("=?UTF-8") or line.startswith("=?utf-8"):
                 decoded_lines = decode_header(line)
