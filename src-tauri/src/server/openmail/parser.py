@@ -71,20 +71,20 @@ MESSAGE_HEADER_PATTERN_MAP = {
 Body Constants
 """
 CONTENT_TYPE_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:\r\nContent-Type:\s*([\w\/\-\+]+).*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
-    rb'(?:\r\nContent-Transfer-Encoding:\s*([\w\-]+).*?\r\nContent-Type:\s*([\w\/\-\+]+))|' \
+    rb'(?:\r\nContent-Type:\s*([\w\/\-\+]+)(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
+    rb'(?:\r\nContent-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Type:\s*([\w\/\-\+]+))|' \
     rb'(?:\r\nContent-Type:\s*([\w\/\-\+]+))',
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:Content-Type:\s*text/plain.*?Content-Transfer-Encoding:\s*(\w+))|' \
-    rb'(?:Content-Transfer-Encoding:\s*(\w+).*?Content-Type:\s*text/plain)|' \
+    rb'(?:Content-Type:\s*text/plain(?:(?!\r\n\r\n).)*?Content-Transfer-Encoding:\s*([\w\-]+))|' \
+    rb'(?:Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?Content-Type:\s*text/plain)|' \
     rb'(?:Content-Type:\s*text/plain)',
     re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:Content-Type:\s*text/html.*?Content-Transfer-Encoding:\s*(\w+))|' \
-    rb'(?:Content-Transfer-Encoding:\s*(\w+).*?Content-Type:\s*text/html)|' \
+    rb'(?:Content-Type:\s*text/html(?:(?!\r\n\r\n).)*?Content-Transfer-Encoding:\s*([\w\-]+))|' \
+    rb'(?:Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?Content-Type:\s*text/html)|' \
     rb'(?:Content-Type:\s*text/html)',
     re.DOTALL | re.IGNORECASE
 )
