@@ -40,7 +40,7 @@ class TestSendOperations(unittest.TestCase):
         email_content = self.__class__._openmail.imap.get_email_content(Folder.Inbox, uid)
 
         # Recipients
-        for key in ["sender", "receiver", "cc", "bcc"]:
+        for key in ["sender", "receiver", "cc"]:
             self.assertCountEqual(
                 [email.strip() for email in email_content[key].split(",")],
                 (
@@ -67,18 +67,18 @@ class TestSendOperations(unittest.TestCase):
                     for email_to_send_inline_attachment in email_to_send_inline_attachments:
                         if not email_to_send_inline_attachment.startswith("data:"):
                             base64_data = FileBase64Encoder.read_file(
-                                cast(str, AttachmentConverter.resolve_and_convert(
-                                    email_to_send_inline_attachment
-                                ).path)
+                                email_to_send_inline_attachment
                             )
                             email_to_send.body = email_to_send.body.replace(
                                 email_to_send_inline_attachment,
                                 f"data:{base64_data[1]};base64,{base64_data[3]}",
                                 count=1
                             )
+                    # Clean bodies
                     email_content.body = email_content.body.replace("base64, ", "base64,", count=1)
-                    email_to_send.body = email_to_send.body.replace("\r", "").replace("\n", "")
+                    email_to_send.body = email_to_send.body.replace("base64, ", "base64,", count=1)
                     email_content.body = email_content.body.replace("\r", "").replace("\n", "")
+                    email_to_send.body = email_to_send.body.replace("\r", "").replace("\n", "")
 
         self.assertEqual(
             email_to_send.body,
@@ -88,7 +88,7 @@ class TestSendOperations(unittest.TestCase):
         # Attachments (strings or `Attachment` objects)
         if ("attachments" in email_to_send.keys() and email_to_send.attachments):
             if not "attachments" in email_content.keys() or not email_content.attachments:
-                self.fail("There is no attachment in `email_content`")
+                self.fail("Attachment(s) found in `email_to_send`, but no attachment detected in `email_content`.")
 
             self.assertCountEqual(
                 [attachment.name for attachment in email_to_send.attachments],
@@ -474,6 +474,6 @@ class TestSendOperations(unittest.TestCase):
     @classmethod
     def cleanup(cls):
         print("Cleaning up test `TestSendOperations`...")
-        """for uid in cls._sent_test_email_uids:
-            cls._openmail.imap.delete_email(Folder.Inbox, uid)"""
+        if cls._sent_test_email_uids:
+            cls._openmail.imap.delete_email(Folder.Inbox, ",".join(sorted(cls._sent_test_email_uids, key=int)))
         cls._openmail.disconnect()

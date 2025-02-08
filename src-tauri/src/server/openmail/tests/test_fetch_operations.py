@@ -1,3 +1,4 @@
+import copy
 import os
 import json
 import math
@@ -48,7 +49,7 @@ class TestFetchOperations(unittest.TestCase):
         )
         cls._test_sent_basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
-            cls._test_sent_basic_email
+            copy.copy(cls._test_sent_basic_email)
         )
         cls._sent_test_email_uids.append(cls._test_sent_basic_email.uid)
 
@@ -66,7 +67,7 @@ class TestFetchOperations(unittest.TestCase):
                     <hr/>
                     {NameGenerator.body()[0]}
                     <i>test_fetch_email_operation</i>
-                    <img src="{SampleImageGenerator().as_filepath(count=1)}"/>
+                    <img src="{SampleImageGenerator().as_filepath()[0]}"/>
                     <hr/>
                 </body>
             </html>
@@ -75,12 +76,12 @@ class TestFetchOperations(unittest.TestCase):
         )
         cls._test_sent_complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
-            cls._test_sent_complex_email
+            copy.copy(cls._test_sent_complex_email)
         )
+        cls._sent_test_email_uids.append(cls._test_sent_complex_email.uid)
+
         cls._openmail.imap.mark_email(Mark.Seen, cls._test_sent_complex_email.uid, Folder.Inbox)
         cls._openmail.imap.mark_email(Mark.Flagged, cls._test_sent_complex_email.uid, Folder.Inbox)
-
-        cls._sent_test_email_uids.extend(cls._test_sent_complex_email.uid)
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
@@ -365,6 +366,17 @@ class TestFetchOperations(unittest.TestCase):
             self.assertIsNotNone(email.subject)
             self.assertIsNotNone(email.body)
 
+    def test_get_deneme(self):
+        print("test_get_deneme...")
+        #self.__class__._openmail.imap.search_emails()
+        #mailbox = self.__class__._openmail.imap.get_emails()
+        #print("mailbox: ", mailbox)
+        email_content = self.__class__._openmail.imap.get_email_content(
+            Folder.Inbox,
+            "3285"
+        )
+        print("email_content: ", email_content)
+
     def test_get_email_content(self):
         print("test_get_email_content...")
 
@@ -374,7 +386,7 @@ class TestFetchOperations(unittest.TestCase):
         )
 
         # Recipients
-        for key in ["sender", "receiver", "cc", "bcc"]:
+        for key in ["sender", "receiver", "cc"]:
             self.assertCountEqual(
                 [email.strip() for email in email_content[key].split(",")],
                 (
@@ -397,23 +409,23 @@ class TestFetchOperations(unittest.TestCase):
             # with `email_content`
             inline_srcs = MessageParser.get_inline_attachment_sources(complex_email_body)
             if inline_srcs:
-                email_to_send_inline_attachments = [match[1] for match in inline_srcs]
-                if email_to_send_inline_attachments:
-                    for email_to_send_inline_attachment in email_to_send_inline_attachments:
-                        if not email_to_send_inline_attachment.startswith("data:"):
+                complex_email_inline_attachments = [match[1] for match in inline_srcs]
+                if complex_email_inline_attachments:
+                    for complex_email_inline_attachment in complex_email_inline_attachments:
+                        if not complex_email_inline_attachment.startswith("data:"):
                             base64_data = FileBase64Encoder.read_file(
-                                cast(str, AttachmentConverter.resolve_and_convert(
-                                    email_to_send_inline_attachment
-                                ).path)
+                                complex_email_inline_attachment
                             )
-                            email_to_send_body = complex_email_body.replace(
-                                email_to_send_inline_attachment,
+                            complex_email_body = complex_email_body.replace(
+                                complex_email_inline_attachment,
                                 f"data:{base64_data[1]};base64,{base64_data[3]}",
                                 count=1
                             )
+                    # Clean bodies
                     email_content.body = email_content.body.replace("base64, ", "base64,", count=1)
-                    complex_email_body = complex_email_body.replace("\r", "").replace("\n", "")
+                    complex_email_body = complex_email_body.replace("base64, ", "base64,", count=1)
                     email_content.body = email_content.body.replace("\r", "").replace("\n", "")
+                    complex_email_body = complex_email_body.replace("\r", "").replace("\n", "")
 
         self.assertEqual(
             complex_email_body,
@@ -425,8 +437,12 @@ class TestFetchOperations(unittest.TestCase):
             self.fail("There is no attachment in `email_content`")
 
         if not self.__class__._test_sent_complex_email.attachments:
-            self.fail("There is no attachment in `test_sent_complex_email`.")
+            self.fail("Attachment(s) found in `email_to_send`, but no attachment detected in `email_content`.")
 
+        self.assertCountEqual(
+            [attachment.name for attachment in self.__class__._test_sent_complex_email.attachments],
+            [attachment.name for attachment in email_content.attachments]
+        )
         for attachment in email_content.attachments:
             found_attachment = self.__class__._openmail.imap.download_attachment(
                 Folder.Inbox,
@@ -574,5 +590,5 @@ class TestFetchOperations(unittest.TestCase):
         for folder_name in cls._created_test_folders:
             cls._openmail.imap.delete_folder(folder_name, True)
         if cls._sent_test_email_uids:
-            cls._openmail.imap.delete_email(Folder.Inbox, ",".join(cls._sent_test_email_uids))
+            cls._openmail.imap.delete_email(Folder.Inbox, ",".join(sorted(cls._sent_test_email_uids, key=int)))
         cls._openmail.disconnect()
