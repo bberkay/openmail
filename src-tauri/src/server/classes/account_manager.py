@@ -128,7 +128,6 @@ class AccountManager:
             i += 1
 
         accounts = [account.model_dump() for account in accounts]
-        accounts.append(account.model_dump())
         self._secure_storage.update_key(
             SecureStorageKey.Accounts,
             accounts,

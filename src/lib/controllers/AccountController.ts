@@ -75,10 +75,13 @@ export class AccountController {
         );
 
         if (response.success) {
-            SharedStore.accounts.push({
+            const target = SharedStore.accounts.findIndex(
+                (account: Account) => account.email_address == email_address
+            );
+            SharedStore.accounts[target] = {
                 email_address: email_address,
-                ...(fullname && { fullname }),
-            });
+                ...(fullname && { fullname })
+            }
 
             SharedStore.failedAccounts = SharedStore.failedAccounts.filter(
                 (account: Account) => account.email_address !== email_address,

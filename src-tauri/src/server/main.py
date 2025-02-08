@@ -89,6 +89,7 @@ def shutdown_openmail_clients():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    #secure_storage.destroy()
     create_and_idle_openmail_clients()
     yield
     shutdown_openmail_clients()
@@ -191,6 +192,7 @@ def add_account(
             return Response(success=False, message="Email address already exists")
 
         openmail_client = OpenMail()
+
         status, msg = openmail_client.connect(
             request.email_address,
             RSACipher.decrypt_password(
@@ -204,7 +206,13 @@ def add_account(
 
         account_manager.add(AccountWithPassword(
             email_address=request.email_address,
-            encrypted_password=request.encrypted_password,
+            encrypted_password=RSACipher.encrypt_password(
+                RSACipher.decrypt_password(
+                    request.encrypted_password,
+                    cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
+                ),
+                cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PublicPem))["value"]
+            ),
             fullname=request.fullname
         ))
 
@@ -254,7 +262,13 @@ def edit_account(
 
             account_manager.edit(AccountWithPassword(
                 email_address=request.email_address,
-                encrypted_password=request.encrypted_password,
+                encrypted_password=RSACipher.encrypt_password(
+                    RSACipher.decrypt_password(
+                        request.encrypted_password,
+                        cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
+                    ),
+                    cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PublicPem))["value"]
+                ),
                 fullname=request.fullname
             ))
 
