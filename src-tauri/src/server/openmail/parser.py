@@ -233,14 +233,14 @@ class MessageParser:
             ... )
             "1"
         """
-        message = BODYSTRUCTURE_PATTERN.search(message.decode("utf-8"))
+        message = BODYSTRUCTURE_PATTERN.search(message.decode("utf-8")) # type: ignore
         if not message:
             return None
 
-        message = message.group(1)
+        message = message.group(1) # type: ignore
 
         if message[0] != "(":
-            if  all(True if keyword in message else False for keyword in keywords):
+            if  all(True if keyword in message else False for keyword in keywords): # type: ignore
                 return "1"
             else:
                 return None
@@ -257,7 +257,7 @@ class MessageParser:
                 if not stack:
                     return None
                 start = stack.pop()
-                block = message[start: i + 1]
+                block = message[start: i + 1] # type: ignore
                 if block:
                     if all(True if keyword in block else False for keyword in keywords):
                         is_found = True
