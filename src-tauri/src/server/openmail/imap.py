@@ -1296,11 +1296,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 or
                 MessageParser.get_text_plain_body(message[1])
                 or
-                MessageDecoder.body(message[1], encoding=encoding)
+                (-1, -1, MessageDecoder.body(message[1], encoding=encoding))
             )
 
-            if body:
-                start, end, body = body
+            start, end, body = body
+            if start >= 0 and end >= 0:
                 try:
                     for cid, data in MessageParser.get_cid_and_data_of_inline_attachments(
                         message[1][:start] + message[1][end:]
