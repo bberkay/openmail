@@ -418,14 +418,12 @@ class TestFetchOperations(unittest.TestCase):
                     # Clean bodies
                     email_content.body = email_content.body.replace("base64, ", "base64,", count=1)
                     complex_email_body = complex_email_body.replace("base64, ", "base64,", count=1)
-                    email_content.body = email_content.body.replace("\r\n", "")
-                    complex_email_body = complex_email_body.replace("\r\n", "")
                     email_content.body = re.sub(r"\s+", "", email_content.body)
                     complex_email_body = re.sub(r"\s+", "", complex_email_body)
 
-        self.assertEqual(
-            complex_email_body,
-            email_content.body,
+        self.assertMultiLineEqual(
+            complex_email_body.strip(),
+            email_content.body.strip(),
         )
 
         # Attachments

@@ -8,7 +8,7 @@ from typing import cast
 
 from openmail import OpenMail
 from openmail.types import Attachment, Draft, Email, Folder
-from openmail.parser import HTMLParser, MessageParser
+from openmail.parser import HTMLParser, MessageDecoder, MessageParser
 from openmail.encoder import FileBase64Encoder
 from openmail.converter import AttachmentConverter
 
@@ -78,14 +78,12 @@ class TestSendOperations(unittest.TestCase):
                     # Clean bodies
                     email_content.body = email_content.body.replace("base64, ", "base64,", count=1)
                     email_to_send.body = email_to_send.body.replace("base64, ", "base64,", count=1)
-                    email_content.body = email_content.body.replace("\r\n", "")
-                    email_to_send.body = email_to_send.body.replace("\r\n", "")
                     email_content.body = re.sub(r"\s+", "", email_content.body)
                     email_to_send.body = re.sub(r"\s+", "", email_to_send.body)
 
-        self.assertEqual(
-            email_to_send.body,
-            email_content.body,
+        self.assertMultiLineEqual(
+            email_to_send.body.strip(),
+            email_content.body.strip(),
         )
 
         # Attachments (strings or `Attachment` objects)
@@ -441,6 +439,26 @@ class TestSendOperations(unittest.TestCase):
             ''',
             attachments=[
                 AttachmentConverter.resolve_and_convert(sampleVideo)
+            ],
+        )
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(
+            self.__class__._openmail,
+            copy.copy(email_to_send)
+        )
+        self._sent_test_email_uids.append(uid)
+        self.is_sent_email_valid(email_to_send, uid)
+
+    def test_send_nonascii_name_attachment(self):
+        print("test_send_nonascii_name_attachment...")
+        email_to_send = Draft(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.subject()[0],
+            body="test_send_nonascii_name_attachment",
+            attachments=[
+                AttachmentConverter.resolve_and_convert(
+                    SampleDocumentGenerator().as_filepath(include_nonascii=True)[0]
+                )
             ],
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(

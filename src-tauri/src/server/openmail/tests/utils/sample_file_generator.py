@@ -12,7 +12,7 @@ MIMETYPE_GUESS_FAILBACK = "application/octet-stream"
 
 class SampleFileGenerator(ABC):
     @abstractmethod
-    def as_filepath(self, count:int = 1, all_different: bool = False) -> list[str]:
+    def as_filepath(self, count:int = 1, all_different: bool = False, include_nonascii: bool = False) -> list[str]:
         pass
 
     @abstractmethod
@@ -26,7 +26,8 @@ class FileGenerator:
     def as_filepath(
         media_type: str,
         count: int = 1,
-        all_different: bool = False
+        all_different: bool = False,
+        include_nonascii: bool = False
     ) -> list[str]:
         """
         Generate sample files from a folder.
@@ -36,6 +37,8 @@ class FileGenerator:
             count (int, optional): The number of files to generate. Defaults to 1.
             all_different (bool, optional): If True, generate unique files.
             Defaults to False.
+            include_nonascii (bool, optional): If True, generates files with nonascii
+            characters. Defaults to False.
 
         Returns:
             list[str]: A list of file paths.
@@ -44,25 +47,38 @@ class FileGenerator:
             >>> SampleFileGenerator.as_filepath(
             ...    "images",
             ...    count=3,
-            ...    all_different=True
+            ...    all_different=True,
+            ...    include_nonascii=True
             ... )
             [
                 '/path/to/image1.jpg',
                 '/path/to/image2.jpg',
-                '/path/to/image3.jpg'
+                '/path/to/image3.jpg',
+                '/path/to/ımage3.jpg'
             ]
         """
-        folder_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), f"media/{media_type}")
+        folder_path = os.path.join(
+            os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))
+            ),
+            f"media/{media_type}{"/nonascii" if include_nonascii else ""}"
+        )
         children = os.listdir(folder_path)
+        children = [child for child in children if "." in child]
 
         if len(children) == 0:
             return []
 
+        if count > len(children):
+            count = len(children)
+
         choices = []
-        while len(choices) < count:
-            random_child = random.choice(children)
-            if not all_different or random_child not in choices:
-                choices.append(os.path.join(folder_path, random_child))
+        i = 0
+        while len(choices) < count and i < 999:
+            new_folder_path = os.path.join(folder_path, random.choice(children))
+            if not all_different or new_folder_path not in choices:
+                choices.append(new_folder_path)
+            i += 1
 
         return choices
 
@@ -124,11 +140,19 @@ class FileGenerator:
                 if excluded_ext_type and url_ext in excluded_ext_type:
                     filtered_urls.remove(url)
 
+        if len(filtered_urls) == 0:
+            return []
+
+        if count > len(filtered_urls):
+            count = len(filtered_urls)
+
         choices = []
-        while len(choices) < count:
+        i = 0
+        while len(choices) < count and i < 999:
             random_line = random.choice(filtered_urls)
             if not all_different or random_line not in choices:
                 choices.append(random_line)
+            i += 1
 
         return choices
 
@@ -175,13 +199,19 @@ class SampleImageGenerator(SampleFileGenerator):
     def __init__(self) -> None:
         super().__init__()
 
-    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str]:
+    def as_filepath(self,
+        count: int = 1,
+        all_different: bool = False,
+        include_nonascii: bool = False
+    ) -> list[str]:
         """
         Generate sample images from a folder.
 
         Args:
             count (int, optional): The number of images to generate. Defaults to 1.
             all_different (bool, optional): If True, generate unique images. Defaults to False.
+            include_nonascii (bool, optional): If True, generates files with nonascii
+            characters. Defaults to False.
 
         Returns:
             list[str] | str: A list of image file paths.
@@ -190,14 +220,16 @@ class SampleImageGenerator(SampleFileGenerator):
             >>> SampleImageGenerator.as_filepath(
             ...    count=3,
             ...    all_different=True
+            ...    include_nonascii=True
             ... )
             [
                 '/path/to/image1.jpg',
                 '/path/to/image2.jpg',
-                '/path/to/image3.jpg'
+                '/path/to/image3.jpg',
+                '/path/to/ımage3.jpg'
             ]
         """
-        return FileGenerator().as_filepath("images", count, all_different)
+        return FileGenerator().as_filepath("images", count, all_different, include_nonascii)
 
     def as_url(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
@@ -251,13 +283,19 @@ class SampleImageGenerator(SampleFileGenerator):
 class SampleDocumentGenerator(SampleFileGenerator):
     """Generates sample documents."""
 
-    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str]:
+    def as_filepath(self,
+        count: int = 1,
+        all_different: bool = False,
+        include_nonascii: bool = False
+    ) -> list[str]:
         """
         Generate sample documents from a folder.
 
         Args:
             count (int, optional): The number of documents to generate. Defaults to 1.
             all_different (bool, optional): If True, generate unique documents. Defaults to False.
+            include_nonascii (bool, optional): If True, generates files with nonascii
+            characters. Defaults to False.
 
         Returns:
             list[str]: A list of document file paths.
@@ -265,15 +303,17 @@ class SampleDocumentGenerator(SampleFileGenerator):
         Example:
             >>> SampleDocumentGenerator.as_filepath(
             ...    count=3,
-            ...    all_different=True
+            ...    all_different=True,
+            ...    include_nonascii=True
             ... )
             [
                 '/path/to/document1.docx',
                 '/path/to/document2.docx',
-                '/path/to/document3.docx'
+                '/path/to/document3.docx',
+                '/path/to/doçument4.docx',
             ]
         """
-        return FileGenerator().as_filepath("docs", count, all_different)
+        return FileGenerator().as_filepath("docs", count, all_different, include_nonascii)
 
     def as_url(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
@@ -303,13 +343,19 @@ class SampleDocumentGenerator(SampleFileGenerator):
 class SampleVideoGenerator(SampleFileGenerator):
     """Generates sample videos."""
 
-    def as_filepath(self, count: int = 1, all_different: bool = False) -> list[str]:
+    def as_filepath(self,
+        count: int = 1,
+        all_different: bool = False,
+        include_nonascii: bool = False
+    ) -> list[str]:
         """
         Generate sample videos from a folder.
 
         Args:
             count (int, optional): The number of videos to generate. Defaults to 1.
             all_different (bool, optional): If True, generate unique videos. Defaults to False.
+            include_nonascii (bool, optional): If True, generates files with nonascii
+            characters. Defaults to False.
 
         Returns:
             list[str]: A list of video file paths.
@@ -317,15 +363,17 @@ class SampleVideoGenerator(SampleFileGenerator):
         Example:
             >>> SampleVideoGenerator().as_filepath(
             ...    count=3,
-            ...    all_different=True
+            ...    all_different=True,
+            ...    include_nonascii=True
             ... )
             [
                 '/path/to/video1.mp4',
                 '/path/to/video2.mp4',
                 '/path/to/video3.mp4',
+                '/path/to/vıdeo4.mp4',
             ]
         """
-        return FileGenerator().as_filepath("videos", count, all_different)
+        return FileGenerator().as_filepath("videos", count, all_different, include_nonascii)
 
     def as_url(self, count: int = 1, all_different: bool = False) -> list[str]:
         """
