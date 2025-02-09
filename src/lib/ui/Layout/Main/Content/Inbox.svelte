@@ -246,12 +246,12 @@
         </Button.Action>
         <Select.Menu onchange={moveEmails} placeholder='Move To'>
             {#each SharedStore.customFolders[0].result as customFolder}
-                <Select.Option value={customFolder}>customFolder</Select.Option>
+                <Select.Option value={customFolder}>{customFolder}</Select.Option>
             {/each}
         </Select.Menu>
         <Select.Menu onchange={copyEmails} placeholder='Copy To'>
             {#each SharedStore.customFolders[0].result as customFolder}
-                <Select.Option value={customFolder}>customFolder</Select.Option>
+                <Select.Option value={customFolder}>{customFolder}</Select.Option>
             {/each}
         </Select.Menu>
         {#if isAllSelectedEmailsAreMarkedAsFlagged()}
