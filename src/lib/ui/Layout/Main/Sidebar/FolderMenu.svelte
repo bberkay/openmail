@@ -39,7 +39,9 @@
     }
 
     function isCustomFolderAParentFolder(path: string): boolean {
-        return SharedStore.customFolders[0].result.filter((customFolder: string) => customFolder == path || customFolder.startsWith(path)).length > 1;
+        return SharedStore.customFolders[0].result.filter(
+            (customFolder: string) => path == customFolder || customFolder.startsWith(path + "/")
+        ).length > 1;
     }
 
     const refreshFolders = async (): Promise<void> => {
