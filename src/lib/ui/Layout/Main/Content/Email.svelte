@@ -21,11 +21,9 @@
     }: Props = $props();
 
     let contentBody: HTMLElement;
-    let attachments: HTMLElement;
 
     onMount(() => {
         contentBody.innerHTML = "";
-        attachments.innerHTML = "";
 
         printBody(email.body);
     });
@@ -87,7 +85,7 @@
 </div>
 <div id="body" bind:this={contentBody}></div>
 {#if Object.hasOwn(email, "attachments") && email.attachments}
-<div id="attachments" bind:this={attachments}>
+<div id="attachments">
     {#each email.attachments as attachment}
         <Button.Action
             class="attachment"
