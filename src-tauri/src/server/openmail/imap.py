@@ -1210,7 +1210,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         encoding=encoding,
                         sanitize="html" not in content_type
                     )
-                    if "html" in content_type: body = HTMLParser.parse(body)
+                    if "html" in content_type:
+                        body = HTMLParser.parse(body)
 
                 emails.append(Email(
                     **headers,
@@ -1269,8 +1270,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 'fetch',
                 uid,
                 '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC ' \
-                'MESSAGE-ID IN-REPLY-TO REFERENCES LIST-UNSUBSCRIBE)] FLAGS ' \
-                'BODYSTRUCTURE BODY[1])'
+                'MESSAGE-ID IN-REPLY-TO REFERENCES LIST-UNSUBSCRIBE CONTENT-' \
+                'TRANSFER-ENCODING)] FLAGS BODYSTRUCTURE BODY[1])'
             )
             if status != 'OK':
                 raise IMAPManagerException(f"Error while getting email `{uid}`'s content in folder `{folder}`: `{status}`")
@@ -1281,6 +1282,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             message = MessageParser.group_messages(message)[0]
             headers = MessageParser.get_headers(message[3])
             flags = MessageParser.get_flags(message[0])
+            _, encoding = MessageParser.get_content_type_and_encoding(message[3])
             for attachment in MessageParser.get_inline_attachment_list(message[2]):
                 inline_attachments.append(Attachment(
                     name=attachment[0],
@@ -1294,7 +1296,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 or
                 MessageParser.get_text_plain_body(message[1])
                 or
-                ""
+                MessageDecoder.body(message[1], encoding=encoding)
             )
 
             if body:
