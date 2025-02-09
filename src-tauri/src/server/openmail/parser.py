@@ -22,7 +22,7 @@ General Fetch Constants
 UID_PATTERN = re.compile(rb"UID\s+(\d+)")
 SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
 FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
-BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+\((.*)", re.DOTALL | re.IGNORECASE)
+BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+(.*)", re.DOTALL | re.IGNORECASE)
 ATTACHMENT_LIST_PATTERN = re.compile(
     r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+' \
     r'[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("ATTACHMENT"\s+\("FILENAME"\s+' \
@@ -237,8 +237,7 @@ class MessageParser:
             return None
 
         message = message.group(1) # type: ignore
-
-        if message[0] != "(":
+        if message[1] != "(":
             if  all(True if keyword in message else False for keyword in keywords): # type: ignore
                 return "1"
             else:
@@ -266,7 +265,7 @@ class MessageParser:
         if not is_found:
             return None
 
-        part = "0"
+        part = "-1"
         i = 0
         s = 0
         while i <= start:
@@ -275,17 +274,17 @@ class MessageParser:
             next = message[i + 1] if i + 1 <= start else None
             if char == "(":
                 s += 1
-                inc = int(part[-1]) + 1
+                inc = int(part[part.rfind(".")+1:]) + 1
                 if prev == ")":
                     part = part[:-1]
                     part += str(inc)
                 elif next == "(":
                     part = str(inc)
                 elif prev == "(":
-                    part += ".1"
+                    part = part + ".1" if part != "0" else "1"
             elif char == ")":
                 s -= 1
-                if s == 0:
+                if s == 1:
                     part = part[0]
             i += 1
 
@@ -339,9 +338,9 @@ class MessageParser:
             list[tuple[str, int, str, str]]: List of attachments as (filename, size, cid, mimetype/subtype)
 
         Example:
-            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\")
+            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.pdf\")
             ... INLINE (FILENAME \"banner.jpg\") b')
-            [("file.txt", 1029, "bcida...", "APPLICATION/TXT")]
+            [("file.txt", 1029, "bcida...", "application/pdf")]
         """
         attachment_list = ATTACHMENT_LIST_PATTERN.findall(message.decode())
         if not attachment_list or not attachment_list[0]:
