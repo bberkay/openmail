@@ -25,13 +25,13 @@ FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
 BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+(.*)", re.DOTALL | re.IGNORECASE)
 ATTACHMENT_LIST_PATTERN = re.compile(
     r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+' \
-    r'[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("ATTACHMENT"\s+\("FILENAME"\s+' \
+    r'[^\s"]+\s+"[^"]+"\s+(\d+).*?\("ATTACHMENT"\s+\("FILENAME"\s+' \
     r'"([^"]+)"\)\)\s+[^\s"]+\)',
     re.DOTALL | re.IGNORECASE
 )
 INLINE_ATTACHMENT_LIST_PATTERN = re.compile(
     r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+' \
-    r'[^\s"]+\s+"[^"]+"\s+(\d+)\s+[^\s"]+\s+\("INLINE"\s+\("FILENAME"\s+' \
+    r'[^\s"]+\s+"[^"]+"\s+(\d+).*?\("INLINE"\s+\("FILENAME"\s+' \
     r'"([^"]+)"\)\)\s+[^\s"]+\)',
     re.DOTALL | re.IGNORECASE
 )
