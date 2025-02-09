@@ -15,7 +15,7 @@ def extract_domain(email: str) -> str:
 
 def truncate_text(content: str, max_length: int) -> str:
     """Truncate text to a specified maximum length."""
-    return content[:max_length] + "..." if len(content) > max_length else content
+    return (content[:max_length] + "...") if len(content) > max_length else content
 
 def choose_positive(var1: int, var2: int) -> int:
     """Select the first positive number from two input integers."""
