@@ -44,6 +44,10 @@
         ).length > 1;
     }
 
+    function filterStandardFolderName(folderName: string): string {
+        return folderName.replace("[Gmail]/", "");
+    }
+
     const refreshFolders = async (): Promise<void> => {
         const response = await mailboxController.getFolders(
             SharedStore.currentAccount
@@ -158,7 +162,7 @@
                         class="inline folder-name"
                         style="flex-grow:1;"
                     >
-                        {folderName}
+                        {filterStandardFolderName(folderName)}
                     </Button.Action>
                 </div>
             {/each}

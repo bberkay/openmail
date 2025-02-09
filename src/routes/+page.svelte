@@ -19,17 +19,15 @@
 <Layout>
     {#if SharedStore.mailboxes.length > 0}
         <Main>
-            <Navbar>
-                <Account />
-                <SearchBar />
-            </Navbar>
             <div class="mailbox">
                 <section style="width:20%;margin-right:5px;">
                     <Sidebar>
+                        <Account />
                         <FolderMenu />
                     </Sidebar>
                 </section>
                 <section style="width:80%;">
+                    <SearchBar />
                     <div class="card">
                         <Content>
                             <Inbox />
