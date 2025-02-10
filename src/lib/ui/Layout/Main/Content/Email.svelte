@@ -3,7 +3,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
     import { onMount } from "svelte";
-    import type { Account, Attachment, EmailWithContent } from "$lib/types";
+    import type { Account, Attachment, Email } from "$lib/types";
     import { makeSizeHumanReadable } from "$lib/utils";
     import * as Button from "$lib/ui/Elements/Button";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
@@ -12,7 +12,7 @@
 
     interface Props {
         account: Account;
-        email: EmailWithContent;
+        email: Email;
     }
 
     let {
@@ -69,9 +69,25 @@
             await file.close();
         }
     }
+
+    const reply = () => {
+
+    }
+
+    const forward = () => {
+
+    }
 </script>
 
-<button onclick={backToDefault}>Back</button>
+<div class="send-operations">
+    <div>
+        <button onclick={backToDefault}>Back</button>
+    </div>
+    <div>
+        <button onclick={reply}>Reply ↩</button>
+        <button onclick={forward}>Forward ↪</button>
+    </div>
+</div>
 <div id="subject" style="margin-bottom: 5px;">
     <h3>{email.subject || ""}</h3>
     <p>From: {email.receiver || ""}</p>
@@ -115,5 +131,12 @@
 
     #attachments {
         margin-top: 1.5rem;
+    }
+
+    .send-operations{
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 </style>

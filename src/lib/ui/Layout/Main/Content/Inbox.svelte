@@ -1,7 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type EmailSummary, Mark, type Mailbox } from "$lib/types";
+    import { type Email, Mark, type Mailbox } from "$lib/types";
     import InboxItem from "$lib/ui/Layout/Main/Content/Inbox/InboxItem.svelte";
     import * as Select from "$lib/ui/Elements/Select";
     import * as Button from "$lib/ui/Elements/Button";
@@ -77,13 +77,13 @@
 
     function isAllSelectedEmailsAreMarked(mark: Mark): boolean {
         return emailSelection.every((uid) => {
-            return SharedStore.mailboxes[0].result.emails.find((email: EmailSummary) => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && email.flags.includes(mark));
+            return SharedStore.mailboxes[0].result.emails.find((email: Email) => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && email.flags.includes(mark));
         });
     }
 
     function isAllSelectedEmailsAreUnmarked(mark: Mark, unmark: Mark): boolean {
         return emailSelection.every((uid) => {
-            return SharedStore.mailboxes[0].result.emails.find((email: EmailSummary) => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && (!email.flags.includes(mark) || email.flags.includes(unmark)));
+            return SharedStore.mailboxes[0].result.emails.find((email: Email) => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && (!email.flags.includes(mark) || email.flags.includes(unmark)));
         });
     }
 

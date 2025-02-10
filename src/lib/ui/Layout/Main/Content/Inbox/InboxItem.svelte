@@ -1,6 +1,6 @@
 <script lang="ts">
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import type { Account, EmailSummary } from "$lib/types";
+    import type { Account, Email as EmailType } from "$lib/types";
     import * as Button from "$lib/ui/Elements/Button";
     import Email from "../Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
@@ -10,7 +10,7 @@
     interface Props {
         account: Account;
         folder: string;
-        email: EmailSummary;
+        email: EmailType;
     }
 
     let { account, folder, email }: Props = $props();

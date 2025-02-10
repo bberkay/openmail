@@ -11,7 +11,7 @@ import {
     Folder,
     Mark,
     type Account,
-    type EmailSummary,
+    type Email,
     type SearchCriteria,
 } from "$lib/types";
 import { removeWhitespaces } from "$lib/utils";
@@ -353,7 +353,7 @@ export class MailboxController {
             const targetMailbox = SharedStore.mailboxes.find(item => item.email_address === account.email_address);
             if (targetMailbox) {
                 targetMailbox.result.emails.forEach(
-                    (email: EmailSummary) => {
+                    (email: Email) => {
                         if (
                             (selection.includes("*") || selection.includes(email.uid.trim())) &&
                             Object.hasOwn(email, "flags") &&
@@ -396,7 +396,7 @@ export class MailboxController {
             const targetMailbox = SharedStore.mailboxes.find(item => item.email_address === account.email_address);
             if (targetMailbox) {
                 targetMailbox.result.emails.forEach(
-                    (email: EmailSummary) => {
+                    (email: Email) => {
                         if (
                             (selection.includes("*") || selection.includes(email.uid.trim())) &&
                             Object.hasOwn(email, "flags") &&

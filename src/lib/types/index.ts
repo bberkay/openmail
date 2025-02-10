@@ -7,18 +7,8 @@ export interface Account {
     fullname?: string;
 }
 
-export interface EmailSummary {
-    uid: string;
-    sender: string | [string, string];
-    receiver: string;
-    date: string;
-    subject: string;
-    body_short: string;
-    flags?: string[];
-    attachments?: Attachment[];
-}
-
-export interface EmailWithContent {
+export interface Email {
+    message_id: string;
     uid: string;
     sender: string | [string, string];
     receiver: string;
@@ -29,8 +19,9 @@ export interface EmailWithContent {
     bcc?: string;
     flags?: string[];
     attachments?: Attachment[];
-    message_id?: string;
-    metadata?: Record<string, string>;
+    in_reply_to?: string;
+    references?: string;
+    list_unsubscribe?: string;
 }
 
 export interface SearchCriteria {
@@ -51,24 +42,25 @@ export interface SearchCriteria {
 
 export interface Attachment {
     name: string;
-    data: string;
     size: string;
     type: string;
+    data: string;
     path?: string;
     cid?: string;
 }
 
-export interface EmailToSend {
+export interface Draft {
     sender: string | [string, string];
     receiver: string;
     //date: string;
     subject: string;
     body: string;
-    uid?: string;
     cc?: string;
     bcc?: string;
-    metadata?: Record<string, string>;
     attachments?: Attachment[];
+    in_reply_to?: string;
+    references?: string;
+    metadata?: Record<string, string>;
     mail_options?: string[];
     rcpt_options?: string[];
 }
@@ -82,7 +74,7 @@ export type OpenMailTaskResults<T> = OpenMailTaskResult<T>[];
 
 export interface Mailbox {
     folder: string;
-    emails: EmailSummary[];
+    emails: Email[];
     total: number;
 }
 

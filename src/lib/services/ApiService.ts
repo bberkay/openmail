@@ -1,7 +1,7 @@
 import type {
     Account,
     Attachment,
-    EmailWithContent,
+    Email,
     Mailbox,
     OpenMailTaskResults,
 } from "$lib/types";
@@ -171,7 +171,7 @@ export interface GetQueryResponse {
     [GetRoutes.GET_MAILBOXES]: OpenMailTaskResults<Mailbox>;
     [GetRoutes.PAGINATE_MAILBOXES]: OpenMailTaskResults<Mailbox>;
     [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>;
-    [GetRoutes.GET_EMAIL_CONTENT]: EmailWithContent;
+    [GetRoutes.GET_EMAIL_CONTENT]: Email;
     [GetRoutes.DOWNLOAD_ATTACHMENT]: Attachment;
     [GetRoutes.GET_PUBLIC_KEY]: {
         public_key: string;
