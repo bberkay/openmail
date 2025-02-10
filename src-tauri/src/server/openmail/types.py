@@ -50,6 +50,7 @@ class SearchCriteria():
 @dataclass
 class Email():
     """Represents a basic email."""
+    message_id: str
     uid: str
     sender: str | Tuple[str, str]
     receiver: str
@@ -58,7 +59,6 @@ class Email():
     body: str
     cc: Optional[str] = ""
     bcc: Optional[str] = ""
-    message_id: Optional[str] = ""
     flags: Optional[list[str]] = field(default_factory=list)
     attachments: Optional[list[Attachment]] = field(default_factory=list)
     in_reply_to: Optional[str] = ""
@@ -85,11 +85,12 @@ class Draft():
     #date: str
     subject: str
     body: str
-    uid: Optional[str] = ""
     cc: Optional[str | list[str]] = ""
     bcc: Optional[str | list[str]] = ""
-    metadata: Optional[dict] = field(default_factory=dict)
     attachments: Optional[list[Attachment]] = field(default_factory=list)
+    in_reply_to: Optional[str] = ""
+    references: Optional[str] = ""
+    metadata: Optional[dict] = field(default_factory=dict)
     mail_options: Optional[Sequence[str]] = field(default_factory=list)
     rcpt_options: Optional[Sequence[str]] = field(default_factory=list)
 
