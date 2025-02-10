@@ -77,6 +77,7 @@ class SecureStorageKey(str, Enum):
         return self.value
 
 class SecureStorageKeyValueType(str, Enum):
+    AESGCMEncrypted = "aesgcm_encrypted"
     RSAEncrypted = "rsa_encrypted"
     Plain = "plain"
 
@@ -333,7 +334,7 @@ class SecureStorage:
         finally:
             self._delete_backup(pre_aesgcm_rotation_backup_id)
             for key_name in temp_store.keys():
-                temp_store[key_name] = None
+                temp_store[key_name] = None # type: ignore
             del temp_store
             return is_rotate_succesful, is_restoration_succesful
 
@@ -358,8 +359,8 @@ class SecureStorage:
 
     def _init_rsa_cipher(self) -> None:
         # No need to use get_key_value because that will decrypt pems
-        # and we do not need to decrypt them at this point so use
-        # get_password instead.
+        # and we do not need to decrypt them at this point so we are
+        # using get_password instead.
         private_pem = self._get_password(SecureStorageKey.PrivatePem)
         public_pem = self._get_password(SecureStorageKey.PublicPem)
         if not private_pem or not public_pem:
@@ -367,12 +368,12 @@ class SecureStorage:
             self.add_key(
                 SecureStorageKey.PrivatePem,
                 rsa_cipher.get_private_pem(),
-                SecureStorageKeyValueType.Plain
+                SecureStorageKeyValueType.AESGCMEncrypted
             )
             self.add_key(
                 SecureStorageKey.PublicPem,
                 rsa_cipher.get_public_pem(),
-                SecureStorageKeyValueType.Plain
+                SecureStorageKeyValueType.AESGCMEncrypted
             )
         else:
             if private_pem["last_updated_at"] + ROTATE_KEY_TTL < time.time():
@@ -470,6 +471,9 @@ class SecureStorage:
         decrypt: bool = True,
         use_cache: bool = True
     ) -> SecureStorageKeyValue | None:
+        if type == SecureStorageKeyValueType.AESGCMEncrypted and not self._encryptor:
+            raise AESGCMCipherNotInitializedError
+
         self._is_key_valid(key_name)
         self._is_key_legal(key_name)
 
@@ -480,11 +484,8 @@ class SecureStorage:
                 return None
             if use_cache: self._cache.set(key_name, key_value)
 
-        if decrypt:
-            if self._encryptor:
-                key_value["value"] = self._encryptor.decrypt(key_value["value"], associated_data)
-            else:
-                raise AESGCMCipherNotInitializedError
+        if decrypt and key_value["type"] == SecureStorageKeyValueType.AESGCMEncrypted:
+            key_value["value"] = self._encryptor.decrypt(key_value["value"], associated_data)
 
         return key_value
 
@@ -494,13 +495,15 @@ class SecureStorage:
         type: SecureStorageKeyValueType,
         associated_data: bytes | None = None
     ) -> None:
-        if not self._encryptor:
+        if type == SecureStorageKeyValueType.AESGCMEncrypted and not self._encryptor:
             raise AESGCMCipherNotInitializedError
 
         self._is_key_legal(key_name)
 
         key_value = self._create_key_value_dict(value, type)
-        key_value["value"] = self._encryptor.encrypt(key_value["value"], associated_data)
+        if type == SecureStorageKeyValueType.AESGCMEncrypted:
+            key_value["value"] = self._encryptor.encrypt(key_value["value"], associated_data)
+
         self._set_password(key_name, key_value)
         self._cache.set(key_name, key_value)
 
@@ -512,7 +515,7 @@ class SecureStorage:
         /,
         keep_last_update_at_same: bool = False
     ) -> None:
-        if not self._encryptor:
+        if type == SecureStorageKeyValueType.AESGCMEncrypted and not self._encryptor:
             raise AESGCMCipherNotInitializedError
 
         key_value = self.get_key_value(key_name, decrypt=False)
@@ -529,7 +532,9 @@ class SecureStorage:
         if not keep_last_update_at_same:
             key_value["last_updated_at"] = time.time()
 
-        key_value["value"] = self._encryptor.encrypt(key_value["value"], associated_data)
+        if type == SecureStorageKeyValueType.AESGCMEncrypted:
+            key_value["value"] = self._encryptor.encrypt(key_value["value"], associated_data)
+
         self._set_password(key_name, key_value)
         self._cache.set(key_name, key_value)
 
@@ -592,7 +597,7 @@ class SecureStorageCache:
     def delete(self, key: SecureStorageKey):
         if key in self._store:
             random_bytes = os.urandom(len(str(self._store[key])))
-            self._store[key] = random_bytes.hex() # Override value
+            self._store[key] = random_bytes.hex() # type: ignore
             del self._store[key]
 
     def destroy(self):
