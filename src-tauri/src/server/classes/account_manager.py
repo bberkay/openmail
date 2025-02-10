@@ -107,7 +107,7 @@ class AccountManager:
         self._secure_storage.update_key(
             SecureStorageKey.Accounts,
             accounts,
-            SecureStorageKeyValueType.RSAEncrypted
+            SecureStorageKeyValueType.AESGCMEncrypted
         )
 
     def edit(self, account: Account | AccountWithPassword) -> None:
@@ -131,7 +131,7 @@ class AccountManager:
         self._secure_storage.update_key(
             SecureStorageKey.Accounts,
             accounts,
-            SecureStorageKeyValueType.RSAEncrypted
+            SecureStorageKeyValueType.AESGCMEncrypted
         )
 
     def remove(self, email_address: str) -> None:
@@ -146,7 +146,7 @@ class AccountManager:
         self._secure_storage.update_key(
             SecureStorageKey.Accounts,
             accounts,
-            SecureStorageKeyValueType.RSAEncrypted
+            SecureStorageKeyValueType.AESGCMEncrypted
         )
 
     def remove_all(self) -> None:
