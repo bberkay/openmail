@@ -49,11 +49,11 @@ class TestFetchOperations(unittest.TestCase):
             subject=NameGenerator.subject()[0],
             body=NameGenerator.body()[0],
         )
-        cls._test_sent_basic_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
+        cls._test_sent_basic_email_uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
             copy.copy(cls._test_sent_basic_email)
         )
-        cls._sent_test_email_uids.append(cls._test_sent_basic_email.uid)
+        cls._sent_test_email_uids.append(cls._test_sent_basic_email_uid)
 
         # Send Complex Text Email
         cls._test_sent_complex_email = Draft(
@@ -79,14 +79,14 @@ class TestFetchOperations(unittest.TestCase):
                 for filepath in SampleImageGenerator().as_filepath(2, True)
             ]
         )
-        cls._test_sent_complex_email.uid = DummyOperator.send_test_email_to_self_and_get_uid(
+        cls._test_sent_complex_email_uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
             copy.copy(cls._test_sent_complex_email)
         )
-        cls._sent_test_email_uids.append(cls._test_sent_complex_email.uid)
+        cls._sent_test_email_uids.append(cls._test_sent_complex_email_uid)
 
-        cls._openmail.imap.mark_email(Mark.Seen, cls._test_sent_complex_email.uid, Folder.Inbox)
-        cls._openmail.imap.mark_email(Mark.Flagged, cls._test_sent_complex_email.uid, Folder.Inbox)
+        cls._openmail.imap.mark_email(Mark.Seen, cls._test_sent_complex_email_uid, Folder.Inbox)
+        cls._openmail.imap.mark_email(Mark.Flagged, cls._test_sent_complex_email_uid, Folder.Inbox)
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
@@ -129,11 +129,11 @@ class TestFetchOperations(unittest.TestCase):
 
         self.assertTrue(self.__class__._openmail.imap.is_email_exists(
             Folder.Inbox,
-            cast(str, self.__class__._test_sent_basic_email.uid)
+            cast(str, self.__class__._test_sent_basic_email_uid)
         ))
         self.assertFalse(self.__class__._openmail.imap.is_email_exists(
             new_created_empty_test_folder,
-            cast(str, self.__class__._test_sent_basic_email.uid)
+            cast(str, self.__class__._test_sent_basic_email_uid)
         ))
 
     def test_build_search_criteria_query_multiple_or_with_even_length_lists(self):
@@ -376,7 +376,7 @@ class TestFetchOperations(unittest.TestCase):
 
         email_content = self.__class__._openmail.imap.get_email_content(
             Folder.Inbox,
-            cast(str, self.__class__._test_sent_complex_email.uid)
+            cast(str, self.__class__._test_sent_complex_email_uid)
         )
 
         # Recipients
@@ -440,7 +440,7 @@ class TestFetchOperations(unittest.TestCase):
         for attachment in self.__class__._test_sent_complex_email.attachments:
             found_attachment = self.__class__._openmail.imap.download_attachment(
                 Folder.Inbox,
-                cast(str, self.__class__._test_sent_complex_email.uid),
+                cast(str, self.__class__._test_sent_complex_email_uid),
                 attachment.name,
                 attachment.cid or ""
             )
@@ -465,7 +465,7 @@ class TestFetchOperations(unittest.TestCase):
         self.assertIn(
             Mark.Flagged,
             self.__class__._openmail.imap.get_email_flags(
-                cast(str, self.__class__._test_sent_complex_email.uid)
+                cast(str, self.__class__._test_sent_complex_email_uid)
             )[0].flags
         )
 
@@ -475,7 +475,7 @@ class TestFetchOperations(unittest.TestCase):
         self.assertGreater(
             self.__class__._openmail.imap.get_email_size(
                 Folder.Inbox,
-                cast(str, self.__class__._test_sent_complex_email.uid)
+                cast(str, self.__class__._test_sent_complex_email_uid)
             ) or 0,
             0
         )
@@ -487,7 +487,7 @@ class TestFetchOperations(unittest.TestCase):
 
         email_content = self.__class__._openmail.imap.get_email_content(
             Folder.Inbox,
-            cast(str, self.__class__._test_sent_complex_email.uid)
+            cast(str, self.__class__._test_sent_complex_email_uid)
         )
 
         if not "attachments" in email_content.keys() or not email_content.attachments:
@@ -500,7 +500,7 @@ class TestFetchOperations(unittest.TestCase):
         for attachment in self.__class__._test_sent_complex_email.attachments:
             found_attachment = self.__class__._openmail.imap.download_attachment(
                 Folder.Inbox,
-                cast(str, self.__class__._test_sent_complex_email.uid),
+                cast(str, self.__class__._test_sent_complex_email_uid),
                 attachment.name,
                 attachment.cid or ""
             )
