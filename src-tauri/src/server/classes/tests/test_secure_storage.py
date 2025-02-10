@@ -33,7 +33,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
             NameGenerator.email_address()[0],
-            SecureStorageKeyValueType.Plain
+            SecureStorageKeyValueType.AESGCMEncrypted
         )
 
         time.sleep(1)
@@ -71,7 +71,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
             NameGenerator.email_address()[0],
-            SecureStorageKeyValueType.Plain
+            SecureStorageKeyValueType.AESGCMEncrypted
         )
 
         time.sleep(1)
@@ -125,7 +125,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
             NameGenerator.email_address()[0],
-            SecureStorageKeyValueType.Plain
+            SecureStorageKeyValueType.AESGCMEncrypted
         )
 
         time.sleep(1)
@@ -157,7 +157,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_get_key_value...")
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -192,7 +192,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_add_key...")
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -215,7 +215,7 @@ class TestSecureStorage(unittest.TestCase):
             self.__class__._secure_storage.add_key(
                 "invalidkey",
                 NameGenerator.email_address()[0],
-                SecureStorageKeyValueType.Plain,
+                SecureStorageKeyValueType.AESGCMEncrypted,
             )
 
     def test_add_illegal_key(self):
@@ -224,7 +224,7 @@ class TestSecureStorage(unittest.TestCase):
             self.__class__._secure_storage.add_key(
                 SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST[0],
                 NameGenerator.email_address()[0],
-                SecureStorageKeyValueType.Plain
+                SecureStorageKeyValueType.AESGCMEncrypted
             )
 
     def test_add_invalid_key_value_type(self):
@@ -240,7 +240,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_override_by_add...")
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -255,7 +255,7 @@ class TestSecureStorage(unittest.TestCase):
 
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -281,7 +281,7 @@ class TestSecureStorage(unittest.TestCase):
 
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -338,7 +338,7 @@ class TestSecureStorage(unittest.TestCase):
         original_value = cast(str, NameGenerator.email_address()[0])
         test_key_value = {
             "value": RSACipher.encrypt_password(original_value, public_pem["value"]),
-            "type": SecureStorageKeyValueType.RSAEncrypted
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -364,7 +364,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_update_key...")
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -379,7 +379,7 @@ class TestSecureStorage(unittest.TestCase):
 
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.update_key(
             SecureStorageKey.TestKey,
@@ -401,7 +401,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
             NameGenerator.email_address()[0],
-            SecureStorageKeyValueType.Plain,
+            SecureStorageKeyValueType.AESGCMEncrypted,
         )
 
         time.sleep(1)
@@ -410,7 +410,7 @@ class TestSecureStorage(unittest.TestCase):
             self.__class__._secure_storage.update_key(
                 "invalidkey",
                 NameGenerator.email_address()[0],
-                SecureStorageKeyValueType.Plain,
+                SecureStorageKeyValueType.AESGCMEncrypted,
             )
 
     def test_update_illegal_key(self):
@@ -418,7 +418,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
             NameGenerator.email_address()[0],
-            SecureStorageKeyValueType.Plain,
+            SecureStorageKeyValueType.AESGCMEncrypted,
         )
 
         time.sleep(1)
@@ -427,7 +427,7 @@ class TestSecureStorage(unittest.TestCase):
             self.__class__._secure_storage.update_key(
                 SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST[0],
                 NameGenerator.email_address()[0],
-                SecureStorageKeyValueType.Plain,
+                SecureStorageKeyValueType.AESGCMEncrypted,
             )
 
     def test_update_invalid_key_value_type(self):
@@ -435,7 +435,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
             NameGenerator.email_address()[0],
-            SecureStorageKeyValueType.Plain,
+            SecureStorageKeyValueType.AESGCMEncrypted,
         )
 
         time.sleep(1)
@@ -457,7 +457,7 @@ class TestSecureStorage(unittest.TestCase):
 
         first_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -467,7 +467,7 @@ class TestSecureStorage(unittest.TestCase):
 
         last_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.update_key(
             SecureStorageKey.TestKey,
@@ -524,7 +524,7 @@ class TestSecureStorage(unittest.TestCase):
         first_original_value = cast(str, NameGenerator.email_address()[0])
         first_key_value = {
             "value": RSACipher.encrypt_password(first_original_value, public_pem["value"]),
-            "type": SecureStorageKeyValueType.RSAEncrypted
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -535,7 +535,7 @@ class TestSecureStorage(unittest.TestCase):
         last_original_value = cast(str, NameGenerator.email_address()[0])
         last_key_value = {
             "value": RSACipher.encrypt_password(last_original_value, public_pem["value"]),
-            "type": SecureStorageKeyValueType.RSAEncrypted
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.update_key(
             SecureStorageKey.TestKey,
@@ -562,7 +562,7 @@ class TestSecureStorage(unittest.TestCase):
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
             NameGenerator.email_address()[0],
-            SecureStorageKeyValueType.Plain,
+            SecureStorageKeyValueType.AESGCMEncrypted,
         )
 
         self.__class__._secure_storage.delete_key(SecureStorageKey.TestKey)
@@ -593,7 +593,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_clear...")
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -616,7 +616,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_destroy...")
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -636,7 +636,7 @@ class TestSecureStorage(unittest.TestCase):
 
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -674,7 +674,7 @@ class TestSecureStorage(unittest.TestCase):
 
         test_key_value = {
             "value": NameGenerator.email_address()[0],
-            "type": SecureStorageKeyValueType.Plain
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -744,7 +744,7 @@ class TestSecureStorage(unittest.TestCase):
 
         test_key_value = {
             "value": RSACipher.encrypt_password(original_value, pre_rotation_public_pem["value"]),
-            "type": SecureStorageKeyValueType.RSAEncrypted
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
@@ -810,7 +810,7 @@ class TestSecureStorage(unittest.TestCase):
 
         test_key_value = {
             "value": RSACipher.encrypt_password(original_value, pre_rotation_public_pem["value"]),
-            "type": SecureStorageKeyValueType.RSAEncrypted
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
         }
         self.__class__._secure_storage.add_key(
             SecureStorageKey.TestKey,
