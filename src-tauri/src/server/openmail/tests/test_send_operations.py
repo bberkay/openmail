@@ -7,7 +7,7 @@ import copy
 from typing import cast
 
 from openmail import OpenMail
-from openmail.types import Attachment, Draft, Email, Folder
+from openmail.types import Attachment, Draft, Email, Folder, SearchCriteria
 from openmail.parser import HTMLParser, MessageDecoder, MessageParser
 from openmail.encoder import FileBase64Encoder
 from openmail.converter import AttachmentConverter
@@ -468,29 +468,133 @@ class TestSendOperations(unittest.TestCase):
         self._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
-    """def test_reply_email(self):
+    def test_reply_email(self):
         print("test_reply_email...")
-        status, _ = self.__class__._smtp.reply_email(
-            Draft(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=NameGenerator.subject()[0],
-                body=NameGenerator.body()[0],
+        # Sent normal email
+        email_to_send = Draft(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.subject()[0],
+            body="test_reply_email",
+            attachments=[
+                AttachmentConverter.resolve_and_convert(
+                    SampleDocumentGenerator().as_filepath()[0]
+                )
+            ],
+        )
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(
+            self.__class__._openmail,
+            copy.copy(email_to_send)
+        )
+        self._sent_test_email_uids.append(uid)
+        self.is_sent_email_valid(email_to_send, uid)
+
+        # Find sent email to reply it.
+        sent_email_content = self.__class__._openmail.imap.get_email_content(
+            Folder.Inbox,
+            uid
+        )
+
+        # Reply email
+        reply_email_subject = NameGenerator.subject()[0]
+        reply_email = Draft(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=reply_email_subject,
+            body="test_reply_email",
+        )
+        status, _ = self.__class__._openmail.smtp.reply_email(
+            reply_email,
+            sent_email_content.message_id,
+            sent_email_content.sender,
+            sent_email_content.body,
+            sent_email_content.date
+        )
+        self.assertTrue(status)
+
+        # Find sent reply_email
+        status, message = self.__class__._openmail.imap.search_emails(
+            folder=Folder.Inbox,
+            search=SearchCriteria(
+                subject=reply_email_subject,
             )
         )
         self.assertTrue(status)
 
+        mailbox = self.__class__._openmail.imap.get_emails()
+        found_reply_email = mailbox.emails[0]
+
+        self._sent_test_email_uids.append(found_reply_email.uid)
+
+        # Check the reply if it has correct structure.
+        self.assertTrue(found_reply_email.subject.startswith("Re: "))
+        self.assertEqual(found_reply_email.in_reply_to, sent_email_content.message_id)
+        assert found_reply_email.references is not None
+        self.assertIn(sent_email_content.message_id, found_reply_email.references)
+
     def test_forward_email(self):
         print("test_forward_email...")
-        status, _ = self.__class__._smtp.forward_email(
-            Draft(
-                sender=self.__class__._sender_email,
-                receiver=self.__class__._sender_email,
-                subject=generate_random_subject_with_uuid(),
-                body=NameGenerator.body()[0],
+        # Sent normal email
+        email_to_send = Draft(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=NameGenerator.subject()[0],
+            body="test_forward_email",
+            attachments=[
+                AttachmentConverter.resolve_and_convert(
+                    SampleDocumentGenerator().as_filepath()[0]
+                )
+            ],
+        )
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(
+            self.__class__._openmail,
+            copy.copy(email_to_send)
+        )
+        self._sent_test_email_uids.append(uid)
+        self.is_sent_email_valid(email_to_send, uid)
+
+        # Find sent email to forward it.
+        sent_email_content = self.__class__._openmail.imap.get_email_content(
+            Folder.Inbox,
+            uid
+        )
+
+        # Forward email
+        forward_email_subject = NameGenerator.subject()[0]
+        forward_email = Draft(
+            sender=self.__class__._sender_email,
+            receiver=self.__class__._sender_email,
+            subject=forward_email_subject,
+            body="forward_email_subject",
+        )
+        status, _ = self.__class__._openmail.smtp.forward_email(
+            forward_email,
+            sent_email_content.message_id,
+            sent_email_content.sender,
+            sent_email_content.body,
+            sent_email_content.date
+        )
+        self.assertTrue(status)
+
+        # Find sent forward_email
+        status, message = self.__class__._openmail.imap.search_emails(
+            folder=Folder.Inbox,
+            search=SearchCriteria(
+                subject=forward_email_subject,
             )
         )
-        self.assertTrue(status)"""
+        self.assertTrue(status)
+
+        mailbox = self.__class__._openmail.imap.get_emails()
+        found_reply_email = mailbox.emails[0]
+
+        self._sent_test_email_uids.append(found_reply_email.uid)
+
+        # Check the forward if it has correct structure.
+        self.assertTrue(found_reply_email.subject.startswith("Fwd: "))
+        self.assertEqual(found_reply_email.in_reply_to, sent_email_content.message_id)
+        assert found_reply_email.references is not None
+        self.assertIn(sent_email_content.message_id, found_reply_email.references)
 
     @classmethod
     def cleanup(cls):

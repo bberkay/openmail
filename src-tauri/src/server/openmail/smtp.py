@@ -31,7 +31,7 @@ from email.mime.multipart import MIMEMultipart
 from .parser import HTMLParser, MessageParser
 from .encoder import FileBase64Encoder
 from .converter import AttachmentConverter
-from .utils import extract_domain, choose_positive, extract_username
+from .utils import extract_domain, choose_positive, extract_username, tuple_to_sender_string
 from .types import Draft, Attachment
 
 """
@@ -226,6 +226,8 @@ class SMTPManager(smtplib.SMTP):
             msg['Subject'] = email.subject
             if cc: msg['Cc'] = cc
             if bcc: msg['Bcc'] = bcc
+            if email.in_reply_to: msg["In-Reply-To"] = email.in_reply_to
+            if email.references: msg["References"] = email.references
         except Exception as e:
             raise SMTPManagerException(f"Error while creating email headers: {str(e)}") from None
 
@@ -311,7 +313,11 @@ class SMTPManager(smtplib.SMTP):
                     if attachment.data and isinstance(attachment.data, str):
                         attachment.data = base64.b64decode(attachment.data)
 
-                    attachment.data = attachment.data or base64.b64decode(FileBase64Encoder.read_file(attachment.path)[3])
+                    attachment.data = (
+                        attachment.data
+                        or
+                        base64.b64decode(FileBase64Encoder.read_file(attachment.path)[3])
+                    )
                     maintype, subtype = attachment.type.split("/")
                     msg.add_attachment(
                         attachment.data,
@@ -327,28 +333,52 @@ class SMTPManager(smtplib.SMTP):
 
         return self.send_message(msg)
 
-    def reply_email(self, email: Draft) -> SMTPCommandResult:
+    def reply_email(self,
+        email: Draft,
+        original_message_id: str,
+        original_sender: tuple[str, str] | str = "",
+        original_body: str = "",
+        original_date: str = ""
+    ) -> SMTPCommandResult:
         """
         Reply to an existing email. Uses the `send_email` method internally.
 
         Args:
-            email (Draft): The email to be replied to.
+            email (Draft): The draft email object to send as a reply.
+            original_msg_id (str): The Message-ID of the email being replied to.
+            original_sender (tuple[str, str] | str, optional): The sender of the original email.
+            original_body (str, optional): The body content of the original email.
+            original_date (str, optional): The date of the original email.
 
         Returns:
             SMTPCommandResult: A tuple containing:
                 - A bool indicating whether the email was replied successfully.
                 - A string containing a success message or an error message.
         """
-        if not email.uid:
-            raise SMTPManagerException(f"Cannot reply to an email without a unique identifier(uid).")
+        if not original_message_id:
+            raise SMTPManagerException(f"Cannot reply to an email without `original_message_id`.")
 
         try:
             email_to_reply = copy.copy(email)
             email_to_reply.subject = "Re: " + email.subject
-            email_to_reply.metadata = (email_to_reply.metadata or {}) | {
-                "In-Reply-To": email.uid,
-                "References": email.uid
-            }
+            email_to_reply.in_reply_to = original_message_id
+            email_to_reply.references = (
+                (email_to_reply.references or "") + " " + original_message_id
+            ).strip()
+            email_to_reply.body = f"""
+            <div>
+                <div>
+                    {email_to_reply.body}
+                </div>
+                <br/><br/>
+                <div>
+                    On {original_date}, {tuple_to_sender_string(original_sender)} wrote:<br/>
+                    <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+                        {original_body}
+                    </blockquote>
+                </div>
+            </div>
+            """
         except Exception as e:
             raise SMTPManagerException(f"Error while creating email reply: {str(e)}") from None
 
@@ -360,7 +390,13 @@ class SMTPManager(smtplib.SMTP):
 
         return status, message
 
-    def forward_email(self, email: Draft) -> SMTPCommandResult:
+    def forward_email(self,
+        email: Draft,
+        original_message_id: str,
+        original_sender: tuple[str, str] | str = "",
+        original_body: str = "",
+        original_date: str = ""
+    ) -> SMTPCommandResult:
         """
         Forward an existing email to new recipients. Uses the `send_email`
         method internally.
@@ -373,16 +409,32 @@ class SMTPManager(smtplib.SMTP):
                 - A bool indicating whether the email was forwarded successfully.
                 - A string containing a success message or an error message.
         """
-        if not email.uid:
-            raise SMTPManagerException(f"Cannot forward an email without a unique identifier(uid).")
+        if not original_message_id:
+            raise SMTPManagerException(f"Cannot forward to an email without `original_message_id`.")
 
         try:
             email_to_forward = copy.copy(email)
             email_to_forward.subject = "Fwd: " + email.subject
-            email_to_forward.metadata = (email_to_forward.metadata or {}) | {
-                "In-Reply-To": email.uid,
-                "References": email.uid
-            }
+            email_to_forward.in_reply_to = original_message_id
+            email_to_forward.references = (
+                (email_to_forward.references or "") + " " + original_message_id
+            ).strip()
+            email_to_forward.body = f"""
+            <div>
+                <div>
+                    {email_to_forward.body}
+                </div>
+                <br/><br/>
+                <div>
+                    ---------- Forwarded message ----------<br/>
+                    From: {tuple_to_sender_string(original_sender)}<br/>
+                    Date: {original_date}<br/>
+                    <blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">
+                        {original_body}
+                    </blockquote>
+                </div>
+            </div>
+            """
         except Exception as e:
             raise SMTPManagerException(f"Error while creating email to forward: `{str(e)}`") from None
 
