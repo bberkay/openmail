@@ -23,16 +23,75 @@
             <button type="button" style="margin-left:5px;" onclick="this.parentElement.remove()">X</button>
         </span>
     `;
+    const replyTemplate = `
+        <div>
+            <div>
+                {body}
+            </div>
+        </div>
+        <br/><br/>
+        <div>
+            On {original_date}, {original_sender} wrote:<br/>
+            <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+                {original_body}
+            </blockquote>
+        </div>
+    `;
+    const forwardTemplate = `
+        <div>
+            <div>
+                {body}
+            </div>
+            <br/><br/>
+        </div>
+        <div>
+            ---------- Forwarded message ----------<br/>
+            From: {original_sender}<br/>
+            Date: {original_date}<br/>
+            <blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">
+                {original_body}
+            </blockquote>
+        </div>
+    `;
 
     /* Variables */
 
+    interface Props {
+        compose_type?: "reply" | "forward";
+        original_message_id?: string;
+        original_sender?: string;
+        original_subject?: string;
+        original_body?: string;
+        original_date?: string;
+    }
+
+    let {
+        compose_type,
+        original_message_id,
+        original_sender,
+        original_subject,
+        original_body,
+        original_date,
+    }: Props = $props();
     let sender: string = $state(SharedStore.accounts[0].email_address);
     let body: WYSIWYGEditor;
     let attachments: File[] | null = null;
+    let subjectInput: HTMLInputElement;
 
     onMount(() => {
         body = new WYSIWYGEditor('body');
         body.init();
+        if (compose_type) {
+            body.setHTMLContent(
+                (compose_type == "reply" ? replyTemplate : forwardTemplate)
+                    .replace("{original_sender}", original_sender || "")
+                    .replace("{original_body}", original_body || "")
+                    .replace("{original_date}", original_date || "")
+            )
+            if (original_subject) {
+                subjectInput.value = (compose_type == "reply" ? "Re: " : "Fwd: ") + original_subject
+            }
+        }
     });
 
     /* Compose Form Handling Functions */
@@ -114,9 +173,26 @@
         formData.set('cc', getEmailAddresses("added-cc"));
         formData.set('bcc', getEmailAddresses("added-bcc"));
 
-        const response = await mailboxController.sendEmail(formData);
+        let response;
+        if (compose_type !== "reply" && compose_type !== "forward") {
+            response = await mailboxController.sendEmail(formData);
+        } else if (!original_message_id) {
+            alert("original_message_id required when sending reply or forwarding message.");
+        } else {
+            if (compose_type == "reply") {
+                response = await mailboxController.replyEmail(
+                    formData,
+                    original_message_id
+                );
+            } else if (compose_type == "forward") {
+                response = await mailboxController.forwardEmail(
+                    formData,
+                    original_message_id
+                );
+            }
+        }
 
-        alert(response.message);
+        alert(response!.message);
         body.clear();
     }
 </script>
@@ -145,7 +221,7 @@
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
-            <input type="text" name="subject" id="subject" placeholder="Subject" required>
+            <input type="text" name="subject" id="subject" placeholder="Subject" bind:this={subjectInput} required>
         </div>
         <div class="form-group">
             <label for="cc">Cc</label>

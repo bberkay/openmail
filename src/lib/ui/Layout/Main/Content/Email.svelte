@@ -5,8 +5,10 @@
     import { onMount } from "svelte";
     import type { Account, Attachment, Email } from "$lib/types";
     import { makeSizeHumanReadable } from "$lib/utils";
+    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import * as Button from "$lib/ui/Elements/Button";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 
     const mailboxController = new MailboxController();
 
@@ -71,11 +73,25 @@
     }
 
     const reply = () => {
-
+        showContent(Compose, {
+            compose_type: "reply",
+            original_message_id: email.message_id,
+            original_sender: email.sender,
+            original_subject: email.subject,
+            original_body: email.body,
+            orginal_date: email.date
+        });
     }
 
     const forward = () => {
-
+        showContent(Compose, {
+            compose_type: "forward",
+            original_message_id: email.message_id,
+            original_sender: email.sender,
+            original_subject: email.subject,
+            original_body: email.body,
+            orginal_date: email.date
+        })
     }
 </script>
 

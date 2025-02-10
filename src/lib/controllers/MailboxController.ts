@@ -248,6 +248,32 @@ export class MailboxController {
         );
     }
 
+    public async replyEmail(formData: FormData, original_message_id: string): Promise<PostResponse> {
+        return await ApiService.post(
+            SharedStore.server,
+            PostRoutes.REPLY_EMAIL,
+            formData,
+            {
+                pathParams: {
+                    original_message_id
+                }
+            }
+        );
+    }
+
+    public async forwardEmail(formData: FormData, original_message_id: string): Promise<PostResponse> {
+        return await ApiService.post(
+            SharedStore.server,
+            PostRoutes.FORWARD_EMAIL,
+            formData,
+            {
+                pathParams: {
+                    original_message_id
+                }
+            }
+        );
+    }
+
     public async deleteEmails(
         account: Account,
         selection: string[],

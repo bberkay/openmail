@@ -337,16 +337,18 @@ class SMTPManager(smtplib.SMTP):
         email: Draft,
         original_message_id: str,
         original_sender: tuple[str, str] | str = "",
+        original_subject: str = "",
         original_body: str = "",
-        original_date: str = ""
+        original_date: str = "",
     ) -> SMTPCommandResult:
         """
         Reply to an existing email. Uses the `send_email` method internally.
 
         Args:
             email (Draft): The draft email object to send as a reply.
-            original_msg_id (str): The Message-ID of the email being replied to.
+            original_message_id (str): The Message-ID of the email being replied to.
             original_sender (tuple[str, str] | str, optional): The sender of the original email.
+            original_subject (str, optional): The subject content of the original email.
             original_body (str, optional): The body content of the original email.
             original_date (str, optional): The date of the original email.
 
@@ -360,15 +362,17 @@ class SMTPManager(smtplib.SMTP):
 
         try:
             email_to_reply = copy.copy(email)
-            email_to_reply.subject = "Re: " + email.subject
             email_to_reply.in_reply_to = original_message_id
             email_to_reply.references = (
                 (email_to_reply.references or "") + " " + original_message_id
             ).strip()
-            email_to_reply.body = f"""
-            <div>
+            if original_subject: email_to_reply.subject = "Re: " + original_subject
+            if original_body:
+                email_to_reply.body = f"""
                 <div>
-                    {email_to_reply.body}
+                    <div>
+                        {email_to_reply.body}
+                    </div>
                 </div>
                 <br/><br/>
                 <div>
@@ -377,8 +381,7 @@ class SMTPManager(smtplib.SMTP):
                         {original_body}
                     </blockquote>
                 </div>
-            </div>
-            """
+                """
         except Exception as e:
             raise SMTPManagerException(f"Error while creating email reply: {str(e)}") from None
 
@@ -394,8 +397,9 @@ class SMTPManager(smtplib.SMTP):
         email: Draft,
         original_message_id: str,
         original_sender: tuple[str, str] | str = "",
+        original_subject: str = "",
         original_body: str = "",
-        original_date: str = ""
+        original_date: str = "",
     ) -> SMTPCommandResult:
         """
         Forward an existing email to new recipients. Uses the `send_email`
@@ -403,6 +407,11 @@ class SMTPManager(smtplib.SMTP):
 
         Args:
             email (Draft): The email to be forwarded.
+            original_message_id (str): The Message-ID of the email being forwarded.
+            original_sender (tuple[str, str] | str, optional): The sender of the original email.
+            original_subject (str, optional): The subject of the original email.
+            original_body (str, optional): The body content of the original email.
+            original_date (str, optional): The date of the original email.
 
         Returns:
             SMTPCommandResult: A tuple containing:
@@ -414,27 +423,28 @@ class SMTPManager(smtplib.SMTP):
 
         try:
             email_to_forward = copy.copy(email)
-            email_to_forward.subject = "Fwd: " + email.subject
             email_to_forward.in_reply_to = original_message_id
             email_to_forward.references = (
                 (email_to_forward.references or "") + " " + original_message_id
             ).strip()
-            email_to_forward.body = f"""
-            <div>
+            if original_subject: email_to_forward.subject = "Fwd: " + original_subject
+            if original_body:
+                email_to_forward.body = f"""
                 <div>
-                    {email_to_forward.body}
+                    <div>
+                        {email_to_forward.body}
+                    </div>
+                    <br/><br/>
                 </div>
-                <br/><br/>
                 <div>
                     ---------- Forwarded message ----------<br/>
-                    From: {tuple_to_sender_string(original_sender)}<br/>
-                    Date: {original_date}<br/>
+                    {f"From: {tuple_to_sender_string(original_sender)}<br/>" if original_sender else ""}
+                    {f"Date: {original_date}<br/>" if original_date else ""}
                     <blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">
                         {original_body}
                     </blockquote>
                 </div>
-            </div>
-            """
+                """
         except Exception as e:
             raise SMTPManagerException(f"Error while creating email to forward: `{str(e)}`") from None
 

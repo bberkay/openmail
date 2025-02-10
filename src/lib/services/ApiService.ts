@@ -37,7 +37,7 @@ export enum PostRoutes {
     DELETE_FOLDER = "/delete-folder",
 }
 
-interface GetQueryParams {
+interface QueryParams {
     [GetRoutes.HELLO]: {};
     [GetRoutes.GET_ACCOUNTS]: {};
     [GetRoutes.GET_MAILBOXES]: {
@@ -82,6 +82,17 @@ interface GetQueryParams {
         }
     };
     [GetRoutes.GET_PUBLIC_KEY]: {};
+    [PostRoutes.REPLY_EMAIL]: {
+        pathParams: {
+            original_message_id: string;
+        }
+    };
+    [PostRoutes.FORWARD_EMAIL]: {
+        pathParams: {
+            original_message_id: string;
+        }
+    }
+    [key: string]: any;
 }
 
 interface PostBody {
@@ -162,6 +173,11 @@ interface PostBody {
     };
 }
 
+export interface BaseResponse {
+    success: boolean;
+    message: string;
+}
+
 export interface GetQueryResponse {
     [GetRoutes.HELLO]: {};
     [GetRoutes.GET_ACCOUNTS]: {
@@ -178,11 +194,6 @@ export interface GetQueryResponse {
     };
 }
 
-export interface BaseResponse {
-    success: boolean;
-    message: string;
-}
-
 export interface GetResponse<T extends GetRoutes> extends BaseResponse {
     data?: GetQueryResponse[T];
 }
@@ -190,28 +201,28 @@ export interface GetResponse<T extends GetRoutes> extends BaseResponse {
 export interface PostResponse extends BaseResponse {}
 
 export class ApiService {
-    static async get<T extends GetRoutes>(
-        url: string,
-        endpoint: T,
-        params?: GetQueryParams[T],
-    ): Promise<GetResponse<T>> {
-        const createQueryString = (params: GetQueryParams[T]) => {
-            let queryString = "";
+    static createQueryString<T extends GetRoutes | PostRoutes>(params: QueryParams[T]): string {
+        let queryString = "";
 
-            if (params && "pathParams" in params && params.pathParams)
-                queryString += "/" + Object.values(params.pathParams).join("/");
+        if (params && "pathParams" in params && params.pathParams)
+            queryString += "/" + Object.values(params.pathParams).join("/");
 
-            if (params && "queryParams" in params && params.queryParams)
-                queryString +=
+        if (params && "queryParams" in params && params.queryParams)
+            queryString +=
                     "?" +
                     new URLSearchParams(
                         removeFalsyParamsAndEmptyLists(params.queryParams),
                     ).toString();
 
-            return queryString;
-        };
+        return queryString;
+    }
 
-        const queryString = params ? createQueryString(params) : "";
+    static async get<T extends GetRoutes>(
+        url: string,
+        endpoint: T,
+        params: QueryParams[T],
+    ): Promise<GetResponse<T>> {
+        const queryString = params ? ApiService.createQueryString(params) : "";
         const response = await fetch(url + endpoint + queryString);
         return response.json();
     }
@@ -220,8 +231,10 @@ export class ApiService {
         url: string,
         endpoint: T,
         body: PostBody[T] | FormData,
+        params?: QueryParams[T]
     ): Promise<PostResponse> {
-        const response = await fetch(url + endpoint, {
+        const queryString = params ? ApiService.createQueryString(params) : "";
+        const response = await fetch(url + endpoint + queryString, {
             method: "POST",
             headers:
                 body instanceof FormData

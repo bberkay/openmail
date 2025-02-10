@@ -522,8 +522,9 @@ async def send_email(
         return Response(success=False, message=err_msg("There was an error while sending email.", str(e)))
 
 
-@app.post("/reply-email")
+@app.post("/reply-email/{original_message_id}")
 async def reply_email(
+    original_message_id: str,
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
@@ -534,7 +535,7 @@ async def reply_email(
         sender_email = (
             form_data.sender if isinstance(form_data.sender, str) else form_data.sender[1]
         )
-        status, msg = openmail_clients[sender_email].smtp.send_email(
+        status, msg = openmail_clients[sender_email].smtp.reply_email(
             Draft(
                 sender=form_data.sender,
                 receiver=form_data.receiver,
@@ -543,7 +544,8 @@ async def reply_email(
                 cc=form_data.cc,
                 bcc=form_data.bcc,
                 attachments=await convert_uploadfile_to_attachment(form_data.attachments),
-            )
+            ),
+            original_message_id
         )
 
         return Response(success=status, message=msg)
@@ -551,8 +553,9 @@ async def reply_email(
         return Response(success=False, message=err_msg("There was an error while replying email.", str(e)))
 
 
-@app.post("/forward-email")
+@app.post("/forward-email/{original_message_id}")
 async def forward_email(
+    original_message_id: str,
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
@@ -563,7 +566,7 @@ async def forward_email(
         sender_email = (
             form_data.sender if isinstance(form_data.sender, str) else form_data.sender[1]
         )
-        status, msg = openmail_clients[sender_email].smtp.send_email(
+        status, msg = openmail_clients[sender_email].smtp.forward_email(
             Draft(
                 sender=form_data.sender,
                 receiver=form_data.receiver,
@@ -572,7 +575,8 @@ async def forward_email(
                 cc=form_data.cc,
                 bcc=form_data.bcc,
                 attachments=await convert_uploadfile_to_attachment(form_data.attachments),
-            )
+            ),
+            original_message_id
         )
 
         return Response(success=status, message=msg)
