@@ -25,6 +25,10 @@ def contains_non_ascii(string: str) -> bool:
     """Check if a string contains any non-ASCII characters."""
     return any(ord(char) > 127 for char in string)
 
+def tuple_to_sender_string(sender: tuple[str, str] | str) -> str:
+    """Formats the sender's name and email into a single string."""
+    return sender[0] + f"<{sender[1]}>" if not isinstance(sender, str) else sender
+
 def add_quotes_if_str(value: str):
     """Add quotes to variables if it is string ant will be trimmed."""
     return f'"{value.strip()}"' if isinstance(value, str) else value
