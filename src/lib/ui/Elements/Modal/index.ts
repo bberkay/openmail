@@ -1,5 +1,25 @@
 import Modal from './Modal.svelte';
-import { show } from './Modal.svelte.ts';
+import { mount, unmount } from 'svelte';
+import type { Component } from "svelte";
+
+let mountedModal: Record<string, any> | null = null;
+
+export function show(modal: Component, modalProps: any) {
+	if(mountedModal)
+	   return;
+
+	mountedModal = mount(modal, {
+		target: document.getElementById('modal-container')!,
+		props: modalProps
+	});
+}
+
+export function close() {
+    console.log("geldi : close");
+    if (mountedModal) {
+        unmount(mountedModal);
+        mountedModal = null;
+    }
+}
 
 export default Modal;
-export { show };

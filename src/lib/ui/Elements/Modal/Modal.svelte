@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import type { Snippet } from "svelte";
+    import { close } from "./index.ts";
 
     interface Props {
         children: Snippet;
