@@ -70,7 +70,6 @@ MESSAGE_HEADER_PATTERN_MAP = {
 """
 Body Constants
 """
-CONTENT_TYPE_AND_ENCODING_PATTERN = re.compile(
 CONTENT_TYPE_PATTERN = re.compile(
     rb'(?:(?:^|\r\n)Content-Type:\s*([\w\/\-]+))', re.DOTALL | re.IGNORECASE
 )
