@@ -393,6 +393,12 @@ class SecureStorage:
                             account["encrypted_password"],
                             private_pem["value"]
                         )
+                elif key_name == SecureStorageKey.TestKey:
+                    key_value["value"] = RSACipher.decrypt_password(
+                        key_value["value"],
+                        private_pem["value"]
+                    )
+
             return key_value
 
         def encrypt_rsa_decrypted_key(key_name: str, key_value: Any) -> SecureStorageKeyValue | None:
@@ -407,6 +413,12 @@ class SecureStorage:
                             account["encrypted_password"],
                             public_pem["value"]
                         )
+                elif key_name == SecureStorageKey.TestKey:
+                    key_value["value"] = RSACipher.encrypt_password(
+                        key_value["value"],
+                        public_pem["value"]
+                    )
+
             return key_value
 
         print("Rotating RSA cipher...")
