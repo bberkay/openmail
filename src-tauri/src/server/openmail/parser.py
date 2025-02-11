@@ -71,10 +71,11 @@ MESSAGE_HEADER_PATTERN_MAP = {
 Body Constants
 """
 CONTENT_TYPE_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:(?:^|\r\n)Content-Type:\s*([\w\/\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|'
-    rb'(?:(?:^|\r\n)Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Type:\s*([\w\/\-]+))|'
-    rb'(?:(?:^|\r\n)Content-Type:\s*([\w\/\-]+))',
-    re.DOTALL | re.IGNORECASE
+CONTENT_TYPE_PATTERN = re.compile(
+    rb'(?:(?:^|\r\n)Content-Type:\s*([\w\/\-]+))', re.DOTALL | re.IGNORECASE
+)
+CONTENT_TRANSFER_ENCODING_PATTERN = re.compile(
+    rb'(?:(?:^|\r\n)Content-Transfer-Encoding:\s*([\w\/\-]+))', re.DOTALL | re.IGNORECASE
 )
 BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN = re.compile(
     rb'(?:(?:^|\r\n)Content-Type:\s*text/plain(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
@@ -408,13 +409,11 @@ class MessageParser:
             >>> get_content_type_encoding(message)
             ('text/plain', 'quoted-printable')
         """
-        match = CONTENT_TYPE_AND_ENCODING_PATTERN.search(message)
-        if match:
-            content_type = match.group(1) or match.group(4) or match.group(5) or b""
-            encoding = match.group(2) or match.group(3) or b""
-            return content_type.decode(), encoding.decode()
-
-        return "", ""
+        content_type_match = CONTENT_TYPE_PATTERN.search(message)
+        content_type = content_type_match.group(1) if content_type_match else b""
+        encoding_match = CONTENT_TRANSFER_ENCODING_PATTERN.search(message)
+        encoding = encoding_match.group(1) if encoding_match else b""
+        return content_type.decode(), encoding.decode()
 
     @staticmethod
     def get_text_plain_body(message: bytes) -> tuple[int, int, str] | None:
