@@ -37,6 +37,9 @@ class AccountManager:
 
         return cls._instance
 
+    def _load_accounts(self, accounts: str) -> list[AccountWithPassword]:
+        return json.loads(accounts.replace("'", "\""))
+
     def is_exists(self, email: str) -> bool:
         return bool(self.get(email_address=email, include_password=False))
 
@@ -48,7 +51,7 @@ class AccountManager:
         if not accounts:
             return None
 
-        accounts = json.loads(accounts["value"].replace("'", "\""))
+        accounts = self._load_accounts(accounts["value"])
         for account in accounts:
             if account["email_address"] != email_address:
                 continue
@@ -67,8 +70,7 @@ class AccountManager:
         if not accounts:
             return []
 
-        accounts = json.loads(accounts["value"].replace("'", "\""))
-
+        accounts = self._load_accounts(accounts["value"])
         filtered_accounts = []
         for account in accounts:
             if email_addresses and account["email_address"] not in email_addresses:
@@ -87,8 +89,7 @@ class AccountManager:
         if not accounts:
             return []
 
-        accounts = json.loads(accounts["value"].replace("'", "\""))
-
+        accounts = self._load_accounts(accounts["value"])
         return self.get_some(
             [account["email_address"] for account in accounts],
             include_passwords
