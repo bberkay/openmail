@@ -75,6 +75,14 @@ export function concatValueAndUnit(value: number | string, unit: Size): string {
     return `${typeof value === "string" ? parseFloat(value) : value} ${unit}`;
 }
 
+export function escapeHTML(str: string): string {
+    return str.replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/&/g, "&amp;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#39;");
+}
+
 export function adjustSizes(smaller: string | [number, Size], larger: string | [number, Size], adjustToSmaller: boolean = true): [string | [number, Size], string | [number, Size]]  {
     let [smallerValue, smallerUnit] = typeof smaller === "string" ? parseValueAndUnit(smaller) : smaller;
     let [largerValue, largerUnit] = typeof larger === "string" ? parseValueAndUnit(larger) : larger;

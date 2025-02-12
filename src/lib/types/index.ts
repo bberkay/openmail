@@ -10,7 +10,7 @@ export interface Account {
 export interface Email {
     message_id: string;
     uid: string;
-    sender: string | [string, string];
+    sender: string;
     receiver: string;
     date: string;
     subject: string;
@@ -50,7 +50,7 @@ export interface Attachment {
 }
 
 export interface Draft {
-    sender: string | [string, string];
+    sender: string;
     receiver: string;
     //date: string;
     subject: string;

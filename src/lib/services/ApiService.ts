@@ -111,7 +111,7 @@ interface PostBody {
     };
     [PostRoutes.REMOVE_ACCOUNTS]: {};
     [PostRoutes.SEND_EMAIL]: {
-        sender: [string, string] | string;
+        sender: string;
         receiver: string;
         subject: string;
         body: string;
