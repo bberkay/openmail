@@ -3,7 +3,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onMount } from 'svelte';
     import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
-    import { createDomObject, makeSizeHumanReadable, isEmailValid, createSenderAddress } from '$lib/utils';
+    import { createDomObject, makeSizeHumanReadable, isEmailValid, createSenderAddress, escapeHTML } from '$lib/utils';
     import * as Select from "$lib/ui/Elements/Select";
     import Form from "$lib/ui/Elements/Form";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
@@ -80,8 +80,8 @@
         if (compose_type) {
             body.addFullHTMLPage(
                 (compose_type == "reply" ? replyTemplate : forwardTemplate)
-                    .replace("{original_sender}", (original_sender || "").replaceAll("<", "&lt").replace(">", "&gt"))
-                    .replace("{original_receiver}", (original_receiver || "").replaceAll("<", "&lt").replace(">", "&gt"))
+                    .replace("{original_sender}", escapeHTML((original_sender || ""))
+                    .replace("{original_receiver}", escapeHTML((original_receiver || ""))
                     .replace("{original_subject}", original_subject || "")
                     .replace("{original_body}", original_body || "")
                     .replace("{original_date}", original_date || "")
