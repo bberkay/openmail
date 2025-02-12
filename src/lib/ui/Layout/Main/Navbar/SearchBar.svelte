@@ -141,11 +141,11 @@
 
     function getSearchCriteria(): SearchCriteria | null {
         const searchCriteria: SearchCriteria = {
-            senders: extractAsArray("#saved-senders"),
-            receivers: extractAsArray("#saved-receivers"),
-            cc: extractAsArray("#saved-cc"),
-            bcc: extractAsArray("#saved-bcc"),
-            included_flags: extractAsArray("#saved-flags"),
+            senders: extractAsArray("#searching-senders"),
+            receivers: extractAsArray("#searching-receivers"),
+            cc: extractAsArray("#searching-cc"),
+            bcc: extractAsArray("#searching-bcc"),
+            included_flags: extractAsArray("#searching-flags"),
             subject: advancedSearchMenu.querySelector<HTMLInputElement>(
                 'input[name="subject"]',
             )!.value,
@@ -183,9 +183,15 @@
             ? (getSearchCriteria() || undefined)
             : simpleSearchInput.value;
 
-        const savedAccounts = extractAsArray("#saved-accounts");
         const response = await mailboxController.getMailboxes(
-            SharedStore.accounts.filter((account: Account) => savedAccounts.includes(account.email_address)),
+            !isAdvancedSearchMenuOpen
+                ? SharedStore.currentAccount
+                : SharedStore.currentAccount,
+                /*: (SharedStore.accounts.filter(
+                    (account: Account) => {
+                        return extractAsArray("#added-accounts").includes(account.email_address)
+                    }
+                ) || SharedStore.currentAccount),*/
             folder,
             searchCriteria
         );
@@ -237,22 +243,22 @@
         <div class="form-group">
             <label for="senders">Sender(s)</label>
             <input type="email" name="senders" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="added-senders"></div>
+            <div class="tags emails" id="searching-senders"></div>
         </div>
         <div class="form-group">
             <label for="receivers">Receiver(s)</label>
             <input type="email" name="receivers" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="added-receivers"></div>
+            <div class="tags emails" id="searching-receivers"></div>
         </div>
         <div class="form-group">
             <label for="cc">Cc</label>
             <input type="email" name="cc" id="cc" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="added-cc"></div>
+            <div class="tags emails" id="searching-cc"></div>
         </div>
         <div class="form-group">
             <label for="bcc">Bcc</label>
             <input type="email" name="bcc" id="bcc" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="added-bcc"></div>
+            <div class="tags emails" id="searching-bcc"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
@@ -322,7 +328,6 @@
                     name="has_attachments"
                     value="Yes"
                     id="has-attachments"
-                    checked
                 />
                 <label for="has-attachments">Yes</label>
             </div>
@@ -344,7 +349,7 @@
                     {/each}
                 </Select.Menu>
             </div>
-            <div class="tags" id="added-flags">
+            <div class="tags" id="searching-flags">
                 <!-- Flags -->
             </div>
         </div>
