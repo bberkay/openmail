@@ -78,10 +78,10 @@
         body = new WYSIWYGEditor('body');
         body.init();
         if (compose_type) {
-            body.setHTMLContent(
+            body.addFullHTMLPage(
                 (compose_type == "reply" ? replyTemplate : forwardTemplate)
-                    .replace("{original_sender}", original_sender || "")
-                    .replace("{original_receiver}", original_receiver || "")
+                    .replace("{original_sender}", (original_sender || "").replaceAll("<", "&lt").replace(">", "&gt"))
+                    .replace("{original_receiver}", (original_receiver || "").replaceAll("<", "&lt").replace(">", "&gt"))
                     .replace("{original_subject}", original_subject || "")
                     .replace("{original_body}", original_body || "")
                     .replace("{original_date}", original_date || "")
