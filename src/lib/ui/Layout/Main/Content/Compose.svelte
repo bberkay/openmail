@@ -3,7 +3,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onMount } from 'svelte';
     import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
-    import { createDomObject, makeSizeHumanReadable, isEmailValid } from '$lib/utils';
+    import { createDomObject, makeSizeHumanReadable, isEmailValid, createSenderAddress } from '$lib/utils';
     import * as Select from "$lib/ui/Elements/Select";
     import Form from "$lib/ui/Elements/Form";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
@@ -24,11 +24,6 @@
         </span>
     `;
     const replyTemplate = `
-        <div>
-            <div>
-                {body}
-            </div>
-        </div>
         <br/><br/>
         <div>
             On {original_date}, {original_sender} wrote:<br/>
@@ -39,15 +34,11 @@
     `;
     const forwardTemplate = `
         <div>
-            <div>
-                {body}
-            </div>
-            <br/><br/>
-        </div>
-        <div>
             ---------- Forwarded message ----------<br/>
             From: {original_sender}<br/>
             Date: {original_date}<br/>
+            Subject: {original_subject}<br/>
+            To: {original_receiver}<br/>
             <blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">
                 {original_body}
             </blockquote>
@@ -60,6 +51,7 @@
         compose_type?: "reply" | "forward";
         original_message_id?: string;
         original_sender?: string;
+        original_receiver?: string;
         original_subject?: string;
         original_body?: string;
         original_date?: string;
@@ -69,11 +61,15 @@
         compose_type,
         original_message_id,
         original_sender,
+        original_receiver,
         original_subject,
         original_body,
         original_date,
     }: Props = $props();
-    let sender: string = $state(SharedStore.accounts[0].email_address);
+    let sender: string = $state(createSenderAddress(
+        SharedStore.accounts[0].email_address,
+        SharedStore.accounts[0].fullname
+    ));
     let body: WYSIWYGEditor;
     let attachments: File[] | null = null;
     let subjectInput: HTMLInputElement;
@@ -85,6 +81,8 @@
             body.setHTMLContent(
                 (compose_type == "reply" ? replyTemplate : forwardTemplate)
                     .replace("{original_sender}", original_sender || "")
+                    .replace("{original_receiver}", original_receiver || "")
+                    .replace("{original_subject}", original_subject || "")
                     .replace("{original_body}", original_body || "")
                     .replace("{original_date}", original_date || "")
             )
@@ -169,9 +167,9 @@
 
         formData.set('sender', sender);
         formData.set('body', body.getHTMLContent());
-        formData.set('receiver', getEmailAddresses("added-receivers"));
-        formData.set('cc', getEmailAddresses("added-cc"));
-        formData.set('bcc', getEmailAddresses("added-bcc"));
+        formData.set('receiver', getEmailAddresses("compose-receiver-list"));
+        formData.set('cc', getEmailAddresses("compose-cc-list"));
+        formData.set('bcc', getEmailAddresses("compose-bcc-list"));
 
         let response;
         if (compose_type !== "reply" && compose_type !== "forward") {
@@ -206,7 +204,7 @@
     <div>
         <div class="form-group">
             <label for="sender">Sender</label>
-            <Select.Menu onchange={selectSender} value={SharedStore.accounts[0].email_address}>
+            <Select.Menu onchange={selectSender} placeholder="Select sender">
                 {#each SharedStore.accounts as account}
                     <Select.Option value={account.email_address}>
                         {account.fullname} &lt;{account.email_address}&gt;
@@ -217,7 +215,7 @@
         <div class="form-group">
             <label for="receiver">Receiver(s)</label>
             <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail} required>
-            <div class="tags emails" id = "added-receivers"></div>
+            <div class="tags emails" id = "compose-receiver-list"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
@@ -226,12 +224,12 @@
         <div class="form-group">
             <label for="cc">Cc</label>
             <input type="email" name="cc" id="cc" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail}>
-            <div class="tags emails" id = "added-cc"></div>
+            <div class="tags emails" id = "compose-cc-list"></div>
         </div>
         <div class="form-group">
             <label for="bcc">Bcc</label>
             <input type="email" name="bcc" id="bcc" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail}>
-            <div class="tags emails" id = "added-bcc"></div>
+            <div class="tags emails" id = "compose-bcc-list"></div>
         </div>
         <div class="form-group">
             <label for="body">Body</label>

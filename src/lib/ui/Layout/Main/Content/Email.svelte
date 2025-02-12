@@ -77,9 +77,10 @@
             compose_type: "reply",
             original_message_id: email.message_id,
             original_sender: email.sender,
+            original_receiver: email.receiver,
             original_subject: email.subject,
             original_body: email.body,
-            orginal_date: email.date
+            original_date: email.date
         });
     }
 
@@ -88,9 +89,10 @@
             compose_type: "forward",
             original_message_id: email.message_id,
             original_sender: email.sender,
+            original_receiver: email.receiver,
             original_subject: email.subject,
             original_body: email.body,
-            orginal_date: email.date
+            original_date: email.date
         })
     }
 </script>

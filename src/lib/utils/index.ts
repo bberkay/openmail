@@ -133,6 +133,11 @@ export function range(start: number, stop: number, step: number): number[] {
     );
 }
 
+export function createSenderAddress(email_address: string, fullname: string | null = null): string {
+    if (fullname && fullname.length > 0) return `${fullname} <${email_address}>`
+    return email_address;
+}
+
 export function getMonths(): string[] {
     return [
         "January",

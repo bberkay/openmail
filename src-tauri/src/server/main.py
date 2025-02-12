@@ -466,16 +466,20 @@ def download_attachment(
 
 async def convert_uploadfile_to_attachment(attachments: list[UploadFile]) -> list[Attachment]:
     converted_to_attachment_list = []
+    if not attachments:
+        return []
+
     for attachment in attachments:
         data = await attachment.read()
-        converted_to_attachment_list.append(
-            Attachment(
-                name=attachment.filename,
-                data=data,
-                type=attachment.content_type,
-                size=len(data),
+        if data:
+            converted_to_attachment_list.append(
+                Attachment(
+                    name=attachment.filename,
+                    data=data,
+                    type=attachment.content_type,
+                    size=len(data),
+                )
             )
-        )
     return converted_to_attachment_list
 
 class SendEmailFormData(BaseModel):

@@ -397,6 +397,7 @@ class SMTPManager(smtplib.SMTP):
         email: Draft,
         original_message_id: str,
         original_sender: tuple[str, str] | str = "",
+        original_receiver: str = "", # mail addresses separated by comma
         original_subject: str = "",
         original_body: str = "",
         original_date: str = "",
@@ -409,6 +410,8 @@ class SMTPManager(smtplib.SMTP):
             email (Draft): The email to be forwarded.
             original_message_id (str): The Message-ID of the email being forwarded.
             original_sender (tuple[str, str] | str, optional): The sender of the original email.
+            original_receiver (str, optional): The receiver email addresses of the original
+            email (separated by comma).
             original_subject (str, optional): The subject of the original email.
             original_body (str, optional): The body content of the original email.
             original_date (str, optional): The date of the original email.
@@ -440,6 +443,8 @@ class SMTPManager(smtplib.SMTP):
                     ---------- Forwarded message ----------<br/>
                     {f"From: {tuple_to_sender_string(original_sender)}<br/>" if original_sender else ""}
                     {f"Date: {original_date}<br/>" if original_date else ""}
+                    {f"Subject: {original_subject}<br/>" if original_subject else ""}
+                    {f"To: {original_receiver}<br/>" if original_receiver else ""}
                     <blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">
                         {original_body}
                     </blockquote>

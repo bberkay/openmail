@@ -571,6 +571,8 @@ class TestSendOperations(unittest.TestCase):
             forward_email,
             sent_email_content.message_id,
             sent_email_content.sender,
+            sent_email_content.receiver,
+            sent_email_content.subject,
             sent_email_content.body,
             sent_email_content.date
         )
