@@ -7,11 +7,23 @@ including domain extraction, date conversion, and other utility tasks.
 
 def extract_username(email: str) -> str:
     """Extract the user name from an email address."""
-    return email.split('@')[0]
+    return (email.split("@")[0].split("<")[1] if "<" in email else email.split('@')[0]).strip()
 
 def extract_domain(email: str) -> str:
     """Extract the domain name from an email address."""
-    return email.split('@')[1].split(".")[0]
+    return email.split('@')[1].split(".")[0].strip()
+
+def extract_fullname(sender: str) -> str:
+    """Extract the fullname from given sender info."""
+    return (sender.split("<")[0] if "<" in sender and "@" in sender else sender).strip()
+
+def extract_email_address(sender: str) -> str:
+    """Extract the email address from a full name <email@address> string"""
+    return (sender.split("<")[1].replace(">", "") if "<" in sender else sender if "@" in sender else "").strip()
+
+def extract_email_addresses(senders: list[str]) -> list[str]:
+    """Extract and remove nullish email addressses from senders."""
+    return list(filter(lambda x: bool(x) is not None, map(extract_email_address, senders)))
 
 def truncate_text(content: str, max_length: int) -> str:
     """Truncate text to a specified maximum length."""

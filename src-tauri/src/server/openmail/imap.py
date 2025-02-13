@@ -30,7 +30,7 @@ from types import MappingProxyType
 from dataclasses import dataclass
 
 from .parser import MessageDecoder, MessageParser, HTMLParser
-from .utils import add_quotes_if_str, extract_domain, choose_positive
+from .utils import add_quotes_if_str, extract_domain, choose_positive, extract_email_address, extract_email_addresses
 from .utils import truncate_text, contains_non_ascii
 from .types import SearchCriteria, Attachment, Mailbox, Email, Flags, Mark, Folder
 
@@ -969,39 +969,41 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 return add_criterion('TEXT', search_criteria).strip()
 
             included_flag_list = []
-            for flag in search_criteria.included_flags:
-                if flag.lower() not in MARK_LIST:
-                    included_flag_list.append(f'KEYWORD {flag}')
-                else:
-                    included_flag_list.append(flag.replace("\\", ""))
+            if search_criteria.included_flags:
+                for flag in search_criteria.included_flags:
+                    if flag.lower() not in MARK_LIST:
+                        included_flag_list.append(f'KEYWORD {flag}')
+                    else:
+                        included_flag_list.append(flag.replace("\\", ""))
 
             excluded_flag_list = []
-            for flag in search_criteria.excluded_flag_list:
-                if flag.lower() not in MARK_LIST:
-                    excluded_flag_list.append(f'UNKEYWORD {flag}')
-                else:
-                    excluded_flag_list.append(flag.replace("\\", ""))
+            if search_criteria.excluded_flags:
+                for flag in search_criteria.excluded_flag_list:
+                    if flag.lower() not in MARK_LIST:
+                        excluded_flag_list.append(f'UNKEYWORD {flag}')
+                    else:
+                        excluded_flag_list.append(flag.replace("\\", ""))
 
             search_criteria_query = ''
             search_criteria_query += add_criterion(
                 'FROM',
-                search_criteria.senders,
-                len(search_criteria.senders) > 1
+                extract_email_addresses(search_criteria.senders or []),
+                len(search_criteria.senders or []) > 1
             )
             search_criteria_query += add_criterion(
                 'TO',
-                search_criteria.receivers,
-                len(search_criteria.receivers) > 1
+                extract_email_addresses(search_criteria.receivers or []),
+                len(search_criteria.receivers or []) > 1
             )
             search_criteria_query += add_criterion(
                 'CC',
-                search_criteria.cc,
-                len(search_criteria.cc) > 1
+                extract_email_addresses(search_criteria.cc or []),
+                len(search_criteria.cc or []) > 1
             )
             search_criteria_query += add_criterion(
                 'BCC',
-                search_criteria.bcc,
-                len(search_criteria.bcc) > 1
+                extract_email_addresses(search_criteria.bcc or []),
+                len(search_criteria.bcc or []) > 1
             )
             search_criteria_query += add_criterion("SUBJECT", search_criteria.subject)
             search_criteria_query += add_criterion("SINCE", search_criteria.since)
@@ -1010,8 +1012,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             search_criteria_query += add_criterion("NOT BODY", search_criteria.exclude)
             search_criteria_query += add_criterion('', included_flag_list)
             search_criteria_query += add_criterion('TEXT', search_criteria.has_attachments and 'ATTACHMENT' or '')
-            search_criteria_query += add_criterion('LARGER', search_criteria.larger_than)
-            search_criteria_query += add_criterion('SMALLER', search_criteria.smaller_than)
+            search_criteria_query += add_criterion('LARGER', str(search_criteria.larger_than))
+            search_criteria_query += add_criterion('SMALLER', str(search_criteria.smaller_than))
         except Exception as e:
             raise IMAPManagerException(f"Error while building search query from `{str(search_criteria)}`") from e
 

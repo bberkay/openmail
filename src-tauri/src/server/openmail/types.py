@@ -53,13 +53,13 @@ class Email():
     """Represents a basic email."""
     message_id: str
     uid: str
-    sender: str | Tuple[str, str]
-    receiver: str
+    sender: str # Name Surname <namesurname@domain.com> or namesurname@domain.com
+    receiver: str  # mail addresses separated by comma
     date: str
     subject: str
     body: str
-    cc: Optional[str] = ""
-    bcc: Optional[str] = ""
+    cc: Optional[str] = "" # mail addresses separated by comma
+    bcc: Optional[str] = "" # mail addresses separated by comma
     flags: Optional[list[str]] = field(default_factory=list)
     attachments: Optional[list[Attachment]] = field(default_factory=list)
     in_reply_to: Optional[str] = ""
@@ -81,7 +81,6 @@ class Draft():
     If the email is being replied or forwarded, the
     `uid` field must be provided.
     """
-    sender: str | Tuple[str, str]
     receiver: str | list[str]
     #date: str
     subject: str
