@@ -80,8 +80,8 @@
         if (compose_type) {
             body.addFullHTMLPage(
                 (compose_type == "reply" ? replyTemplate : forwardTemplate)
-                    .replace("{original_sender}", escapeHTML((original_sender || ""))
-                    .replace("{original_receiver}", escapeHTML((original_receiver || ""))
+                    .replace("{original_sender}", escapeHTML((original_sender || "")))
+                    .replace("{original_receiver}", escapeHTML((original_receiver || "")))
                     .replace("{original_subject}", original_subject || "")
                     .replace("{original_body}", original_body || "")
                     .replace("{original_date}", original_date || "")
