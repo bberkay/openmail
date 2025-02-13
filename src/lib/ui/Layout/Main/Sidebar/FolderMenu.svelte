@@ -169,6 +169,8 @@
         </div>
     </div>
 </div>
+
+{#if SharedStore.currentAccount}
 <div style="margin-top:20px;">
     <div style="border-bottom:1px solid dimgrey;display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
         <div>
@@ -205,6 +207,7 @@
         {/each}
     </div>
 </div>
+{/if}
 
 <style>
     .folder :global{

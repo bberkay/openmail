@@ -11,13 +11,14 @@
                 return;
             }
 
-            SharedStore.currentAccount = selectedAccount;
+            SharedStore.currentAccount = selectedAccount || null;
             SharedStore.currentFolder = Folder.Inbox;
         }
     }
 </script>
 
 <Select.Menu onchange={handleAccount} value={SharedStore.currentAccount?.email_address} placeholder="Account">
+    <Select.Option value="">Home</Select.Option>
     {#each SharedStore.accounts as account}
         <Select.Option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</Select.Option>
     {/each}

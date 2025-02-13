@@ -18,7 +18,7 @@
         if (!response.success) {
             alert(response.message);
         } else {
-            SharedStore.currentAccount = SharedStore.accounts[0];
+            SharedStore.currentAccount = null;
             SharedStore.currentFolder = Folder.Inbox;
         }
     }
