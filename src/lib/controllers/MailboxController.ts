@@ -124,8 +124,8 @@ export class MailboxController {
                 }
 
                 standardFolderList.forEach((standardFolder) => {
-                    const matchedFolder = account.result.find((currentFolder) =>
-                        currentFolder
+                    const matchedFolder = account.result.find((folder) =>
+                        folder
                             .trim()
                             .startsWith(standardFolder),
                     );
@@ -150,10 +150,10 @@ export class MailboxController {
                 }
 
                 customFolders.result = account.result.filter(
-                    (currentFolder) => {
+                    (folder) => {
                         return (
                             standardFolders.result.includes(
-                                currentFolder,
+                                folder,
                             ) !== true
                         );
                     },
@@ -530,8 +530,8 @@ export class MailboxController {
         if (response.success) {
             SharedStore.customFolders.forEach((item) => {
                 if (item.email_address == account.email_address) {
-                    item.result = item.result.map((currentFolderName) => {
-                        return currentFolderName.replace(
+                    item.result = item.result.map((folderName) => {
+                        return folderName.replace(
                             folderPath.includes("/")
                                 ? folderPath.slice(folderPath.lastIndexOf("/") + 1)
                                 : folderPath,
