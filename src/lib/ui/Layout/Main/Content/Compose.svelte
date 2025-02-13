@@ -100,25 +100,34 @@
         composeSenderList.innerHTML += tagTemplate.replace("{tag}", email_address);
     }
 
-    const addEnteredEmail = (e: KeyboardEvent) => {
+    const addEnteredEmail = (e: Event) => {
         const target = e.target as HTMLInputElement;
-        const email_address = target.value;
-        const emails = target
-            .closest(".form-group")!
-            .querySelector(".emails")! as HTMLElement;
-        if (e.key === "Spacebar" || e.key === " ") {
-            if (email_address !== "" && isEmailValid(email_address)) {
-                emails.style.display = "flex";
-                emails.innerHTML += tagTemplate.replace("{tag}", email_address);
-                target.value = "";
-            } else {
-                target.style.transform = "scale(1.02)";
-                setTimeout(() => {
-                    target.style.transform = "scale(1)";
-                }, 100);
-            }
+        const email_address = target.value.trim();
+        const emails = target.closest(".form-group")?.querySelector(".emails") as HTMLElement;
+
+        if (!emails) return;
+
+        if (e instanceof KeyboardEvent && (e.key === " " || e.key === "Spacebar")) {
+            e.preventDefault();
+            processEmail(target, emails, email_address);
         }
-    }
+        else if (e instanceof FocusEvent) {
+            processEmail(target, emails, email_address);
+        }
+    };
+
+    function processEmail(target: HTMLInputElement, emails: HTMLElement, email_address: string) {
+        if (email_address !== "" && isEmailValid(email_address)) {
+            emails.style.display = "flex";
+            emails.innerHTML += tagTemplate.replace("{tag}", email_address);
+            target.value = "";
+        } else if (email_address !== "") {
+            target.style.transform = "scale(1.02)";
+            setTimeout(() => {
+                target.style.transform = "scale(1)";
+            }, 100);
+        }
+    };
 
     const addFile = (e: Event) => {
         const target = e.target as HTMLInputElement;
@@ -223,7 +232,7 @@
         </div>
         <div class="form-group">
             <label for="receiver">Receiver(s)</label>
-            <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail}>
+            <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail} onblur={addEnteredEmail}>
             <div class="tags emails" id = "compose-receiver-list"></div>
         </div>
         <div class="form-group">
@@ -232,12 +241,12 @@
         </div>
         <div class="form-group">
             <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail}>
+            <input type="email" name="cc" id="cc" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail} onblur={addEnteredEmail}>
             <div class="tags emails" id = "compose-cc-list"></div>
         </div>
         <div class="form-group">
             <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail}>
+            <input type="email" name="bcc" id="bcc" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail} onblur={addEnteredEmail}>
             <div class="tags emails" id = "compose-bcc-list"></div>
         </div>
         <div class="form-group">
