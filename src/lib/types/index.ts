@@ -37,6 +37,7 @@ export interface SearchCriteria {
     include?: string;
     exclude?: string;
     included_flags?: string[];
+    excluded_flags?: string[];
     has_attachments?: boolean;
 }
 

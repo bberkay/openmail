@@ -345,8 +345,8 @@ class TestFetchOperations(unittest.TestCase):
         assert size is not None
         self.assertGreaterEqual(size, 30000)
 
-    def test_complex_search_with_include_flags(self):
-        print("test_complex_search_with_include_flags...")
+    def test_complex_search_with_included_flags(self):
+        print("test_complex_search_with_included_flags...")
 
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
             included_flags=[Mark.Seen, Mark.Flagged]
@@ -357,6 +357,19 @@ class TestFetchOperations(unittest.TestCase):
         assert found_emails.emails[0].flags is not None
         self.assertIn(Mark.Flagged, found_emails.emails[0].flags)
         self.assertIn(Mark.Seen, found_emails.emails[0].flags)
+
+    def test_complex_search_with_excluded_flags(self):
+        print("test_complex_search_with_excluded_flags...")
+
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            excluded_flags=[Mark.Seen, Mark.Flagged]
+        ))
+
+        found_emails = self.__class__._openmail.imap.get_emails(1, 1)
+        self.assertGreaterEqual(found_emails.total, 1)
+        if found_emails.emails[0].flags:
+            self.assertNotIn(Mark.Flagged, found_emails.emails[0].flags)
+            self.assertNotIn(Mark.Seen, found_emails.emails[0].flags)
 
     def test_get_emails(self):
         print("test_get_emails...")

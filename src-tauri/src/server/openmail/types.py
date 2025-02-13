@@ -27,6 +27,7 @@ class SearchCriteria():
     include: Optional[str] = ""
     exclude: Optional[str] = ""
     included_flags: Optional[list[str]] = field(default_factory=list)
+    excluded_flags: Optional[list[str]] = field(default_factory=list)
     has_attachments: Optional[bool] = False
 
     def __str__(self) -> str:

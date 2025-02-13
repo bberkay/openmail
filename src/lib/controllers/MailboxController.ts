@@ -42,7 +42,13 @@ export class MailboxController {
             }
         }
 
-        response = await this.getMailboxes();
+        response = await this.getMailboxes(
+            SharedStore.accounts,
+            Folder.Inbox,
+            {
+                excluded_flags: [Mark.Seen],
+            }
+        );
         return {
             success: response.success,
             message: response.success ? "Mailbox Controller Initialized" : response.message

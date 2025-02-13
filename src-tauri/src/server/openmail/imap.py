@@ -975,6 +975,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 else:
                     included_flag_list.append(flag.replace("\\", ""))
 
+            excluded_flag_list = []
+            for flag in search_criteria.excluded_flag_list:
+                if flag.lower() not in MARK_LIST:
+                    excluded_flag_list.append(f'UNKEYWORD {flag}')
+                else:
+                    excluded_flag_list.append(flag.replace("\\", ""))
+
             search_criteria_query = ''
             search_criteria_query += add_criterion(
                 'FROM',
