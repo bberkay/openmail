@@ -1,7 +1,10 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, type Account } from "$lib/types";
     import * as Select from "$lib/ui/Elements/Select";
+
+    const mailboxController = new MailboxController();
 
     const handleAccount = (selectedAccountEmailAddr: string | null) => {
         if (selectedAccountEmailAddr) {
@@ -13,6 +16,7 @@
 
             SharedStore.currentAccount = selectedAccount || null;
             SharedStore.currentFolder = Folder.Inbox;
+            mailboxController.init(SharedStore.currentAccount);
         }
     }
 </script>
