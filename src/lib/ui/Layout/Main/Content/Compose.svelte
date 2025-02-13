@@ -73,7 +73,7 @@
     let body: WYSIWYGEditor;
     let attachments: File[] | null = null;
     let subjectInput: HTMLInputElement;
-
+    let composeSenderList: HTMLElement;
     onMount(() => {
         body = new WYSIWYGEditor('body');
         body.init();
@@ -94,21 +94,22 @@
 
     /* Compose Form Handling Functions */
 
-    const selectSender = (email_address: string | null) => {
+    const addSender = (email_address: string | null) => {
         if (!email_address) return;
-        sender = email_address;
+        composeSenderList.style.display = "flex";
+        composeSenderList.innerHTML += tagTemplate.replace("{tag}", email_address);
     }
 
     const addEnteredEmail = (e: KeyboardEvent) => {
         const target = e.target as HTMLInputElement;
-        const email = target.value;
+        const email_address = target.value;
         const emails = target
             .closest(".form-group")!
             .querySelector(".emails")! as HTMLElement;
         if (e.key === "Spacebar" || e.key === " ") {
-            if (email !== "" && isEmailValid(email)) {
+            if (email_address !== "" && isEmailValid(email_address)) {
                 emails.style.display = "flex";
-                emails.innerHTML += tagTemplate.replace("{tag}", email);
+                emails.innerHTML += tagTemplate.replace("{tag}", email_address);
                 target.value = "";
             } else {
                 target.style.transform = "scale(1.02)";
@@ -165,11 +166,18 @@
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
 
-        formData.set('sender', sender);
+        formData.set('sender', getEmailAddresses("compose-sender-list"));
         formData.set('body', body.getHTMLContent());
         formData.set('receiver', getEmailAddresses("compose-receiver-list"));
         formData.set('cc', getEmailAddresses("compose-cc-list"));
         formData.set('bcc', getEmailAddresses("compose-bcc-list"));
+
+        if (!formData.get("compose-sender-list")) {
+            alert("At least one sender must be added");
+        }
+        if (!formData.get("compose-receiver-list")) {
+            alert("At least one receiver must be added");
+        }
 
         let response;
         if (compose_type !== "reply" && compose_type !== "forward") {
@@ -204,17 +212,18 @@
     <div>
         <div class="form-group">
             <label for="sender">Sender</label>
-            <Select.Menu onchange={selectSender} placeholder="Select sender">
+            <Select.Menu onchange={addSender} placeholder="Add sender">
                 {#each SharedStore.accounts as account}
                     <Select.Option value={account.email_address}>
                         {account.fullname} &lt;{account.email_address}&gt;
                     </Select.Option>
                 {/each}
             </Select.Menu>
+             <div class="tags emails" id = "compose-sender-list" bind:this={composeSenderList}></div>
         </div>
         <div class="form-group">
             <label for="receiver">Receiver(s)</label>
-            <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail} required>
+            <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail}>
             <div class="tags emails" id = "compose-receiver-list"></div>
         </div>
         <div class="form-group">

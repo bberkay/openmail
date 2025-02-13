@@ -10,13 +10,13 @@ export interface Account {
 export interface Email {
     message_id: string;
     uid: string;
-    sender: string;
-    receiver: string;
+    sender: string; // Name Surname <namesurname@domain.com> or namesurname@domain.com
+    receiver: string; // mail addresses separated by comma
     date: string;
     subject: string;
     body: string;
-    cc?: string;
-    bcc?: string;
+    cc?: string; // mail addresses separated by comma
+    bcc?: string; // mail addresses separated by comma
     flags?: string[];
     attachments?: Attachment[];
     in_reply_to?: string;
@@ -51,13 +51,12 @@ export interface Attachment {
 }
 
 export interface Draft {
-    sender: string;
-    receiver: string;
+    receiver: string | string[];
     //date: string;
     subject: string;
     body: string;
-    cc?: string;
-    bcc?: string;
+    cc?: string | string[];
+    bcc?: string | string[];
     attachments?: Attachment[];
     in_reply_to?: string;
     references?: string;
