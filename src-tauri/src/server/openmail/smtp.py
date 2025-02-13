@@ -332,8 +332,8 @@ class SMTPManager(smtplib.SMTP):
         return self.send_message(msg)
 
     def reply_email(self,
-        email: Draft,
         sender: str,
+        email: Draft,
         original_message_id: str,
         original_sender: tuple[str, str] | str = "",
         original_subject: str = "",
