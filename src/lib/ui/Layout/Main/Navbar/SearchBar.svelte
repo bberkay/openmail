@@ -32,8 +32,8 @@
 
     /* Criteria Handling Functions */
 
-    const addSelectedAccount = (selectedAccount: string | null) => {
-        const tags = document.getElementById("added-accounts") as HTMLDivElement;
+    const addSearchAccount = (selectedAccount: string | null) => {
+        const tags = document.getElementById("search-accounts") as HTMLDivElement;
         if (selectedAccount) {
             tags.innerHTML += tagTemplate.replace("{tag}", selectedAccount);
         }
@@ -201,14 +201,7 @@
             : simpleSearchInput.value;
 
         const response = await mailboxController.getMailboxes(
-            !isAdvancedSearchMenuOpen
-                ? SharedStore.currentAccount
-                : SharedStore.currentAccount,
-                /*: (SharedStore.accounts.filter(
-                    (account: Account) => {
-                        return extractAsArray("#added-accounts").includes(account.email_address)
-                    }
-                ) || SharedStore.currentAccount),*/
+            SharedStore.currentAccount,
             folder,
             searchCriteria
         );
@@ -229,21 +222,6 @@
         bind:this={advancedSearchMenu}
     >
         <div class="form-group">
-            <label for="accounts">Accounts</label>
-            <div class="input-group" id="accounts">
-                <Select.Menu onchange={addSelectedAccount} placeholder="Account(s) to Search" resetAfterSelect={true}>
-                    {#each SharedStore.accounts as account}
-                        <Select.Option value={account.email_address}>
-                            {account.fullname} &lt;{account.email_address}&gt;
-                        </Select.Option>
-                    {/each}
-                </Select.Menu>
-            </div>
-            <div class="tags" id="added-accounts">
-                <!-- Accounts -->
-            </div>
-        </div>
-        <div class="form-group">
             <label for="folder">Folder</label>
             <div class="input-group">
                 <Select.Menu enableSearch={true} onchange={setSelectedFolder} value={Folder.All}>
@@ -251,9 +229,11 @@
                         {@const [folderTag, folderName] = standardFolder.split(":")}
                         <Select.Option value={folderTag}>{folderName}</Select.Option>
                     {/each}
-                    {#each SharedStore.customFolders[0].result as customFolder}
-                        <Select.Option value={customFolder}>{customFolder}</Select.Option>
-                    {/each}
+                    {#if SharedStore.currentAccount}
+                        {#each SharedStore.customFolders[0].result as customFolder}
+                            <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                        {/each}
+                    {/if}
                 </Select.Menu>
             </div>
         </div>
