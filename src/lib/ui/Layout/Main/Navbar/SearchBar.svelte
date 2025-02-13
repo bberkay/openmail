@@ -33,7 +33,7 @@
     /* Criteria Handling Functions */
 
     const addSelectedAccount = (selectedAccount: string | null) => {
-        const tags = document.getElementById("saved-accounts") as HTMLDivElement;
+        const tags = document.getElementById("added-accounts") as HTMLDivElement;
         if (selectedAccount) {
             tags.innerHTML += tagTemplate.replace("{tag}", selectedAccount);
         }
@@ -45,25 +45,34 @@
         }
     }
 
-    const addEnteredEmail = (e: KeyboardEvent) => {
+    const addEnteredEmail = (e: Event) => {
         const target = e.target as HTMLInputElement;
-        const email = target.value;
-        const emails = target
-            .closest(".form-group")!
-            .querySelector(".emails")! as HTMLElement;
-        if (e.key === "Spacebar" || e.key === " ") {
-            if (email !== "" && isEmailValid(email)) {
-                emails.style.display = "flex";
-                emails.innerHTML += tagTemplate.replace("{tag}", email);
-                target.value = "";
-            } else {
-                target.style.transform = "scale(1.02)";
-                setTimeout(() => {
-                    target.style.transform = "scale(1)";
-                }, 100);
-            }
+        const email_address = target.value.trim();
+        const emails = target.closest(".form-group")?.querySelector(".emails") as HTMLElement;
+
+        if (!emails) return;
+
+        if (e instanceof KeyboardEvent && (e.key === " " || e.key === "Spacebar")) {
+            e.preventDefault();
+            processEmail(target, emails, email_address);
         }
-    }
+        else if (e instanceof FocusEvent) {
+            processEmail(target, emails, email_address);
+        }
+    };
+
+    function processEmail(target: HTMLInputElement, emails: HTMLElement, email_address: string) {
+        if (email_address !== "" && isEmailValid(email_address)) {
+            emails.style.display = "flex";
+            emails.innerHTML += tagTemplate.replace("{tag}", email_address);
+            target.value = "";
+        } else if (email_address !== "") {
+            target.style.transform = "scale(1.02)";
+            setTimeout(() => {
+                target.style.transform = "scale(1)";
+            }, 100);
+        }
+    };
 
     const setEnteredSizeValue = debounce((e: Event) => {
         const target = e.target as HTMLInputElement;
@@ -120,8 +129,15 @@
         }
     }
 
-    const addSelectedFlag = (selectedFlag: string | null) => {
-        const tags = document.getElementById("saved-flags") as HTMLDivElement;
+    const addIncludedFlag = (selectedFlag: string | null) => {
+        const tags = document.getElementById("search-included-flags") as HTMLDivElement;
+        if (selectedFlag) {
+            tags.innerHTML += tagTemplate.replace("{tag}", selectedFlag);
+        }
+    }
+
+    const addExcludedFlag = (selectedFlag: string | null) => {
+        const tags = document.getElementById("search-excluded-flags") as HTMLDivElement;
         if (selectedFlag) {
             tags.innerHTML += tagTemplate.replace("{tag}", selectedFlag);
         }
@@ -141,11 +157,12 @@
 
     function getSearchCriteria(): SearchCriteria | null {
         const searchCriteria: SearchCriteria = {
-            senders: extractAsArray("#searching-senders"),
-            receivers: extractAsArray("#searching-receivers"),
-            cc: extractAsArray("#searching-cc"),
-            bcc: extractAsArray("#searching-bcc"),
-            included_flags: extractAsArray("#searching-flags"),
+            senders: extractAsArray("#search-senders"),
+            receivers: extractAsArray("#search-receivers"),
+            cc: extractAsArray("#search-cc"),
+            bcc: extractAsArray("#search-bcc"),
+            included_flags: extractAsArray("#search-included-flags"),
+            excluded_flags: extractAsArray("#search-excluded-flags"),
             subject: advancedSearchMenu.querySelector<HTMLInputElement>(
                 'input[name="subject"]',
             )!.value,
@@ -242,23 +259,23 @@
         </div>
         <div class="form-group">
             <label for="senders">Sender(s)</label>
-            <input type="email" name="senders" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="searching-senders"></div>
+            <input type="email" name="senders" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="search-senders"></div>
         </div>
         <div class="form-group">
             <label for="receivers">Receiver(s)</label>
-            <input type="email" name="receivers" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="searching-receivers"></div>
+            <input type="email" name="receivers" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="search-receivers"></div>
         </div>
         <div class="form-group">
             <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="searching-cc"></div>
+            <input type="email" name="cc" id="cc" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="search-cc"></div>
         </div>
         <div class="form-group">
             <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" onkeyup={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="searching-bcc"></div>
+            <input type="email" name="bcc" id="bcc" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
+            <div class="tags emails" id="search-bcc"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>
@@ -341,15 +358,28 @@
             <input type="text" name="exclude" placeholder="What should be excluded" />
         </div>
         <div class="form-group">
-            <label for="include-flags">Include Flag</label>
-            <div class="input-group" id="include-flags">
-                <Select.Menu onchange={addSelectedFlag} placeholder="Flag" resetAfterSelect={true}>
+            <label for="included-flags">Include Flag</label>
+            <div class="input-group" id="included-flags">
+                <Select.Menu onchange={addIncludedFlag} placeholder="Flag" resetAfterSelect={true}>
                     {#each Object.entries(Mark) as mark}
                         <Select.Option value={mark[1]}>{mark[0]}</Select.Option>
                     {/each}
                 </Select.Menu>
             </div>
-            <div class="tags" id="searching-flags">
+            <div class="tags" id="search-included-flags">
+                <!-- Flags -->
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="excluded-flags">Exclude Flag</label>
+            <div class="input-group" id="excluded-flags">
+                <Select.Menu onchange={addExcludedFlag} placeholder="Flag" resetAfterSelect={true}>
+                    {#each Object.entries(Mark) as mark}
+                        <Select.Option value={mark[1]}>{mark[0]}</Select.Option>
+                    {/each}
+                </Select.Menu>
+            </div>
+            <div class="tags" id="search-excluded-flags">
                 <!-- Flags -->
             </div>
         </div>
