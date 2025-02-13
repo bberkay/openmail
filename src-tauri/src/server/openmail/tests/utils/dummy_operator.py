@@ -2,6 +2,7 @@ import time
 from typing import cast
 
 from openmail import OpenMail
+from openmail.utils import extract_email_address
 from openmail.smtp import SMTPManagerException
 from openmail.imap import IMAPManagerException
 from openmail.types import Draft, SearchCriteria, Folder
@@ -61,14 +62,17 @@ class DummyOperator:
     @staticmethod
     def send_test_email_to_self_and_get_uid(
         openmail: OpenMail,
-        sender_email_or_email_to_send: str | Draft
+        sender: str,
+        draft: Draft | None = None
     ) -> str:
         """
         Sends a test email to self and returns the UID of the sent email.
 
         Args:
             openmail (OpenMail): An instance of the OpenMail class.
-            sender_email_or_email_to_send (str | Draft): The email address or Draft object to send the test email.
+            sender (str): Sender email address like "Name Surname <name@domain.com>" or "name@domain.com".
+            draft (Draft | None): Draft object to send the test email if it is none random draft will
+            be generated.
 
         Returns:
             str: The UID of the sent email.
@@ -88,23 +92,17 @@ class DummyOperator:
 
         uid = None
         subject = ""
-        sender_email = None
-        email_to_send = None
-        if isinstance(sender_email_or_email_to_send, str):
-            subject = cast(str, NameGenerator.subject()[0])
-            sender_email = sender_email_or_email_to_send
-            email_to_send = Draft(
-                sender_email_or_email_to_send,
-                sender_email_or_email_to_send,
-                subject,
-                NameGenerator.body()[0]
-            )
+        if draft:
+            subject = draft.subject
         else:
-            subject = sender_email_or_email_to_send.subject
-            sender_email = sender_email_or_email_to_send.sender
-            email_to_send = sender_email_or_email_to_send
+            subject = cast(str, NameGenerator.subject()[0])
+            draft = Draft(
+                receiver=sender,
+                subject=subject,
+                body=NameGenerator.body()[0]
+            )
 
-        status, message = openmail.smtp.send_email(email_to_send)
+        status, message = openmail.smtp.send_email(sender, draft)
 
         if not status:
             raise SMTPManagerException(f"Failed to send test email with status: {status} and message: {message}")
@@ -116,8 +114,8 @@ class DummyOperator:
             folder=Folder.Inbox,
             search=SearchCriteria(
                 subject=subject,
-                senders=[sender_email if isinstance(sender_email, str) else sender_email[1]],
-                receivers=[sender_email if isinstance(sender_email, str) else sender_email[1]]
+                senders=[sender],
+                receivers=[sender]
             )
         )
         if not status:

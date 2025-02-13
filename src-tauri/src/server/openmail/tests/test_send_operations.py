@@ -120,13 +120,13 @@ class TestSendOperations(unittest.TestCase):
     def test_send_basic_email(self):
         print("test_send_basic_email...")
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body="test_send_basic_email"
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -135,7 +135,6 @@ class TestSendOperations(unittest.TestCase):
     def test_send_multiple_recipients_email(self):
         print("test_send_multiple_recipients_email...")
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._receiver_emails[0:2],
             subject=NameGenerator.subject()[0],
             body="test_send_multiple_recipients_email",
@@ -144,6 +143,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -152,7 +152,6 @@ class TestSendOperations(unittest.TestCase):
     def test_send_html_email(self):
         print("test_send_html_email...")
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body=f'''
@@ -169,6 +168,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -178,7 +178,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_filepath_attachment...")
         sampleDocumentFiles = SampleDocumentGenerator().as_filepath(count=2, all_different=True)
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body="test_send_email_with_filepath_attachment",
@@ -189,6 +188,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -198,7 +198,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_link_attachment...")
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body="test_send_email_with_link_attachment",
@@ -209,6 +208,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -219,7 +219,6 @@ class TestSendOperations(unittest.TestCase):
         sampleImageFiles = SampleImageGenerator().as_filepath(count=2, all_different=True)
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body="test_send_email_with_all_options_attachment",
@@ -232,6 +231,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -241,7 +241,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_inline_path_attachment...")
         sampleImageFiles = SampleImageGenerator().as_filepath(count=2, all_different=True)
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body=f'''
@@ -260,6 +259,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -269,7 +269,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_inline_link_attachment...")
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body=f'''
@@ -288,6 +287,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -297,7 +297,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_inline_base64_attachment...")
         sampleImageFiles = SampleImageGenerator().as_base64(count=2, all_different=True)
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body=f'''
@@ -316,6 +315,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -327,7 +327,6 @@ class TestSendOperations(unittest.TestCase):
         sampleImageUrls = SampleImageGenerator().as_url(count=2, all_different=True)
         sampleImagePaths = SampleImageGenerator().as_filepath(count=2, all_different=True)
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body=f'''
@@ -350,6 +349,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -359,7 +359,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_both_attachment_and_inline_attachment...")
         sampleImages = SampleImageGenerator().as_filepath(count=4, all_different=True)
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body=f'''
@@ -382,6 +381,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -392,7 +392,6 @@ class TestSendOperations(unittest.TestCase):
         sampleImage1 = SampleImageGenerator().as_filepath()[0]
         sampleDocument2 = SampleDocumentGenerator().as_filepath()[0]
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body=f'''
@@ -415,6 +414,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -424,7 +424,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_send_email_with_large_attachment...")
         sampleVideo = SampleVideoGenerator().as_filepath()[0]
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body=f'''
@@ -443,6 +442,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -451,7 +451,6 @@ class TestSendOperations(unittest.TestCase):
     def test_send_nonascii_name_attachment(self):
         print("test_send_nonascii_name_attachment...")
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body="test_send_nonascii_name_attachment",
@@ -463,6 +462,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -472,7 +472,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_reply_email...")
         # Sent normal email
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body="test_reply_email",
@@ -484,6 +483,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -498,12 +498,12 @@ class TestSendOperations(unittest.TestCase):
         # Reply email
         reply_email_subject = NameGenerator.subject()[0]
         reply_email = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=reply_email_subject,
             body="test_reply_email",
         )
         status, _ = self.__class__._openmail.smtp.reply_email(
+            self.__class__._sender_email,
             reply_email,
             sent_email_content.message_id,
             sent_email_content.sender,
@@ -536,7 +536,6 @@ class TestSendOperations(unittest.TestCase):
         print("test_forward_email...")
         # Sent normal email
         email_to_send = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=NameGenerator.subject()[0],
             body="test_forward_email",
@@ -548,6 +547,7 @@ class TestSendOperations(unittest.TestCase):
         )
         uid = DummyOperator.send_test_email_to_self_and_get_uid(
             self.__class__._openmail,
+            self.__class__._sender_email,
             copy.copy(email_to_send)
         )
         self._sent_test_email_uids.append(uid)
@@ -562,12 +562,12 @@ class TestSendOperations(unittest.TestCase):
         # Forward email
         forward_email_subject = NameGenerator.subject()[0]
         forward_email = Draft(
-            sender=self.__class__._sender_email,
             receiver=self.__class__._sender_email,
             subject=forward_email_subject,
             body="forward_email_subject",
         )
         status, _ = self.__class__._openmail.smtp.forward_email(
+            self.__class__._sender_email,
             forward_email,
             sent_email_content.message_id,
             sent_email_content.sender,
