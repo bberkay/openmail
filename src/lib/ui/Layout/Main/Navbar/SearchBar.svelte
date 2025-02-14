@@ -224,17 +224,17 @@
         <div class="form-group">
             <label for="folder">Folder</label>
             <div class="input-group">
-                <Select.Menu enableSearch={true} onchange={setSelectedFolder} value={Folder.All}>
-                    {#each SharedStore.standardFolders[0].result as standardFolder}
-                        {@const [folderTag, folderName] = standardFolder.split(":")}
-                        <Select.Option value={folderTag}>{folderName}</Select.Option>
-                    {/each}
-                    {#if SharedStore.currentAccount}
+                {#if SharedStore.currentAccount}
+                    <Select.Menu enableSearch={true} onchange={setSelectedFolder} value={Folder.All}>
+                        {#each SharedStore.standardFolders[0].result as standardFolder}
+                            {@const [folderTag, folderName] = standardFolder.split(":")}
+                            <Select.Option value={folderTag}>{folderName}</Select.Option>
+                        {/each}
                         {#each SharedStore.customFolders[0].result as customFolder}
                             <Select.Option value={customFolder}>{customFolder}</Select.Option>
                         {/each}
-                    {/if}
-                </Select.Menu>
+                    </Select.Menu>
+                {/if}
             </div>
         </div>
         <div class="form-group">

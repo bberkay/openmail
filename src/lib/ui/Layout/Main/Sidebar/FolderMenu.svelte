@@ -146,12 +146,15 @@
 </script>
 
 <div>
-    <div>
-        <button
-            class="bg-primary"
-            style="width:100%;padding:7x;margin:10px 0;"
-            onclick={() => { showContent(Compose) }}>New Message +</button>
-    </div>
+    <button
+        class="bg-primary"
+        style="width:100%;padding:7x;margin:10px 0;"
+        onclick={() => { showContent(Compose) }}
+    >New Message +</button>
+</div>
+
+{#if SharedStore.currentAccount}
+<div>
     <div style="border-bottom:1px solid dimgrey;">
         <div id="standard-folders">
             {#each SharedStore.standardFolders[0].result as standardFolder, index}
@@ -169,8 +172,6 @@
         </div>
     </div>
 </div>
-
-{#if SharedStore.currentAccount}
 <div style="margin-top:20px;">
     <div style="border-bottom:1px solid dimgrey;display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
         <div>
