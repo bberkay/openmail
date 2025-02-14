@@ -43,7 +43,7 @@ export class MailboxController {
         }
 
         response = await this.getMailboxes(
-            (Array.isArray(accounts) && accounts.length > 0) || accounts ? accounts : SharedStore.accounts,
+            !accounts || (Array.isArray(accounts) && accounts.length < 1) ? SharedStore.accounts : accounts,
             Folder.Inbox,
             {
                 excluded_flags: [Mark.Seen],
@@ -78,7 +78,7 @@ export class MailboxController {
         );
 
         if (response.success && response.data) {
-            if (accounts) {
+            if (accounts && SharedStore.mailboxes.length > 0) {
                 response.data.forEach(account => {
                     const targetMailbox = SharedStore.mailboxes.find(current => current.email_address === account.email_address);
                     if (targetMailbox) {
