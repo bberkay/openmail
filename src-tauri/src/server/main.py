@@ -17,6 +17,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from openmail import OpenMail
 from openmail.types import Draft, Attachment, Email, SearchCriteria
+from openmail.utils import extract_email_addresses
 from openmail.imap import Folder, Mark
 
 from classes.account_manager import AccountManager, Account, AccountWithPassword
@@ -78,6 +79,8 @@ def reconnect_and_idle_logged_out_openmail_clients():
                 if status:
                     openmail_client.imap.idle()
 
+def find_email_of_client(client: OpenMail):
+    return next((email for email, c in openmail_clients.items() if c == client), None)
 
 def shutdown_openmail_clients():
     try:
@@ -483,13 +486,13 @@ async def convert_uploadfile_to_attachment(attachments: list[UploadFile]) -> lis
     return converted_to_attachment_list
 
 class SendEmailFormData(BaseModel):
-    sender: str # Name Surname <namesurname@domain.com> or namesurname@domain.com
+    sender: str # list of Name Surname <namesurname@domain.com> or namesurname@domain.com, separated by comma
     receiver: str  # mail addresses separated by comma
     subject: str
     body: str
     uid: Optional[str] = None
-    cc: Optional[str] = None
-    bcc: Optional[str] = None
+    cc: Optional[str] = None # mail addresses separated by comma
+    bcc: Optional[str] = None # mail addresses separated by comma
     attachments: list[UploadFile] = []
 
 @app.post("/send-email")
@@ -501,27 +504,36 @@ async def send_email(
         if not response:
             return response
 
-        sender = form_data.sender.split("<")
-        sender_email = ""
-        if len(sender) > 1:
-            sender = (sender[0], sender[1])
-            sender_email = sender[1][1:-1]
-        else:
-            sender_email = sender[0]
-
-        status, msg = openmail_clients[sender_email].smtp.send_email(
-            Draft(
-                sender=form_data.sender,
+        results = execute_openmail_task_concurrently(
+            extract_email_addresses(form_data.sender.split(",")),
+            lambda client, **params: client.smtp.send_email(sender=find_email_of_client(client), **params),
+            email=Draft(
                 receiver=form_data.receiver,
                 subject=form_data.subject,
                 body=form_data.body,
                 cc=form_data.cc,
                 bcc=form_data.bcc,
                 attachments=await convert_uploadfile_to_attachment(form_data.attachments),
-            )
+            ),
         )
 
-        return Response(success=status, message=msg)
+        # Check results
+        success = True
+        message = ""
+        failed_accounts = []
+        if not success:
+            for account in results:
+                if not account.result:
+                    success = False
+                    failed_accounts.append(account.email_address)
+
+        message = "Email could not be sent from these accounts: " + ",".join(failed_accounts)
+        message = message or "Email sent successfully from all accounts."
+
+        return Response(
+            success=success,
+            message=message
+        )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while sending email.", str(e)))
 
@@ -536,12 +548,10 @@ async def reply_email(
         if not response:
             return response
 
-        sender_email = (
-            form_data.sender if isinstance(form_data.sender, str) else form_data.sender[1]
-        )
-        status, msg = openmail_clients[sender_email].smtp.reply_email(
-            Draft(
-                sender=form_data.sender,
+        results = execute_openmail_task_concurrently(
+            extract_email_addresses(form_data.sender.split(",")),
+            lambda client, **params: client.smtp.reply_email(sender=find_email_of_client(client), **params),
+            email=Draft(
                 receiver=form_data.receiver,
                 subject=form_data.subject,
                 body=form_data.body,
@@ -549,10 +559,25 @@ async def reply_email(
                 bcc=form_data.bcc,
                 attachments=await convert_uploadfile_to_attachment(form_data.attachments),
             ),
-            original_message_id
         )
 
-        return Response(success=status, message=msg)
+        # Check results
+        success = True
+        message = ""
+        failed_accounts = []
+        if not success:
+            for account in results:
+                if not account.result:
+                    success = False
+                    failed_accounts.append(account.email_address)
+
+        message = "Email could not be replied from these accounts: " + ",".join(failed_accounts)
+        message = message or "Email replied successfully from all accounts."
+
+        return Response(
+            success=success,
+            message=message
+        )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while replying email.", str(e)))
 
@@ -567,12 +592,10 @@ async def forward_email(
         if not response:
             return response
 
-        sender_email = (
-            form_data.sender if isinstance(form_data.sender, str) else form_data.sender[1]
-        )
-        status, msg = openmail_clients[sender_email].smtp.forward_email(
-            Draft(
-                sender=form_data.sender,
+        results = execute_openmail_task_concurrently(
+            extract_email_addresses(form_data.sender.split(",")),
+            lambda client, **params: client.smtp.forward_email(sender=find_email_of_client(client), **params),
+            email=Draft(
                 receiver=form_data.receiver,
                 subject=form_data.subject,
                 body=form_data.body,
@@ -580,10 +603,25 @@ async def forward_email(
                 bcc=form_data.bcc,
                 attachments=await convert_uploadfile_to_attachment(form_data.attachments),
             ),
-            original_message_id
         )
 
-        return Response(success=status, message=msg)
+        # Check results
+        success = True
+        message = ""
+        failed_accounts = []
+        if not success:
+            for account in results:
+                if not account.result:
+                    success = False
+                    failed_accounts.append(account.email_address)
+
+        message = "Email could not be forwarded from these accounts: " + ",".join(failed_accounts)
+        message = message or "Email forwarded successfully from all accounts."
+
+        return Response(
+            success=success,
+            message=message
+        )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while forwarding email.", str(e)))
 
