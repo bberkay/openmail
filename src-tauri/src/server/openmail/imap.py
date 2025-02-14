@@ -926,7 +926,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         def add_criterion(
             criteria: str,
-            value: str | list | None,
+            value: str | int | list | None,
             seperate_with_or: bool = False
         ) -> str:
             """
@@ -947,7 +947,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if not value:
                 return ''
 
-            if isinstance(value, list):
+            if isinstance(value, int):
+                value = str(value)
+            elif isinstance(value, list):
                 if criteria == '':
                     # value=["Flagged", "Seen", "Answered"]
                     return f" {' '.join([i.strip().upper() for i in value])}"
@@ -978,7 +980,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             excluded_flag_list = []
             if search_criteria.excluded_flags:
-                for flag in search_criteria.excluded_flag_list:
+                for flag in search_criteria.excluded_flags:
                     if flag.lower() not in MARK_LIST:
                         excluded_flag_list.append(f'UNKEYWORD {flag}')
                     else:
@@ -1011,9 +1013,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             search_criteria_query += add_criterion("BODY", search_criteria.include)
             search_criteria_query += add_criterion("NOT BODY", search_criteria.exclude)
             search_criteria_query += add_criterion('', included_flag_list)
+            search_criteria_query += add_criterion('', excluded_flag_list)
             search_criteria_query += add_criterion('TEXT', search_criteria.has_attachments and 'ATTACHMENT' or '')
-            search_criteria_query += add_criterion('LARGER', str(search_criteria.larger_than))
-            search_criteria_query += add_criterion('SMALLER', str(search_criteria.smaller_than))
+            search_criteria_query += add_criterion('LARGER', search_criteria.larger_than)
+            search_criteria_query += add_criterion('SMALLER', search_criteria.smaller_than)
         except Exception as e:
             raise IMAPManagerException(f"Error while building search query from `{str(search_criteria)}`") from e
 
