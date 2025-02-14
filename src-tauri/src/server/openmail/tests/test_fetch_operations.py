@@ -179,7 +179,8 @@ class TestFetchOperations(unittest.TestCase):
                     smaller_than=300, # 300 bytes
                     since="2023-01-01",
                     before="2023-12-31",
-                    included_flags=[Mark.Flagged, Mark.Seen, "customflag"],
+                    included_flags=[Mark.Flagged, Mark.Seen, "customflag1"],
+                    excluded_flags=[Mark.Answered, Mark.Undraft, "customflag2"],
                     has_attachments=True
                 )
             ),
@@ -187,7 +188,7 @@ class TestFetchOperations(unittest.TestCase):
             '(OR (CC "cc1@mail.com") (CC "cc2@mail.com")) (OR (BCC "bcc1@mail.com") ' \
             '(OR (BCC "bcc2@mail.com") (BCC "bcc3@mail.com"))) (SUBJECT "Hello") (SINCE "2023-01-01") ' \
             '(BEFORE "2023-12-31") (BODY "word") (NOT BODY "good bye") FLAGGED SEEN KEYWORD CUSTOMFLAG ' \
-            '(TEXT "ATTACHMENT") (LARGER 150) (SMALLER 300)'
+            'ANSWERED UNDRAFT UNKEYWORD CUSTOMFLAG2 (TEXT "ATTACHMENT") (LARGER 150) (SMALLER 300)'
         )
 
     def test_basic_search_with_sender(self):
