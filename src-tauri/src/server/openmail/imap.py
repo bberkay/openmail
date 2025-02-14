@@ -970,21 +970,25 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if isinstance(search_criteria, str):
                 return add_criterion('TEXT', search_criteria).strip()
 
-            included_flag_list = []
+            flag_list = []
             if search_criteria.included_flags:
                 for flag in search_criteria.included_flags:
                     if flag.lower() not in MARK_LIST:
-                        included_flag_list.append(f'KEYWORD {flag}')
+                        flag_list.append(f'KEYWORD {flag}')
                     else:
-                        included_flag_list.append(flag.replace("\\", ""))
+                        flag_list.append(flag.replace("\\", ""))
 
-            excluded_flag_list = []
             if search_criteria.excluded_flags:
                 for flag in search_criteria.excluded_flags:
                     if flag.lower() not in MARK_LIST:
-                        excluded_flag_list.append(f'UNKEYWORD {flag}')
+                        flag_list.append(f'UNKEYWORD {flag}')
                     else:
-                        excluded_flag_list.append(flag.replace("\\", ""))
+                        flag_list.append(
+                            flag.replace(
+                                "\\",
+                                "UN" if not flag.lower().startswith("\\un") else ""
+                            )
+                        )
 
             search_criteria_query = ''
             search_criteria_query += add_criterion(
@@ -1012,8 +1016,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             search_criteria_query += add_criterion("BEFORE", search_criteria.before)
             search_criteria_query += add_criterion("BODY", search_criteria.include)
             search_criteria_query += add_criterion("NOT BODY", search_criteria.exclude)
-            search_criteria_query += add_criterion('', included_flag_list)
-            search_criteria_query += add_criterion('', excluded_flag_list)
+            search_criteria_query += add_criterion('', flag_list)
             search_criteria_query += add_criterion('TEXT', search_criteria.has_attachments and 'ATTACHMENT' or '')
             search_criteria_query += add_criterion('LARGER', search_criteria.larger_than)
             search_criteria_query += add_criterion('SMALLER', search_criteria.smaller_than)
@@ -1390,13 +1393,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if status != 'OK':
                 raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`")
 
-            message = message[1][0]
-            flags_list.append(Flags(
-                uid=MessageParser.get_uid(message),
-                flags=MessageParser.get_flags(message)
-            ))
+            message = MessageParser.group_messages(message)[0]
+            for part in message:
+                flags_list.append(Flags(
+                    uid=MessageParser.get_uid(part),
+                    flags=MessageParser.get_flags(part)
+                ))
         except Exception as e:
-            raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{status}`") from e
+            raise IMAPManagerException(f"Error while fetching flags of email `{sequence_set}`: `{e}`") from e
 
         return flags_list or []
 
