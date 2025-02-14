@@ -194,10 +194,10 @@ class TestFetchOperations(unittest.TestCase):
     def test_basic_search_with_sender(self):
         print("test_basic_search_with_sender...")
 
-        self.__class__._openmail.imap.search_emails(search=cast(str, self.__class__._test_sent_basic_email.sender))
+        self.__class__._openmail.imap.search_emails(search=cast(str, self.__class__._sender_email))
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(found_emails.total, 1)
-        self.assertIn(self.__class__._test_sent_basic_email.sender, found_emails.emails[0].sender)
+        self.assertIn(self.__class__._sender_email, found_emails.emails[0].sender)
 
     def test_basic_search_with_receiver(self):
         print("test_basic_search_with_receiver...")
