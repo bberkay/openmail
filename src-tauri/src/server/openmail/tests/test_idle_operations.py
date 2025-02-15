@@ -22,13 +22,13 @@ class TestIdleOperations(unittest.TestCase):
         print(f"Connected to {cls._email}...")
 
         cls._sent_test_email_uids = []
-        #uid = DummyOperator.send_test_email_to_self_and_get_uid(cls._openmail, cls._email)
-        #cls._sent_test_email_uids.append(uid)
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(cls._openmail, cls._email)
+        cls._sent_test_email_uids.append(uid)
 
     def test_idle_and_done(self):
         print("test_idle_and_done...")
         self.__class__._openmail.imap.idle()
-        time.sleep(10)
+        time.sleep(5)
         self.__class__._openmail.imap.done()
 
     def test_idle_lifecycle(self):
