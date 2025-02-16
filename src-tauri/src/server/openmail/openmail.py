@@ -96,13 +96,16 @@ class OpenMail:
         """
         Close both IMAP and SMTP connections.
         """
-        imap_stat = True
-        if self.imap:
-            imap_stat, _ = self.imap.logout()
-
-        smtp_stat = True
-        if self.smtp:
-            smtp_stat, _ = self.smtp.logout()
+        imap_stat = smtp_stat = True
+        try:
+            if self.imap: imap_stat, _ = self.imap.logout()
+            if self.smtp: smtp_stat, _ = self.smtp.logout()
+        except IMAPManagerException as e:
+            imap_stat = "timeout" in str(e).lower()
+        except SMTPManagerException as e:
+            smtp_stat = "timeout" in str(e).lower()
+        except:
+            imap_stat = smtp_stat = False
 
         disconnect_msg = ""
         if not imap_stat:
