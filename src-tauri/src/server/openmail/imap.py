@@ -372,6 +372,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             counter += 1
             if counter > WAIT_RESPONSE_TIMEOUT:
                 print(f"IMAPManager.WaitResponse: {wait_response} did not received in time at {datetime.now()}. IMAPManager.WaitResponse set to None")
+                self._terminate_threads()
                 break
 
         self._wait_for_response = None
