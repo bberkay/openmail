@@ -813,6 +813,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     # IMAPManager commands
 
+    def is_logged_out(self):
+        try:
+            return super().noop()[0] != "OK"
+        except Exception:
+            return True
+
     def idle(self):
         """
         Initiates the IMAP IDLE command to start monitoring changes
