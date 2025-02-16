@@ -83,14 +83,14 @@ class TestIdleOperations(unittest.TestCase):
     def test_get_folders_in_idle_mode(self):
         print("test_get_folders_in_idle_mode...")
         self.__class__._openmail.imap.idle()
-        time.sleep(5)
+        time.sleep(3)
         result = self.__class__._openmail.imap.get_folders()
         self.assertGreaterEqual(len(result), 1)
 
     def test_get_emails_in_idle_mode(self):
         print("test_get_emails_in_idle_mode...")
         self.__class__._openmail.imap.idle()
-        time.sleep(5)
+        time.sleep(3)
         self.__class__._openmail.imap.search_emails()
         time.sleep(3)
         result = self.__class__._openmail.imap.get_emails()
@@ -103,5 +103,5 @@ class TestIdleOperations(unittest.TestCase):
     def cleanup(cls):
         print("Cleaning up test `TestIdleOperations`...")
         if cls._sent_test_email_uids:
-            cls._openmail.imap.delete_email(Folder.Inbox, ",".join(cls._sent_test_email_uids))
+            result = cls._openmail.imap.delete_email(Folder.Inbox, ",".join(cls._sent_test_email_uids))
         cls._openmail.disconnect()
