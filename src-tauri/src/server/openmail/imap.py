@@ -386,7 +386,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         while not self._idle_thread_event.is_set():
             print(f"IDLING for {self._current_idle_tag} at {datetime.now()}.")
             time.sleep(1)
-            if time.time() - self._current_idle_start_time > IDLE_TIMEOUT:
+            if time.time() - self._current_idle_start_time > IDLE_TIMEOUT and not self._idle_thread_event.is_set():
                 print(f"IDLING timeout reached for {self._current_idle_tag} at {datetime.now()}.")
                 self.done()
                 self.idle()
