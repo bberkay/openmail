@@ -42,43 +42,39 @@ class TestIdleOperations(unittest.TestCase):
     def test_reconnection(self):
         print("test_reconnection...")
         self.__class__._openmail.imap.idle()
-        print("idle mode activated before waiting...")
+        print("Idle mode activated before waiting...")
         time.sleep(60 * 30)
         try:
             result = self.__class__._openmail.imap.get_folders()
-            print("get folders after a long time: ",result)
             self.assertGreaterEqual(len(result), 1)
         except Exception as e:
-            print("Exception raised: ", e)
-            print("reconnecting...")
+            print("Error while fetching folders: ", e)
+            print("Checking connection...")
             try:
-                self.__class__._openmail.disconnect()
+                if self.__class__._openmail.imap.is_logged_out():
+                    print(f"IMAPManager logged out from {self.__class__._email}")
+                else:
+                    print(f"IMAPManager seems stil logged in to {self.__class__._email}, going to try to disconnect...")
+                    status, message = self.__class__._openmail.disconnect()
+                    if not status: self.fail(message)
             except Exception as e:
-                print("Error while disconnecting...: ", e)
+                print("Error while checking connection: ", e)
             finally:
+                print("Reconnecting...")
                 try:
-                    result2 = self.__class__._openmail.connect(
+                    status, message = self.__class__._openmail.connect(
                         self.__class__._email,
                         self.__class__._credentials[0]["password"]
                     )
-                    print("connect result2: ", result2)
-                    if result2[0]:
-                        time.sleep(3)
-                        self.__class__._openmail.imap.idle()
-                        time.sleep(5)
-                        result4 = self.__class__._openmail.imap.get_folders()
-                        print("get folder test4: ", result4)
-                        print("WORKING")
-                        self.assertGreaterEqual(len(result4), 1)
-                    else:
-                        print("CONNECT FAILED it seems")
-                        self.fail("CONNECT COMP FAILED")
-                except Exception as t:
-                    print("reconnecte connect t: ", t)
-                    print("FAILED it seems")
-                    self.fail("COMP FAILED")
+                    if not status: self.fail(message)
 
-        print("finished")
+                    time.sleep(1)
+                    self.__class__._openmail.imap.idle()
+                    time.sleep(5)
+                    result = self.__class__._openmail.imap.get_folders()
+                    self.assertGreaterEqual(len(result), 1)
+                except Exception as e:
+                    self.fail("Error while reconnecting: " + str(e))
 
     def test_get_folders_in_idle_mode(self):
         print("test_get_folders_in_idle_mode...")
