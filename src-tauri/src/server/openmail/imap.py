@@ -143,11 +143,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._current_idle_tag: str | None = None
         self._wait_for_response: IMAPManager.WaitResponse | None = None
 
-        self._idle_thread_event = None
-        self._idle_thread = None
-
         self._readline_thread_event = None
         self._readline_thread = None
+
+        self._idle_thread_event = None
+        self._idle_thread = None
 
         super().__init__(
             self._host,
@@ -404,10 +404,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             """
             Continuously reads server responses and processes them.
             """
-            self.socket().settimeout(None)
             if not self._readline_thread_event:
                 raise Exception("`readline_thread_event` is None")
 
+            self.socket().settimeout(None)
             while not self._readline_thread_event.is_set():
                 try:
                     print(f"Waiting for new response at {datetime.now()}.")
@@ -830,10 +830,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
     def idle(self):
         """
         Initiates the IMAP IDLE command to start monitoring changes
-        in the mailbox on its own thread. If already in IDLE mode,
-        does nothing.
+        in the INBOX(is going to select) on its own thread. If already
+        in IDLE mode, does nothing.
         """
         if not self._is_idle:
+            self.select(Folder.Inbox)
             self._current_idle_tag = self._new_tag()
             self.send(b"%s IDLE\r\n" % self._current_idle_tag)
             print(f"'IDLE' command sent with tag: {self._current_idle_tag} at {datetime.now()}.")
