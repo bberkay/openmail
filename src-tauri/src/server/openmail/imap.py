@@ -22,6 +22,7 @@ import re
 import threading
 import base64
 import time
+from imaplib import _AnyResponseData
 from typing import Callable, override, List
 from datetime import datetime
 from enum import Enum
@@ -187,7 +188,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException("Unsupported email domain") from None
 
     def _parse_command_result(self,
-        result: tuple[str, List[bytes | None]],
+        result: tuple[str, List[bytes | None] | List[bytes] | _AnyResponseData],
         success_message: str = "",
         failure_message: str = ""
     ) -> IMAPCommandResult:
