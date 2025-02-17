@@ -218,7 +218,7 @@ class SMTPManager(smtplib.SMTP):
             msg['From'] = Address(
                 display_name=extract_fullname(sender),
                 username=extract_username(sender),
-                domain=extract_domain(sender)
+                domain=extract_domain(sender, True)
             )
             msg['To'] = receiver
             msg['Subject'] = email.subject
