@@ -128,10 +128,8 @@ export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: nu
 }
 
 export function convertToIMAPDate(dateStringOrDate: string | Date): string {
-    const date = typeof dateStringOrDate == "string" ? new Date(dateStringOrDate) : dateStringOrDate;
-    return date
-        .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-        .replace(',', '');
+    const date = typeof dateStringOrDate === "string" ? new Date(dateStringOrDate) : dateStringOrDate;
+    return `${date.getDate()}-${date.toLocaleString('en-GB', { month: 'short' })}-${date.getFullYear()}`;
 }
 
 export function range(start: number, stop: number, step: number): number[] {

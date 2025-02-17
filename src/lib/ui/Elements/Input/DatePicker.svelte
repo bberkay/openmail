@@ -10,7 +10,7 @@
     }
 
     let {
-        placeholder = "1 Jan 1970",
+        placeholder = new Date().toLocaleDateString(),
         value = undefined,
         onchange = undefined
     }: Props = $props();
