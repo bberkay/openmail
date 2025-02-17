@@ -4,6 +4,7 @@ TODO: improve docstring
 """
 from __future__ import annotations
 import os
+import asyncio
 import concurrent.futures
 from urllib.parse import unquote
 from typing import Annotated, Callable, Generic, Optional, TypeVar, cast
@@ -31,12 +32,15 @@ from utils import is_email_valid, err_msg, parse_err_msg
 
 
 #################### SET UP #######################
-openmail_clients: dict[str, OpenMail] = {}
-failed_openmail_clients: list[str] = []
+T = TypeVar("T")
+
 account_manager = AccountManager()
 secure_storage = SecureStorage()
 http_request_logger = HTTPRequestLogger()
-T = TypeVar("T")
+
+openmail_clients: dict[str, OpenMail] = {}
+failed_openmail_clients: list[str] = []
+monitor_logged_out_clients_task = None
 
 def create_and_idle_openmail_clients():
     accounts: list[AccountWithPassword] = cast(list[AccountWithPassword], account_manager.get_all())
@@ -54,49 +58,99 @@ def create_and_idle_openmail_clients():
                     cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
                 )
             )
-            print(f"Connected to {account.email_address}")
-            """if status:
-                openmail_clients[account["email_address"]].imap.idle()"""
+            if status:
+                print(f"Successfully connected to {account.email_address}")
+                openmail_clients[account.email_address].imap.idle()
+                try:
+                    failed_openmail_clients.remove(account.email_address)
+                except ValueError:
+                    pass
+            else:
+                print(f"Could not successfully connected to {account.email_address}.")
+                del openmail_clients[account.email_address]
+                failed_openmail_clients.append(account.email_address)
         except Exception as e:
-            openmail_clients.pop(account.email_address)
+            del openmail_clients[account.email_address]
             failed_openmail_clients.append(account.email_address)
             print(f"Failed to connect to {account.email_address}: {e}")
 
-def reconnect_and_idle_logged_out_openmail_clients():
-    # TODO: Implement reconnection
-    for email_address, openmail_client in openmail_clients.items():
-        if not openmail_client.is_logged_in():
+def reconnect_and_idle_logged_out_openmail_clients(email_addresses: str):
+    created_openmail_clients = openmail_clients.keys()
+    for email_address in email_addresses.split(","):
+        try:
+            if email_address not in created_openmail_clients:
+                continue
+
+            if not openmail_clients[email_address].imap.is_logged_out():
+                continue
+
             accounts: list[AccountWithPassword] = account_manager.get(email_address)
-            if accounts:
-                status = openmail_client.connect(
+            account = accounts[0] if accounts else None
+            if account:
+                print(f"Reconnecting to {account.email_address}...")
+                status, _ = openmail_clients[account.email_address].connect(
                     email_address,
                     RSACipher.decrypt_password(
-                        accounts[0].encrypted_password,
+                        account.encrypted_password,
                         cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
                     )
                 )
-                print(f"Reconnected to {email_address}")
                 if status:
-                    openmail_client.imap.idle()
+                    print(f"Successfully reconnected to {email_address}")
+                    openmail_clients[account.email_address].imap.idle()
+                    try:
+                        failed_openmail_clients.remove(account.email_address)
+                    except ValueError:
+                        pass
+                else:
+                    print(f"Could not successfully reconnected to {email_address}.")
+                    del openmail_clients[account.email_address]
+                    failed_openmail_clients.append(account.email_address)
+        except Exception as e:
+            del openmail_clients[email_address]
+            failed_openmail_clients.append(email_address)
+            print(f"Failed to reconnect to {email_address}: {e}")
 
 def find_email_of_client(client: OpenMail):
     return next((email for email, c in openmail_clients.items() if c == client), None)
+
+async def monitor_logged_out_clients():
+    try:
+        while True:
+            await asyncio.sleep(60)
+            reconnect_and_idle_logged_out_openmail_clients(",".join(openmail_clients.keys()))
+    except asyncio.CancelledError:
+        print("Monitoring logged out clients task is being cancelled...")
+        raise
 
 def shutdown_openmail_clients():
     try:
         for email, openmail_client in openmail_clients.items():
             openmail_client.disconnect()
     except:
-        pass
-
+        print("Clients could not properly terminated.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    #secure_storage.destroy()
     create_and_idle_openmail_clients()
-    yield
-    shutdown_openmail_clients()
 
+    # Check logged out clients and reconnect them.
+    global monitor_logged_out_clients_task
+    monitor_logged_out_clients_task = asyncio.create_task(monitor_logged_out_clients())
+
+    # App
+    yield
+
+    # Cancel logged out client reconnection task
+    try:
+        if monitor_logged_out_clients_task:
+            monitor_logged_out_clients_task.cancel()
+            try:
+                await monitor_logged_out_clients_task
+            except asyncio.CancelledError:
+                pass
+    finally:
+        shutdown_openmail_clients()
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
@@ -106,7 +160,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=TRUSTED_HOSTS
+)
 
 class Response(BaseModel, Generic[T]):
     success: bool
@@ -341,11 +398,13 @@ def execute_openmail_task_concurrently(
         return results
 
 def check_if_email_client_is_exists(accounts: str) -> Response | bool:
+    reconnect_and_idle_logged_out_openmail_clients(accounts)
+    connected_openmail_clients = openmail_clients.keys()
     for account in accounts.split(","):
-        if account not in openmail_clients:
+        if account not in connected_openmail_clients:
             return Response(
                 success=False,
-                message=f"Error, {account} is not (or not anymore) connected."
+                message=f'Error, {account} connection is not available or timed out and could not reconnected.'
             )
 
     return True
