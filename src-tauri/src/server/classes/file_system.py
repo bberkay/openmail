@@ -40,15 +40,24 @@ class FileObject:
             file.write(self._initial_content)
 
     def read(self) -> str:
+        if not self.fullpath:
+            raise FileNotFoundError
+
         with open(self.fullpath, "r", encoding="utf-8") as file:
             content = file.read()
         return content
 
     def write(self, content: Any):
+        if not self.fullpath:
+            raise FileNotFoundError
+
         with open(self.fullpath, "w", encoding="utf-8") as file:
             file.write(content)
 
     def clear(self):
+        if not self.fullpath:
+            raise FileNotFoundError
+
         with open(self.fullpath, "w", encoding="utf-8") as file:
             file.write("")
 
