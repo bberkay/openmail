@@ -406,6 +406,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             Continuously reads server responses and processes them.
             """
             self.socket().settimeout(None)
+            if not self._readline_thread_event:
+                raise Exception("`readline_thread_event` is None")
 
             while not self._readline_thread_event.is_set():
                 try:
@@ -463,8 +465,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         temp_tag = self._current_idle_tag
         self._current_idle_tag = None
 
-        self._idle_thread_event.set()
-        self._readline_thread_event.set()
+        if self._idle_thread_event and not self._idle_thread_event.is_set():
+            self._idle_thread_event.set()
+        if self._readline_thread_event and not self._readline_thread_event.is_set():
+            self._readline_thread_event.set()
 
         self._wait_for_response = IMAPManager.WaitResponse.DONE
         print(
@@ -481,8 +485,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         print(f"'BYE' response received from server at {datetime.now()}.")
         self._wait_for_response = IMAPManager.WaitResponse.BYE
-        self._readline_thread_event.set()
-        self._idle_thread_event.set()
+
+        if self._readline_thread_event and not self._readline_thread_event.is_set():
+            self._readline_thread_event.set()
+        if self._idle_thread_event and not self._idle_thread_event.is_set():
+            self._idle_thread_event.set()
+
         self._is_idle = False
         self._current_idle_tag = None
         raise IMAPManagerLoggedOutException(f"'BYE' response received from server at {datetime.now()}. IMAPManager connection closed safely.") from None
