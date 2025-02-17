@@ -5,6 +5,8 @@ These functions provide helper methods for email-related operations,
 including domain extraction, date conversion, and other utility tasks.
 """
 
+from datetime import datetime
+
 def extract_username(email: str) -> str:
     """Extract the user name from an email address."""
     return (email.split("@")[0].split("<")[1] if "<" in email else email.split('@')[0]).strip()
@@ -41,6 +43,9 @@ def tuple_to_sender_string(sender: tuple[str, str] | str) -> str:
     """Formats the sender's name and email into a single string."""
     return sender[0] + f"<{sender[1]}>" if not isinstance(sender, str) else sender
 
-def add_quotes_if_str(value: str):
+def add_quotes_if_str(value: str) -> str:
     """Add quotes to variables if it is string ant will be trimmed."""
     return f'"{value.strip()}"' if isinstance(value, str) else value
+
+def convert_to_imap_date(date: str | datetime) -> str:
+    return datetime.fromisoformat(date).strftime('%d-%b-%Y') if isinstance(date, str) else date.strftime('%d-%b-%Y')

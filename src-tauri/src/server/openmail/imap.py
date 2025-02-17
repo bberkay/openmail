@@ -23,14 +23,14 @@ import threading
 import base64
 import time
 from typing import Callable, override, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from ssl import SSLContext
 from types import MappingProxyType
 from dataclasses import dataclass
 
 from .parser import MessageDecoder, MessageParser, HTMLParser
-from .utils import add_quotes_if_str, extract_domain, choose_positive, extract_email_address, extract_email_addresses
+from .utils import add_quotes_if_str, convert_to_imap_date, extract_domain, choose_positive, extract_email_address, extract_email_addresses
 from .utils import truncate_text, contains_non_ascii
 from .types import SearchCriteria, Attachment, Mailbox, Email, Flags, Mark, Folder
 
@@ -82,14 +82,16 @@ Custom consts
 """
 GET_EMAILS_OFFSET_START = 1
 GET_EMAILS_OFFSET_END = 10
-SHORT_BODY_MAX_LENGTH = 100 # Character count
 SHORT_BODY_TEXT_CHUNK_SIZE = 4096 # in bytes
+# Character counts
+SHORT_BODY_MAX_LENGTH = 100
 MAX_FOLDER_NAME_LENGTH = 1024
-CONN_TIMEOUT = 30 # 30 seconds
-IDLE_TIMEOUT = 15 * 60 # 15 minutes
-JOIN_TIMEOUT = 3 # 3 seconds
-WAIT_RESPONSE_TIMEOUT = 3 * 60 # 3 minutes
-READLINE_SLEEP = 1 # 1 seconds
+# Timeouts in seconds
+CONN_TIMEOUT = 30
+IDLE_TIMEOUT = 15 * 60
+JOIN_TIMEOUT = 3
+WAIT_RESPONSE_TIMEOUT = 180
+READLINE_SLEEP = 1
 
 class IMAPManager(imaplib.IMAP4_SSL):
     """
