@@ -2,6 +2,10 @@ import re
 import json
 import random
 import time
+from typing import Any
+
+def get_key_by_value(obj: dict, value: Any) -> str | None:
+    return next((k for k, v in obj.items() if v == value), None)
 
 def is_email_valid(email: str) -> bool:
     return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
@@ -18,7 +22,7 @@ def make_size_human_readable(size: int | None) -> str:
     else:
         return f"{size / 1024 / 1024 / 1024:.2f} GB"
 
-def random_id() -> str:
+def generate_random_id() -> str:
     epoch_time = int(time.time() * 1000)
     random_part = random.randint(1000, 9999)
     return f"{epoch_time}{random_part}"

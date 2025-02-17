@@ -28,7 +28,7 @@ from classes.secure_storage import SecureStorage, SecureStorageKey, RSACipher, S
 from classes.port_scanner import PortScanner
 
 from consts import TRUSTED_HOSTS
-from utils import is_email_valid, err_msg, parse_err_msg
+from utils import is_email_valid, err_msg, parse_err_msg, get_key_by_value
 
 
 #################### SET UP #######################
@@ -41,6 +41,9 @@ http_request_logger = HTTPRequestLogger()
 openmail_clients: dict[str, OpenMail] = {}
 failed_openmail_clients: list[str] = []
 monitor_logged_out_clients_task = None
+
+def connect_to_account(email_address: str):
+    pass
 
 def create_and_idle_openmail_clients():
     accounts: list[AccountWithPassword] = cast(list[AccountWithPassword], account_manager.get_all())
@@ -110,9 +113,6 @@ def reconnect_and_idle_logged_out_openmail_clients(email_addresses: str):
             del openmail_clients[email_address]
             failed_openmail_clients.append(email_address)
             print(f"Failed to reconnect to {email_address}: {e}")
-
-def find_email_of_client(client: OpenMail):
-    return next((email for email, c in openmail_clients.items() if c == client), None)
 
 async def monitor_logged_out_clients():
     try:
@@ -521,7 +521,12 @@ def download_attachment(
         return Response[Attachment](
             success=True,
             message="Email content fetched successfully.",
-            data=openmail_clients[account].imap.download_attachment(unquote(folder), uid, name, cid),
+            data=openmail_clients[account].imap.download_attachment(
+                unquote(folder),
+                uid,
+                name,
+                cid
+            ),
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))
@@ -565,7 +570,10 @@ async def send_email(
 
         results = execute_openmail_task_concurrently(
             extract_email_addresses(form_data.sender.split(",")),
-            lambda client, **params: client.smtp.send_email(sender=find_email_of_client(client), **params),
+            lambda client, **params: client.smtp.send_email(
+                sender=get_key_by_value(openmail_clients, client),
+                **params
+            ),
             email=Draft(
                 receiver=form_data.receiver,
                 subject=form_data.subject,
@@ -609,7 +617,10 @@ async def reply_email(
 
         results = execute_openmail_task_concurrently(
             extract_email_addresses(form_data.sender.split(",")),
-            lambda client, **params: client.smtp.reply_email(sender=find_email_of_client(client), **params),
+            lambda client, **params: client.smtp.reply_email(
+                sender=get_key_by_value(openmail_clients, client),
+                **params
+            ),
             email=Draft(
                 receiver=form_data.receiver,
                 subject=form_data.subject,
@@ -653,7 +664,10 @@ async def forward_email(
 
         results = execute_openmail_task_concurrently(
             extract_email_addresses(form_data.sender.split(",")),
-            lambda client, **params: client.smtp.forward_email(sender=find_email_of_client(client), **params),
+            lambda client, **params: client.smtp.forward_email(
+                sender=get_key_by_value(openmail_clients, client),
+                **params
+            ),
             email=Draft(
                 receiver=form_data.receiver,
                 subject=form_data.subject,

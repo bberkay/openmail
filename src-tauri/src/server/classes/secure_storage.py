@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 
-from utils import random_id, safe_json_loads
+from utils import generate_random_id, safe_json_loads
 from consts import APP_NAME
 
 """
@@ -170,7 +170,7 @@ class SecureStorage:
             pass
 
     def _create_backup_id(self) -> str:
-        return f"backup_id_{random_id()}"
+        return f"backup_id_{generate_random_id()}"
 
     def _create_backup(self) -> str:
         # Check out `_load_backup` method to see the structure
