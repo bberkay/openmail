@@ -20,6 +20,7 @@ import imaplib
 import re
 import threading
 import time
+import pytz
 from typing import Callable, override, List
 from enum import Enum
 from ssl import SSLContext
@@ -139,7 +140,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         self._searched_emails: IMAPManager.SearchedEmails | None = None
         self._previous_mailbox_size = 0
-        self._new_message_timestamps = []
+        self._new_message_timestamps: List[datetime] = []
 
         # IDLE and READLINE variables
         self._is_idle = False
@@ -508,7 +509,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Args:
             response (bytes): The server's EXISTS response data.
         """
-        received_at = datetime.now()
+        # Use of timedelta to account for potential server delays or discrepancies
+        # in message arrival times.
+        received_at = datetime.now() - timedelta(minutes=EMAIL_LOOKBACK_WINDOW)
+        received_at = received_at.replace(tzinfo=pytz.UTC)
         print(f"'EXISTS' response received from server at {received_at}.")
         self._wait_for_response = IMAPManager.WaitResponse.EXISTS
         size = MessageParser.get_exists_size(response)
@@ -1454,14 +1458,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         Retrieves recent emails from the inbox based on the timestamps of newly detected messages.
 
-        It searches for emails received since a few minutes before the first recorded new message
-        to ensure no emails are missed due to potential server time discrepancies.
-        Filters the retrieved emails to include only those received after the first new message.
-
         Returns:
             Mailbox: A mailbox object containing the filtered list of recent emails.
         """
-        search_start_time = min(self._new_message_timestamps) - timedelta(minutes=EMAIL_LOOKBACK_WINDOW)
+        search_start_time = min(self._new_message_timestamps)
         self.search_emails(
             Folder.Inbox,
             SearchCriteria(
