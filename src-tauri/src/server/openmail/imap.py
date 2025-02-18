@@ -512,7 +512,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # Use of timedelta to account for potential server delays or discrepancies
         # in message arrival times.
         received_at = datetime.now() - timedelta(minutes=EMAIL_LOOKBACK_WINDOW)
-        received_at = received_at.replace(tzinfo=pytz.UTC)
+        received_at = received_at.astimezone(pytz.UTC)
         print(f"'EXISTS' response received from server at {received_at}.")
         self._wait_for_response = IMAPManager.WaitResponse.EXISTS
         size = MessageParser.get_exists_size(response)
@@ -1454,7 +1454,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         return bool(self._new_message_timestamps)
 
     @handle_idle
-    def get_recent_emails(self) -> Mailbox:
+    def get_recent_emails(self) -> List[Email]:
         """
         Retrieves recent emails from the inbox based on the timestamps of newly detected messages.
 
@@ -1468,7 +1468,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 # search_start_time must be converted to an IMAP-compatible date format
                 # as defined in RFC 9051, Section 6.4.4
                 # https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check out date-text)
-                since=convert_to_imap_date(search_start_time)
+                since=convert_to_imap_date(search_start_time),
+                included_flags=[Mark.Unseen]
             )
         )
         mailbox = self.get_emails()
@@ -1478,11 +1479,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
             mailbox.emails = [
                 email
                 for email in mailbox.emails
-                if parsedate_to_datetime(email.date) >= search_start_time
+                if parsedate_to_datetime(email.date).astimezone(pytz.UTC) >= search_start_time
             ]
 
         self._new_message_timestamps = []
-        return mailbox
+        return mailbox.emails
 
     @handle_idle
     def get_email_content(self,
