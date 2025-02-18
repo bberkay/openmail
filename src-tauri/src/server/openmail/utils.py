@@ -48,4 +48,5 @@ def add_quotes_if_str(value: str) -> str:
     return f'"{value.strip()}"' if isinstance(value, str) else value
 
 def convert_to_imap_date(date: str | datetime) -> str:
+    """Format datetime date or string date to IMAP4 date format."""
     return datetime.fromisoformat(date).strftime('%d-%b-%Y') if isinstance(date, str) else date.strftime('%d-%b-%Y')
