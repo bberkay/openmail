@@ -34,6 +34,7 @@ from utils import is_email_valid, err_msg, parse_err_msg, get_key_by_value
 
 #################### SET UP #######################
 T = TypeVar("T")
+MAX_CONNECTION_WORKER = 5
 
 account_manager = AccountManager()
 secure_storage = SecureStorage()
@@ -43,7 +44,6 @@ openmail_clients: dict[str, OpenMail] = {}
 failed_openmail_clients: list[str] = []
 monitor_logged_out_clients_task = None
 
-MAX_CONNECTION_WORKER = 5
 
 def connect_to_account(account: AccountWithPassword):
     print(f"Connecting/Reconnecting to {account.email_address}...")
