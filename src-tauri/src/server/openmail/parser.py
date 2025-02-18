@@ -21,6 +21,7 @@ General Fetch Constants
 """
 UID_PATTERN = re.compile(rb"UID\s+(\d+)")
 SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
+EXISTS_SIZE_PATTERN = re.compile(rb'\* (\d+) EXISTS')
 FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
 BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+(.*)", re.DOTALL | re.IGNORECASE)
 ATTACHMENT_LIST_PATTERN = re.compile(
@@ -306,6 +307,24 @@ class MessageParser:
             42742
         """
         match = SIZE_PATTERN.search(message)
+        return int(match.group(1)) if match else -1
+
+    @staticmethod
+    def get_exists_size(message: bytes) -> int:
+        """
+        Get size from `EXISTS` server response.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            int: Size as bytes.
+
+        Example:
+            >>> get_size(b'* 12 EXISTS')
+            12
+        """
+        match = EXISTS_SIZE_PATTERN.search(message)
         return int(match.group(1)) if match else -1
 
     @staticmethod

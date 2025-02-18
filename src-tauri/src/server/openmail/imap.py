@@ -138,11 +138,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._port = port or IMAP_PORT
 
         self._searched_emails: IMAPManager.SearchedEmails | None = None
+        self._previous_mailbox_size = 0
+        self._new_message_timestamps = []
 
         # IDLE and READLINE variables
         self._is_idle = False
         self._current_idle_start_time = None
-        self._current_idle_tag: str | None = None
+        self._current_idle_tag: bytes | None = None
         self._wait_for_response: IMAPManager.WaitResponse | None = None
 
         self._readline_thread_event = None
@@ -506,10 +508,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Args:
             response (bytes): The server's EXISTS response data.
         """
-        print(f"'EXISTS' response received from server at {datetime.now()}.")
+        received_at = datetime.now()
+        print(f"'EXISTS' response received from server at {received_at}.")
         self._wait_for_response = IMAPManager.WaitResponse.EXISTS
-        # TODO: Implement handling of EXISTS response
-        pass
+        size = MessageParser.get_exists_size(response)
+        if size > self._previous_mailbox_size:
+            self._new_message_timestamps.append(received_at)
+
 
     def _handle_response(self, response: bytes):
         """
@@ -522,7 +527,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         if b'idling' in response:
             self._handle_idle_response()
-        elif b'OK' in response and bytes(self._current_idle_tag) in response:
+        elif b'OK' in response and self._current_idle_tag and self._current_idle_tag in response:
             self._handle_done_response()
         elif b'BYE' in response:
             self._handle_bye_response()
