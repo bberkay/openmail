@@ -17,20 +17,19 @@ Author: <berkaykayaforbusiness@outlook.com>
 License: MIT
 """
 import imaplib
-import email
 import re
 import threading
-import base64
 import time
 from typing import Callable, override, List
-from datetime import datetime, timedelta
 from enum import Enum
 from ssl import SSLContext
 from types import MappingProxyType
+from datetime import datetime, timedelta
 from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
 
 from .parser import MessageDecoder, MessageParser, HTMLParser
-from .utils import add_quotes_if_str, convert_to_imap_date, extract_domain, choose_positive, extract_email_address, extract_email_addresses
+from .utils import add_quotes_if_str, convert_to_imap_date, extract_domain, choose_positive, extract_email_addresses
 from .utils import truncate_text, contains_non_ascii
 from .types import SearchCriteria, Attachment, Mailbox, Email, Flags, Mark, Folder
 
@@ -82,6 +81,7 @@ Custom consts
 """
 GET_EMAILS_OFFSET_START = 1
 GET_EMAILS_OFFSET_END = 10
+EMAIL_LOOKBACK_WINDOW = 5 # minutes
 SHORT_BODY_TEXT_CHUNK_SIZE = 4096 # in bytes
 # Character counts
 SHORT_BODY_MAX_LENGTH = 100
@@ -514,7 +514,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         size = MessageParser.get_exists_size(response)
         if size > self._previous_mailbox_size:
             self._new_message_timestamps.append(received_at)
-
 
     def _handle_response(self, response: bytes):
         """
@@ -1355,7 +1354,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         uids_len = len(self._searched_emails.uids)
 
         if offset_start and offset_end and offset_start > offset_end:
-            raise ValueError(f"Invalid `offset_start`: `offset_start` must be less then `offset_end`.")
+            raise ValueError("Invalid `offset_start`: `offset_start` must be less then `offset_end`.")
 
         if not offset_start:
             offset_start = GET_EMAILS_OFFSET_START
@@ -1439,6 +1438,51 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{len(emails)}`") from e
 
         return Mailbox(folder=self._searched_emails.folder, emails=emails, total=uids_len)
+
+    def any_new_email(self) -> bool:
+        """
+        Checks if there are any new emails by verifying if new message timestamps
+        have been recorded.
+
+        Returns:
+            bool: True if new messages exist, False otherwise.
+        """
+        return bool(self._new_message_timestamps)
+
+    @handle_idle
+    def get_recent_emails(self) -> Mailbox:
+        """
+        Retrieves recent emails from the inbox based on the timestamps of newly detected messages.
+
+        It searches for emails received since a few minutes before the first recorded new message
+        to ensure no emails are missed due to potential server time discrepancies.
+        Filters the retrieved emails to include only those received after the first new message.
+
+        Returns:
+            Mailbox: A mailbox object containing the filtered list of recent emails.
+        """
+        search_start_time = min(self._new_message_timestamps) - timedelta(minutes=EMAIL_LOOKBACK_WINDOW)
+        self.search_emails(
+            Folder.Inbox,
+            SearchCriteria(
+                # search_start_time must be converted to an IMAP-compatible date format
+                # as defined in RFC 9051, Section 6.4.4
+                # https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check out date-text)
+                since=convert_to_imap_date(search_start_time)
+            )
+        )
+        mailbox = self.get_emails()
+        if mailbox.total > 0:
+            # email.date must conform to the syntax defined in RFC 5322, Section 3.3
+            # https://datatracker.ietf.org/doc/html/rfc5322#autoid-23
+            mailbox.emails = [
+                email
+                for email in mailbox.emails
+                if parsedate_to_datetime(email.date) >= search_start_time
+            ]
+
+        self._new_message_timestamps = []
+        return mailbox
 
     @handle_idle
     def get_email_content(self,
@@ -1669,7 +1713,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         try:
             target_part = MessageParser.get_part(message[0], ["FILENAME", '"' + name + '"', cid])
             if not target_part:
-                raise IMAPManagerException(f"Error, target attachment could not found in the email body.")
+                raise IMAPManagerException("Error, target attachment could not found in the email body.")
 
             status, message = self.uid('FETCH', uid, f'(BODY[{target_part}])')
             if status != 'OK':
