@@ -17,7 +17,7 @@ class FileObject:
 
         self.name = name
         self._initial_content = initial_content
-        self.fullpath = None
+        self.fullpath: str = ""
 
     def __repr__(self):
         return f"FileObject({self.name})"
