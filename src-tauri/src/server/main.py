@@ -24,7 +24,7 @@ from openmail.imap import Folder, Mark
 
 from classes.account_manager import AccountManager, Account, AccountWithPassword
 from classes.file_system import FileSystem
-from classes.http_request_logger import HTTPRequestLogger
+from classes.uvicorn_logger import UvicornLogger
 from classes.secure_storage import SecureStorage, SecureStorageKey, RSACipher, SecureStorageKeyValue
 from classes.port_scanner import PortScanner
 
@@ -39,7 +39,7 @@ EMAIL_CHECK_INTERVAL = 60 # seconds
 
 account_manager = AccountManager()
 secure_storage = SecureStorage()
-http_request_logger = HTTPRequestLogger()
+uvicorn_logger = UvicornLogger()
 
 openmail_clients: dict[str, OpenMail] = {}
 failed_openmail_clients: list[str] = []
@@ -175,7 +175,7 @@ async def catch_request_for_logging(request: Request, call_next):
 
     response = await call_next(request)
     response._body = await get_response_body(response)
-    http_request_logger.request(request, response)
+    uvicorn_logger.request(request, response)
     return FastAPIResponse(
         content=parse_err_msg(response._body)[0],
         status_code=response.status_code,
@@ -420,13 +420,13 @@ def check_openmail_connection_availability(accounts: str | list[str]) -> Respons
 @app.websocket("/notifications/{accounts}")
 async def websocket_endpoint(websocket: WebSocket, accounts: str):
     await websocket.accept()
-    http_request_logger.websocket(websocket, "New notification subscription created")
+    uvicorn_logger.websocket(websocket, "New notification subscription created")
     try:
         while True:
             response = check_openmail_connection_availability(accounts)
             if isinstance(response, Response):
                 await websocket.close(reason=response.message)
-                http_request_logger.websocket(websocket, response.message)
+                uvicorn_logger.websocket(websocket, response.message)
                 break
 
             # Listen for new messages and send notification when
@@ -441,10 +441,10 @@ async def websocket_endpoint(websocket: WebSocket, accounts: str):
                         get_recent_emails: Callable[[OpenMail], list[Email]] = lambda client: client.imap.get_recent_emails()
                         task_results = execute_openmail_task_concurrently(new_email_accounts, get_recent_emails)
                         await websocket.send_json(task_results)
-                        http_request_logger.websocket(websocket, task_results)
+                        uvicorn_logger.websocket(websocket, task_results)
                 except Exception as e:
                     await websocket.close(reason="There was an error while receving new emails.")
-                    http_request_logger.websocket(websocket, e)
+                    uvicorn_logger.websocket(websocket, e)
                     break
     except WebSocketDisconnect:
         pass
@@ -936,13 +936,13 @@ def create_uvicorn_info_file(host, port, pid):
 
 
 def main():
-    http_request_logger.init()
+    uvicorn_logger.init()
 
     port = PortScanner.find_free_port(8000, 9000)
     pid = str(os.getpid())
     create_uvicorn_info_file(HOST, str(port), pid)
 
-    http_request_logger.info(
+    uvicorn_logger.info(
         "Starting server at http://%s:%d | PID: %s", HOST, port, pid
     )
     uvicorn.run(app, host=HOST, port=port)

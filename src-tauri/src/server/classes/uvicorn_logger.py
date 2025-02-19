@@ -18,7 +18,7 @@ MAX_BACKUP_COUNT = 5
 DATA_PREVIEW_LENGTH = 5
 CENSOR_TRACE_LENGTH = 10
 
-class HTTPRequestLogger(logging.Logger):
+class UvicornLogger(logging.Logger):
     def __init__(self):
         super().__init__(APP_NAME)
         self.name = APP_NAME
