@@ -27,6 +27,30 @@ async function loadAccounts() {
 }
 
 /**
+ * Create WebSocket connections
+ * for every account to receive
+ * new email notifications.
+ */
+function listenForNotifications() {
+    const ws = new WebSocket(SharedStore.server.replace("http", "ws") + `/notifications/${SharedStore.accounts.join(",")}`);
+    ws.onmessage = (e: MessageEvent) => {
+        (e.data as typeof SharedStore.recentEmails).forEach((account) => {
+            const currentRecentEmails = SharedStore.recentEmails.find(
+                current => current.email_address === account.email_address
+            );
+            if (currentRecentEmails) {
+                currentRecentEmails.result = currentRecentEmails.result.concat(account.result);
+            }
+        })
+    }
+    ws.onclose = (e: CloseEvent) => {
+        if(e.reason && e.reason.toLowerCase().includes("error")) {
+            alert(e.reason);
+        }
+    }
+}
+
+/**
  * Get the server url from the tauri app and
  * check if the server is running. If it is,
  * then set the server url in the shared store and
@@ -44,6 +68,7 @@ async function connectToLocalServer(): Promise<void> {
         if (response.success) {
             SharedStore.server = url;
             await loadAccounts();
+            listenForNotifications();
         } else {
             error(500, response.message);
         }
