@@ -17,7 +17,7 @@ class FileObject:
 
         self.name = name
         self._initial_content = initial_content
-        self.fullpath: str = ""
+        self._fullpath: str = ""
 
     def __repr__(self):
         return f"FileObject({self.name})"
@@ -25,13 +25,19 @@ class FileObject:
     def __call__(self):
         return self
 
+    @property
+    def fullpath(self) -> str:
+        if not self._fullpath:
+            raise FileNotFoundError
+        return self._fullpath
+
     def create(self, fullpath: str, overwrite: bool = False):
         if not isinstance(fullpath, str):
             raise TypeError(f"Invalid file path: {fullpath}. File paths must be a string.")
         if not fullpath:
             raise ValueError(f"Invalid file path: {fullpath}. File paths must not be empty.")
 
-        self.fullpath = fullpath
+        self._fullpath = fullpath
 
         if not overwrite and os.path.exists(self.fullpath):
             return
@@ -40,24 +46,15 @@ class FileObject:
             file.write(self._initial_content)
 
     def read(self) -> str:
-        if not self.fullpath:
-            raise FileNotFoundError
-
         with open(self.fullpath, "r", encoding="utf-8") as file:
             content = file.read()
         return content
 
     def write(self, content: Any):
-        if not self.fullpath:
-            raise FileNotFoundError
-
         with open(self.fullpath, "w", encoding="utf-8") as file:
             file.write(content)
 
     def clear(self):
-        if not self.fullpath:
-            raise FileNotFoundError
-
         with open(self.fullpath, "w", encoding="utf-8") as file:
             file.write("")
 
@@ -65,7 +62,7 @@ class DirObject:
     def __init__(self, name: str, children: list[FileObject | DirObject] | None = None):
         self.name = name
         self.children = children or []
-        self.fullpath = None
+        self._fullpath: str = ""
 
     def __repr__(self):
         return f"DirObject({self.name})"
@@ -81,6 +78,12 @@ class DirObject:
                 return child
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
+    @property
+    def fullpath(self) -> str:
+        if not self._fullpath:
+            raise FileNotFoundError
+        return self._fullpath
+
     def get(self, name: str) -> DirObject | FileObject:
         """Get a child by its name (used for both dot and key access)"""
         for child in self.children:
@@ -94,7 +97,7 @@ class DirObject:
         if not fullpath:
             raise ValueError(f"Invalid directory path: {fullpath}. Directory paths must not be empty.")
 
-        self.fullpath = fullpath
+        self._fullpath = fullpath
 
         if not overwrite and os.path.exists(self.fullpath):
             return
