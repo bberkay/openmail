@@ -390,10 +390,22 @@ def execute_openmail_task_concurrently(
 
         return results
 
-def check_if_email_client_is_exists(accounts: str) -> Response | bool:
-    reconnect_and_idle_logged_out_openmail_clients(accounts)
+def check_openmail_connection_availability(accounts: str | list[str]) -> Response | bool:
+    if isinstance(accounts, str): accounts = accounts.split(",")
+
     connected_openmail_clients = openmail_clients.keys()
-    for account in accounts.split(","):
+    disconnected_accounts = []
+    for account in accounts:
+        if account not in connected_openmail_clients:
+            disconnected_accounts.append(account)
+
+    if disconnected_accounts:
+        reconnect_and_idle_logged_out_openmail_clients(",".join(disconnected_accounts))
+    else:
+        return True
+
+    connected_openmail_clients = openmail_clients.keys()
+    for account in disconnected_accounts:
         if account not in connected_openmail_clients:
             return Response(
                 success=False,
@@ -411,9 +423,8 @@ async def get_mailboxes(
     offset_end: Optional[int] = None,
 ) -> Response[list[OpenMailTaskResult]]:
     try:
-        response = check_if_email_client_is_exists(accounts)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(accounts)
+        if isinstance(response, Response): return response
 
         execute_openmail_task_concurrently(
             accounts.split(","),
@@ -442,9 +453,8 @@ async def paginate_mailboxes(
     offset_end: int,
 ) -> Response[list[OpenMailTaskResult]]:
     try:
-        response = check_if_email_client_is_exists(accounts)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(accounts)
+        if isinstance(response, Response): return response
 
         return Response[list[OpenMailTaskResult]](
             success=True,
@@ -464,9 +474,8 @@ async def get_folders(
     accounts: str,
 ) -> Response[list[OpenMailTaskResult]]:
     try:
-        response = check_if_email_client_is_exists(accounts)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(accounts)
+        if isinstance(response, Response): return response
 
         return Response[list[OpenMailTaskResult]](
             success=True,
@@ -486,9 +495,8 @@ def get_email_content(
     uid: str
 ) -> Response[Email]:
     try:
-        response = check_if_email_client_is_exists(account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(account)
+        if isinstance(response, Response): return response
 
         return Response[Email](
             success=True,
@@ -507,9 +515,8 @@ def download_attachment(
     cid: str = ""
 ) -> Response[Attachment]:
     try:
-        response = check_if_email_client_is_exists(account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(account)
+        if isinstance(response, Response): return response
 
         return Response[Attachment](
             success=True,
@@ -557,9 +564,8 @@ async def send_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_client_is_exists(form_data.sender)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(form_data.sender)
+        if isinstance(response, Response): return response
 
         results = execute_openmail_task_concurrently(
             extract_email_addresses(form_data.sender.split(",")),
@@ -604,9 +610,8 @@ async def reply_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_client_is_exists(form_data.sender)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(form_data.sender)
+        if isinstance(response, Response): return response
 
         results = execute_openmail_task_concurrently(
             extract_email_addresses(form_data.sender.split(",")),
@@ -651,9 +656,8 @@ async def forward_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_if_email_client_is_exists(form_data.sender)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(form_data.sender)
+        if isinstance(response, Response): return response
 
         results = execute_openmail_task_concurrently(
             extract_email_addresses(form_data.sender.split(",")),
@@ -702,9 +706,8 @@ class MarkEmailRequest(BaseModel):
 @app.post("/mark-email")
 async def mark_email(request_body: MarkEmailRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[request_body.account].imap.mark_email(
             request_body.mark,
@@ -726,9 +729,8 @@ class UnmarkEmailRequest(BaseModel):
 @app.post("/unmark-email")
 async def unmark_email(request_body: UnmarkEmailRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[request_body.account].imap.unmark_email(
             request_body.mark,
@@ -750,9 +752,8 @@ class MoveEmailRequest(BaseModel):
 @app.post("/move-email")
 async def move_email(request_body: MoveEmailRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[request_body.account].imap.move_email(
             request_body.source_folder,
@@ -774,9 +775,8 @@ class CopyEmailRequest(BaseModel):
 @app.post("/copy-email")
 async def copy_email(request_body: CopyEmailRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[request_body.account].imap.copy_email(
             request_body.source_folder,
@@ -797,9 +797,8 @@ class DeleteEmailRequest(BaseModel):
 @app.post("/delete-email")
 async def delete_email(request_body: DeleteEmailRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[request_body.account].imap.delete_email(
             request_body.folder, request_body.sequence_set
@@ -818,9 +817,8 @@ class CreateFolderRequest(BaseModel):
 @app.post("/create-folder")
 async def create_folder(request_body: CreateFolderRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[
             request_body.account
@@ -841,9 +839,8 @@ class RenameFolderRequest(BaseModel):
 @app.post("/rename-folder")
 async def rename_folder(request_body: RenameFolderRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[
             request_body.account
@@ -864,9 +861,8 @@ class MoveFolderRequest(BaseModel):
 @app.post("/move-folder")
 async def move_folder(request_body: MoveFolderRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[request_body.account].imap.move_folder(
             request_body.folder_name, request_body.destination_folder
@@ -884,9 +880,8 @@ class DeleteFolderRequest(BaseModel):
 @app.post("/delete-folder")
 async def delete_folder(request_body: DeleteFolderRequest) -> Response:
     try:
-        response = check_if_email_client_is_exists(request_body.account)
-        if not response:
-            return response
+        response = check_openmail_connection_availability(request_body.account)
+        if isinstance(response, Response): return response
 
         status, msg = openmail_clients[
             request_body.account
