@@ -33,7 +33,7 @@ class HTTPRequestLogger(logging.Logger):
         self.addHandler(stream_handler)
         self.addHandler(file_handler)
 
-    def _censor(self, data: Any) -> str:
+    def _censor(self, data: Any) -> dict | str:
         if not data:
             return ""
         if isinstance(data, dict):
@@ -44,10 +44,10 @@ class HTTPRequestLogger(logging.Logger):
         elif isinstance(data, list):
             return "[" + (str(data)[1:DATA_PREVIEW_LENGTH] + "*" * CENSOR_TRACE_LENGTH) + "]" if data[0] else "[]"
         elif isinstance(data, str):
-            return data[:DATA_PREVIEW_LENGTH] + "*" + CENSOR_TRACE_LENGTH
+            return data[:DATA_PREVIEW_LENGTH] + ("*" * CENSOR_TRACE_LENGTH)
         return "`response_data` was not censored properly."
 
-    def _summarize(self, data: Any) -> Any:
+    def _summarize(self, data: Any) -> dict | str:
         if isinstance(data, dict):
             return {key: self._summarize(value) for key, value in data.items()}
         elif isinstance(data, list):
@@ -56,11 +56,11 @@ class HTTPRequestLogger(logging.Logger):
             return data[:MAX_SUMMARIZED_DATA_LENGTH] + '...' + (']' if data.startswith('[') else '')
         return data
 
-    def _load(self, data: bytes) -> Any:
+    def _load(self, data: bytes | str) -> Any:
         try:
             return json.loads(data)
         except json.decoder.JSONDecodeError:
-            return data.decode("utf-8")
+            return data.decode("utf-8") if isinstance(data, bytes) else data
 
     def request(self, request, response):
         try:
@@ -76,6 +76,25 @@ class HTTPRequestLogger(logging.Logger):
             if response.status_code >= 400:
                 self.error(log_message)
             elif response.status_code != 307: # Temporary Redirect
+                self.info(log_message)
+        except Exception as e:
+            self.error("Error while logging request and response: %s" % str(e))
+
+    def websocket(self, websocket, response):
+        try:
+            if isinstance(response, dict):
+                response = self._censor(response)
+            else:
+                response = self._load(response)
+
+            log_message = (
+                f"WebSocket {str(websocket.url)}"
+                f"{self._summarize(response)} - "
+                f"{make_size_human_readable(len(response))}"
+            )
+            if isinstance(response, str) and "error" in response.lower():
+                self.error(log_message)
+            else:
                 self.info(log_message)
         except Exception as e:
             self.error("Error while logging request and response: %s" % str(e))

@@ -28,7 +28,7 @@ from classes.http_request_logger import HTTPRequestLogger
 from classes.secure_storage import SecureStorage, SecureStorageKey, RSACipher, SecureStorageKeyValue
 from classes.port_scanner import PortScanner
 
-from consts import TRUSTED_HOSTS
+from consts import HOST, TRUSTED_HOSTS
 from utils import is_email_valid, err_msg, parse_err_msg, get_key_by_value
 
 
@@ -420,25 +420,32 @@ def check_openmail_connection_availability(accounts: str | list[str]) -> Respons
 @app.websocket("/notifications/{accounts}")
 async def websocket_endpoint(websocket: WebSocket, accounts: str):
     await websocket.accept()
+    http_request_logger.websocket(websocket, "New notification subscription created")
     try:
         while True:
             response = check_openmail_connection_availability(accounts)
             if isinstance(response, Response):
-                await websocket.send_text(response.message)
+                await websocket.close(reason=response.message)
+                http_request_logger.websocket(websocket, response.message)
                 break
 
             # Listen for new messages and send notification when
             # any new message received.
             while True:
-                await asyncio.sleep(EMAIL_CHECK_INTERVAL)
-                any_new_email: Callable[[OpenMail], bool] = lambda client: client.imap.any_new_email()
-                task_results = execute_openmail_task_concurrently(accounts, any_new_email)
-                new_email_accounts = [account.email_address for account in task_results if account.result]
-                if len(new_email_accounts) > 0:
-                    get_recent_emails: Callable[[OpenMail], list[Email]] = lambda client: client.imap.get_recent_emails()
-                    task_results = execute_openmail_task_concurrently(new_email_accounts, get_recent_emails)
-                    await websocket.send_json(task_results)
-        await websocket.close()
+                try:
+                    await asyncio.sleep(EMAIL_CHECK_INTERVAL)
+                    any_new_email: Callable[[OpenMail], bool] = lambda client: client.imap.any_new_email()
+                    task_results = execute_openmail_task_concurrently(accounts, any_new_email)
+                    new_email_accounts = [account.email_address for account in task_results if account.result]
+                    if len(new_email_accounts) > 0:
+                        get_recent_emails: Callable[[OpenMail], list[Email]] = lambda client: client.imap.get_recent_emails()
+                        task_results = execute_openmail_task_concurrently(new_email_accounts, get_recent_emails)
+                        await websocket.send_json(task_results)
+                        http_request_logger.websocket(websocket, task_results)
+                except Exception as e:
+                    await websocket.close(reason="There was an error while receving new emails.")
+                    http_request_logger.websocket(websocket, e)
+                    break
     except WebSocketDisconnect:
         pass
 
@@ -931,15 +938,14 @@ def create_uvicorn_info_file(host, port, pid):
 def main():
     http_request_logger.init()
 
-    host = "127.0.0.1"
     port = PortScanner.find_free_port(8000, 9000)
     pid = str(os.getpid())
-    create_uvicorn_info_file(host, str(port), pid)
+    create_uvicorn_info_file(HOST, str(port), pid)
 
     http_request_logger.info(
-        "Starting server at http://%s:%d | PID: %s", host, port, pid
+        "Starting server at http://%s:%d | PID: %s", HOST, port, pid
     )
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(app, host=HOST, port=port)
 
 
 if __name__ == "__main__":
