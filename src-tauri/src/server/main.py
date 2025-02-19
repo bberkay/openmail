@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import uvicorn
 from pydantic import BaseModel
-from fastapi import FastAPI, Form, UploadFile, Request, Response as FastAPIResponse
+from fastapi import FastAPI, Form, UploadFile, Request, Response as FastAPIResponse, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
@@ -35,6 +35,7 @@ from utils import is_email_valid, err_msg, parse_err_msg, get_key_by_value
 #################### SET UP #######################
 T = TypeVar("T")
 MAX_CONNECTION_WORKER = 5
+EMAIL_CHECK_INTERVAL = 60 # seconds
 
 account_manager = AccountManager()
 secure_storage = SecureStorage()
@@ -368,10 +369,11 @@ class OpenMailTaskResult(BaseModel):
     result: dict | list | str | tuple | object
 
 def execute_openmail_task_concurrently(
-    accounts: list[str],
+    accounts: list[str] | str,
     func: Callable[...],
     **params
 ) -> list[OpenMailTaskResult]:
+    if isinstance(accounts, str): accounts = accounts.split(",")
     results: list[OpenMailTaskResult] = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_emails = {
@@ -415,6 +417,31 @@ def check_openmail_connection_availability(accounts: str | list[str]) -> Respons
 
     return True
 
+@app.websocket("/notifications/{accounts}")
+async def websocket_endpoint(websocket: WebSocket, accounts: str):
+    await websocket.accept()
+    try:
+        while True:
+            response = check_openmail_connection_availability(accounts)
+            if isinstance(response, Response):
+                await websocket.send_text(response.message)
+                break
+
+            # Listen for new messages and send notification when
+            # any new message received.
+            while True:
+                await asyncio.sleep(EMAIL_CHECK_INTERVAL)
+                any_new_email: Callable[[OpenMail], bool] = lambda client: client.imap.any_new_email()
+                task_results = execute_openmail_task_concurrently(accounts, any_new_email)
+                new_email_accounts = [account.email_address for account in task_results if account.result]
+                if len(new_email_accounts) > 0:
+                    get_recent_emails: Callable[[OpenMail], list[Email]] = lambda client: client.imap.get_recent_emails()
+                    task_results = execute_openmail_task_concurrently(new_email_accounts, get_recent_emails)
+                    await websocket.send_json(task_results)
+        await websocket.close()
+    except WebSocketDisconnect:
+        pass
+
 @app.get("/get-mailboxes/{accounts}")
 async def get_mailboxes(
     accounts: str,
@@ -428,7 +455,7 @@ async def get_mailboxes(
         if isinstance(response, Response): return response
 
         execute_openmail_task_concurrently(
-            accounts.split(","),
+            accounts,
             lambda client, **params: client.imap.search_emails(**params),
             folder=folder,
             search=SearchCriteria.parse_raw(search) if search else None,
@@ -438,7 +465,7 @@ async def get_mailboxes(
             success=True,
             message="Emails fetched successfully.",
             data=execute_openmail_task_concurrently(
-                accounts.split(","),
+                accounts,
                 lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
                 offset_end=offset_end,
@@ -461,7 +488,7 @@ async def paginate_mailboxes(
             success=True,
             message="Emails paginated successfully.",
             data=execute_openmail_task_concurrently(
-                accounts.split(","),
+                accounts,
                 lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
                 offset_end=offset_end,
@@ -482,7 +509,7 @@ async def get_folders(
             success=True,
             message="Folders fetched successfully.",
             data=execute_openmail_task_concurrently(
-                accounts.split(","),
+                accounts,
                 lambda client: client.imap.get_folders(tagged=True),
             ),
         )
