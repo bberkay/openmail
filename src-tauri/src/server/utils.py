@@ -27,7 +27,9 @@ def generate_random_id() -> str:
     random_part = random.randint(1000, 9999)
     return f"{epoch_time}{random_part}"
 
-def safe_json_loads(value: str) -> dict | list | str:
+def safe_json_loads(value: bytes | str) -> dict | list | str:
+    if isinstance(value, bytes):
+        value = value.decode()
     try:
         return json.loads(value)
     except (json.JSONDecodeError, TypeError):

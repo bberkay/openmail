@@ -936,8 +936,6 @@ def create_uvicorn_info_file(host, port, pid):
 
 
 def main():
-    uvicorn_logger.init()
-
     port = PortScanner.find_free_port(8000, 9000)
     pid = str(os.getpid())
     create_uvicorn_info_file(HOST, str(port), pid)
