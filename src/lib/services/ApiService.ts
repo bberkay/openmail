@@ -220,7 +220,7 @@ export class ApiService {
     static async get<T extends GetRoutes>(
         url: string,
         endpoint: T,
-        params: QueryParams[T],
+        params?: QueryParams[T],
     ): Promise<GetResponse<T>> {
         const queryString = params ? ApiService.createQueryString(params) : "";
         const response = await fetch(url + endpoint + queryString);
