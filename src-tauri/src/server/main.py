@@ -186,6 +186,7 @@ async def catch_request_for_logging(request: Request, call_next):
 async def hello() -> Response:
     return Response(success=True, message="Hello, Server is ready for you!")
 
+
 ################ ACCOUNT OPERATIONS #################
 class GetPublicKeyData(BaseModel):
     public_key: str
