@@ -1460,6 +1460,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         Returns:
             Mailbox: A mailbox object containing the filtered list of recent emails.
+
+        Example:
+            >>> get_recent_emails()
+            [Email(uid="2", sender="b@gmail.com", ...), Email(uid="3", sender="c@gmail.com", ...)]
         """
         search_start_time = min(self._new_message_timestamps)
         self.search_emails(
