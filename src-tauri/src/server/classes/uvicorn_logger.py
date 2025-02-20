@@ -35,7 +35,7 @@ class UvicornLogger(logging.Logger):
         stream_handler.setFormatter(formatter)
 
         file_handler = RotatingFileHandler(
-            FileSystem().root["logs"]["uvicorn.log"].fullpath,
+            FileSystem().get_uvicorn_log().fullpath,
             maxBytes=MAX_BYTES_TO_LOG,
             backupCount=MAX_BACKUP_COUNT
         )
