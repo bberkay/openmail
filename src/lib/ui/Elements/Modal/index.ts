@@ -15,7 +15,6 @@ export function show(modal: Component, modalProps: any) {
 }
 
 export function close() {
-    console.log("geldi : close");
     if (mountedModal) {
         unmount(mountedModal);
         mountedModal = null;
