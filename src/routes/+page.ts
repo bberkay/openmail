@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { TauriCommand } from "$lib/types";
+import { TauriCommand, type Email, type OpenMailTaskResults } from "$lib/types";
 import { SharedStore } from "$lib/stores/shared.svelte";
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from './$types';
@@ -34,12 +34,23 @@ async function loadAccounts() {
 function listenForNotifications() {
     const ws = new WebSocket(SharedStore.server.replace("http", "ws") + `/notifications/${SharedStore.accounts.join(",")}`);
     ws.onmessage = (e: MessageEvent) => {
-        (e.data as typeof SharedStore.recentEmails).forEach((account) => {
+        (e.data as OpenMailTaskResults<Email[]>).forEach((account) => {
+            // Add uid of the email to the recent emails store.
             const currentRecentEmails = SharedStore.recentEmails.find(
                 current => current.email_address === account.email_address
             );
             if (currentRecentEmails) {
-                currentRecentEmails.result = currentRecentEmails.result.concat(account.result);
+                currentRecentEmails.result = currentRecentEmails.result.concat(
+                    account.result.map(email => email.uid)
+                );
+            }
+
+            // Add email itself to account's mailbox.
+            const currentMailbox = SharedStore.mailboxes.find(
+                current => current.email_address === account.email_address
+            );
+            if (currentMailbox) {
+                currentMailbox.result.emails = currentMailbox.result.emails.concat(account.result);
             }
         })
     }

@@ -21,7 +21,7 @@ interface ISharedStore {
     [SharedStoreKeys.server]: string;
     [SharedStoreKeys.accounts]: Account[];
     [SharedStoreKeys.failedAccounts]: Account[];
-    [SharedStoreKeys.recentEmails]: OpenMailTaskResults<Email[]>;
+    [SharedStoreKeys.recentEmails]: OpenMailTaskResults<string[]>; // uid list
     [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
     [SharedStoreKeys.standardFolders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.customFolders]: OpenMailTaskResults<string[]>;
