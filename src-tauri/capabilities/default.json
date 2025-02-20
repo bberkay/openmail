@@ -22,15 +22,28 @@
     "fs:default",
     {
       "identifier": "fs:allow-create",
-      "allow": [{ "path": "$DOWNLOAD/**" }]
+      "allow": [
+        {
+          "path": "$DOWNLOAD/**"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-write",
-      "allow": [{ "path": "$DOWNLOAD/**" }]
+      "allow": [
+        {
+          "path": "$DOWNLOAD/**"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "$DOWNLOAD/**" }]
-    }
+      "allow": [
+        {
+          "path": "$DOWNLOAD/**"
+        }
+      ]
+    },
+    "notification:default"
   ]
 }
