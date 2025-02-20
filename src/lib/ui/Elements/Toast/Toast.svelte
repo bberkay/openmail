@@ -6,9 +6,10 @@
     interface Props {
         id: string;
         children: Snippet;
+        content?: string;
     }
 
-    let { id, children }: Props = $props();
+    let { id, children, content }: Props = $props();
     let toast: HTMLElement;
 
     onMount(() => {
@@ -34,7 +35,11 @@
 </script>
 
 <div class="toast" bind:this={toast}>
-    <div>{@render children()}</div>
+    {#if content}
+        <div>{@html content}</div>
+    {:else}
+        <div>{@render children()}</div>
+    {/if}
     <button class="toast-close" type="button" onclick={dismiss}>X</button>
 </div>
 

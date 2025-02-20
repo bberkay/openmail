@@ -5,8 +5,15 @@ import { generateRandomId } from '$lib/utils';
 
 let mountedToasts: Record<string, Record<string, any>> = {};
 
-export function show(notification: Component, toastProps: any) {
+export function show(notification: string | Component, toastProps: any) {
     const toastId = generateRandomId();
+
+    let content = '';
+    if (typeof notification === 'string') {
+        content = notification + ' ' + toastId;
+        notification = Toast;
+    }
+
     const mountedNotification = mount(notification, {
         target: document.getElementById('notification-container')!,
         props: { ...toastProps, id: toastId },
