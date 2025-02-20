@@ -1,13 +1,7 @@
 <script lang="ts">
-    import {
-      isPermissionGranted,
-      requestPermission,
-      sendNotification,
-    } from '@tauri-apps/plugin-notification';
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import type { Account, Email as EmailAsType } from "$lib/types";
-    import { onMount } from 'svelte';
     import * as Button from "$lib/ui/Elements/Button";
     import Email from "../Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
