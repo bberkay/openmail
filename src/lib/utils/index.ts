@@ -16,6 +16,10 @@ export function debounce(func: Function, delay: number) {
     };
 }
 
+export function generateRandomId(): string {
+    return Date.now().toString();
+}
+
 export function removeWhitespaces(text: string): string {
     return text.replace(/\s+/g, '');
 }

@@ -7,3 +7,4 @@
 </div>
 
 <div id="modal-container"></div>
+<div id="notification-container"></div>
