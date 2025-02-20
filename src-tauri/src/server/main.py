@@ -7,7 +7,7 @@ import os
 import asyncio
 import concurrent.futures
 from urllib.parse import unquote
-from typing import Annotated, Callable, Generic, Optional, TypeVar, cast
+from typing import Annotated, Callable, Generic, Optional, TypeVar, Any, cast
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 
@@ -366,7 +366,7 @@ def remove_accounts() -> Response:
 ################ EMAIL OPERATIONS ###################
 class OpenMailTaskResult(BaseModel):
     email_address: str
-    result: dict | list | str | tuple | object
+    result: Any
 
 def execute_openmail_task_concurrently(
     accounts: list[str] | str,
