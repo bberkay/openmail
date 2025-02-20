@@ -81,6 +81,10 @@ class DirObject:
         """Key-based access (for example: explorer['config'])"""
         return self.get(name)
 
+    def __setitem__(self, key, value):
+        """Prevent overwriting __getitem__"""
+        raise AttributeError(f"Modification of '{key}' via __setitem__ is not allowed.")
+
     @property
     def fullpath(self) -> str:
         if not self._fullpath:
