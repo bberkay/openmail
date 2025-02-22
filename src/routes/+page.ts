@@ -1,10 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import {
-  isPermissionGranted,
-  requestPermission,
-  sendNotification,
-} from '@tauri-apps/plugin-notification';
-import { TauriCommand, type Email, type OpenMailTaskResults } from "$lib/types";
+import { TauriCommand } from "$lib/types";
 import { SharedStore } from "$lib/stores/shared.svelte";
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from './$types';
@@ -32,62 +27,6 @@ async function loadAccounts() {
 }
 
 /**
- * Create WebSocket connections
- * for every account to receive
- * new email notifications.
- */
-async function listenForNotifications() {
-    const ws = new WebSocket(
-        SharedStore.server.replace("http", "ws") + `/notifications/${SharedStore.accounts.join(",")}`
-    );
-
-    let permissionGranted = false;
-    ws.onopen = async () => {
-        permissionGranted = await isPermissionGranted();
-        if (!permissionGranted) {
-          const permission = await requestPermission();
-          permissionGranted = permission === 'granted';
-        }
-    }
-
-    ws.onmessage = (e: MessageEvent) => {
-        // Send app notification.
-        if (permissionGranted) {
-            sendNotification({
-                title: 'New Email Received!',
-                body: 'Here, look at your new email.'
-            });
-        }
-
-        (e.data as OpenMailTaskResults<Email[]>).forEach((account) => {
-            // Add uid of the email to the recent emails store.
-            const currentRecentEmails = SharedStore.recentEmails.find(
-                current => current.email_address === account.email_address
-            );
-            if (currentRecentEmails) {
-                currentRecentEmails.result = currentRecentEmails.result.concat(
-                    account.result.map(email => email.uid)
-                );
-            }
-
-            // Add email itself to account's mailbox.
-            const currentMailbox = SharedStore.mailboxes.find(
-                current => current.email_address === account.email_address
-            );
-            if (currentMailbox) {
-                currentMailbox.result.emails = currentMailbox.result.emails.concat(account.result);
-            }
-        })
-    }
-
-    ws.onclose = (e: CloseEvent) => {
-        if(e.reason && e.reason.toLowerCase().includes("error")) {
-            alert(e.reason);
-        }
-    }
-}
-
-/**
  * Get the server url from the tauri app and
  * check if the server is running. If it is,
  * then set the server url in the shared store and
@@ -105,7 +44,6 @@ async function connectToLocalServer(): Promise<void> {
         if (response.success) {
             SharedStore.server = url;
             await loadAccounts();
-            await listenForNotifications();
         } else {
             error(500, response.message);
         }
