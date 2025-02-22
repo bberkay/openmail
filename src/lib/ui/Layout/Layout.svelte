@@ -23,7 +23,7 @@
     let { children }: Props = $props();
 </script>
 
-<div bind:this={componentContainer}>
+<div id="layout-container" bind:this={componentContainer}>
     {#if !isMounted}
         {@render children()}
     {/if}
