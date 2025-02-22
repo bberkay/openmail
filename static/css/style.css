@@ -14,7 +14,7 @@
 }
 
 body{
-    --bg-color: light-dark(#FFFFFF, #0F1012);
+    --bg-color: light-dark(#FFFFFF, #000);
     --text-color: light-dark(#2A2D31, #CFCFD2);
     --front-color: light-dark(#F3F5F7, #131517);
     --front-bright-color: light-dark(#F9FAFB, #373B41);
