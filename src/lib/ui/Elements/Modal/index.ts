@@ -4,7 +4,7 @@ import type { Component } from "svelte";
 
 let mountedModal: Record<string, any> | null = null;
 
-export function show(modal: Component, modalProps: any) {
+export function show(modal: Component, modalProps?: any) {
 	if(mountedModal)
 	   return;
 
