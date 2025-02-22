@@ -1,3 +1,40 @@
+/* Theme */
+:root{
+    & body {
+        color-scheme: light dark;
+    }
+
+    & body[data-color-scheme="light"] {
+        color-scheme: light;
+    }
+
+    & body[data-color-scheme="dark"] {
+        color-scheme: dark;
+    }
+}
+
+body{
+    --bg-color: light-dark(#FFFFFF, #0F1012);
+    --text-color: light-dark(#2A2D31, #CFCFD2);
+    --front-color: light-dark(#F3F5F7, #131517);
+    --front-bright-color: light-dark(#F9FAFB, #373B41);
+    --border-color: light-dark(#E5E8EA, #1A1C1F);
+    --outline-color: light-dark(#D1D5D8, #2A2D31);
+    --accent-color: light-dark(#4274c2, #144a9a);
+    --info-bg-color: light-dark(#CFF4FC, #032830);
+    --info-border-color: light-dark(#9EEAF9, #087990);
+    --info-text-color: light-dark(#055160, #6EDFF6);
+    --error-color: light-dark(#F8D7DA, #2C0B0E);
+    --error-border-color: light-dark(#F1AEB5, #842029);
+    --error-text-color: light-dark(#68272F, #EA868F);
+    --success-color: light-dark(#D1E7DD, #051B11);
+    --success-border-color: light-dark(#A3CFBB, #0F5132);
+    --success-text-color: light-dark(#0A3622, #6AA98B);
+    --scrollbar-thumb-color: light-dark(#808080, #808080);
+}
+
+/* Elements */
+
 *{
     scrollbar-width: thin;
     scrollbar-color: #888 transparent;

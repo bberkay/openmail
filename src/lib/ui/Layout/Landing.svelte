@@ -23,8 +23,18 @@
     let { children }: Props = $props();
 </script>
 
-<div bind:this={componentContainer}>
+<section bind:this={componentContainer} class="landing">
     {#if !isMounted}
         {@render children()}
     {/if}
-</div>
+</section>
+
+<style>
+    .landing {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+    }
+</style>
