@@ -1,6 +1,5 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import Layout from "$lib/ui/Layout/Layout.svelte";
     import Main from "$lib/ui/Layout/Main.svelte";
     import Content from "$lib/ui/Layout/Main/Content.svelte";
     import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
@@ -15,39 +14,34 @@
     let isLoading: boolean = $derived(SharedStore.server === "");
 </script>
 
-<Layout>
-    {#if SharedStore.mailboxes.length > 0}
-        <Main>
-            <div class="mailbox">
-                <section style="width:20%;margin-right:5px;">
-                    <Sidebar>
-                        <Account />
-                        <FolderMenu />
-                    </Sidebar>
-                </section>
-                <section style="width:80%;">
-                    <SearchBar />
-                    <div class="card">
-                        <Content>
-                            <Inbox />
-                        </Content>
-                    </div>
-                </section>
-            </div>
-        </Main>
-    {:else}
-        <Landing>
-            {#if isLoading}
-                <Loading />
-            {:else}
-                <Register />
-            {/if}
-        </Landing>
-    {/if}
-</Layout>
-
-<hr />
-<pre>{JSON.stringify(SharedStore, null, 4)}</pre>
+{#if SharedStore.mailboxes.length > 0}
+    <Main>
+        <div class="mailbox">
+            <section style="width:20%;margin-right:5px;">
+                <Sidebar>
+                    <Account />
+                    <FolderMenu />
+                </Sidebar>
+            </section>
+            <section style="width:80%;">
+                <SearchBar />
+                <div class="card">
+                    <Content>
+                        <Inbox />
+                    </Content>
+                </div>
+            </section>
+        </div>
+    </Main>
+{:else}
+    <Landing>
+        {#if isLoading}
+            <Loading />
+        {:else}
+            <Register />
+        {/if}
+    </Landing>
+{/if}
 
 <style>
     .mailbox {
