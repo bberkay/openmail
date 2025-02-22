@@ -430,7 +430,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._readline_thread_event.clear()
 
         if not self._readline_thread or not self._readline_thread.is_alive():
-            self._readline_thread = threading.Thread(target=readline_thread)
+            self._readline_thread = threading.Thread(target=readline_thread, daemon=True)
             self._readline_thread.start()
 
     def _handle_idle_response(self):
@@ -450,7 +450,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._idle_thread_event.clear()
 
         if not self._idle_thread or not self._idle_thread.is_alive():
-            self._idle_thread = threading.Thread(target=self._idle)
+            self._idle_thread = threading.Thread(target=self._idle, daemon=True)
             self._idle_thread.start()
 
         self._wait_for_response = IMAPManager.WaitResponse.IDLE
@@ -833,6 +833,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def is_logged_out(self):
         try:
+            if self._is_idle:
+                return False
             return super().noop()[0] != "OK"
         except Exception:
             return True

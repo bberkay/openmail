@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import asyncio
 import concurrent.futures
+import sys
 from urllib.parse import unquote
 from typing import Annotated, Callable, Generic, Optional, TypeVar, Any, cast
 from contextlib import asynccontextmanager
@@ -35,7 +36,10 @@ from utils import is_email_valid, err_msg, parse_err_msg, get_key_by_value
 #################### SET UP #######################
 T = TypeVar("T")
 MAX_CONNECTION_WORKER = 5
-EMAIL_CHECK_INTERVAL = 60 # seconds
+# Timeouts (in seconds)
+IMAP_OPERATION_TIMEOUT = 60
+IMAP_LOGGED_OUT_INTERVAL = 60
+EMAIL_CHECK_INTERVAL = 60
 
 account_manager = AccountManager()
 secure_storage = SecureStorage()
@@ -89,6 +93,7 @@ def reconnect_to_account(email_address: str):
             return
 
         if not openmail_clients[email_address].imap.is_logged_out():
+            print(f"No need to reconnect for {email_address}")
             return
 
         accounts: list[AccountWithPassword] = account_manager.get(email_address)
@@ -111,7 +116,7 @@ def reconnect_and_idle_logged_out_openmail_clients(email_addresses: str):
 async def monitor_logged_out_openmail_clients():
     try:
         while True:
-            await asyncio.sleep(60)
+            await asyncio.sleep(IMAP_LOGGED_OUT_INTERVAL)
             reconnect_and_idle_logged_out_openmail_clients(",".join(openmail_clients.keys()))
     except asyncio.CancelledError:
         print("Monitoring logged out clients task is being cancelled...")
@@ -126,7 +131,14 @@ def shutdown_openmail_clients():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_and_idle_openmail_clients()
+    # Create openmail clients
+    try:
+        create_and_idle_openmail_clients()
+    except Exception as e:
+        print(f"Error while creating openmail clients: {e}")
+        uvicorn_logger.error(e)
+        shutdown_openmail_clients()
+        sys.exit(1)
 
     # Check logged out clients and reconnect them.
     global monitor_logged_out_clients_task
@@ -375,14 +387,14 @@ def execute_openmail_task_concurrently(
 ) -> list[OpenMailTaskResult]:
     if isinstance(accounts, str): accounts = accounts.split(",")
     results: list[OpenMailTaskResult] = []
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONNECTION_WORKER) as executor:
         future_to_emails = {
             executor.submit(func, client, **params): email_address
             for email_address, client in openmail_clients.items()
             if email_address in accounts
         }
 
-        for future in concurrent.futures.as_completed(future_to_emails):
+        for future in concurrent.futures.as_completed(future_to_emails, IMAP_OPERATION_TIMEOUT):
             email_address = future_to_emails[future]
             future = future.result()
             results.append(OpenMailTaskResult(
@@ -434,10 +446,12 @@ async def websocket_endpoint(websocket: WebSocket, accounts: str):
             while True:
                 try:
                     await asyncio.sleep(EMAIL_CHECK_INTERVAL)
+                    print("Checking for new emails for these accounts: ", accounts)
                     any_new_email: Callable[[OpenMail], bool] = lambda client: client.imap.any_new_email()
                     task_results = execute_openmail_task_concurrently(accounts, any_new_email)
                     new_email_accounts = [account.email_address for account in task_results if account.result]
                     if len(new_email_accounts) > 0:
+                        print("These accounts has new emails: ", accounts)
                         get_recent_emails: Callable[[OpenMail], list[Email]] = lambda client: client.imap.get_recent_emails()
                         task_results = execute_openmail_task_concurrently(new_email_accounts, get_recent_emails)
                         await websocket.send_json(task_results)
