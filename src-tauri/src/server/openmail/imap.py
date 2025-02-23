@@ -831,7 +831,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     # IMAPManager commands
 
-    def is_logged_out(self):
+    def is_logged_out(self) -> bool:
+        """Check if imap connection is terminated"""
         try:
             if self._is_idle:
                 return False
@@ -839,7 +840,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception:
             return True
 
-    def idle(self):
+    def is_idle(self) -> bool:
+        """Check if idle is active"""
+        return self._is_idle
+
+    def idle(self) -> None:
         """
         Initiates the IMAP IDLE command to start monitoring changes
         in the INBOX(is going to select) on its own thread. If already
@@ -853,7 +858,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             self._readline()
             self._wait_response(IMAPManager.WaitResponse.IDLE)
 
-    def done(self):
+    def done(self) -> None:
         """Terminates the current IDLE session if active."""
         if self._is_idle:
             self.send(b"DONE\r\n")
