@@ -82,10 +82,8 @@
         }
     }
 
-    let isEditingAccount: Account | null = $state(SharedStore.failedAccounts
-            ? SharedStore.failedAccounts[0]
-            : null);
-    let isListingAccount: boolean = $state(false);
+    let isEditingAccount: Account | null = $state(null);
+    let isListingAccount: boolean = $state(SharedStore.failedAccounts.length > 0);
 </script>
 
 <div class="register--account_list">
