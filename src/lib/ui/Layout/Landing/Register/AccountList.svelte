@@ -45,7 +45,7 @@
 
 <div>
     {#if SharedStore.failedAccounts.length > 0}
-        <div class="alert" style="margin-bottom:15px;">
+        <div class="alert error" style="margin-bottom:15px;">
             <span>
                 ⚠ There were {SharedStore.failedAccounts.length} accounts that failed to
                 connect.
