@@ -11,6 +11,7 @@
     }
 
     let { isEditingAccount = $bindable() }: Props = $props();
+    let accountSelection: string[] = $state([]);
 
     const removeAccount = async (e: Event): Promise<void> => {
         const target = e.target as HTMLButtonElement;
@@ -45,6 +46,13 @@
             }
         }
     };
+
+    const selectAllAccounts = (event: Event) => {
+        const selectAllCheckbox = event.target as HTMLInputElement;
+        accountSelection = selectAllCheckbox.checked
+            ? SharedStore.failedAccounts.concat(SharedStore.accounts).map((account) => account.email_address)
+            : [];
+    }
 </script>
 
 <div>
@@ -64,21 +72,39 @@
     <table class="account_list--table">
         <thead>
             <tr>
-                <th><input type="checkbox"></th>
-                <th>Account Email Address</th>
-                <th colspan="2"></th>
+                <th><input type="checkbox" onclick={selectAllAccounts}></th>
+                <th>Account{accountSelection.length > 0 ? ` (${accountSelection.length} selected)` : ""}</th>
+                <th colspan="2">
+                    {#if accountSelection.length > 0}
+                        <Button.Action
+                            class="inline"
+                            onclick={removeAllAccounts}
+                        >
+                            Remove All
+                        </Button.Action>
+                    {:else}
+                        <Button.Action
+                            class="inline"
+                            style="visibility: hidden;"
+                            onclick={() => {}}
+                        >
+                            invisible
+                        </Button.Action>
+                    {/if}
+                </th>
             </tr>
         </thead>
         <tbody>
             {#each SharedStore.failedAccounts.concat(SharedStore.accounts) as account, index}
             <tr class={index < failedAccountLength ? "failed" : ""}>
-                <td><input type="checkbox"></td>
+                <td><input type="checkbox" bind:group={accountSelection} value={account.email_address}></td>
                 <td>
                     {index < failedAccountLength ? "Warning" : ""}
                     {account.fullname} &lt;{account.email_address}&gt;
                 </td>
                 <td>
                     <button
+                        class="inline"
                         style="margin-right: 5px;"
                         onclick={() => {
                             isEditingAccount = account;
@@ -89,6 +115,7 @@
                 </td>
                 <td>
                     <Button.Action
+                        class="inline"
                         onclick={removeAccount}
                         data-email-address={account.email_address}
                     >
@@ -108,14 +135,19 @@
         width: 100%;
         border-collapse: collapse;
 
-        & th {
-            text-align: left;
-        }
-
         & th, & td{
             border:1px solid #444;
-            padding: 0.5em;
-            padding-left: 0.75em;
+            padding: 0.85em 0.5em;
+            padding-bottom: 0.65em;
+            text-align: center;
         }
+    }
+
+    .account_list--table th:nth-child(2),
+    .account_list--table td:nth-child(2) {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: left;
     }
 </style>

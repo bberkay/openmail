@@ -3,7 +3,6 @@
     import { AccountController } from "$lib/controllers/AccountController";
     import { type Account } from "$lib/types";
     import Form from "$lib/ui/Elements/Form";
-    import * as Button from "$lib/ui/Elements/Button";
 
     const accountController = new AccountController();
 
@@ -26,16 +25,6 @@
             formData.get("password") as string,
             formData.get("fullname") as string,
         );
-
-        if (!response.success) {
-            alert(response.message);
-        }
-    };
-
-    const removeAccount = async (e: Event): Promise<void> => {
-        const target = e.target as HTMLButtonElement;
-        const account = target.getAttribute("data-email-address")!;
-        const response = await accountController.remove(account);
 
         if (!response.success) {
             alert(response.message);
@@ -90,13 +79,7 @@
                 >
             </div>
             <button type="submit" id="edit-account-btn">Edit Account</button>
-            <button type="button" onclick={cancelEdit}>Cancel</button>
-            <Button.Action
-                onclick={removeAccount}
-                data-email-address={isEditingAccount.email_address}
-            >
-                Remove
-            </Button.Action>
+            <button type="button" class="inline" onclick={cancelEdit}>Cancel</button>
         </div>
     </Form>
 {/if}

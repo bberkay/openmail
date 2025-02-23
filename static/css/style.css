@@ -132,6 +132,12 @@ pre {
 /* Colors */
 .bg-primary{
     background-color: #234483;
+    border-color: #055160;
+}
+
+.bg-error{
+    background-color: var(--error-color);
+    border-color: red;
 }
 
 /* Form */
@@ -143,7 +149,6 @@ input, textarea{
     box-sizing: border-box;
     padding: 0.5rem;
     font-size: 1rem;
-    margin-bottom: 0.5rem;
     resize: vertical;
 
     &:focus{
@@ -192,6 +197,8 @@ button{
     &.inline{
         background-color: transparent;
         text-align: left;
+        border: none;
+        padding: 0;
     }
 }
 
@@ -209,7 +216,7 @@ span {
 
 /* Components */
 label + input {
-    margin-top: 2px;
+    margin-top: 5px;
 }
 
 .card {
