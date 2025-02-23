@@ -7,66 +7,115 @@
     const accountController = new AccountController();
 
     interface Props {
-        editingAccount: Account | null;
+        isEditingAccount: Account | null;
     }
 
-    let { editingAccount = $bindable() }: Props = $props();
+    let { isEditingAccount = $bindable() }: Props = $props();
 
     const removeAccount = async (e: Event): Promise<void> => {
         const target = e.target as HTMLButtonElement;
-        const account = target.getAttribute('data-email-address')!
+        const account = target.getAttribute("data-email-address")!;
         const response = await accountController.remove(account);
 
         if (!response.success) {
             alert(response.message);
         }
-    }
+    };
 
     const removeAllAccounts = async (): Promise<void> => {
-        if(confirm("Are you certain? You are about to remove all accounts.")){
+        if (confirm("Are you certain? You are about to remove all accounts.")) {
             const response = await accountController.removeAll();
 
             if (!response.success) {
                 alert(response.message);
             }
         }
-    }
+    };
 
     const removeAllFailedAccounts = async (): Promise<void> => {
-        if(confirm("Are you certain? You are about to remove all failed accounts.")){
+        if (
+            confirm(
+                "Are you certain? You are about to remove all failed accounts.",
+            )
+        ) {
             const response = await accountController.removeAll();
 
             if (!response.success) {
                 alert(response.message);
             }
         }
-    }
+    };
 </script>
 
-{#if SharedStore.accounts && SharedStore.accounts.length > 0}
-    <h3>Current Accounts <button onclick={removeAllAccounts}>Remove All</button></h3>
-    <ul>
-        {#each SharedStore.accounts as account}
-            <li>
-                <span style="margin-right: 5px;">{account.fullname} &lt;{account.email_address}&gt;</span>
-                <button style="margin-right: 5px;" onclick={() => { editingAccount = account }}>Edit</button>
-                <Button.Action onclick={removeAccount} data-email-address={account.email_address} >
-                    Remove
-                </Button.Action>
-            </li>
-        {/each}
-    </ul>
+<div>
     {#if SharedStore.failedAccounts.length > 0}
-        <h3>Failed Accounts <button onclick={removeAllFailedAccounts}>Remove All</button></h3>
-        <small>There were {SharedStore.failedAccounts.length} accounts that failed to connect.</small>
-        {#each SharedStore.failedAccounts as failedAccount}
-            <li>
-                <span style="margin-right: 5px;">{failedAccount.fullname} &lt;{failedAccount.email_address}&gt;</span>
-                <button style="margin-right: 5px;" onclick={() => { editingAccount = failedAccount }}>Edit</button>
-                <Button.Action onclick={removeAccount} data-email-address={failedAccount.email_address} >
-                    Remove
-                </Button.Action>
-            </li>
-        {/each}
+        <div class="alert">
+            <span>
+                There were {SharedStore.failedAccounts.length} accounts that failed to
+                connect.
+            </span>
+        </div>
     {/if}
-{/if}
+    {#if
+        (SharedStore.accounts && SharedStore.accounts.length > 0)
+        || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)
+    }
+    {@const failedAccountLength = SharedStore.failedAccounts.length}
+    <table class="account_list--table">
+        <thead>
+            <tr>
+                <th><input type="checkbox"></th>
+                <th>Account Email Address</th>
+                <th colspan="2"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {#each SharedStore.failedAccounts.concat(SharedStore.accounts) as account, index}
+            <tr class={index < failedAccountLength ? "failed" : ""}>
+                <td><input type="checkbox"></td>
+                <td>
+                    {index < failedAccountLength ? "Warning" : ""}
+                    {account.fullname} &lt;{account.email_address}&gt;
+                </td>
+                <td>
+                    <button
+                        style="margin-right: 5px;"
+                        onclick={() => {
+                            isEditingAccount = account;
+                        }}
+                    >
+                        Edit
+                    </button>
+                </td>
+                <td>
+                    <Button.Action
+                        onclick={removeAccount}
+                        data-email-address={account.email_address}
+                    >
+                        Remove
+                    </Button.Action>
+                </td>
+            </tr>
+            {/each}
+        </tbody>
+    </table>
+    {/if}
+</div>
+
+<style>
+    .account_list--table{
+        background-color: #222;
+        width: 100%;
+        border-collapse: collapse;
+
+        & th {
+            text-align: left;
+        }
+
+        & th, & td{
+            border:1px solid #444;
+            padding: 0.5em;
+            padding-left: 0.75em;
+        }
+    }
+</style>
