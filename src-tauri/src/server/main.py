@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import uvicorn
 from pydantic import BaseModel
-from fastapi import FastAPI, Form, UploadFile, Request, Response as FastAPIResponse, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Form, UploadFile, Request, Response as FastAPIResponse, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
@@ -51,7 +51,7 @@ monitor_logged_out_clients_task = None
 
 
 def connect_to_account(account: AccountWithPassword):
-    print(f"Connecting/Reconnecting to {account.email_address}...")
+    print(f"Connecting to {account.email_address}...")
     try:
         openmail_clients[account.email_address] = OpenMail()
         status, _ = openmail_clients[account.email_address].connect(
@@ -62,18 +62,18 @@ def connect_to_account(account: AccountWithPassword):
             )
         )
         if status:
-            print(f"Successfully connected/reconnected to {account.email_address}")
+            print(f"Successfully connected to {account.email_address}")
             openmail_clients[account.email_address].imap.idle()
             try: failed_openmail_clients.remove(account.email_address)
             except ValueError: pass
         else:
-            print(f"Could not successfully connected/reconnected to {account.email_address}.")
+            print(f"Could not successfully connected to {account.email_address}.")
             del openmail_clients[account.email_address]
             failed_openmail_clients.append(account.email_address)
     except Exception as e:
         del openmail_clients[account.email_address]
         failed_openmail_clients.append(account.email_address)
-        print(f"Failed to connect/reconnect to {account.email_address}: {e}")
+        uvicorn_logger.error(f"Failed while connecting to {account.email_address}: {e}")
 
 def create_and_idle_openmail_clients():
     print("OpenMail clients are creating...")
@@ -105,7 +105,7 @@ def reconnect_to_account(email_address: str):
     except Exception as e:
         del openmail_clients[email_address]
         failed_openmail_clients.append(email_address)
-        print(f"Failed to reconnect to {email_address}: {e}")
+        uvicorn_logger.error(f"Failed while reconnecting to {email_address}: {e}")
 
 def reconnect_and_idle_logged_out_openmail_clients(email_addresses: str):
     print("Reconnecting to OpenMail clients...")
@@ -119,7 +119,7 @@ async def monitor_logged_out_openmail_clients():
             await asyncio.sleep(IMAP_LOGGED_OUT_INTERVAL)
             reconnect_and_idle_logged_out_openmail_clients(",".join(openmail_clients.keys()))
     except asyncio.CancelledError:
-        print("Monitoring logged out clients task is being cancelled...")
+        uvicorn_logger.error("Monitoring logged out clients task is being cancelled...")
         raise
 
 def shutdown_openmail_clients():
@@ -135,8 +135,7 @@ async def lifespan(app: FastAPI):
     try:
         create_and_idle_openmail_clients()
     except Exception as e:
-        print(f"Error while creating openmail clients: {e}")
-        uvicorn_logger.error(e)
+        uvicorn_logger.error(f"Error while creating openmail clients: {e}")
         shutdown_openmail_clients()
         sys.exit(1)
 
@@ -409,18 +408,18 @@ def check_openmail_connection_availability(accounts: str | list[str]) -> Respons
     if isinstance(accounts, str): accounts = accounts.split(",")
 
     connected_openmail_clients = openmail_clients.keys()
-    disconnected_accounts = []
+    terminated_openmail_clients = []
     for account in accounts:
         if account not in connected_openmail_clients:
-            disconnected_accounts.append(account)
+            terminated_openmail_clients.append(account)
 
-    if disconnected_accounts:
-        reconnect_and_idle_logged_out_openmail_clients(",".join(disconnected_accounts))
+    if terminated_openmail_clients:
+        reconnect_and_idle_logged_out_openmail_clients(",".join(terminated_openmail_clients))
     else:
         return True
 
     connected_openmail_clients = openmail_clients.keys()
-    for account in disconnected_accounts:
+    for account in terminated_openmail_clients:
         if account not in connected_openmail_clients:
             return Response(
                 success=False,
@@ -466,6 +465,7 @@ async def websocket_endpoint(websocket: WebSocket, accounts: str):
 @app.get("/get-mailboxes/{accounts}")
 async def get_mailboxes(
     accounts: str,
+    background_tasks: BackgroundTasks,
     folder: Optional[str] = None,
     search: Optional[str] = None,
     offset_start: Optional[int] = None,
@@ -475,6 +475,18 @@ async def get_mailboxes(
         response = check_openmail_connection_availability(accounts)
         if isinstance(response, Response): return response
 
+        # Disable idle and store which clients were in idle.
+        which_emails_in_idle_mode = [
+            email_address
+            for email_address in accounts.split(",")
+            if openmail_clients[email_address].imap.is_idle()
+        ]
+        execute_openmail_task_concurrently(
+            which_emails_in_idle_mode,
+            lambda client: client.imap.done()
+        )
+
+        # Search and fetch emails.
         execute_openmail_task_concurrently(
             accounts,
             lambda client, **params: client.imap.search_emails(**params),
@@ -482,15 +494,25 @@ async def get_mailboxes(
             search=SearchCriteria.parse_raw(search) if search else None,
         )
 
+        fetched_emails = execute_openmail_task_concurrently(
+            accounts,
+            lambda client, **params: client.imap.get_emails(**params),
+            offset_start=offset_start,
+            offset_end=offset_end,
+        )
+
+        # Re idle in background.
+        if background_tasks:
+            background_tasks.add_task(execute_openmail_task_concurrently(
+                which_emails_in_idle_mode,
+                lambda client: client.imap.done()
+            ))
+
+        # Send fetched emails.
         return Response[list[OpenMailTaskResult]](
             success=True,
             message="Emails fetched successfully.",
-            data=execute_openmail_task_concurrently(
-                accounts,
-                lambda client, **params: client.imap.get_emails(**params),
-                offset_start=offset_start,
-                offset_end=offset_end,
-            ),
+            data=fetched_emails,
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching emails.", str(e)))
