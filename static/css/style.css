@@ -214,3 +214,18 @@ button{
         margin-top: 10px;
     }
 }
+
+.alert{
+    display: flex;
+    width: 100%;
+    border:1px solid transparent;
+    padding: 0.5em;
+    padding-left: 0.75em;
+    align-items: center;
+
+    &.error{
+        border:1px solid #842029;
+        background-color: #2c0b0e;
+        color: #ea868f;
+    }
+}
