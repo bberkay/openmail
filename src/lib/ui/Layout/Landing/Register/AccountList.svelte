@@ -14,18 +14,10 @@
     let accountSelection: string[] = $state([]);
 
     const removeAccount = async (e: Event): Promise<void> => {
-        const target = e.target as HTMLButtonElement;
-        const account = target.getAttribute("data-email-address")!;
-        const response = await accountController.remove(account);
-
-        if (!response.success) {
-            alert(response.message);
-        }
-    };
-
-    const removeAllAccounts = async (): Promise<void> => {
-        if (confirm("Are you certain? You are about to remove all accounts.")) {
-            const response = await accountController.removeAll();
+        if (confirm("Are you certain? Deleting an account cannot be undone.")) {
+            const target = e.target as HTMLButtonElement;
+            const account = target.getAttribute("data-email-address")!;
+            const response = await accountController.remove(account);
 
             if (!response.success) {
                 alert(response.message);
@@ -33,12 +25,8 @@
         }
     };
 
-    const removeAllFailedAccounts = async (): Promise<void> => {
-        if (
-            confirm(
-                "Are you certain? You are about to remove all failed accounts.",
-            )
-        ) {
+    const removeAllAccounts = async (): Promise<void> => {
+        if (confirm("Are you certain? You are about to remove all accounts.")) {
             const response = await accountController.removeAll();
 
             if (!response.success) {
