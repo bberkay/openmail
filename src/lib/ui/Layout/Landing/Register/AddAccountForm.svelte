@@ -21,7 +21,7 @@
 
 <Form onsubmit={addAccount}>
     <div>
-        <div>
+        <div class="form-group">
             <label for="email_address">Email Address</label>
             <br />
             <!-- svelte-ignore a11y_autofocus -->
@@ -35,7 +35,7 @@
                 required
             />
         </div>
-        <div>
+        <div class="form-group">
             <label for="password">Password</label>
             <br />
             <input
@@ -46,9 +46,8 @@
                 required
             />
         </div>
-        <div>
+        <div class="form-group-2">
             <label for="fullname">Fullname (Optional)</label>
-            <br />
             <input
                 type="text"
                 name="fullname"
@@ -56,11 +55,10 @@
                 autocomplete="off"
                 value=""
             />
-            <br />
-            <small style="font-style:italic;margin-top:5px;">
+            <small>
                 Enter your fullname to be displayed in the email.
             </small>
         </div>
-        <button type="submit" id="add-account-btn">Add Account</button>
+        <button type="submit"  id="add-account-btn">Add Account</button>
     </div>
 </Form>
