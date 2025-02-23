@@ -108,16 +108,18 @@
             <AddAccountForm />
         {/if}
 
-        <div class="buttons">
-            <Button.Action onclick={initMailboxes} disabled={SharedStore.accounts.length == 0}>
-                Continue
-            </Button.Action>
-            {#if isListingAccount}
-                <button onclick={() => { isListingAccount = false; }}>Add New</button>
-            {:else}
-                <button onclick={() => { isListingAccount = true; }}>List Added</button>
-            {/if}
-        </div>
+        {#if !isEditingAccount}
+            <div class="buttons">
+                <Button.Action onclick={initMailboxes} disabled={SharedStore.accounts.length == 0}>
+                    Continue to mailbox.
+                </Button.Action>
+                {#if isListingAccount}
+                    <button onclick={() => { isListingAccount = false; }}>Add a new account.</button>
+                {:else}
+                    <button onclick={() => { isListingAccount = true; }}>Show added accounts.</button>
+                {/if}
+            </div>
+        {/if}
     </div>
 </div>
 

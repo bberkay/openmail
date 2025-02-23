@@ -39,8 +39,8 @@
 {#if isEditingAccount}
     <Form onsubmit={editAccount}>
         <div>
-            <div>
-                <label for="email_address">Email Address</label><br />
+            <div class="form-group">
+                <label for="email_address">Email Address</label>
                 <input
                     type="email"
                     name="email_address"
@@ -52,8 +52,8 @@
                     required
                 />
             </div>
-            <div>
-                <label for="password">Password</label><br />
+            <div class="form-group">
+                <label for="password">Password</label>
                 <!-- svelte-ignore a11y_autofocus -->
                 <input
                     type="password"
@@ -64,8 +64,8 @@
                     required
                 />
             </div>
-            <div>
-                <label for="fullname">Fullname (Optional)</label><br />
+            <div class="form-group">
+                <label for="fullname">Fullname (Optional)</label>
                 <input
                     type="text"
                     name="fullname"
@@ -73,13 +73,13 @@
                     autocomplete="off"
                     placeholder="Fullname"
                     value={isEditingAccount.fullname}
-                /><br />
-                <small style="font-style:italic;margin-top:5px;"
-                    >Enter your fullname to be displayed in the email.</small
-                >
+                />
+                <small>Enter your fullname to be displayed in the email. (e.g. Alex Doe &lt;alexdoe@domain.com&gt;)</small>
             </div>
-            <button type="submit" id="edit-account-btn">Edit Account</button>
-            <button type="button" class="inline" onclick={cancelEdit}>Cancel</button>
+            <button type="submit" id="edit-account-btn" style="margin-right:10px;">Edit Account</button>
+            <button type="button" class="inline" onclick={cancelEdit}>
+                Cancel
+            </button>
         </div>
     </Form>
 {/if}

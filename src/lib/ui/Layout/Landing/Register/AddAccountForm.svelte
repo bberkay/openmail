@@ -23,7 +23,6 @@
     <div>
         <div class="form-group">
             <label for="email_address">Email Address</label>
-            <br />
             <!-- svelte-ignore a11y_autofocus -->
             <input
                 type="email"
@@ -37,7 +36,6 @@
         </div>
         <div class="form-group">
             <label for="password">Password</label>
-            <br />
             <input
                 type="password"
                 name="password"
@@ -46,7 +44,7 @@
                 required
             />
         </div>
-        <div class="form-group-2">
+        <div class="form-group">
             <label for="fullname">Fullname (Optional)</label>
             <input
                 type="text"
@@ -55,9 +53,7 @@
                 autocomplete="off"
                 value=""
             />
-            <small>
-                Enter your fullname to be displayed in the email.
-            </small>
+            <small>Enter your fullname to be displayed in the email. (e.g. Alex Doe &lt;alexdoe@domain.com&gt;)</small>
         </div>
         <button type="submit"  id="add-account-btn">Add Account</button>
     </div>
