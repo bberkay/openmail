@@ -14,10 +14,6 @@
 
     const mailboxController = new MailboxController();
 
-    let editingAccount: Account | null = $state(SharedStore.failedAccounts
-        ? SharedStore.failedAccounts[0]
-        : null);
-
     async function initMailboxes(): Promise<void> {
         const response = await mailboxController.init();
         if (!response.success) {
@@ -85,32 +81,89 @@
             }
         }
     }
+
+    let isEditingAccount: Account | null = $state(SharedStore.failedAccounts
+            ? SharedStore.failedAccounts[0]
+            : null);
+    let isListingAccount: boolean = $state(false);
 </script>
 
 <div class="register--account_list">
-    {#if editingAccount}
-        <h3>Edit Account</h3>
-        <EditAccountForm bind:editingAccount={editingAccount}/>
-    {:else}
-        <h3>Add Account</h3>
-        <AddAccountForm />
-    {/if}
-
-    <AccountList bind:editingAccount={editingAccount}/>
-
-    {#if SharedStore.accounts.length > 0}
-    <div>
-        <Button.Action onclick={initMailboxes}>
-            Continue To Inbox
-        </Button.Action>
+    <div class="header">
+        <h1>{
+            isEditingAccount
+                ? "Edit account."
+                : isListingAccount
+                    ? "Added accounts."
+                    : "Add a new account."
+            }
+        </h1>
     </div>
-    {/if}
+    <div class="body">
+        {#if isEditingAccount}
+            <EditAccountForm bind:isEditingAccount={isEditingAccount}/>
+        {:else if isListingAccount}
+            <AccountList bind:isEditingAccount={isEditingAccount}/>
+        {:else}
+            <AddAccountForm />
+        {/if}
+
+        <div class="buttons">
+            <Button.Action onclick={initMailboxes} disabled={SharedStore.accounts.length == 0}>
+                Continue
+            </Button.Action>
+            {#if isListingAccount}
+                <button onclick={() => { isListingAccount = false; }}>Add New</button>
+            {:else}
+                <button onclick={() => { isListingAccount = true; }}>List Added</button>
+            {/if}
+        </div>
+    </div>
 </div>
 
 <style>
     .register--account_list{
-        border:1px dashed white;
-        padding: 5em;
-        height:100%;
+        display: flex;
+        flex-direction: column;
+        background-color: #111;
+        border: 1px dashed #333;
+        border-top: none;
+        border-bottom: none;
+        height: 100%;
+        width: 700px;
+
+        & .header{
+            padding: 2em 1.5em 1em 1.5em;
+            border-bottom: 1px dashed #333;
+        }
+
+        & .body {
+            padding: 1.5em;
+            display:flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+
+            :global(& form input) {
+                width: 100%;
+                border:1px solid #444;
+                background-color: #333;
+                border-radius: 0;
+            }
+
+            & .buttons {
+                display: flex;
+                gap: 7px;
+                margin-top: 1em;
+
+                :global(& button) {
+                    flex:1;
+                    padding: 5px;
+                    border:1px solid #444;
+                    background-color:#222;
+                    border-radius:0;
+                }
+            }
+        }
     }
 </style>

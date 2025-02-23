@@ -33,7 +33,7 @@ body{
     --scrollbar-thumb-color: light-dark(#808080, #808080);
 }
 
-/* Elements */
+/* Layout */
 
 *{
     scrollbar-width: thin;
@@ -86,6 +86,7 @@ body:has(.modal){
     z-index: 98;
 }
 
+/* Elements */
 iframe{
     width: 100%;
     height: 100%;
@@ -144,6 +145,10 @@ input, textarea{
     font-size: 1rem;
     margin-bottom: 0.5rem;
     resize: vertical;
+
+    &:focus{
+        outline:#144a9a;
+    }
 }
 
 input[type="submit"], button[type="submit"]{
@@ -169,27 +174,24 @@ input[type="submit"]{
 }
 
 button{
-    background-color: #832e23;
-    color: #f5f5f5;
-    border: none;
-    border-radius: 5px;
     box-sizing: border-box;
     cursor: pointer;
+    padding: 5px;
+    border:1px solid #444;
+    background-color:#222;
+    color: #f5f5f5;
+    border-radius:0;
 
-    &[disabled]{
+    &[disabled], &.disabled{
         cursor: not-allowed;
         opacity: 0.5;
+        pointer-events: none;
+
     }
 
     &.inline{
         background-color: transparent;
         text-align: left;
-    }
-
-    &.disabled{
-        cursor: not-allowed;
-        opacity: 0.5;
-        pointer-events: none;
     }
 }
 
@@ -205,30 +207,11 @@ span {
     }
 }
 
-/* Loader */
-.loader {
-    border: 2px solid #2a2a2a;
-    border-radius: 50%;
-    border-top: 2px solid #fff;
-    width: 10px;
-    height: 10px;
-    -webkit-animation: spin 2s linear infinite;
-    animation: spin 2s linear infinite;
-    display: inline-block;
-    margin-right: 5px;
-}
-
-@-webkit-keyframes spin {
-    0% { -webkit-transform: rotate(0deg); }
-    100% { -webkit-transform: rotate(360deg); }
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
 /* Components */
+label + input {
+    margin-top: 2px;
+}
+
 .card {
     background-color: #2e2e2e;
     border:1px solid #5a5a5a;

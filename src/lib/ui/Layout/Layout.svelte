@@ -28,3 +28,9 @@
         {@render children()}
     {/if}
 </div>
+
+<style>
+    #layout-container{
+        height:100vh;
+    }
+</style>
