@@ -93,6 +93,7 @@ IDLE_TIMEOUT = 15 * 60
 JOIN_TIMEOUT = 3
 WAIT_RESPONSE_TIMEOUT = 180
 READLINE_SLEEP = 1
+IDLE_ACTIVATION_INTERVAL = 180
 
 class IMAPManager(imaplib.IMAP4_SSL):
     """
@@ -143,8 +144,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._new_message_timestamps: List[datetime] = []
 
         # IDLE and READLINE variables
+        self.idle_optimization = True
         self._is_idle = False
-        self._current_idle_start_time = None
+        self._current_idle_start_time: float = 0
         self._current_idle_tag: bytes | None = None
         self._wait_for_response: IMAPManager.WaitResponse | None = None
 
@@ -850,20 +852,22 @@ class IMAPManager(imaplib.IMAP4_SSL):
         in the INBOX(is going to select) on its own thread. If already
         in IDLE mode, does nothing.
         """
-        if not self._is_idle:
-            self.select(Folder.Inbox)
-            self._current_idle_tag = self._new_tag()
-            self.send(b"%s IDLE\r\n" % self._current_idle_tag)
-            print(f"'IDLE' command sent with tag: {self._current_idle_tag} at {datetime.now()}.")
-            self._readline()
-            self._wait_response(IMAPManager.WaitResponse.IDLE)
+        if self._is_idle:
+            return
+        self.select(Folder.Inbox)
+        self._current_idle_tag = self._new_tag()
+        self.send(b"%s IDLE\r\n" % self._current_idle_tag)
+        print(f"'IDLE' command sent with tag: {self._current_idle_tag} at {datetime.now()}.")
+        self._readline()
+        self._wait_response(IMAPManager.WaitResponse.IDLE)
 
     def done(self) -> None:
         """Terminates the current IDLE session if active."""
-        if self._is_idle:
-            self.send(b"DONE\r\n")
-            print(f"DONE command sent for {self._current_idle_tag} at {datetime.now()}.")
-            self._wait_response(IMAPManager.WaitResponse.DONE)
+        if not self._is_idle:
+            return
+        self.send(b"DONE\r\n")
+        print(f"DONE command sent for {self._current_idle_tag} at {datetime.now()}.")
+        self._wait_response(IMAPManager.WaitResponse.DONE)
 
     @handle_idle
     def find_matching_folder(self, requested_folder: str | Folder, encoded: bool = True) -> bytes | None:
