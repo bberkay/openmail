@@ -7,6 +7,7 @@ import os
 import asyncio
 import concurrent.futures
 import sys
+import time
 from urllib.parse import unquote
 from typing import Annotated, Callable, Generic, Optional, TypeVar, Any, cast
 from contextlib import asynccontextmanager
@@ -40,6 +41,7 @@ MAX_CONNECTION_WORKER = 5
 IMAP_OPERATION_TIMEOUT = 60
 IMAP_LOGGED_OUT_INTERVAL = 60
 EMAIL_CHECK_INTERVAL = 60
+INACTIVITY_CHECK_INTERVAL = 180
 
 account_manager = AccountManager()
 secure_storage = SecureStorage()
@@ -48,12 +50,36 @@ uvicorn_logger = UvicornLogger()
 openmail_clients: dict[str, OpenMail] = {}
 failed_openmail_clients: list[str] = []
 monitor_logged_out_clients_task = None
+monitor_inactive_clients_task = None
+last_activity_times: dict[str, float] = {}
 
+def shutdown_openmail_clients(exit: bool = False):
+    try:
+        uvicorn_logger.info("Shutting down openmail clients...")
+        for email, openmail_client in openmail_clients.items():
+            openmail_client.disconnect()
+    except Exception as e:
+        uvicorn_logger.error(f"Openmail clients could not properly terminated: {e}")
+
+def shutdown_monitors():
+    if monitor_logged_out_clients_task:
+        monitor_logged_out_clients_task.cancel()
+    if monitor_inactive_clients_task:
+        monitor_inactive_clients_task.cancel()
+
+def shutdown_completely() -> None:
+    uvicorn_logger.info("Shutdown signal received. Starting to logging out and terminating threads...")
+    try:
+        shutdown_openmail_clients()
+        shutdown_monitors()
+    except Exception as e:
+        uvicorn_logger.error("Shutdown could not properly executed.")
 
 def connect_to_account(account: AccountWithPassword):
     print(f"Connecting to {account.email_address}...")
     try:
         openmail_clients[account.email_address] = OpenMail()
+        last_activity_times[account.email_address] = time.time()
         status, _ = openmail_clients[account.email_address].connect(
             account.email_address,
             RSACipher.decrypt_password(
@@ -63,7 +89,6 @@ def connect_to_account(account: AccountWithPassword):
         )
         if status:
             print(f"Successfully connected to {account.email_address}")
-            openmail_clients[account.email_address].imap.idle()
             try: failed_openmail_clients.remove(account.email_address)
             except ValueError: pass
         else:
@@ -75,14 +100,34 @@ def connect_to_account(account: AccountWithPassword):
         failed_openmail_clients.append(account.email_address)
         uvicorn_logger.error(f"Failed while connecting to {account.email_address}: {e}")
 
-def create_and_idle_openmail_clients():
-    print("OpenMail clients are creating...")
-    accounts: list[AccountWithPassword] = cast(list[AccountWithPassword], account_manager.get_all())
-    if not accounts:
-        return
+def create_openmail_clients():
+    try:
+        print("OpenMail clients are creating...")
+        accounts: list[AccountWithPassword] = cast(list[AccountWithPassword], account_manager.get_all())
+        if not accounts:
+            return
 
-    with ThreadPoolExecutor(max_workers=MAX_CONNECTION_WORKER) as executor:
-        executor.map(connect_to_account, accounts)
+        with ThreadPoolExecutor(max_workers=MAX_CONNECTION_WORKER) as executor:
+            executor.map(connect_to_account, accounts)
+    except Exception as e:
+        uvicorn_logger.error(f"Error while creating openmail clients: {e}")
+        raise e
+
+    # Check logged out clients and reconnect them.
+    try:
+        global monitor_logged_out_clients_task
+        monitor_logged_out_clients_task = asyncio.create_task(monitor_logged_out_openmail_clients())
+    except Exception as e:
+        uvicorn_logger.error(f"Error while creating monitors to logged out openmail clients: {e}")
+        pass
+
+    # Check inactive clients and reconnect them.
+    try:
+        global monitor_inactive_clients_task
+        monitor_inactive_clients_task = asyncio.create_task(monitor_inactivite_clients())
+    except Exception as e:
+        uvicorn_logger.error(f"Error while creating monitors to inactive openmail clients: {e}")
+        pass
 
 def reconnect_to_account(email_address: str):
     print(f"Reconnecton for {email_address}...")
@@ -107,7 +152,7 @@ def reconnect_to_account(email_address: str):
         failed_openmail_clients.append(email_address)
         uvicorn_logger.error(f"Failed while reconnecting to {email_address}: {e}")
 
-def reconnect_and_idle_logged_out_openmail_clients(email_addresses: str):
+def reconnect_logged_out_openmail_clients(email_addresses: str):
     print("Reconnecting to OpenMail clients...")
     email_addresses = email_addresses.split(",") # type: ignore
     with ThreadPoolExecutor(max_workers=MAX_CONNECTION_WORKER) as executor:
@@ -117,45 +162,33 @@ async def monitor_logged_out_openmail_clients():
     try:
         while True:
             await asyncio.sleep(IMAP_LOGGED_OUT_INTERVAL)
-            reconnect_and_idle_logged_out_openmail_clients(",".join(openmail_clients.keys()))
+            print("Checking logged out OpenMail clients...")
+            reconnect_logged_out_openmail_clients(",".join(openmail_clients.keys()))
     except asyncio.CancelledError:
         uvicorn_logger.error("Monitoring logged out clients task is being cancelled...")
         raise
 
-def shutdown_openmail_clients():
+async def monitor_inactivite_clients():
     try:
-        for email, openmail_client in openmail_clients.items():
-            openmail_client.disconnect()
-    except:
-        print("Clients could not properly terminated.")
+        while True:
+            await asyncio.sleep(INACTIVITY_CHECK_INTERVAL)
+            print("Checking inactivity of OpenMail clients...")
+            reconnect_logged_out_openmail_clients(",".join([
+                email_address
+                for email_address, last_activity in last_activity_times.items()
+                if time.time() - last_activity > INACTIVITY_CHECK_INTERVAL
+            ]))
+    except asyncio.CancelledError:
+        uvicorn_logger.error("Monitoring inactivity clients task is being cancelled...")
+        raise
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create openmail clients
     try:
-        create_and_idle_openmail_clients()
-    except Exception as e:
-        uvicorn_logger.error(f"Error while creating openmail clients: {e}")
-        shutdown_openmail_clients()
-        sys.exit(1)
-
-    # Check logged out clients and reconnect them.
-    global monitor_logged_out_clients_task
-    monitor_logged_out_clients_task = asyncio.create_task(monitor_logged_out_openmail_clients())
-
-    # App
-    yield
-
-    # Cancel logged out client reconnection task
-    try:
-        if monitor_logged_out_clients_task:
-            monitor_logged_out_clients_task.cancel()
-            try:
-                await monitor_logged_out_clients_task
-            except asyncio.CancelledError:
-                pass
-    finally:
-        shutdown_openmail_clients()
+        create_openmail_clients()
+        yield
+    except:
+        shutdown_completely()
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
@@ -405,22 +438,27 @@ def execute_openmail_task_concurrently(
         return results
 
 def check_openmail_connection_availability(accounts: str | list[str]) -> Response | bool:
-    if isinstance(accounts, str): accounts = accounts.split(",")
+    global last_activity_times
+
+    if isinstance(accounts, str):
+        accounts = accounts.split(",")
 
     connected_openmail_clients = openmail_clients.keys()
     terminated_openmail_clients = []
     for account in accounts:
+        last_activity_times[account] = time.time()
         if account not in connected_openmail_clients:
             terminated_openmail_clients.append(account)
 
     if terminated_openmail_clients:
-        reconnect_and_idle_logged_out_openmail_clients(",".join(terminated_openmail_clients))
+        reconnect_logged_out_openmail_clients(",".join(terminated_openmail_clients))
     else:
         return True
 
     connected_openmail_clients = openmail_clients.keys()
     for account in terminated_openmail_clients:
         if account not in connected_openmail_clients:
+            del last_activity_times[account]
             return Response(
                 success=False,
                 message=f'Error, {account} connection is not available or timed out and could not reconnected.'
@@ -505,7 +543,7 @@ async def get_mailboxes(
         if background_tasks:
             background_tasks.add_task(execute_openmail_task_concurrently(
                 which_emails_in_idle_mode,
-                lambda client: client.imap.done()
+                lambda client: client.imap.idle()
             ))
 
         # Send fetched emails.
@@ -966,21 +1004,15 @@ async def delete_folder(request_body: DeleteFolderRequest) -> Response:
 
 #######################################################
 
-
-def create_uvicorn_info_file(host, port, pid):
-    FileSystem().get_uvicorn_info().write(f"URL=http://{host}:{port}\nPID={pid}\n")
-
-
 def main():
     port = PortScanner.find_free_port(8000, 9000)
     pid = str(os.getpid())
-    create_uvicorn_info_file(HOST, str(port), pid)
+    FileSystem().get_uvicorn_info().write(f"URL=http://{HOST}:{str(port)}\nPID={pid}\n")
 
     uvicorn_logger.info(
         "Starting server at http://%s:%d | PID: %s", HOST, port, pid
     )
     uvicorn.run(app, host=HOST, port=port)
-
 
 if __name__ == "__main__":
     main()
