@@ -5,7 +5,7 @@ import json
 import threading
 
 from openmail import OpenMail
-from openmail.imap import Folder
+from openmail.imap import IDLE_TIMEOUT, Folder
 from openmail.types import Draft
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
@@ -44,7 +44,7 @@ class TestIdleOperations(unittest.TestCase):
         print("test_reconnection...")
         self.__class__._openmail.imap.idle()
         print("Idle mode activated before waiting...")
-        time.sleep(60 * 30)
+        time.sleep(IDLE_TIMEOUT + 60)
         try:
             result = self.__class__._openmail.imap.get_folders()
             self.assertGreaterEqual(len(result), 1)
