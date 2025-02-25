@@ -713,7 +713,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if not is_current_idle_still_active():
                 raise Exception("There is no active idle session or event to start idling.")
 
-            while is_current_idle_still_active():
+            while True:
                 time.sleep(1)
                 if is_current_idle_still_active():
                     print(f"IDLING for {self._idle_manager.currentIdle.tag} at {datetime.now()}.")
@@ -721,8 +721,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         print(f"IDLING timeout reached for {self._idle_manager.currentIdle.tag} at {datetime.now()}.")
                         self.done()
                         self.idle()
-                else:
-                    break
 
         if not self.is_idle_supported():
             raise Exception(f"IDLE is not supported on {self._host}")
