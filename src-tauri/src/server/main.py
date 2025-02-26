@@ -160,7 +160,7 @@ async def lifespan(app: FastAPI):
     try:
         create_openmail_clients()
         yield
-    except:
+    finally:
         shutdown_completely()
 
 app = FastAPI(lifespan=lifespan)
