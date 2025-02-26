@@ -59,8 +59,11 @@ def shutdown_openmail_clients(exit: bool = False):
         uvicorn_logger.error(f"Openmail clients could not properly terminated: {e}")
 
 def shutdown_monitors():
+    global monitor_logged_out_clients_task
     if monitor_logged_out_clients_task:
+        print("this is monitor logged: ", monitor_logged_out_clients_task)
         monitor_logged_out_clients_task.cancel()
+        print("now it is cancelled")
 
 def shutdown_completely() -> None:
     uvicorn_logger.info("Shutdown signal received. Starting to logging out and terminating threads...")
@@ -83,7 +86,7 @@ def connect_to_account(account: AccountWithPassword):
         )
         if status:
             print(f"Successfully connected to {account.email_address}")
-            openmail_clients[account.email_address].imap.idle_optimization = True
+            #openmail_clients[account.email_address].imap.idle_optimization = True
             openmail_clients[account.email_address].imap.idle()
             try: failed_openmail_clients.remove(account.email_address)
             except ValueError: pass
@@ -152,7 +155,7 @@ async def monitor_logged_out_openmail_clients():
             print("Checking logged out OpenMail clients...")
             reconnect_logged_out_openmail_clients(",".join(openmail_clients.keys()))
     except asyncio.CancelledError:
-        uvicorn_logger.error("Monitoring logged out clients task is being cancelled...")
+        uvicorn_logger.info("Monitoring logged out clients task is being cancelled...")
         raise
 
 @asynccontextmanager
