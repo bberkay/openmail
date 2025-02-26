@@ -190,7 +190,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._port = port or IMAP_PORT
 
         self.idle_optimization = True
-        self._start_idle_timer = 0
+        self._idle_activation_countdown = 0
         self._idle_manager: IdleManager | None = None
         self._wait_response: WaitResponse | None = None
 
@@ -669,10 +669,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Initiates the IMAP IDLE command to start monitoring changes
         in the INBOX(is going to select) on its own thread. If already
         in IDLE mode, does nothing.
+
+        If idle_optimization is True, Before starting IDLE mode wait about
+        IDLE_ACTIVATION_INTERVAL then start IDLE mode, but if `idle` method
+        called while waiting, restart countdown and start waiting from the
+        beginning, this technique prevents switching to IDLE mode too much
+        in very short period. See: https://developer.mozilla.org/en-US/docs/Glossary/Debounce
         """
         def start_reading_lines():
             """
-            Continuously reads server responses and processes them.
+            Continuously reads server responses and processes
+            them.
             """
             if not self._idle_manager or not self._idle_manager.readline_event:
                 raise Exception("Cannot start to reading lines because the `readline_event` is not initialized.")
@@ -694,10 +701,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         def start_idle_lifecycle():
             """
-            Background thread handler for IDLE mode monitoring.
-
-            Continuously checks IDLE session duration and automatically
-            refreshes the connection when IDLE_TIMEOUT is reached.
+            Starts and automatically refreshes IDLE mode
+            when IDLE_TIMEOUT is reached.
             """
             if not self._idle_manager:
                 raise Exception("Cannot start idle lifecycle, idle manager is not initialized.")
@@ -705,11 +710,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 raise Exception("Cannot start idle lifecycle, idling event is not cleaned.")
 
             if self.idle_optimization:
-                self._start_idle_timer = 0
-                while self._start_idle_timer < IDLE_ACTIVATION_INTERVAL:
+                self._idle_activation_countdown = IDLE_ACTIVATION_INTERVAL
+                while self._idle_activation_countdown > 0:
                     time.sleep(1)
                     if not self._idle_manager.idling_event.is_set():
-                        self._start_idle_timer += 1
+                        self._idle_activation_countdown -= 1
 
             self._idle_manager.currentIdle = IdleSession(
                 tag=self._new_tag(),
@@ -746,8 +751,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if self.is_idle():
             return
 
-        # Restart start idle timer
-        self._start_idle_timer = 0
+        # Reset
+        self._idle_activation_countdown = IDLE_ACTIVATION_INTERVAL
 
         if not self._idle_manager:
             self._idle_manager = IdleManager(
