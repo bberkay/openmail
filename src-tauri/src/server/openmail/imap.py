@@ -90,8 +90,7 @@ SHORT_BODY_MAX_LENGTH = 100
 MAX_FOLDER_NAME_LENGTH = 1024
 # Timeouts in seconds
 CONN_TIMEOUT = 30
-#IDLE_TIMEOUT = 29 * 60
-IDLE_TIMEOUT = 60
+IDLE_TIMEOUT = 29 * 60
 JOIN_TIMEOUT = 3
 WAIT_RESPONSE_TIMEOUT = 180
 READLINE_SLEEP = 1
@@ -729,11 +728,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     print(f"IDLE activation countdown started at {datetime.now()}...")
                     while self._idle_activation_countdown > 0:
                         time.sleep(1)
-                        if self._idle_manager is not None and not self._idle_manager.idling_event.is_set():
+                        if self._idle_manager is None:
+                            break
+                        if not self._idle_manager.idling_event.is_set():
                             self._idle_activation_countdown -= 1
-
-                if self._idle_manager is None:
-                    break
+                    print(f"IDLE activation countdown finished at {datetime.now()}...")
 
                 if self._idle_manager.idling_event.is_set():
                     time.sleep(1)
