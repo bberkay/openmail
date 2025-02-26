@@ -90,7 +90,8 @@ SHORT_BODY_MAX_LENGTH = 100
 MAX_FOLDER_NAME_LENGTH = 1024
 # Timeouts in seconds
 CONN_TIMEOUT = 30
-IDLE_TIMEOUT = 29 * 60
+#IDLE_TIMEOUT = 29 * 60
+IDLE_TIMEOUT = 60
 JOIN_TIMEOUT = 3
 WAIT_RESPONSE_TIMEOUT = 180
 READLINE_SLEEP = 1
@@ -124,7 +125,7 @@ class IdleManager:
     readline_thread: threading.Thread
     idling_event: threading.Event
     idling_thread: threading.Thread
-    currentIdle: IdleSession | None = None
+    current_idle: IdleSession | None = None
 
     def __setattr__(self, name: str, value: Any, /) -> None:
         """Terminate existing event and thread before creating new ones."""
@@ -189,7 +190,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._host = host or self._find_imap_server(email_address)
         self._port = port or IMAP_PORT
 
-        self.idle_optimization = True
+        self.idle_optimization = False
         self._idle_activation_countdown = 0
         self._idle_manager: IdleManager | None = None
         self._wait_response: WaitResponse | None = None
@@ -315,9 +316,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 )
 
             was_idle_before_call = self.is_idle()
+            print("name. ", imap4_cmd.__name__, "was_idle_before_call: ", was_idle_before_call)
             try:
                 if was_idle_before_call:
                     self.done()
+                elif self._idle_manager:
+                    if not self._idle_manager.readline_event.is_set():
+                        self._idle_manager.readline_event.set()
+                        self.send(b"%s NOOP\r\n" % self._new_tag())
+                        print("finally finished")
             except Exception as e:
                 if is_logged_out(str(e).lower()):
                     raise IMAPManagerLoggedOutException(f"To perform this command `{imap4_cmd.__name__}`, the IMAPManager must be logged in: {str(e)}") from None
@@ -337,8 +344,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             # Restore IDLE mode.
             try:
+                print("RESTORE", "name. ", imap4_cmd.__name__, "was_idle_before_call: ", was_idle_before_call)
                 if was_idle_before_call and imap4_cmd.__name__.lower() != "logout":
                     self.idle()
+                elif self._idle_manager:
+                    if self._idle_manager.readline_event.is_set():
+                        self._idle_manager.readline_event.clear()
+                        print("READLIEN CLEANED")
             except Exception as e:
                 print(f"Unexpected error while restoring IDLE mode: {str(e)}")
                 was_idle_before_call = False
@@ -486,13 +498,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raised.
         """
         try:
-            return self._parse_command_result(
-                super().logout(),
-                success_message="Logout successful",
-                failure_message="Could not logout from the target imap server"
-            )
-        finally:
-            self._current_idle = None
+            if self._idle_manager:
+                self._idle_manager = None
+        except Exception as e:
+            print("Idle Manager could not terminated properly: ", e)
+
+        return self._parse_command_result(
+            super().logout(),
+            success_message="Logout successful",
+            failure_message="Could not logout from the target imap server"
+        )
 
     @override
     @handle_idle
@@ -662,7 +677,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def is_idle(self) -> bool:
         """Check if idle is active"""
-        return bool(self._idle_manager) and bool(self._idle_manager.currentIdle)
+        return self._idle_manager is not None and self._idle_manager.current_idle is not None
 
     def idle(self) -> None:
         """
@@ -681,13 +696,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
             Continuously reads server responses and processes
             them.
             """
-            if not self._idle_manager or not self._idle_manager.readline_event:
+            if not self._idle_manager:
+                raise Exception("Cannot start to reading lines because Idle Manager is not initialized.")
+            if not self._idle_manager.readline_event:
                 raise Exception("Cannot start to reading lines because the `readline_event` is not initialized.")
+            if not self._idle_manager.idling_event:
+                raise Exception("Cannot start to reading lines because the `idling_event` is not initialized.")
 
             self.socket().settimeout(None)
             print("Reading lines started on its own thread...")
-            while True:
-                if not self._idle_manager.readline_event.is_set():
+            while self._idle_manager:
+                if self._idle_manager.readline_event and not self._idle_manager.readline_event.is_set():
                     try:
                         print(f"Waiting for new line since {datetime.now()}...")
                         response = self.readline()
@@ -704,46 +723,50 @@ class IMAPManager(imaplib.IMAP4_SSL):
             Starts and automatically refreshes IDLE mode
             when IDLE_TIMEOUT is reached.
             """
-            if not self._idle_manager:
-                raise Exception("Cannot start idle lifecycle, idle manager is not initialized.")
-            if self._idle_manager.idling_event.is_set():
-                raise Exception("Cannot start idle lifecycle, idling event is not cleaned.")
+            while self._idle_manager:
+                if self.idle_optimization:
+                    self._idle_activation_countdown = IDLE_ACTIVATION_INTERVAL
+                    print(f"IDLE activation countdown started at {datetime.now()}...")
+                    while self._idle_activation_countdown > 0:
+                        time.sleep(1)
+                        if self._idle_manager is not None and not self._idle_manager.idling_event.is_set():
+                            self._idle_activation_countdown -= 1
 
-            if self.idle_optimization:
-                self._idle_activation_countdown = IDLE_ACTIVATION_INTERVAL
-                while self._idle_activation_countdown > 0:
+                if self._idle_manager is None:
+                    break
+
+                if self._idle_manager.idling_event.is_set():
                     time.sleep(1)
-                    if not self._idle_manager.idling_event.is_set():
-                        self._idle_activation_countdown -= 1
+                    continue
 
-            self._idle_manager.currentIdle = IdleSession(
-                tag=self._new_tag(),
-                start_time=time.time()
-            )
+                # Before starting idle mode, select inbox to receive exists
+                # and recent messages:
+                # https://datatracker.ietf.org/doc/html/rfc2177.html#autoid-3
+                self.select(Folder.Inbox)
+                idle_tag = self._new_tag()
+                self.send(b"%s IDLE\r\n" % idle_tag)
+                print(f"'IDLE' command sent with tag: {idle_tag} at {datetime.now()}.")
 
-            # Before starting idle mode, select inbox to receive exists
-            # and recent messages:
-            # https://datatracker.ietf.org/doc/html/rfc2177.html#autoid-3
-            self.select(Folder.Inbox)
-            self.send(b"%s IDLE\r\n" % self._idle_manager.currentIdle.tag)
-            print(f"'IDLE' command sent with tag: {self._idle_manager.currentIdle.tag} at {datetime.now()}.")
+                self._wait_for_response(WaitResponse.IDLE)
+                if not self._idle_manager:
+                    raise Exception("Cannot start idle lifecycle, Idle Manager is destructed while waiting for IDLE response.")
+                if self._idle_manager.idling_event.is_set():
+                    raise Exception("Cannot start idle lifecycle, idling event is set while waiting for IDLE response.")
 
-            self._wait_for_response(WaitResponse.IDLE)
-            print(f"'IDLE' lifecycle creating for {self._idle_manager.currentIdle.tag} ...")
-
-            if not self.is_idle():
-                raise Exception("Cannot start idle lifecycle, there is no active idle session.")
-            if self._idle_manager.idling_event.is_set():
-                raise Exception("Cannot start idle lifecycle, idling event is not cleaned.")
-
-            while True:
-                time.sleep(1)
-                if self.is_idle() and not self._idle_manager.idling_event.is_set():
-                    print(f"IDLING for {self._idle_manager.currentIdle.tag} at {datetime.now()}.")
-                    if time.time() - self._idle_manager.currentIdle.start_time > IDLE_TIMEOUT:
-                        print(f"IDLING timeout reached for {self._idle_manager.currentIdle.tag} at {datetime.now()}.")
-                        self.done()
-                        self.idle()
+                self._idle_manager.current_idle = IdleSession(
+                    tag=idle_tag,
+                    start_time=time.time()
+                )
+                print(f"'IDLE' lifecycle creating for {self._idle_manager.current_idle.tag} ...")
+                while True:
+                    time.sleep(1)
+                    if self.is_idle() and not self._idle_manager.idling_event.is_set():
+                        print(f"IDLING for {self._idle_manager.current_idle.tag} at {datetime.now()}.")
+                        if time.time() - self._idle_manager.current_idle.start_time > IDLE_TIMEOUT:
+                            print(f"IDLING timeout reached for {self._idle_manager.current_idle.tag} at {datetime.now()}.")
+                            self.done()
+                            self.idle()
+                            break
 
         if not self.is_idle_supported():
             raise Exception(f"IDLE is not supported on {self._host}")
@@ -761,9 +784,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 idling_event=threading.Event(),
                 idling_thread=threading.Thread(target=start_idle_lifecycle, daemon=True)
             )
+
+        if not self._idle_manager.readline_thread.is_alive():
             self._idle_manager.readline_thread.start()
+
+        if not self._idle_manager.idling_thread.is_alive():
             self._idle_manager.idling_thread.start()
-            return
 
         if self._idle_manager.readline_event.is_set():
             self._idle_manager.readline_event.clear()
@@ -773,22 +799,28 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def done(self) -> None:
         """Terminates the current IDLE session if active."""
-        if not self._idle_manager or not self._idle_manager.currentIdle:
+        if not self._idle_manager or not self._idle_manager.current_idle:
             return
 
         self.send(b"DONE\r\n")
-        print(f"DONE command sent for {self._idle_manager.currentIdle.tag} at {datetime.now()}.")
+        print(f"DONE command sent for {self._idle_manager.current_idle.tag} at {datetime.now()}.")
 
+        temp_tag = self._idle_manager.current_idle.tag
         self._wait_for_response(WaitResponse.DONE)
 
-        temp_tag = self._idle_manager.currentIdle.tag
-        self._idle_manager.currentIdle = None
-        if not self._idle_manager.idling_event.is_set():
-            self._idle_manager.idling_event.set()
-        if not self._idle_manager.readline_event.is_set():
-            self._idle_manager.readline_event.set()
+        if self._idle_manager:
+            self._idle_manager.current_idle = None
+            if not self._idle_manager.idling_event.is_set():
+                self._idle_manager.idling_event.set()
+            if not self._idle_manager.readline_event.is_set():
+                self._idle_manager.readline_event.set()
 
-        print(f"DONE for {temp_tag} handled. IDLE terminated.")
+            print(f"DONE for {temp_tag} handled. IDLE terminated.")
+        else:
+            print(
+                f"""DONE for {temp_tag} could not properly handled.
+                Idle Manager is destructed while waiting for DONE response"""
+            )
 
     def _wait_for_response(self, wait_response: WaitResponse):
         """
@@ -801,14 +833,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         counter = 0
         while self._wait_response != wait_response:
-            print(f"Waiting for {wait_response} response...")
-            time.sleep(1)
-            counter += 1
-            if counter > WAIT_RESPONSE_TIMEOUT:
-                if self._idle_manager and self._idle_manager.currentIdle:
-                    self._idle_manager.currentIdle = None
-                self._wait_response = None
-                raise TimeoutError(f"IMAPManager.WaitResponse: {wait_response} did not received in time at {datetime.now()}.")
+            print(f"Waiting for {wait_response} response at {datetime.now()}...")
+            if self._idle_manager and not self._idle_manager.readline_event.is_set():
+                time.sleep(1)
+                counter += 1
+                if counter > WAIT_RESPONSE_TIMEOUT:
+                    if self._idle_manager.current_idle:
+                        self._idle_manager.current_idle = None
+                    self._wait_response = None
+                    raise TimeoutError(f"IMAPManager.WaitResponse: {wait_response} did not received in time at {datetime.now()}.")
+            else:
+                break
 
     def _handle_response(self, response: bytes):
         """
@@ -821,7 +856,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         if b'idling' in response:
             self._handle_idle_response()
-        elif b'OK' in response and self.is_idle() and self._idle_manager.currentIdle.tag in response: # type: ignore
+        elif b'OK' in response and self.is_idle() and self._idle_manager.current_idle.tag in response: # type: ignore
             self._handle_done_response()
         elif b'BYE' in response:
             self._handle_bye_response()
@@ -834,10 +869,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         This method shouldn't be called directly, but rather
         through the `handle_response` method.
         """
-        if not self._idle_manager or not self._idle_manager.currentIdle:
-            raise Exception(f"An IDLE response received at {datetime.now()} but current idle is not set.")
-
-        print(f"'+idling' response catched for {self._idle_manager.currentIdle.tag} at {datetime.now()}.")
         self._wait_response = WaitResponse.IDLE
 
     def _handle_done_response(self):
@@ -846,10 +877,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         This method shouldn't be called directly, but rather
         through the `handle_response` method.
         """
-        if not self._idle_manager or not self._idle_manager.currentIdle:
-            raise Exception(f"A DONE response received at {datetime.now()} but current idle is not set.")
-
-        print(f"'DONE' response catched for {self._idle_manager.currentIdle.tag} at {datetime.now()}.")
         self._wait_response = WaitResponse.DONE
 
     def _handle_exists_response(self, response: bytes):
