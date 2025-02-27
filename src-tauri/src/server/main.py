@@ -61,9 +61,7 @@ def shutdown_openmail_clients(exit: bool = False):
 def shutdown_monitors():
     global monitor_logged_out_clients_task
     if monitor_logged_out_clients_task:
-        print("this is monitor logged: ", monitor_logged_out_clients_task)
         monitor_logged_out_clients_task.cancel()
-        print("now it is cancelled")
 
 def shutdown_completely() -> None:
     uvicorn_logger.info("Shutdown signal received. Starting to logging out and terminating threads...")
