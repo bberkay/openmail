@@ -21,7 +21,7 @@ import imaplib
 import re
 import threading
 import time
-import pytz
+from zoneinfo import ZoneInfo
 from typing import Any, Callable, override, List
 from enum import Enum
 from ssl import SSLContext
@@ -896,7 +896,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             # Use of timedelta to account for potential server delays or discrepancies
             # in message arrival times.
             received_at = datetime.now() - timedelta(minutes=EMAIL_LOOKBACK_WINDOW)
-            received_at = received_at.astimezone(pytz.UTC)
+            received_at = received_at.astimezone(ZoneInfo("UTC"))
             self._new_message_timestamps.append(received_at)
 
     def _handle_bye_response(self):
@@ -1600,7 +1600,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             mailbox.emails = [
                 email
                 for email in mailbox.emails
-                if parsedate_to_datetime(email.date).astimezone(pytz.UTC) >= search_start_time
+                if parsedate_to_datetime(email.date).astimezone(ZoneInfo("UTC")) >= search_start_time
             ]
 
         self._new_message_timestamps = []
