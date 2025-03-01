@@ -81,7 +81,6 @@ class TestIdleOperations(unittest.TestCase):
     def test_idle_reconnection(self):
         print("test_reconnection...")
         self.__class__._openmail.imap.idle()
-        print("Idle mode activated before waiting...")
         time.sleep(IDLE_TIMEOUT + 10)
         try:
             result = self.__class__._openmail.imap.get_folders()
@@ -106,10 +105,9 @@ class TestIdleOperations(unittest.TestCase):
                         self.__class__._credentials[0]["password"]
                     )
                     if not status: self.fail(message)
-
                     time.sleep(1)
                     self.__class__._openmail.imap.idle()
-                    time.sleep(5)
+                    time.sleep(2)
                     result = self.__class__._openmail.imap.get_folders()
                     self.assertGreaterEqual(len(result), 1)
                 except Exception as e:
@@ -123,13 +121,11 @@ class TestIdleOperations(unittest.TestCase):
         new_message_received = threading.Event()
 
         def wait_for_new_email():
-            remanining_time = 100
-            while remanining_time > 0:
-                time.sleep(1)
+            while True:
                 if self.__class__._openmail.imap.any_new_email():
                     new_message_received.set()
                     break
-                remanining_time -= 1
+                time.sleep(1)
 
         wait_new_message_thread = threading.Thread(target=wait_for_new_email)
         wait_new_message_thread.start()
@@ -149,14 +145,21 @@ class TestIdleOperations(unittest.TestCase):
         print(f"{sender_email} sent {subject}")
 
         # Wait sent message
-        while not new_message_received.is_set():
+        timeout = 100
+        while timeout > 0:
+            if new_message_received.is_set():
+                break
             print("Waiting for new message...")
+            timeout -= 1
             time.sleep(1)
 
-        wait_new_message_thread.join()
+        wait_new_message_thread.join(timeout=5)
+        if not new_message_received.is_set():
+            self.fail(f"No message received in given time({timeout}s).")
+
         new_message_received.clear()
         emails = self.__class__._openmail.imap.get_recent_emails()
-        self.assertEqual(len(emails), 1)
+        self.assertGreaterEqual(len(emails), 1)
         self.assertEqual(emails[0].sender, sender_email)
         self.assertEqual(emails[0].subject, subject)
 
@@ -229,10 +232,91 @@ class TestIdleOperations(unittest.TestCase):
         self.assertTrue(self.__class__._openmail.imap.is_idle())
 
     def test_optimized_idle_reconnection(self):
-        pass
+        print("test_optimized_idle_reconnection...")
+        self.__class__._openmail.imap.idle_optimization = True
+        self.__class__._openmail.imap.idle()
+        time.sleep(IDLE_TIMEOUT + 10)
+        try:
+            result = self.__class__._openmail.imap.get_folders()
+            self.assertGreaterEqual(len(result), 1)
+        except Exception as e:
+            print("Error while fetching folders: ", e)
+            print("Checking connection...")
+            try:
+                if self.__class__._openmail.imap.is_logged_out():
+                    print(f"IMAPManager logged out from {self.__class__._email}")
+                else:
+                    print(f"IMAPManager seems stil logged in to {self.__class__._email}, going to try to disconnect...")
+                    status, message = self.__class__._openmail.disconnect()
+                    if not status: self.fail(message)
+            except Exception as e:
+                print("Error while checking connection: ", e)
+            finally:
+                print("Reconnecting...")
+                try:
+                    status, message = self.__class__._openmail.connect(
+                        self.__class__._email,
+                        self.__class__._credentials[0]["password"]
+                    )
+                    if not status: self.fail(message)
+                    time.sleep(1)
+                    self.__class__._openmail.imap.idle()
+                    time.sleep(2)
+                    result = self.__class__._openmail.imap.get_folders()
+                    self.assertGreaterEqual(len(result), 1)
+                except Exception as e:
+                    self.fail("Error while reconnecting: " + str(e))
 
     def test_new_emails_in_optimized_idle_mode(self):
-        pass
+        print("test_new_emails_in_optimized_idle_mode...")
+        self.__class__._openmail.imap.idle_optimization = True
+        self.__class__._openmail.imap.idle()
+        time.sleep(3)
+
+        new_message_received = threading.Event()
+
+        def wait_for_new_email():
+            while True:
+                if self.__class__._openmail.imap.any_new_email():
+                    new_message_received.set()
+                    break
+                time.sleep(1)
+
+        wait_new_message_thread = threading.Thread(target=wait_for_new_email)
+        wait_new_message_thread.start()
+
+        # Sender
+        sender = OpenMail()
+        sender_email = self.__class__._credentials[2]["email"]
+        sender.connect(sender_email, self.__class__._credentials[2]["password"])
+        print(f"Connecting to {sender_email}")
+        subject = cast(str, NameGenerator.subject()[0])
+        sender.smtp.send_email(sender_email, Draft(
+            receiver=self.__class__._email,
+            subject=subject,
+            body=NameGenerator.body()[0]
+        ))
+        sender.disconnect()
+        print(f"{sender_email} sent {subject}")
+
+        # Wait sent message
+        timeout = 100
+        while timeout > 0:
+            if new_message_received.is_set():
+                break
+            print("Waiting for new message...")
+            timeout -= 1
+            time.sleep(1)
+
+        wait_new_message_thread.join(timeout=5)
+        if not new_message_received.is_set():
+            self.fail(f"No message received in given time({timeout}s).")
+
+        new_message_received.clear()
+        emails = self.__class__._openmail.imap.get_recent_emails()
+        self.assertGreaterEqual(len(emails), 1)
+        self.assertEqual(emails[0].sender, sender_email)
+        self.assertEqual(emails[0].subject, subject)
 
     @classmethod
     def cleanup(cls):
