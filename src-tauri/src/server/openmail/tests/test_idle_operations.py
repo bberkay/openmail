@@ -176,8 +176,8 @@ class TestIdleOperations(unittest.TestCase):
         result = self.__class__._openmail.imap.get_folders()
         self.assertGreaterEqual(len(result), 1)
 
-    def test_get_folders_in_optimized_idle_without_waiting_idle_mode(self):
-        print("test_get_folders_in_optimized_idle_without_waiting_idle_mode_to_start...")
+    def test_get_folders_in_optimized_idle_without_waiting_for_idle_mode(self):
+        print("test_get_folders_in_optimized_idle_without_waiting_for_idle_mode...")
         self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         result = self.__class__._openmail.imap.get_folders()
@@ -188,6 +188,14 @@ class TestIdleOperations(unittest.TestCase):
         self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_ACTIVATION_INTERVAL + 10)
+        self.__class__._openmail.imap.search_emails()
+        result = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(len(result.emails), 1)
+
+    def test_get_emails_in_optimized_idle_without_waiting_for_idle_mode(self):
+        print("test_get_emails_in_optimized_idle_without_waiting_for_idle_mode...")
+        self.__class__._openmail.imap.idle_optimization = True
+        self.__class__._openmail.imap.idle()
         self.__class__._openmail.imap.search_emails()
         result = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(len(result.emails), 1)

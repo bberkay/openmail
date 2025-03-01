@@ -698,7 +698,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         IDLE_ACTIVATION_INTERVAL then start IDLE mode, but if `idle` method
         called while waiting, restart countdown and start waiting from the
         beginning, this technique prevents switching to IDLE mode too much
-        in very short period. See: https://developer.mozilla.org/en-US/docs/Glossary/Debounce
+        in very short period.
         """
         def start_reading_lines():
             """
@@ -746,15 +746,23 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         def start_optimized_idle_lifecycle():
             """
-            Starts and automatically refreshes IDLE mode
-            when IDLE_TIMEOUT is reached.
+            Starts when the countdown is finished and
+            automatically refreshes IDLE mode when
+            IDLE_TIMEOUT is reached.
             """
             while self._idle_manager is not None:
                 print(f"IDLE activation countdown started at {datetime.now()}...")
                 while self._idle_activation_countdown > 0:
                     time.sleep(1)
+                    if not self._idle_manager:
+                        break
                     if not self._idle_manager.idling_event.is_set():
                         self._idle_activation_countdown -= 1
+
+                if not self._idle_manager:
+                    print("Idle Manager terminated while waiting for countdown. Breaking lifecycle...")
+                    break
+
                 print(f"IDLE activation countdown finished at {datetime.now()}...")
 
                 # Before starting idle mode, select inbox to receive exists
@@ -785,6 +793,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         self.idle()
                         break
                     time.sleep(1)
+                time.sleep(1)
 
         if not self.is_idle_supported():
             raise Exception(f"IDLE is not supported on {self._host}")
