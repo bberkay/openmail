@@ -72,11 +72,17 @@ class TestIdleOperations(unittest.TestCase):
         result = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(len(result.emails), 1)
 
+    def test_idle_timeout(self):
+        print("test_idle_timeout...")
+        self.__class__._openmail.imap.idle()
+        time.sleep(IDLE_TIMEOUT + 10)
+        self.assertTrue(self.__class__._openmail.imap.is_idle())
+
     def test_idle_reconnection(self):
         print("test_reconnection...")
         self.__class__._openmail.imap.idle()
         print("Idle mode activated before waiting...")
-        time.sleep(IDLE_TIMEOUT + 60)
+        time.sleep(IDLE_TIMEOUT + 10)
         try:
             result = self.__class__._openmail.imap.get_folders()
             self.assertGreaterEqual(len(result), 1)
@@ -214,6 +220,13 @@ class TestIdleOperations(unittest.TestCase):
         self.__class__._openmail.imap.search_emails()
         result = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(len(result.emails), 1)
+
+    def test_optimized_idle_timeout(self):
+        print("test_optimized_idle_timeout...")
+        self.__class__._openmail.imap.idle_optimization = True
+        self.__class__._openmail.imap.idle()
+        time.sleep(IDLE_TIMEOUT + 10)
+        self.assertTrue(self.__class__._openmail.imap.is_idle())
 
     def test_optimized_idle_reconnection(self):
         pass
