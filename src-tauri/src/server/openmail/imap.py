@@ -88,14 +88,14 @@ SHORT_BODY_TEXT_CHUNK_SIZE = 4096 # in bytes
 # Character counts
 SHORT_BODY_MAX_LENGTH = 100
 MAX_FOLDER_NAME_LENGTH = 1024
-# Timeouts in seconds
+# Timers in seconds
 CONN_TIMEOUT = 30
 #IDLE_TIMEOUT = 29 * 60
-IDLE_TIMEOUT = 30
+IDLE_TIMEOUT = 60
 JOIN_TIMEOUT = 3
-WAIT_RESPONSE_TIMEOUT = 180
+WAIT_RESPONSE_TIMEOUT = 30
 READLINE_SLEEP = 1
-#IDLE_ACTIVATION_INTERVAL = 180
+#IDLE_ACTIVATION_INTERVAL = 60
 IDLE_ACTIVATION_INTERVAL = 10
 
 @dataclass
@@ -741,7 +741,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         print(f"IDLING timeout reached for {self._idle_manager.current_idle.tag} at {datetime.now()}.")
                         self.done()
                         self.idle()
-                        break
                 time.sleep(1)
 
         def start_optimized_idle_lifecycle():
@@ -767,11 +766,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
                 # Before starting idle mode, select inbox to receive exists
                 # messages: https://datatracker.ietf.org/doc/html/rfc2177.html#autoid-3
-                # But before selecting INBOX make sure readline_event is set
-                # to prevent ...
-                if not self._idle_manager.readline_event.is_set():
-                    self._idle_manager.readline_event.set()
-                    self._release_readline()
                 self.select(Folder.Inbox, readonly=True)
 
                 idle_tag = self._new_tag()
@@ -791,7 +785,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         print(f"IDLING timeout reached for {self._idle_manager.current_idle.tag} at {datetime.now()}.")
                         self.done()
                         self.idle()
-                        break
                     time.sleep(1)
                 time.sleep(1)
 
@@ -807,8 +800,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             )
 
         if not self.idle_optimization:
-            # Check out optimized_idle_lifecycle function
-            # for description.
+            # Check out select INBOX in optimized_idle_lifecycle
+            # function for description of this selection.
             self.select(Folder.Inbox, readonly=True)
 
             if not self._idle_manager.readline_event.is_set():
