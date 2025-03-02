@@ -90,13 +90,11 @@ SHORT_BODY_MAX_LENGTH = 100
 MAX_FOLDER_NAME_LENGTH = 1024
 # Timers in seconds
 CONN_TIMEOUT = 30
-#IDLE_TIMEOUT = 29 * 60
-IDLE_TIMEOUT = 60
+IDLE_TIMEOUT = 29 * 60
 JOIN_TIMEOUT = 3
 WAIT_RESPONSE_TIMEOUT = 30
 READLINE_SLEEP = 1
-#IDLE_ACTIVATION_INTERVAL = 60
-IDLE_ACTIVATION_INTERVAL = 10
+IDLE_ACTIVATION_INTERVAL = 60
 
 @dataclass
 class IdleSession:
@@ -205,6 +203,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         self.idle_optimization = False
         self._idle_activation_countdown = 0
+        self._is_idle_in_activation_countdown = False
         self._idle_manager: IdleManager | None = None
         self._wait_response: WaitResponse | None = None
 
@@ -683,7 +682,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def is_idle(self) -> bool:
         """Check if idle is active"""
-        return bool(self._idle_manager and self._idle_manager.current_idle)
+        return bool(
+            self._idle_manager and
+            (
+                self._idle_manager.current_idle or
+                (self.idle_optimization and self._is_idle_in_activation_countdown)
+            )
+        )
 
     def idle(self) -> None:
         """
@@ -748,14 +753,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
             """
             while self._idle_manager is not None:
                 print(f"IDLE activation countdown started at {datetime.now()}...")
+                self._is_idle_in_activation_countdown = True
                 while self._idle_activation_countdown > 0:
                     time.sleep(1)
                     if not self._idle_manager:
+                        self._is_idle_in_activation_countdown = False
                         break
                     if not self._idle_manager.idling_event.is_set():
                         self._idle_activation_countdown -= 1
 
                 if self._idle_manager is None:
+                    self._is_idle_in_activation_countdown = False
                     print("Idle Manager terminated while waiting for countdown. Breaking lifecycle...")
                     break
 
@@ -764,17 +772,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 # Before starting idle mode, select inbox to receive exists
                 # messages: https://datatracker.ietf.org/doc/html/rfc2177.html#autoid-3
                 self.select(Folder.Inbox, readonly=True)
-                # NOTIFICATION İÇİN YAPILACAK BİR ŞEY YOK
-                # BİR YAN ETKİ GİBİ DÜŞÜNÜLEBİLİR.
-                # ANCAK NOTIFICATION SORUNU ZATEN AYRI AÇILAN BİR
-                # THREAD YENİ BİR CLIENT AÇILARAK ÇÖZÜLEBİLİR
-                #
                 idle_tag = self._new_tag()
                 self.send(b"%s IDLE\r\n" % idle_tag)
                 print(f"'IDLE' command sent with tag: {idle_tag} at {datetime.now()}.")
 
                 self._wait_for_response(WaitResponse.IDLE)
                 if self._idle_manager is None:
+                    self._is_idle_in_activation_countdown = False
                     print("Idle Manager is desctructed while waiting for IDLE response.")
                     break
 
@@ -782,6 +786,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     tag=idle_tag,
                     start_time=time.time()
                 )
+                self._is_idle_in_activation_countdown = False
 
                 print(f"Optimized 'IDLE' lifecycle creating for {self._idle_manager.current_idle.tag} ...")
                 while self._idle_manager is not None and not self._idle_manager.idling_event.is_set():

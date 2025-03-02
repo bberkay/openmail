@@ -84,7 +84,7 @@ def connect_to_account(account: AccountWithPassword):
         )
         if status:
             print(f"Successfully connected to {account.email_address}")
-            #openmail_clients[account.email_address].imap.idle_optimization = True
+            openmail_clients[account.email_address].imap.idle_optimization = True
             openmail_clients[account.email_address].imap.idle()
             try: failed_openmail_clients.remove(account.email_address)
             except ValueError: pass
