@@ -285,6 +285,17 @@ class TestIdleOperations(unittest.TestCase):
         wait_new_message_thread = threading.Thread(target=wait_for_new_email)
         wait_new_message_thread.start()
 
+        """
+        An important problem about idle optimization is when
+        new messages arrive while idle still waiting for activation,
+        their EXISTS messages is NOT going to be handled since IDLE
+        mode won't be enabled. So we will wait IDLE_ACTIVATION time
+        before sending test email but in real product, new messages
+        should be listening in standard idle mode and most highly
+        in their own threads which will necessitate new imap connection.
+        """
+        time.sleep(IDLE_ACTIVATION_INTERVAL + 10)
+
         # Sender
         sender = OpenMail()
         sender_email = self.__class__._credentials[2]["email"]
@@ -317,6 +328,45 @@ class TestIdleOperations(unittest.TestCase):
         self.assertGreaterEqual(len(emails), 1)
         self.assertEqual(emails[0].sender, sender_email)
         self.assertEqual(emails[0].subject, subject)
+
+    def test_is_optimized_idle_mode_is_really_optimized(self):
+        print("test_is_optimized_idle_mode_is_really_optimized...")
+        print("Standard IDLE mode testing...")
+        standard_start_time = time.time()
+        self.__class__._openmail.imap.idle()
+        result = self.__class__._openmail.imap.get_folders()
+        self.assertGreaterEqual(len(result), 1)
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+        self.__class__._sent_test_email_uids.append(uid)
+        self.__class__._openmail.imap.idle()
+        self.__class__._openmail.imap.search_emails()
+        result = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(len(result.emails), 1)
+        standard_end_time = time.time()
+
+        print("Optimized IDLE mode testing...")
+        optimized_start_time = time.time()
+        self.__class__._openmail.imap.idle_optimization = True
+        self.__class__._openmail.imap.idle()
+        result = self.__class__._openmail.imap.get_folders()
+        self.assertGreaterEqual(len(result), 1)
+        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+        self.__class__._sent_test_email_uids.append(uid)
+        self.__class__._openmail.imap.idle()
+        self.__class__._openmail.imap.search_emails()
+        result = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(len(result.emails), 1)
+        optimized_end_time = time.time()
+
+        standard_duration = standard_end_time - standard_start_time
+        optimized_duration = optimized_end_time - optimized_start_time
+
+        print(f"Standard idle duration: {standard_duration:.4f} seconds")
+        print(f"Optimized idle duration: {optimized_duration:.4f} seconds")
+        self.assertLess(optimized_duration, standard_duration)
+
+        speedup_percentage = ((standard_duration - optimized_duration) / standard_duration) * 100
+        print(f"Optimized idle is {speedup_percentage:.2f}% faster")
 
     @classmethod
     def cleanup(cls):

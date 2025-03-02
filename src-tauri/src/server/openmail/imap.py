@@ -329,10 +329,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 )
 
             was_idle_before_call = self.is_idle()
-            print("command: ", imap4_cmd.__name__, "was_idle_before_call: ", was_idle_before_call)
             try:
                 if was_idle_before_call:
                     self.done()
+                else:
+                    self._release_readline_for_imap4()
             except Exception as e:
                 if is_logout_error(str(e).lower()):
                     raise IMAPManagerLoggedOutException(f"To perform this command `{imap4_cmd.__name__}`, the IMAPManager must be logged in: {str(e)}") from None
@@ -343,12 +344,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     print("Active IDLE session set to None and threads stopped forcefully.")
 
             try:
-                if self._idle_manager and not self._idle_manager.readline_event.is_set():
-                    self._idle_manager.readline_event.set()
-                self._release_readline()
                 result = imap4_cmd(self, *args, **kwargs)
-                if self._idle_manager and self._idle_manager.readline_event.is_set():
-                    self._idle_manager.readline_event.clear()
             except Exception as e:
                 if is_logout_error(str(e).lower()):
                     raise IMAPManagerLoggedOutException(f"To perform this command `{imap4_cmd.__name__}`, the IMAPManager must be logged in: {str(e)}") from None
@@ -357,9 +353,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             # Restore IDLE mode.
             try:
-                print("RESTORE", "command: ", imap4_cmd.__name__, "was_idle_before_call: ", was_idle_before_call)
                 if was_idle_before_call and imap4_cmd.__name__.lower() != "logout":
                     self.idle()
+                else:
+                    self._resume_readline_for_imapmanager()
             except Exception as e:
                 print(f"Unexpected error while restoring IDLE mode: {str(e)}")
                 was_idle_before_call = False
@@ -767,12 +764,20 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 # Before starting idle mode, select inbox to receive exists
                 # messages: https://datatracker.ietf.org/doc/html/rfc2177.html#autoid-3
                 self.select(Folder.Inbox, readonly=True)
-
+                # NOTIFICATION İÇİN YAPILACAK BİR ŞEY YOK
+                # BİR YAN ETKİ GİBİ DÜŞÜNÜLEBİLİR.
+                # ANCAK NOTIFICATION SORUNU ZATEN AYRI AÇILAN BİR
+                # THREAD YENİ BİR CLIENT AÇILARAK ÇÖZÜLEBİLİR
+                #
                 idle_tag = self._new_tag()
                 self.send(b"%s IDLE\r\n" % idle_tag)
                 print(f"'IDLE' command sent with tag: {idle_tag} at {datetime.now()}.")
 
                 self._wait_for_response(WaitResponse.IDLE)
+                if self._idle_manager is None:
+                    print("Idle Manager is desctructed while waiting for IDLE response.")
+                    break
+
                 self._idle_manager.current_idle = IdleSession(
                     tag=idle_tag,
                     start_time=time.time()
@@ -834,17 +839,41 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         if self._idle_manager:
             self._idle_manager.stop()
-            self._release_readline()
+            self._release_readline_for_imap4(True)
             print(f"DONE for {temp_tag} handled. IDLE terminated.")
         else:
             print(
                 f"""DONE for {temp_tag} could not properly handled.
-                Idle Manager is destructed while waiting for DONE response"""
+                Idle Manager is destructed while waiting for DONE response."""
             )
 
-    def _release_readline(self):
-        """This will release self.readline in readline_thread."""
-        self.send(b"%s NOOP\r\n" % self._new_tag())
+    def _release_readline_for_imap4(self, force: bool = True):
+        """
+        Sets the readline event in the idle manager, allowing methods like select, uid
+        and list in the parent class (IMAP4_SSL) to retrieve messages instead of IMAPManager.
+
+        Args:
+            force (bool): If force is True then send NOOP even readline_event is already
+            set.
+        """
+        if not self._idle_manager:
+            return
+        if not self._idle_manager.readline_event.is_set():
+            self._idle_manager.readline_event.set()
+            # This will release self.readline in readline_thread
+            self.send(b"%s NOOP\r\n" % self._new_tag())
+        elif force:
+            self.send(b"%s NOOP\r\n" % self._new_tag())
+
+    def _resume_readline_for_imapmanager(self):
+        """
+        Clears the readline event in the idle manager, allowing IMAPManager to retrieve
+        messages such as IDLE, RECENT and EXISTS instead of the parent class.
+        """
+        if not self._idle_manager:
+            return
+        if self._idle_manager.readline_event.is_set():
+            self._idle_manager.readline_event.clear()
 
     def _wait_for_response(self, wait_response: WaitResponse):
         """
@@ -942,8 +971,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if self._idle_manager:
             self._idle_manager.idling_event.set()
             self._idle_manager.idling_thread.join(timeout=JOIN_TIMEOUT)
-            if not self._idle_manager.readline_event.is_set():
-                self._idle_manager.readline_event.set()
+            self._release_readline_for_imap4()
 
         raise IMAPManagerLoggedOutException(f"'BYE' response received from server at {datetime.now()}. IMAPManager connection closed safely.") from None
 
