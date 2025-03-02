@@ -28,20 +28,35 @@ class TestIdleOperations(unittest.TestCase):
 
     def test_idle_and_done(self):
         print("test_idle_and_done...")
+        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(5)
         self.__class__._openmail.imap.done()
 
     def test_idle_lifecycle(self):
         print("test_idle_lifecycle...")
+        self.__class__._openmail.imap.idle_optimization = False
         for _ in range(0, 3):
             self.__class__._openmail.imap.idle()
             time.sleep(5)
             self.__class__._openmail.imap.done()
             time.sleep(2)
 
+    def test_is_idle(self):
+        print("test_is_idle...")
+        self.__class__._openmail.imap.idle_optimization = False
+        self.assertFalse(self.__class__._openmail.imap.is_idle())
+        self.__class__._openmail.imap.idle()
+        time.sleep(5)
+        self.assertTrue(self.__class__._openmail.imap.is_idle())
+        time.sleep(1)
+        self.__class__._openmail.imap.done()
+        time.sleep(1)
+        self.assertFalse(self.__class__._openmail.imap.is_idle())
+
     def test_get_folders_in_idle_mode(self):
         print("test_get_folders_in_idle_mode...")
+        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(3)
         result = self.__class__._openmail.imap.get_folders()
@@ -49,6 +64,7 @@ class TestIdleOperations(unittest.TestCase):
 
     def test_get_emails_in_idle_mode(self):
         print("test_get_emails_in_idle_mode...")
+        self.__class__._openmail.imap.idle_optimization = False
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
         self.__class__._sent_test_email_uids.append(uid)
         self.__class__._openmail.imap.idle()
@@ -59,12 +75,14 @@ class TestIdleOperations(unittest.TestCase):
 
     def test_get_folders_in_idle_mode_without_waiting_for_idle_mode(self):
         print("test_get_folders_in_idle_mode_without_waiting_for_idle_mode...")
+        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         result = self.__class__._openmail.imap.get_folders()
         self.assertGreaterEqual(len(result), 1)
 
     def test_get_emails_in_idle_mode_without_waiting_for_idle_mode(self):
         print("test_get_emails_in_idle_mode_without_waiting_for_idle_mode...")
+        self.__class__._openmail.imap.idle_optimization = False
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
         self.__class__._sent_test_email_uids.append(uid)
         self.__class__._openmail.imap.idle()
@@ -74,12 +92,14 @@ class TestIdleOperations(unittest.TestCase):
 
     def test_idle_timeout(self):
         print("test_idle_timeout...")
+        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_TIMEOUT + 10)
         self.assertTrue(self.__class__._openmail.imap.is_idle())
 
     def test_idle_reconnection(self):
         print("test_reconnection...")
+        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_TIMEOUT + 10)
         try:
@@ -115,6 +135,7 @@ class TestIdleOperations(unittest.TestCase):
 
     def test_new_emails_in_idle_mode(self):
         print("test_new_emails_in_idle_mode...")
+        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(3)
 
@@ -176,6 +197,18 @@ class TestIdleOperations(unittest.TestCase):
         self.assertGreater(reset_activation_countdown, old_activation_countdown)
         time.sleep(IDLE_ACTIVATION_INTERVAL + 10)
         self.__class__._openmail.imap.done()
+
+    def test_is_idle_when_idle_optimization_is_true(self):
+        print("test_is_idle_while_not_in_optimized_idle_mode...")
+        self.__class__._openmail.imap.idle_optimization = True
+        self.assertFalse(self.__class__._openmail.imap.is_idle())
+        self.__class__._openmail.imap.idle()
+        time.sleep(5)
+        self.assertTrue(self.__class__._openmail.imap.is_idle())
+        time.sleep(1)
+        self.__class__._openmail.imap.done()
+        time.sleep(1)
+        self.assertFalse(self.__class__._openmail.imap.is_idle())
 
     @unittest.skipIf(IDLE_ACTIVATION_INTERVAL <= 7, "IDLE_ACTIVATION_INTERVAL must be bigger than 7.")
     def test_optimized_idle_lifecycle(self):
