@@ -195,13 +195,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
         password: str,
         host: str = "",
         port: int = IMAP_PORT,
+        *,
         ssl_context: SSLContext | None = None,
-        timeout: int = CONN_TIMEOUT
+        timeout: int = CONN_TIMEOUT,
+        enable_idle_optimization: bool = False
     ):
         self._host = host or self._find_imap_server(email_address)
         self._port = port or IMAP_PORT
 
-        self.idle_optimization = False
+        self._idle_optimization = enable_idle_optimization
         self._idle_activation_countdown = 0
         self._is_countdown_continue = False
         self._idle_manager: IdleManager | None = None
