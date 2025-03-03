@@ -90,8 +90,7 @@ SHORT_BODY_MAX_LENGTH = 100
 MAX_FOLDER_NAME_LENGTH = 1024
 # Timers in seconds
 CONN_TIMEOUT = 30
-#IDLE_TIMEOUT = 29 * 60
-IDLE_TIMEOUT = 10
+IDLE_TIMEOUT = 29 * 60
 JOIN_TIMEOUT = 1
 WAIT_RESPONSE_TIMEOUT = 30
 READLINE_SLEEP = 1
@@ -156,6 +155,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._current_idle: IMAPManager.IdleSession | None = None
         self._idle_activation_countdown = 0
         self._is_idle_activation_countdown_continue = False
+        self._is_idling_in_process_on_idling_thread = False
         self._wait_response: IMAPManager.WaitResponse | None = None
         self._previous_mailbox_size = 0
         self._new_message_timestamps: List[datetime] = []
@@ -285,6 +285,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 return self.state == "LOGOUT" and any(
                     item.lower() in err_msg for item in ("AUTH", "SELECTED")
                 )
+
+            while self._is_idling_in_process_on_idling_thread:
+                time.sleep(0.2)
 
             was_idle_before_call = self.is_idle() or self.is_idle_activation_countdown_continue()
             try:
@@ -773,6 +776,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             idle_tag = self._new_tag()
             self.send(b"%s IDLE\r\n" % idle_tag)
             print(f"'IDLE' command sent with tag: {idle_tag} at {datetime.now()}.")
+            self._is_idling_in_process_on_idling_thread = True
 
             self._wait_for_response(IMAPManager.WaitResponse.IDLE)
             if self._release_idle_loops_event.is_set():
@@ -785,6 +789,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 start_time=time.time()
             )
             self._is_idle_activation_countdown_continue = False
+            self._is_idling_in_process_on_idling_thread = False
 
             print(f"Optimized 'IDLE' lifecycle creating for {self._current_idle.tag} ...")
             while not self._release_idle_loops_event.is_set():
