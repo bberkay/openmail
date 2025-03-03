@@ -1,5 +1,5 @@
 import time
-from typing import cast
+from typing import Callable, cast
 import unittest
 import json
 import threading
@@ -21,30 +21,66 @@ class TestIdleOperations(unittest.TestCase):
             cls._credentials = json.load(credentials)
 
         cls._email = cls._credentials[0]["email"]
-        cls._openmail.connect(cls._email, cls._credentials[0]["password"])
+        cls._openmail.connect(
+            cls._email,
+            cls._credentials[0]["password"],
+            imap_enable_idle_optimization=False
+        )
         print(f"Connected to {cls._email}...")
 
         cls._sent_test_email_uids = []
 
+    @staticmethod
+    def enable_idle_optimization(optimized_idle_test: Callable):
+        def wrapper(self, *args, **kwargs):
+            if not self.__class__._openmail.imap.is_idle_optimization_enabled():
+                print(f"Idle must be enabled for {optimized_idle_test.__name__} but it is not. Logging out to enable optimization...")
+                self.__class__._openmail.imap.logout()
+                self.__class__._openmail.connect(
+                    self.__class__._email,
+                    self.__class__._credentials[0]["password"],
+                    imap_enable_idle_optimization=True
+                )
+                print(f"Idle optimization is now enabled. Running {optimized_idle_test.__name__}...")
+            return optimized_idle_test(self, *args, **kwargs)
+
+        return wrapper
+
+    @staticmethod
+    def disable_idle_optimization(standard_idle_test: Callable):
+        def wrapper(self, *args, **kwargs):
+            if self.__class__._openmail.imap.is_idle_optimization_enabled():
+                print(f"Idle must be disabled for {standard_idle_test.__name__}, but it is not. Logging out to disable optimization...")
+                self.__class__._openmail.imap.logout()
+                self.__class__._openmail.connect(
+                    self.__class__._email,
+                    self.__class__._credentials[0]["password"],
+                    imap_enable_idle_optimization=False
+                )
+                print(f"Idle optimization is now disabled. Running {standard_idle_test.__name__}...")
+            return standard_idle_test(self, *args, **kwargs)
+
+        return wrapper
+
+    @disable_idle_optimization
     def test_idle_and_done(self):
         print("test_idle_and_done...")
-        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(5)
         self.__class__._openmail.imap.done()
 
+    @disable_idle_optimization
     def test_idle_lifecycle(self):
         print("test_idle_lifecycle...")
-        self.__class__._openmail.imap.idle_optimization = False
         for _ in range(0, 3):
             self.__class__._openmail.imap.idle()
             time.sleep(5)
             self.__class__._openmail.imap.done()
             time.sleep(2)
 
+    @disable_idle_optimization
     def test_is_idle(self):
         print("test_is_idle...")
-        self.__class__._openmail.imap.idle_optimization = False
         self.assertFalse(self.__class__._openmail.imap.is_idle())
         self.__class__._openmail.imap.idle()
         time.sleep(5)
@@ -54,17 +90,17 @@ class TestIdleOperations(unittest.TestCase):
         time.sleep(1)
         self.assertFalse(self.__class__._openmail.imap.is_idle())
 
+    @disable_idle_optimization
     def test_get_folders_in_idle_mode(self):
         print("test_get_folders_in_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(3)
         result = self.__class__._openmail.imap.get_folders()
         self.assertGreaterEqual(len(result), 1)
 
+    @disable_idle_optimization
     def test_get_emails_in_idle_mode(self):
         print("test_get_emails_in_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = False
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
         self.__class__._sent_test_email_uids.append(uid)
         self.__class__._openmail.imap.idle()
@@ -73,16 +109,16 @@ class TestIdleOperations(unittest.TestCase):
         result = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(len(result.emails), 1)
 
+    @disable_idle_optimization
     def test_get_folders_in_idle_mode_without_waiting_for_idle_mode(self):
         print("test_get_folders_in_idle_mode_without_waiting_for_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         result = self.__class__._openmail.imap.get_folders()
         self.assertGreaterEqual(len(result), 1)
 
+    @disable_idle_optimization
     def test_get_emails_in_idle_mode_without_waiting_for_idle_mode(self):
         print("test_get_emails_in_idle_mode_without_waiting_for_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = False
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
         self.__class__._sent_test_email_uids.append(uid)
         self.__class__._openmail.imap.idle()
@@ -90,16 +126,16 @@ class TestIdleOperations(unittest.TestCase):
         result = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(len(result.emails), 1)
 
+    @disable_idle_optimization
     def test_idle_timeout(self):
         print("test_idle_timeout...")
-        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_TIMEOUT + 10)
         self.assertTrue(self.__class__._openmail.imap.is_idle())
 
+    @disable_idle_optimization
     def test_idle_reconnection(self):
         print("test_reconnection...")
-        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_TIMEOUT + 10)
         try:
@@ -133,9 +169,9 @@ class TestIdleOperations(unittest.TestCase):
                 except Exception as e:
                     self.fail("Error while reconnecting: " + str(e))
 
+    @disable_idle_optimization
     def test_new_emails_in_idle_mode(self):
         print("test_new_emails_in_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = False
         self.__class__._openmail.imap.idle()
         time.sleep(3)
 
@@ -185,9 +221,9 @@ class TestIdleOperations(unittest.TestCase):
         self.assertEqual(emails[0].subject, subject)
 
     @unittest.skipIf(IDLE_ACTIVATION_INTERVAL <= 7, "IDLE_ACTIVATION_INTERVAL must be bigger than 7.")
+    @enable_idle_optimization
     def test_idle_optimization(self):
         print("test_idle_optimization...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_ACTIVATION_INTERVAL / 2)
         old_activation_countdown = self.__class__._openmail.imap._idle_activation_countdown
@@ -198,9 +234,9 @@ class TestIdleOperations(unittest.TestCase):
         time.sleep(IDLE_ACTIVATION_INTERVAL + 10)
         self.__class__._openmail.imap.done()
 
+    @enable_idle_optimization
     def test_is_idle_when_idle_optimization_is_true(self):
         print("test_is_idle_while_not_in_optimized_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.assertFalse(self.__class__._openmail.imap.is_idle())
         self.__class__._openmail.imap.idle()
         time.sleep(5)
@@ -211,9 +247,9 @@ class TestIdleOperations(unittest.TestCase):
         self.assertFalse(self.__class__._openmail.imap.is_idle())
 
     @unittest.skipIf(IDLE_ACTIVATION_INTERVAL <= 7, "IDLE_ACTIVATION_INTERVAL must be bigger than 7.")
+    @enable_idle_optimization
     def test_optimized_idle_lifecycle(self):
         print("test_optimized_idle_lifecycle...")
-        self.__class__._openmail.imap.idle_optimization = True
         for _ in range(0, 3):
             self.__class__._openmail.imap.idle()
             time.sleep(IDLE_ACTIVATION_INTERVAL / 2)
@@ -225,48 +261,48 @@ class TestIdleOperations(unittest.TestCase):
             time.sleep(IDLE_ACTIVATION_INTERVAL + 10)
             self.__class__._openmail.imap.done()
 
+    @enable_idle_optimization
     def test_get_folders_in_optimized_idle_mode(self):
         print("test_get_folders_in_optimized_idle...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_ACTIVATION_INTERVAL + 10)
         result = self.__class__._openmail.imap.get_folders()
         self.assertGreaterEqual(len(result), 1)
 
+    @enable_idle_optimization
     def test_get_emails_in_optimized_idle_mode(self):
         print("test_get_emails_in_optimized_idle...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_ACTIVATION_INTERVAL + 10)
         self.__class__._openmail.imap.search_emails()
         result = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(len(result.emails), 1)
 
+    @enable_idle_optimization
     def test_get_folders_in_optimized_idle_mode_without_waiting_for_idle_mode(self):
         print("test_get_folders_in_optimized_idle_without_waiting_for_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         result = self.__class__._openmail.imap.get_folders()
         self.assertGreaterEqual(len(result), 1)
 
+    @enable_idle_optimization
     def test_get_emails_in_optimized_idle_mode_without_waiting_for_idle_mode(self):
         print("test_get_emails_in_optimized_idle_without_waiting_for_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         self.__class__._openmail.imap.search_emails()
         result = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(len(result.emails), 1)
 
+    @enable_idle_optimization
     def test_optimized_idle_timeout(self):
         print("test_optimized_idle_timeout...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_TIMEOUT + 10)
         self.assertTrue(self.__class__._openmail.imap.is_idle())
 
+    @enable_idle_optimization
     def test_optimized_idle_reconnection(self):
         print("test_optimized_idle_reconnection...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         time.sleep(IDLE_TIMEOUT + 10)
         try:
@@ -300,9 +336,9 @@ class TestIdleOperations(unittest.TestCase):
                 except Exception as e:
                     self.fail("Error while reconnecting: " + str(e))
 
+    @enable_idle_optimization
     def test_new_emails_in_optimized_idle_mode(self):
         print("test_new_emails_in_optimized_idle_mode...")
-        self.__class__._openmail.imap.idle_optimization = True
         self.__class__._openmail.imap.idle()
         time.sleep(3)
 
@@ -364,36 +400,43 @@ class TestIdleOperations(unittest.TestCase):
 
     def test_is_optimized_idle_mode_is_really_optimized(self):
         print("test_is_optimized_idle_mode_is_really_optimized...")
-        print("Standard IDLE mode testing...")
-        standard_start_time = time.time()
-        self.__class__._openmail.imap.idle()
-        result = self.__class__._openmail.imap.get_folders()
-        self.assertGreaterEqual(len(result), 1)
-        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
-        self.__class__._sent_test_email_uids.append(uid)
-        self.__class__._openmail.imap.idle()
-        self.__class__._openmail.imap.search_emails()
-        result = self.__class__._openmail.imap.get_emails()
-        self.assertGreaterEqual(len(result.emails), 1)
-        standard_end_time = time.time()
 
-        print("Optimized IDLE mode testing...")
-        optimized_start_time = time.time()
-        self.__class__._openmail.imap.idle_optimization = True
-        self.__class__._openmail.imap.idle()
-        result = self.__class__._openmail.imap.get_folders()
-        self.assertGreaterEqual(len(result), 1)
-        uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
-        self.__class__._sent_test_email_uids.append(uid)
-        self.__class__._openmail.imap.idle()
-        self.__class__._openmail.imap.search_emails()
-        result = self.__class__._openmail.imap.get_emails()
-        self.assertGreaterEqual(len(result.emails), 1)
-        optimized_end_time = time.time()
+        @TestIdleOperations.disable_idle_optimization
+        def measure_task_duration_in_idle_mode():
+            print("Standard IDLE mode testing...")
+            standard_start_time = time.time()
+            self.__class__._openmail.imap.idle()
+            result = self.__class__._openmail.imap.get_folders()
+            self.assertGreaterEqual(len(result), 1)
+            uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+            self.__class__._sent_test_email_uids.append(uid)
+            self.__class__._openmail.imap.idle()
+            self.__class__._openmail.imap.search_emails()
+            result = self.__class__._openmail.imap.get_emails()
+            self.assertGreaterEqual(len(result.emails), 1)
+            standard_end_time = time.time()
+            standard_duration = standard_end_time - standard_start_time
+            return standard_duration
 
-        standard_duration = standard_end_time - standard_start_time
-        optimized_duration = optimized_end_time - optimized_start_time
+        @TestIdleOperations.enable_idle_optimization
+        def measure_task_duration_in_optimized_idle_mode():
+            print("Optimized IDLE mode testing...")
+            optimized_start_time = time.time()
+            self.__class__._openmail.imap.idle()
+            result = self.__class__._openmail.imap.get_folders()
+            self.assertGreaterEqual(len(result), 1)
+            uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
+            self.__class__._sent_test_email_uids.append(uid)
+            self.__class__._openmail.imap.idle()
+            self.__class__._openmail.imap.search_emails()
+            result = self.__class__._openmail.imap.get_emails()
+            self.assertGreaterEqual(len(result.emails), 1)
+            optimized_end_time = time.time()
+            optimized_duration = optimized_end_time - optimized_start_time
+            return optimized_duration
 
+        standard_duration = measure_task_duration_in_idle_mode()
+        optimized_duration = measure_task_duration_in_optimized_idle_mode()
         print(f"Standard idle duration: {standard_duration:.4f} seconds")
         print(f"Optimized idle duration: {optimized_duration:.4f} seconds")
         self.assertLess(optimized_duration, standard_duration)
