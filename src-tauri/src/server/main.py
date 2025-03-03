@@ -80,11 +80,11 @@ def connect_to_account(account: AccountWithPassword):
             RSACipher.decrypt_password(
                 account.encrypted_password,
                 cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
-            )
+            ),
+            imap_enable_idle_optimization=True
         )
         if status:
             print(f"Successfully connected to {account.email_address}")
-            openmail_clients[account.email_address].imap.idle_optimization = True
             openmail_clients[account.email_address].imap.idle()
             try: failed_openmail_clients.remove(account.email_address)
             except ValueError: pass
