@@ -733,7 +733,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 except (TimeoutError, OSError):
                     print(f"Readline timed out at {datetime.now()}.")
                     pass
-            self._readline_event.wait(timeout=1)
+            self._release_idle_loops_event.wait(timeout=1)
 
     def _start_idle_lifecycle(self) -> None:
         """
@@ -754,7 +754,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     print(f"IDLING timeout reached for {self._current_idle.tag} at {datetime.now()}.")
                     self.done()
                     self.idle()
-            self._idling_event.wait(timeout=1)
+            self._release_idle_loops_event.wait(timeout=1)
 
     def _start_optimized_idle_lifecycle(self) -> None:
         """
@@ -810,7 +810,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         self.done()
                         self.idle()
                         break
-                self._idling_event.wait(timeout=1)
+                self._release_idle_loops_event.wait(timeout=1)
 
     def done(self) -> None:
         """Terminates the current IDLE session if active."""
@@ -869,7 +869,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
         while self._wait_response != wait_response and not self._release_idle_loops_event.is_set():
             print(f"Waiting for {wait_response} response at {datetime.now()}...")
             if not self._readline_event.is_set():
-                self._readline_event.wait(timeout=1)
                 counter += 1
                 if counter > WAIT_RESPONSE_TIMEOUT:
                     if self._current_idle:
@@ -879,6 +878,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     raise TimeoutError(f"IMAPManager.WaitResponse: {wait_response} did not received in time at {datetime.now()}.")
             else:
                 raise Exception("Readline is set while waiting for response.")
+            self._release_idle_loops_event.wait(timeout=1)
 
     def _handle_response(self, response: bytes):
         """
