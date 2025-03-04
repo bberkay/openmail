@@ -155,11 +155,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._current_idle: IMAPManager.IdleSession | None = None
         self._idle_activation_countdown = 0
         self._is_idle_activation_countdown_continue = False
-        self._is_idling_in_process_on_idling_thread = False
         self._wait_response: IMAPManager.WaitResponse | None = None
         self._previous_mailbox_size = 0
         self._new_message_timestamps: List[datetime] = []
-        self._release_idle_loops_event = threading.Event()
         self._readline_event=threading.Event()
         self._readline_thread=threading.Thread(target=self._start_reading_lines, daemon=True)
         self._idling_event=threading.Event()
@@ -167,6 +165,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             target=self._start_optimized_idle_lifecycle if enable_idle_optimization else self._start_idle_lifecycle,
             daemon=True
         )
+        self._release_idle_loops_event = threading.Event()
+        self._idle_command_in_process_event = threading.Event()
+        self._idle_command_in_process_event.set()
 
         super().__init__(
             self._host,
@@ -286,8 +287,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     item.lower() in err_msg for item in ("AUTH", "SELECTED")
                 )
 
-            while self._is_idling_in_process_on_idling_thread:
-                time.sleep(0.2)
+            if not self._idle_command_in_process_event.is_set():
+                """
+                For `_idle_command_in_process_event` to be set,
+                `_wait_response` must be equal to `WaitResponse.IDLE`,
+                Since a TimeoutError will be raised if it is not set
+                within WAIT_RESPONSE_TIMEOUT, there is no need to
+                provide any timeout to this wait or to consider anything
+                further.
+                """
+                self._idle_command_in_process_event.wait()
 
             was_idle_before_call = self.is_idle() or self.is_idle_activation_countdown_continue()
             try:
@@ -672,6 +681,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise Exception(f"IDLE is not supported on {self._host}")
         if self.is_idle():
             return
+        if not self._idle_command_in_process_event.is_set():
+            return
 
         if self._idle_optimization:
             if not self._idling_event.is_set():
@@ -776,7 +787,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             idle_tag = self._new_tag()
             self.send(b"%s IDLE\r\n" % idle_tag)
             print(f"'IDLE' command sent with tag: {idle_tag} at {datetime.now()}.")
-            self._is_idling_in_process_on_idling_thread = True
+            self._idle_command_in_process_event.clear()
 
             self._wait_for_response(IMAPManager.WaitResponse.IDLE)
             if self._release_idle_loops_event.is_set():
@@ -789,7 +800,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 start_time=time.time()
             )
             self._is_idle_activation_countdown_continue = False
-            self._is_idling_in_process_on_idling_thread = False
+            self._idle_command_in_process_event.set()
 
             print(f"Optimized 'IDLE' lifecycle creating for {self._current_idle.tag} ...")
             while not self._release_idle_loops_event.is_set():
