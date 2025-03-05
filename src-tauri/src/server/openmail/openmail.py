@@ -55,6 +55,7 @@ class OpenMail:
         imap_port: int = 993,
         imap_ssl_context = None,
         imap_enable_idle_optimization = False,
+        imap_listen_new_messages = False,
         smtp_host: str = "",
         smtp_port: int = 587,
         smtp_local_hostname: str | None = None,
@@ -84,7 +85,8 @@ class OpenMail:
             imap_port,
             ssl_context=imap_ssl_context,
             timeout=timeout,
-            enable_idle_optimization=imap_enable_idle_optimization
+            enable_idle_optimization=imap_enable_idle_optimization,
+            listen_new_messages=imap_listen_new_messages
         )
         self._smtp = SMTPManager(
             email_address,

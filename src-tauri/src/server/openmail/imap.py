@@ -90,11 +90,12 @@ SHORT_BODY_MAX_LENGTH = 100
 MAX_FOLDER_NAME_LENGTH = 1024
 # Timers in seconds
 CONN_TIMEOUT = 30
-IDLE_TIMEOUT = 29 * 60
+#IDLE_TIMEOUT = 29 * 60
+IDLE_TIMEOUT = 29
 JOIN_TIMEOUT = 1
 WAIT_RESPONSE_TIMEOUT = 30
-READLINE_SLEEP = 1
-IDLE_ACTIVATION_INTERVAL = 60
+#IDLE_ACTIVATION_INTERVAL = 60
+IDLE_ACTIVATION_INTERVAL = 10
 
 class IMAPManager(imaplib.IMAP4_SSL):
     """
@@ -145,13 +146,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
         *,
         ssl_context: SSLContext | None = None,
         timeout: int = CONN_TIMEOUT,
-        enable_idle_optimization: bool = False
+        enable_idle_optimization: bool = False,
+        listen_new_messages: bool = False,
     ):
         self._host = host or self._find_imap_server(email_address)
         self._port = port or IMAP_PORT
 
         # Idle and Readline variables
         self._idle_optimization = enable_idle_optimization
+        self._listen_new_messages = listen_new_messages
         self._current_idle: IMAPManager.IdleSession | None = None
         self._idle_activation_countdown = 0
         self._is_idle_activation_countdown_continue = False
@@ -288,6 +291,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 )
 
             if not self._idle_command_in_process_event.is_set():
+                print("Command: ", imap4_cmd.__name__, "Already in idle waiting...")
                 """
                 For `_idle_command_in_process_event` to be set,
                 `_wait_response` must be equal to `WaitResponse.IDLE`,
@@ -299,6 +303,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 self._idle_command_in_process_event.wait()
 
             was_idle_before_call = self.is_idle() or self.is_idle_activation_countdown_continue()
+            #print("Was Idle Before Call: ", was_idle_before_call, "Command: ", imap4_cmd.__name__)
             try:
                 if was_idle_before_call:
                     self.done()
@@ -323,6 +328,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             # Restore IDLE mode.
             try:
+                #print("Restore - ", "Was Idle Before Call: ", was_idle_before_call, "Command: ", imap4_cmd.__name__)
                 if was_idle_before_call and imap4_cmd.__name__.lower() != "logout":
                     self.idle()
                 #else:
@@ -895,7 +901,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             self._handle_done_response()
         elif b'BYE' in response:
             self._handle_bye_response()
-        elif b'EXISTS' in response:
+        elif b'EXISTS' in response and self._listen_new_messages:
             self._handle_exists_response(response)
 
     def _handle_idle_response(self):

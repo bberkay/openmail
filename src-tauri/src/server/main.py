@@ -47,6 +47,7 @@ secure_storage = SecureStorage()
 uvicorn_logger = UvicornLogger()
 
 openmail_clients: dict[str, OpenMail] = {}
+openmail_clients_for_new_messages: dict[str, OpenMail] = {}
 failed_openmail_clients: list[str] = []
 monitor_logged_out_clients_task = None
 
@@ -81,7 +82,8 @@ def connect_to_account(account: AccountWithPassword):
                 account.encrypted_password,
                 cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
             ),
-            imap_enable_idle_optimization=True
+            imap_enable_idle_optimization=True,
+            imap_listen_new_messages=False
         )
         if status:
             print(f"Successfully connected to {account.email_address}")
@@ -421,10 +423,10 @@ def check_openmail_connection_availability(accounts: str | list[str]) -> Respons
         if account not in connected_openmail_clients:
             terminated_openmail_clients.append(account)
 
-    if terminated_openmail_clients:
-        reconnect_logged_out_openmail_clients(",".join(terminated_openmail_clients))
-    else:
+    if not terminated_openmail_clients:
         return True
+
+    reconnect_logged_out_openmail_clients(",".join(terminated_openmail_clients))
 
     connected_openmail_clients = openmail_clients.keys()
     for account in terminated_openmail_clients:
@@ -437,7 +439,7 @@ def check_openmail_connection_availability(accounts: str | list[str]) -> Respons
     return True
 
 @app.websocket("/notifications/{accounts}")
-async def websocket_endpoint(websocket: WebSocket, accounts: str):
+async def notifications_socket(websocket: WebSocket, accounts: str):
     await websocket.accept()
     uvicorn_logger.websocket(websocket, "New notification subscription created")
     try:
@@ -447,6 +449,9 @@ async def websocket_endpoint(websocket: WebSocket, accounts: str):
                 await websocket.close(reason=response.message)
                 uvicorn_logger.websocket(websocket, response.message)
                 break
+
+            """for account in accounts.split(","):
+                openmail_clients_for_new_messages[account] = OpenMail()"""
 
             # Listen for new messages and send notification when
             # any new message received.
