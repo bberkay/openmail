@@ -21,7 +21,7 @@
         } else {
             SharedStore.currentAccount = null;
             SharedStore.currentFolder = Folder.Inbox;
-            await listenForNotifications();
+            //await listenForNotifications();
         }
     }
 
