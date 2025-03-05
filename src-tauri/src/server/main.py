@@ -142,9 +142,8 @@ def reconnect_to_account(email_address: str):
         failed_openmail_clients.append(email_address)
         uvicorn_logger.error(f"Failed while reconnecting to {email_address}: {e}")
 
-def reconnect_logged_out_openmail_clients(email_addresses: str):
-    print("Reconnecting to OpenMail clients...")
-    email_addresses = email_addresses.split(",") # type: ignore
+def reconnect_logged_out_openmail_clients(email_addresses: list[str]):
+    print("Reconnecting to OpenMail clients: ", email_addresses)
     with ThreadPoolExecutor(max_workers=MAX_CONNECTION_WORKER) as executor:
         executor.map(reconnect_to_account, email_addresses)
 
@@ -153,7 +152,7 @@ async def monitor_logged_out_openmail_clients():
         while True:
             await asyncio.sleep(IMAP_LOGGED_OUT_INTERVAL)
             print("Checking logged out OpenMail clients...")
-            reconnect_logged_out_openmail_clients(",".join(openmail_clients.keys()))
+            reconnect_logged_out_openmail_clients(list(openmail_clients.keys()))
     except asyncio.CancelledError:
         uvicorn_logger.info("Monitoring logged out clients task is being cancelled...")
         raise
@@ -423,10 +422,10 @@ def check_openmail_connection_availability(accounts: str | list[str]) -> Respons
         if account not in connected_openmail_clients:
             terminated_openmail_clients.append(account)
 
-    if not terminated_openmail_clients:
+    if not terminated_openmail_clients or len(terminated_openmail_clients) == 0:
         return True
 
-    reconnect_logged_out_openmail_clients(",".join(terminated_openmail_clients))
+    reconnect_logged_out_openmail_clients(terminated_openmail_clients)
 
     connected_openmail_clients = openmail_clients.keys()
     for account in terminated_openmail_clients:
