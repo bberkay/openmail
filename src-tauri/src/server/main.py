@@ -131,8 +131,7 @@ def reconnect_to_account(email_address: str):
             print(f"No need to reconnect for {email_address}")
             return
 
-        accounts: list[AccountWithPassword] = account_manager.get(email_address)
-        account = accounts[0] if accounts else None
+        account: list[AccountWithPassword] = account_manager.get(email_address)
         if account:
             connect_to_account(account)
         else:
