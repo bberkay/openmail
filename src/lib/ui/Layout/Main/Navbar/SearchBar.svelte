@@ -160,7 +160,6 @@
             senders: extractAsArray("#search-senders"),
             receivers: extractAsArray("#search-receivers"),
             cc: extractAsArray("#search-cc"),
-            bcc: extractAsArray("#search-bcc"),
             included_flags: extractAsArray("#search-included-flags"),
             excluded_flags: extractAsArray("#search-excluded-flags"),
             subject: advancedSearchMenu.querySelector<HTMLInputElement>(
@@ -251,11 +250,6 @@
             <label for="cc">Cc</label>
             <input type="email" name="cc" id="cc" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
             <div class="tags emails" id="search-cc"></div>
-        </div>
-        <div class="form-group">
-            <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="search-bcc"></div>
         </div>
         <div class="form-group">
             <label for="subject">Subject</label>

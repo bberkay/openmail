@@ -1355,11 +1355,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 extract_email_addresses(search_criteria.cc or []),
                 len(search_criteria.cc or []) > 1
             )
-            search_criteria_query += add_criterion(
-                'BCC',
-                extract_email_addresses(search_criteria.bcc or []),
-                len(search_criteria.bcc or []) > 1
-            )
             search_criteria_query += add_criterion("SUBJECT", search_criteria.subject)
             search_criteria_query += add_criterion("SINCE", search_criteria.since)
             search_criteria_query += add_criterion("BEFORE", search_criteria.before)

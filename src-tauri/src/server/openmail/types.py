@@ -18,7 +18,6 @@ class SearchCriteria():
     senders: Optional[list[str]] = field(default_factory=list)
     receivers: Optional[list[str]] = field(default_factory=list)
     cc: Optional[list[str]] = field(default_factory=list)
-    bcc: Optional[list[str]] = field(default_factory=list)
     subject: Optional[str] = ""
     since: Optional[str] = ""
     before: Optional[str] = ""

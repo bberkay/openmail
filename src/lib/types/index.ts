@@ -28,7 +28,6 @@ export interface SearchCriteria {
     senders?: string[];
     receivers?: string[];
     cc?: string[];
-    bcc?: string[];
     subject?: string;
     since?: string;
     before?: string;

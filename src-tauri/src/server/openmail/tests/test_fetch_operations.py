@@ -171,7 +171,6 @@ class TestFetchOperations(unittest.TestCase):
                     senders=["sender@mail.com"],
                     receivers=["receiver1@mail.com", "receiver2@mail.com"],
                     cc=["cc1@mail.com", "cc2@mail.com"],
-                    bcc=["bcc1@mail.com", "bcc2@mail.com", "bcc3@mail.com"],
                     subject="Hello",
                     include="word",
                     exclude="good bye",
@@ -185,8 +184,7 @@ class TestFetchOperations(unittest.TestCase):
                 )
             ),
             '(FROM "sender@mail.com") (OR (TO "receiver1@mail.com") (TO "receiver2@mail.com")) ' \
-            '(OR (CC "cc1@mail.com") (CC "cc2@mail.com")) (OR (BCC "bcc1@mail.com") ' \
-            '(OR (BCC "bcc2@mail.com") (BCC "bcc3@mail.com"))) (SUBJECT "Hello") (SINCE "2023-01-01") ' \
+            '(OR (CC "cc1@mail.com") (CC "cc2@mail.com")) (SUBJECT "Hello") (SINCE "2023-01-01") ' \
             '(BEFORE "2023-12-31") (BODY "word") (NOT BODY "good bye") FLAGGED SEEN KEYWORD CUSTOMFLAG ' \
             'ANSWERED UNDRAFT UNKEYWORD CUSTOMFLAG2 (TEXT "ATTACHMENT") (LARGER 150) (SMALLER 300)'
         )
@@ -258,26 +256,6 @@ class TestFetchOperations(unittest.TestCase):
         self.assertCountEqual(
             [email.strip() for email in email_content.cc.split(",")],
             cast(list[str], self.__class__._test_sent_complex_email.cc)
-        )
-
-    def test_complex_search_with_bcc(self):
-        print("test_complex_search_with_bcc...")
-
-        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            bcc=[cast(str, self.__class__._test_sent_complex_email.bcc)],
-        ))
-
-        found_emails = self.__class__._openmail.imap.get_emails()
-        self.assertGreaterEqual(found_emails.total, 1)
-
-        email_content = self.__class__._openmail.imap.get_email_content(
-            found_emails.folder,
-            found_emails.emails[0].uid
-        )
-        assert email_content.bcc
-        self.assertIn(
-            [email.strip() for email in email_content.bcc.split(",")],
-            cast(str, self.__class__._test_sent_complex_email.bcc)
         )
 
     def test_complex_search_with_include(self):
