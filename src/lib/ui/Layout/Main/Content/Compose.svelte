@@ -3,7 +3,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onMount } from 'svelte';
     import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
-    import { createDomObject, makeSizeHumanReadable, isEmailValid, createSenderAddress, escapeHTML } from '$lib/utils';
+    import { createDomElement, makeSizeHumanReadable, isEmailValid, createSenderAddress, escapeHTML } from '$lib/utils';
     import * as Select from "$lib/ui/Elements/Select";
     import Form from "$lib/ui/Elements/Form";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
@@ -135,7 +135,7 @@
         const tags = target.parentElement!.parentElement!.querySelector('.tags')! as HTMLElement;
         Array.from(attachments).forEach((file, index) => {
             const name = `${file.name} (${makeSizeHumanReadable(file.size)})`;
-            const fileNode = createDomObject(fileTemplate.replace('{name}', name));
+            const fileNode = createDomElement(fileTemplate.replace('{name}', name));
             fileNode!.querySelector('button')!.addEventListener('click', (e: Event) => {
                 removeFile(e, index);
             });
