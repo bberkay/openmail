@@ -14,7 +14,7 @@
 }
 
 body{
-    --bg-color: light-dark(#FFFFFF, #000);
+    --bg-color: light-dark(#FFFFFF, #121212);
     --text-color: light-dark(#2A2D31, #CFCFD2);
     --front-color: light-dark(#F3F5F7, #131517);
     --front-bright-color: light-dark(#F9FAFB, #373B41);
@@ -38,16 +38,17 @@ body{
 *{
     scrollbar-width: thin;
     scrollbar-color: #888 transparent;
-    user-select: none;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
 }
 
 body{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
     font-family: 'Roboto', sans-serif;
-    background-color: rgb(22, 22, 22);
-    color: #dddddd;
+    background-color: var(--bg-color);
+    color: var(--front-color);
+    line-height: 1.6;
+    min-height: 100vh;
 }
 
 body:has(.modal){

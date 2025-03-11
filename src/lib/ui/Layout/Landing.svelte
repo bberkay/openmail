@@ -23,18 +23,28 @@
     let { children }: Props = $props();
 </script>
 
-<section id="landing-container" bind:this={componentContainer}>
-    {#if !isMounted}
-        {@render children()}
-    {/if}
+<section class="landing-container" bind:this={componentContainer}>
+    <div class="landing-header">
+        <h1 class="title">Openmail</h1>
+        <p class="subtitle">Secure and Fast Email Communication</p>
+    </div>
+    <div class="landing-body">
+        {#if !isMounted}
+            {@render children()}
+        {/if}
+    </div>
 </section>
 
 <style>
-    #landing-container {
+    .landing-container {
         display: flex;
         justify-content: center;
         align-items: center;
         width: 100%;
-        height: 100%;
+        max-width: 37px;
+
+        & .landing-header {
+            text-align: center;
+        }
     }
 </style>

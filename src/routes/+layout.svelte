@@ -1,4 +1,5 @@
 <script lang="ts">
+    import "$lib/assets/css/style.css";
     import * as Modal from "$lib/ui/Elements/Modal";
     import Layout from "$lib/ui/Layout/Layout.svelte";
     import Variables from "$lib/ui/Layout/Developer/Variables.svelte";
