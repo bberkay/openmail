@@ -5,16 +5,17 @@
 
     interface Props {
         id: string;
-        children: Snippet;
-        content?: string;
+        content: string;
+        autoCloseDelay?: number;
+        onUndo?: (e: Event) => void;
     }
 
-    let { id, children, content }: Props = $props();
+    let { id, content, onUndo, autoCloseDelay }: Props = $props();
     let toast: HTMLElement;
 
     onMount(() => {
-        const autoCloseDelay = 15000;
-        setTimeout(() => toast.classList.add('show'), 10);
+        autoCloseDelay = autoCloseDelay || 3000;
+        setTimeout(() => toast.classList.add("show"), 10);
 
         const timeout = setTimeout(() => {
             dismiss();
@@ -29,16 +30,17 @@
 
     function dismiss() {
         clearTimeout(Number(toast.dataset.timeout));
-        toast.classList.remove('show');
-        toast.addEventListener('transitionend', () => { close(id) });
+        toast.classList.remove("show");
+        toast.addEventListener("transitionend", () => {
+            close(id);
+        });
     }
 </script>
 
 <div class="toast" bind:this={toast}>
-    {#if content}
-        <div>{@html content}</div>
-    {:else}
-        <div>{@render children()}</div>
+    <div>{@html content}</div>
+    {#if onUndo}
+        <button class="toast-close" type="button" onclick={onUndo}>Undo</button>
     {/if}
     <button class="toast-close" type="button" onclick={dismiss}>X</button>
 </div>
@@ -62,7 +64,7 @@
         max-width: 300px;
     }
 
-    :global(.toast.show){
+    :global(.toast.show) {
         opacity: 1;
         transform: translateX(0);
     }
@@ -78,12 +80,8 @@
         opacity: 0.7;
         transition: opacity 0.2s;
 
-        &:hover{
-            opacity:1;
+        &:hover {
+            opacity: 1;
         }
-    }
-
-    .toast-close:hover {
-        opacity: 1;
     }
 </style>

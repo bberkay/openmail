@@ -1,24 +1,25 @@
-import Toast from './Toast.svelte';
-import { mount, unmount } from 'svelte';
-import type { Component } from 'svelte';
-import { generateRandomId } from '$lib/utils';
+import Toast from "./Toast.svelte";
+import { mount, unmount } from "svelte";
+import { generateRandomId } from "$lib/utils";
 
 let mountedToasts: Record<string, Record<string, any>> = {};
 
-export function show(notification: string | Component, toastProps: any) {
+export function show(
+    content: string,
+    autoCloseDelay?: number,
+    onUndo?: (e: Event) => void,
+) {
     const toastId = generateRandomId();
-
-    let content = '';
-    if (typeof notification === 'string') {
-        content = notification + ' ' + toastId;
-        notification = Toast;
-    }
-
-    const mountedNotification = mount(notification, {
-        target: document.getElementById('notification-container')!,
-        props: { ...toastProps, id: toastId },
+    const mountedToast = mount(Toast, {
+        target: document.getElementById("toast-container")!,
+        props: {
+            id: toastId,
+            content,
+            autoCloseDelay,
+            onUndo,
+        },
     });
-    mountedToasts[toastId] = mountedNotification;
+    mountedToasts[toastId] = mountedToast;
 }
 
 export function close(toastId: string) {
@@ -27,5 +28,3 @@ export function close(toastId: string) {
         delete mountedToasts[toastId];
     }
 }
-
-export { Toast };

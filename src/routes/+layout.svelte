@@ -21,4 +21,4 @@
 </Layout>
 
 <div id="modal-container"></div>
-<div id="notification-container"></div>
+<div id="toast-container"></div>
