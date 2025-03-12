@@ -1,17 +1,16 @@
-import Modal from './Modal.svelte';
-import { mount, unmount } from 'svelte';
+import Modal from "./Modal.svelte";
+import { mount, unmount } from "svelte";
 import type { Component } from "svelte";
 
 let mountedModal: Record<string, any> | null = null;
 
 export function show(modal: Component, modalProps?: any) {
-	if(mountedModal)
-	   return;
+    if (mountedModal) return;
 
-	mountedModal = mount(modal, {
-		target: document.getElementById('modal-container')!,
-		props: modalProps
-	});
+    mountedModal = mount(modal, {
+        target: document.getElementById("modal-container")!,
+        props: modalProps,
+    });
 }
 
 export function close() {
