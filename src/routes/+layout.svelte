@@ -20,5 +20,5 @@
     {@render children()}
 </Layout>
 
-<div id="modal-container"></div>
-<div id="toast-container"></div>
+<div class="modal-container"></div>
+<div class="toast-container"></div>
