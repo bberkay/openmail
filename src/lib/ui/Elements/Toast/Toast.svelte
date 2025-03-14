@@ -46,42 +46,51 @@
 </div>
 
 <style>
-    .toast {
-        background-color: #333;
-        color: white;
-        padding: 16px 24px;
-        border-radius: 4px;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        opacity: 0;
-        transform: translateX(-100%);
-        transition: all 0.3s ease-in;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    .toast{
+        width: 400px;
         display: flex;
+        flex-direction: row;
         align-items: center;
-        gap: 12px;
-        min-width: 200px;
-        max-width: 300px;
-    }
+        justify-content: space-between;
+        height: 75px;
+        background-color: var(--color-bg-primary);
+        padding: var(--spacing-2xs) var(--spacing-md);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        z-index: var(--z-index-toast);
 
-    :global(.toast.show) {
-        opacity: 1;
-        transform: translateX(0);
-    }
+        & .toast-header, .toast-footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
 
-    .toast-close {
-        background: none;
-        border: none;
-        color: white;
-        font-size: 18px;
-        cursor: pointer;
-        padding: 0;
-        margin-left: 8px;
-        opacity: 0.7;
-        transition: opacity 0.2s;
+            & svg {
+                fill: var(--color-bg-primary);
+                height: 22px;
+                width: 22px;
+            }
+        }
 
-        &:hover {
-            opacity: 1;
+        & .toast-body {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+            margin-left: -10px;
+
+            & .toast-title {
+                color: var(--color-text-primary);
+            }
+        }
+
+        & .toast-footer {
+            display: flex;
+            flex-direction: row;
+            gap: var(--spacing-2xs);
+
+            & button {
+                padding: 6px 10px;
+                width: auto;
+            }
         }
     }
 </style>
