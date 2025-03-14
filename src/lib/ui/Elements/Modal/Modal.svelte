@@ -30,16 +30,38 @@
 </div>
 
 <style>
-    .modal {
-        background-color: #2e2e2e;
-        border: 1px solid #5a5a5a;
-        border-radius: 5px;
-        padding: 1rem;
-        margin-bottom: 5px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 99999;
+    .modal{
+        width: var(--container-md);
+        background-color: var(--color-bg-primary);
+        padding: var(--spacing-lg) var(--spacing-xl);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        z-index: var(--z-index-modal);
+
+        & .modal-header {
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-2xs);
+            font-weight: var(--font-weight-bold);
+            font-size: var(--font-size-xl);
+        }
+
+        & .modal-body {
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-size-sm);
+        }
+
+        & .modal-footer {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+            gap: var(--spacing-xs);
+            color: var(--color-text-primary);
+
+            & button {
+                width: auto;
+            }
+        }
     }
 </style>
