@@ -1,13 +1,19 @@
 <script lang="ts">
     import { mount, unmount, type Snippet } from "svelte";
     import { Spinner } from "$lib/ui/Elements/Loader";
+    import { combine } from "$lib/utils";
 
     interface Props {
         children: Snippet;
         onsubmit: (e: Event) => Promise<void>
+        [attribute: string]: unknown;
     }
 
-    let { children, onsubmit }: Props = $props();
+    let {
+        children,
+        onsubmit,
+        ...attributes
+    }: Props = $props();
 
     const makeAnApiRequest = async (e: Event) => {
         e.preventDefault();
@@ -32,8 +38,27 @@
         unmount(loader);
         form.reset();
     }
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 </script>
 
-<form onsubmit={makeAnApiRequest}>
+<form
+    class={combine("form", additionalClass)}
+    onsubmit={makeAnApiRequest}
+    {...restAttributes}
+>
     {@render children()}
 </form>
+
+<style>
+    :global {
+        .form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+    }
+</style>
