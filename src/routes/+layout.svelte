@@ -22,3 +22,28 @@
 
 <div class="modal-container"></div>
 <div class="toast-container"></div>
+
+<style>
+    .modal-container {
+        position: fixed;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+        background-color: #00000099;
+        z-index: var(--z-index-overlay);
+    }
+
+    .toast-container{
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 8px;
+    }
+</style>
