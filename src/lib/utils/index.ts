@@ -16,6 +16,10 @@ export function debounce(func: Function, delay: number) {
     };
 }
 
+export function combine(strA: string, strB: any): string {
+    return strA + (strB ? " " + strB : "");
+}
+
 export function generateRandomId(): string {
     return Date.now().toString();
 }
