@@ -26,3 +26,20 @@
 </script>
 
 <div bind:this={placeholder}></div>
+
+<style>
+    :global {
+        svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2;
+            transition: all var(--transition-fast) var(--ease-default);
+            fill: var(--color-text-secondary);
+
+            &.hidden {
+                display: none;
+            }
+        }
+    }
+</style>
