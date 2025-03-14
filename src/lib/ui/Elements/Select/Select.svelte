@@ -12,11 +12,11 @@
 
     let {
         children,
-        placeholder = undefined,
-        value = undefined,
-        onchange = undefined,
-        enableSearch = false,
-        resetAfterSelect = false
+        placeholder,
+        value,
+        onchange,
+        enableSearch,
+        resetAfterSelect
     }: Props = $props();
 
     let isOpen = $state(false);
@@ -30,18 +30,10 @@
     const noResultWarning = `<div class="no-results">No matching options found</div>`;
 
     onMount(() => {
-        if(selectWrapper) {
-            options = Array.from(selectWrapper.querySelectorAll(".option")) as HTMLElement[];
-            selectedOption = selectWrapper.querySelector(`.option[data-value="${value}"]`) as HTMLElement;
-            filterOptions();
-        }
+        options = Array.from(selectWrapper.querySelectorAll(".option")) as HTMLElement[];
+        if (value) selectOption(value)
+        filterOptions();
     });
-
-    const closeWhenClickedOutside = (e: Event) => {
-        if (!selectWrapper.contains(e.target as HTMLElement)) {
-            closeSelect();
-        }
-    }
 
     function filterOptions(searchTerm: string | null = null) {
         searchTerm = searchTerm?.toLowerCase() || null;
@@ -70,6 +62,30 @@
         }
     }
 
+    function selectOption(value: string) {
+        if(selectedOption) selectedOption.classList.remove("selected");
+        selectedOption = options.find(option => option.dataset.value == value);
+        selectedOption.classList.add("selected");
+        if(onchange) onchange(value.toString());
+        if(resetAfterSelect) selectedOption = null;
+        closeSelect();
+    }
+
+    function closeSelect() {
+        if (!isOpen)
+            return;
+
+        isOpen = false;
+        if(enableSearch) searchInput!.value = "";
+        filterOptions();
+    }
+
+    const closeWhenClickedOutside = (e: Event) => {
+        if (!selectWrapper.contains(e.target as HTMLElement)) {
+            closeSelect();
+        }
+    }
+
     const toggleSelect = () => {
         if (isOpen)
             return closeSelect();
@@ -78,16 +94,7 @@
         if (enableSearch) searchInput!.focus();
     }
 
-    const closeSelect = () => {
-        if (!isOpen)
-            return;
-
-        isOpen = false;
-        if(enableSearch) searchInput!.value = "";
-        filterOptions();
-    };
-
-    const selectOption = (e: Event) => {
+    const handleSelection = (e: Event) => {
         if (!e.target)
             return;
 
@@ -99,12 +106,7 @@
         if(!value)
             return;
 
-        selectedOption = option;
-        optionsList.querySelector(".selected")?.classList.remove("selected");
-        selectedOption.classList.add("selected");
-        if(onchange) onchange(value.toString());
-        if(resetAfterSelect) selectedOption = null;
-        closeSelect();
+        selectOption(value);
     };
 
     const handleSearch = (e: Event) => {
@@ -115,7 +117,7 @@
         filterOptions(target.value);
     }
 
-    const clearSelection = (e: Event) => {
+    const clearSelection = () => {
         selectedOption = null;
         optionsList.querySelector(".selected")?.classList.remove("selected");
         filterOptions();
@@ -130,7 +132,7 @@
         <div class="select-trigger">
             <div class="select-trigger-content">
                 {#if selectedOption}
-                    <span data-value={selectedOption.getAttribute("data-value")!}>{selectedOption.innerText}</span>
+                    <span data-value={selectedOption.getAttribute("data-value")!}>{selectedOption.textContent}</span>
                     <button class="clear-button {selectedOption ? "visible" : ""}" onclick={clearSelection}>×</button>
                 {:else}
                     <span data-value="">{placeholder}</span>
@@ -146,7 +148,7 @@
             </div>
         {/if}
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-        <div class="options-list" onclick={selectOption} bind:this={optionsList}>
+        <div class="options-list" onclick={handleSelection} bind:this={optionsList}>
             {@render children()}
         </div>
     </div>
@@ -158,14 +160,17 @@
         width: 300px;
         font-family: Arial, sans-serif;
         user-select: none;
+        text-align: left;
 
         & .custom-select {
             position: relative;
             border: 1px solid #e1e1e1;
             border-radius: 4px;
-            padding: 10px;
+            padding: 7px 10px;
             cursor: pointer;
             background-color: white;
+            color: black;
+            font-size:14px;
 
             &.open {
                 border-color: #007bff;
@@ -261,9 +266,7 @@
             }
         }
 
-        /* Search input styles */
         & .search-box {
-            padding: 8px;
             position: sticky;
             top: 0;
             background: white;
@@ -282,7 +285,6 @@
             }
         }
 
-        /* No results message */
         & .no-results {
             padding: 10px;
             color: #666;

@@ -15,9 +15,11 @@
 
 <style>
     .option :global{
-        padding: 10px;
+        padding: 7px 10px;
         cursor: pointer;
         transition: background-color 0.2s ease;
+        color: grey;
+        font-size:14px;
 
         &:hover{
             background-color: #f8f9fa;
