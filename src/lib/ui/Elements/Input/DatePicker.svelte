@@ -1,7 +1,7 @@
 <script lang="ts">
-    import {  onMount } from "svelte";
-    import { range, getMonths, convertToIMAPDate } from "$lib/utils";
+    import { onMount } from "svelte";
     import * as Select from "$lib/ui/Elements/Select";
+    import { getDays, getMonths, convertToIMAPDate, range } from "$lib/utils";
 
     interface Props {
         placeholder?: string,
@@ -10,11 +10,11 @@
     }
 
     let {
-        placeholder = new Date().toLocaleDateString(),
-        value = undefined,
-        onchange = undefined
+        placeholder,
+        value,
+        onchange
     }: Props = $props();
-
+    
     let currentDate = new Date();
     let currentYear = currentDate.getFullYear();
     let currentMonth = currentDate.getMonth();
@@ -22,11 +22,12 @@
     let displayedMonth: number = $state(currentMonth);
     let selectedDate: Date | "" = $state(value || "");
 
-    let datePickerShown: boolean = $state(false);
+    let isDatePickerOpen: boolean = $state(false);
     let datePickerWrapper: HTMLDivElement;
     let dateInput: HTMLInputElement;
     let calendarBody: HTMLElement;
 
+    placeholder = placeholder ?? new Date().toLocaleDateString();
     onMount(() => {
         if (datePickerWrapper) {
             renderCalendar();
@@ -38,30 +39,21 @@
             !datePickerWrapper.contains(e.target as HTMLElement) &&
             e.target !== dateInput
         ) {
-            datePickerShown = false;
+            isDatePickerOpen = false;
         }
     }
 
-    const selectMonth = (selectedMonthIndex: string | null) => {
-        if (!selectedMonthIndex) return;
-        displayedMonth = parseInt(selectedMonthIndex);
-        renderCalendar();
-    };
-
-    const selectYear = (selectedYear: string | null) => {
-        if (!selectedYear) return;
-        displayedYear = parseInt(selectedYear);
-    };
-
-    const selectDate = (selectedDayNumber: string) => {
+    function selectDate(selectedDayNumber: string) {
         selectedDate = new Date(
             displayedYear,
             displayedMonth,
             parseInt(selectedDayNumber),
         );
-        datePickerShown = false;
+        const prevSelectedDate = calendarBody.querySelector(`.selected-date`);
+        if (prevSelectedDate) prevSelectedDate.classList.remove("selected-date");
+        calendarBody.querySelector(`td[data-date="${selectedDayNumber}"]`).classList.add("selected-date");
+        isDatePickerOpen = false;
         if(onchange) onchange(selectedDate);
-        renderCalendar();
     }
 
     const goPrevMonth = () => {
@@ -70,6 +62,7 @@
             displayedMonth = 11;
             displayedYear--;
         }
+        renderCalendar();
     };
 
     const goNextMonth = () => {
@@ -78,6 +71,7 @@
             displayedMonth = 0;
             displayedYear++;
         }
+        renderCalendar();
     };
 
     const clearSelection = () => {
@@ -99,38 +93,42 @@
             let row = "<tr>";
 
             for (let j = 0; j < 7; j++) {
+                let displayedDay = date;
+                
+                const classes = [];
                 if (i === 0 && j < startingDay) {
+                    classes.push("other-month");
+                    classes.push("prev-month");
                     const prevMonthLastDay = new Date(
                         displayedYear,
                         displayedMonth,
                         0,
                     ).getDate();
-                    const prevMonthDay =
-                        prevMonthLastDay - (startingDay - j - 1);
-                    row += `<td class="other-month">${prevMonthDay}</td>`;
+                    displayedDay = prevMonthLastDay - (startingDay - j - 1);
+                    date--;
                 } else if (date > totalDays) {
-                    row += `<td class="other-month">${date - totalDays}</td>`;
-                    date++;
-                } else if (date <= totalDays) {
-                    const isCurrentDate =
-                        date === currentDate.getDate() &&
-                        displayedMonth === currentDate.getMonth() &&
-                        displayedYear === currentDate.getFullYear();
-
-                    const isSelectedDate =
-                        selectedDate &&
-                        date === selectedDate.getDate() &&
-                        displayedMonth === selectedDate.getMonth() &&
-                        displayedYear === selectedDate.getFullYear();
-
-                    const classes = [];
-                    if (isCurrentDate) classes.push("current-date");
-                    if (isSelectedDate) classes.push("selected-date");
-
-                    row += `<td class="${classes.join(" ")}"
-                                  data-date="${date}">${date}</td>`;
-                    date++;
+                    classes.push("other-month");
+                    classes.push("next-month");
+                    displayedDay = date - totalDays;
                 }
+                            
+                const isCurrentDate =
+                    displayedDay === currentDate.getDate() &&
+                    displayedMonth === currentDate.getMonth() &&
+                    displayedYear === currentDate.getFullYear();
+
+                const isSelectedDate =
+                    selectedDate &&
+                    displayedDay === selectedDate.getDate() &&
+                    displayedMonth === selectedDate.getMonth() &&
+                    displayedYear === selectedDate.getFullYear();
+
+                classes.push("date");
+                if (isCurrentDate) classes.push("current-date");
+                if (isSelectedDate) classes.push("selected-date");
+
+                row += `<td class="${classes.join(" ")}" data-date="${displayedDay}">${displayedDay}</td>`;
+                date++;
             }
 
             row += "</tr>";
@@ -147,7 +145,14 @@
         calendarBody
             .querySelectorAll<HTMLElement>("td[data-date]")
             .forEach((cell: HTMLElement) => {
-                cell.addEventListener("click", () => { selectDate(cell.dataset.date!) });
+                cell.addEventListener("click", () => { 
+                  if (cell.classList.contains("next-month")) {
+                      goNextMonth();
+                  } else if (cell.classList.contains("prev-month")) {
+                      goPrevMonth();
+                  }
+                  selectDate(cell.dataset.date!); 
+                });
             });
     }
 </script>
@@ -159,27 +164,17 @@
         type="text"
         class="date-input"
         readonly
-        placeholder={placeholder}
+        placeholder={convertToIMAPDate(placeholder)}
         value={selectedDate ? convertToIMAPDate(selectedDate) : ""}
         bind:this={dateInput}
-        onclick={() => {
-            datePickerShown = !datePickerShown;
-        }}
+        onclick={() => { isDatePickerOpen = !isDatePickerOpen }}
     />
-    <div class="datepicker-container {datePickerShown ? 'visible' : ''}">
+    <div class="datepicker-container {isDatePickerOpen ? 'visible' : ''}">
         <div class="datepicker-header">
             <div class="month-year-selector">
                 <button class="nav-button" id="prev-month" onclick={goPrevMonth}>←</button>
-                <Select.Menu onchange={selectMonth} value={displayedMonth.toString()}>
-                    {#each getMonths() as month, index}
-                        <Select.Option value={index.toString()}>{month}</Select.Option>
-                    {/each}
-                </Select.Menu>
-                <Select.Menu onchange={selectYear} value={displayedYear.toString()}>
-                    {#each range(currentYear - 10, currentYear + 10, 1) as year}
-                        <Select.Option value={year.toString()}>{year}</Select.Option>
-                    {/each}
-                </Select.Menu>
+                {getMonths()[displayedMonth]}
+                {displayedYear}
                 <button class="nav-button" id="next-month" onclick={goNextMonth}>→</button>
             </div>
             <button class="clear-button" onclick={clearSelection}>Clear</button>
@@ -187,13 +182,9 @@
         <table class="calendar">
             <thead>
                 <tr>
-                    <th>Sun</th>
-                    <th>Mon</th>
-                    <th>Tue</th>
-                    <th>Wed</th>
-                    <th>Thu</th>
-                    <th>Fri</th>
-                    <th>Sat</th>
+                  {#each getDays() as day}
+                    <th>{day}</th>
+                  {/each}
                 </tr>
             </thead>
             <tbody id="calendar-body" bind:this={calendarBody}></tbody>
@@ -299,6 +290,10 @@
             &:hover {
                 background: #f0f0f0;
             }
+        }
+
+        & .date {
+          color: black;
         }
 
         & .current-date {

@@ -164,3 +164,7 @@ export function getMonths(): string[] {
         "December",
     ];
 }
+
+export function getDays(): string[] {
+    return ["Sun", "Mon", "Tue", "Wed", "Thu", "Sat", "Fri"];
+}
