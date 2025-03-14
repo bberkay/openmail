@@ -33,6 +33,7 @@
     function printBody(body: string): void {
         // Body
         let iframe = document.createElement("iframe");
+        iframe.classList.add("email-body")
         contentBody.appendChild(iframe);
 
         let iframeDoc: Document | null;
@@ -135,6 +136,15 @@
 {/if}
 
 <style>
+    :global {
+        iframe.email-body{
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: var(--color-bg-primary);
+        }
+    }
+
     #body:not(:has(iframe)) {
         background-color: #f5f5f5;
         color: #333;
