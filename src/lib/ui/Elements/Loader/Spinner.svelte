@@ -14,15 +14,15 @@
 
 <style>
     .loader {
-        border: 2px solid #2a2a2a;
+        border: 2px solid var(--color-border);
         border-radius: 50%;
-        border-top: 2px solid #fff;
+        border-top: 2px solid var(--color-text-primary);
         width: 10px;
         height: 10px;
         -webkit-animation: spin 2s linear infinite;
         animation: spin 2s linear infinite;
         display: inline-block;
-        margin-right: 5px;
+        margin-right: var(--spacing-2xs);
     }
 
     @-webkit-keyframes spin {
