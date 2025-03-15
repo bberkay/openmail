@@ -49,32 +49,31 @@
 
 <style>
     .collapse-wrapper {
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 10px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        margin-bottom: var(--spacing-sm);
         overflow: hidden;
-    }
 
-    .collapse-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 16px;
-        background-color: #f5f5f5;
-        cursor: pointer;
-        font-weight: 500;
-        user-select: none;
-    }
+        & .collapse-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background-color: var(--color-bg-primary);
+            cursor: pointer;
+            user-select: none;
+        }
 
-    .collapse-content {
-        padding: 16px;
-    }
+        & .collapse-content {
+            padding: var(--spacing-md);
+        }
 
-    .collapse-icon {
-        transition: transform 0.3s ease;
-    }
+        & .collapse-icon {
+            transition: transform var(--transition-normal) var(--ease-default);
+        }
 
-    .collapse-icon.open {
-        transform: rotate(180deg);
+        & .collapse-icon.open {
+            transform: rotate(180deg);
+        }
     }
 </style>
