@@ -3,7 +3,7 @@ import DropdownItem from './DropdownItem.svelte';
 import DropdownToggle from './DropdownToggle.svelte';
 
 export {
-  Dropdown as Menu,
+  Dropdown as Root,
   DropdownItem as Item,
   DropdownToggle as Toggle,
 };
