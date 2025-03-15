@@ -19,11 +19,6 @@
         : 'input';
 </script>
 
-<!--
-    TODO: Elements de ki, Input, Input Group vs.
-    implemente edilecek, örneğin select,
-    date vs. de için.
--->
 <input
     class={combine("input", additionalClass)}
     {...restAttributes}
