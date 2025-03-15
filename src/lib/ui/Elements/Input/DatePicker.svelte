@@ -1,6 +1,9 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { getDays, getMonths, convertToIMAPDate } from "$lib/utils";
+    import * as Button from "$lib/ui/Elements/Button";
+    import * as Input from "$lib/ui/Elements/Input";
+    import * as Table from "$lib/ui/Elements/Table";
 
     interface Props {
         placeholder?: string,
@@ -28,6 +31,8 @@
 
     placeholder = placeholder ?? new Date().toLocaleDateString();
     onMount(() => {
+        dateInput = datePickerWrapper.querySelector(".date-input")!;
+        calendarBody = datePickerWrapper.querySelector(".calendar-body")!;
         if (datePickerWrapper) {
             renderCalendar();
         }
@@ -159,51 +164,57 @@
 <svelte:body onclick={closeWhenClickedOutside} />
 
 <div class="date-input-wrapper" bind:this={datePickerWrapper}>
-    <input
+    <Input.Basic
         type="text"
         class="date-input"
-        readonly
         placeholder={convertToIMAPDate(placeholder)}
         value={selectedDate ? convertToIMAPDate(selectedDate) : ""}
-        bind:this={dateInput}
         onclick={() => { isDatePickerOpen = !isDatePickerOpen }}
+        readonly
     />
     <div class="datepicker-container {isDatePickerOpen ? 'visible' : ''}">
         <div class="datepicker-header">
             <div class="month-year-selector">
-                <button class="nav-button" id="prev-month" onclick={goPrevMonth}>←</button>
+                <Button.Basic
+                    class="btn-outline"
+                    id="prev-month"
+                    onclick={goPrevMonth}
+                >←</Button.Basic>
                 {getMonths()[displayedMonth]}
                 {displayedYear}
-                <button class="nav-button" id="next-month" onclick={goNextMonth}>→</button>
+                <Button.Basic
+                    class="btn-outline"
+                    id="next-month"
+                    onclick={goNextMonth}
+                >→</Button.Basic>
             </div>
-            <button class="clear-button" onclick={clearSelection}>Clear</button>
+            <Button.Basic
+                class="btn-outline"
+                onclick={clearSelection}
+            >X</Button.Basic>
         </div>
-        <table class="calendar">
-            <thead>
-                <tr>
-                  {#each getDays() as day}
-                    <th>{day}</th>
-                  {/each}
-                </tr>
-            </thead>
-            <tbody id="calendar-body" bind:this={calendarBody}></tbody>
-        </table>
+        <Table.Root class="calendar">
+            <Table.Header>
+                <Table.Row>
+                    {#each getDays() as day}
+                      <Table.Head>{day}</Table.Head>
+                    {/each}
+                </Table.Row>
+            </Table.Header>
+            <Table.Body class="calendar-body">
+                <br/>
+            </Table.Body>
+        </Table.Root>
     </div>
 </div>
 
 <style>
     :global {
-        /* TODO: Check this later */
         .date-input-wrapper{
             position: relative;
-            width: 200px;
 
             & .date-input {
-                width: 100%;
-                padding: 8px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                cursor: pointer;
+                width: max-content;
             }
 
             & .datepicker-container {
@@ -211,106 +222,73 @@
                 position: absolute;
                 top: 100%;
                 left: 0;
-                width: 300px;
-                font-family: Arial, sans-serif;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                padding: 10px;
-                background: #fff;
-                z-index: 1000;
-                margin-top: 5px;
+                width: max-content;
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                border-top-left-radius: none;
+                border-top-right-radius: none;
+                padding: var(--spacing-sm);
+                background: var(--color-bg-primary);
+                z-index: var(--z-index-dropdown);
                 opacity: 0;
                 visibility: hidden;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                transition: all var(--transform-fast) var(--ease-default);
+                box-shadow: var(--shadow-sm);
 
                 &.visible {
                     opacity: 1;
                     visibility: visible;
                 }
-            }
 
-            & .datepicker-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 10px;
-            }
+                & .datepicker-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: var(--spacing-sm);
 
-            & .month-year-selector {
-                display: flex;
-                gap: 10px;
-                align-items: center;
-            }
-
-            & .nav-button {
-                background: #f0f0f0;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background 0.3s;
-
-                &:hover {
-                    background: #e0e0e0;
-                }
-            }
-
-            & .clear-button {
-                background: #ff4444;
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background 0.3s;
-
-                &:hover {
-                    background: #ff0000;
+                    & .month-year-selector {
+                        display: flex;
+                        gap: var(--spacing-sm);
+                        align-items: center;
+                    }
                 }
             }
 
             & .calendar {
                 width: 100%;
-                border-collapse: collapse;
+                color: var(--color-text-primary);
 
                 & th {
-                    padding: 8px;
-                    background: #f0f0f0;
-                    color: #333;
+                    padding: var(--spacing-xs);
+                    background: none;
+                    color: var(--color-text-secondary);
                 }
-            }
 
-            & .calendar td {
-                padding: 8px;
-                text-align: center;
-                cursor: pointer;
-                border: 1px solid #eee;
-                position: relative;
+                & td {
+                    padding: var(--spacing-xs);
+                    text-align: center;
+                    cursor: pointer;
+                    position: relative;
 
-                &:hover {
-                    background: #f0f0f0;
+                    &:hover {
+                        background-color: var(--color-hover);
+                    }
+
+                    &.current-date {
+                        background: var(--color-border-subtle);
+                        border-radius: var(--radius-sm);
+                    }
+
+                    &.selected-date {
+                        background: var(--color-text-primary);
+                        color: var(--color-bg-primary);
+                        border-radius: var(--radius-sm);
+                    }
+
+                    &.other-month {
+                        color: var(--color-text-secondary);
+                    }
                 }
-            }
-
-            & .date {
-            color: black;
-            }
-
-            & .current-date {
-                background: #007bff;
-                color: white !important;
-                border-radius: 50%;
-                position: relative;
-            }
-
-            & .selected-date {
-                background: #e3f2fd;
-                border: 2px solid #007bff;
-            }
-
-            .other-month {
-                color: #ccc;
             }
         }
     }
