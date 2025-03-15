@@ -74,8 +74,8 @@
                 transition: all var(--transition-fast) var(--ease-default);
 
                 & svg {
-                    width: 20px;
-                    height: 20px;
+                    width: var(--font-size-lg);
+                    height: var(--font-size-lg);
                 }
             }
 

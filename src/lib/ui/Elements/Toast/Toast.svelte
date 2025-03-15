@@ -81,8 +81,8 @@
 
                 & svg {
                     fill: var(--color-bg-primary);
-                    height: 22px;
-                    width: 22px;
+                    height: var(--font-size-lg);
+                    width: var(--font-size-lg);
                 }
             }
 

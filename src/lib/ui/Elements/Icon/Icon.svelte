@@ -30,8 +30,8 @@
 <style>
     :global {
         svg {
-            width: 16px;
-            height: 16px;
+            width: var(--font-size-md);
+            height: var(--font-size-md);
             stroke: currentColor;
             stroke-width: 2;
             transition: all var(--transition-fast) var(--ease-default);
