@@ -1,4 +1,6 @@
 <script lang="ts">
+    import * as Button from "$lib/ui/Elements/Button";
+
     interface Props {
         opened: boolean;
         onclick?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
@@ -27,4 +29,10 @@
     }
 </script>
 
-<button {...attributes} type="button" onclick={toggle}>{content}</button>
+<Button.Basic
+    type="button"
+    onclick={toggle}
+    {...attributes}
+>
+    {content}
+</Button.Basic>
