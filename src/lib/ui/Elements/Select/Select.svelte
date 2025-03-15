@@ -202,38 +202,38 @@
                 &.open {
                     border-color: var(--color-text-primary);
                 }
-            }
 
-            & .select-trigger {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                color: var(--color-text-primary);
-
-                & .select-trigger-content {
+                & .select-trigger {
                     display: flex;
+                    justify-content: space-between;
                     align-items: center;
-                    gap: var(--spacing-xs);
-                    flex: 1;
+                    color: var(--color-text-primary);
 
-                    & .clear-button {
-                        background: none;
-                        border: none;
-                        color: var(--color-text-secondary);
-                        cursor: pointer;
-                        padding: calc(var(--spacing-2xs) / 2) calc(var(--spacing-xs) / 2);
-                        line-height: 1;
-                        visibility: hidden;
-                        opacity: 0;
-                        transition: all var(--transform-fast) var(--ease-default);
+                    & .select-trigger-content {
+                        display: flex;
+                        align-items: center;
+                        gap: var(--spacing-xs);
+                        flex: 1;
 
-                        &.visible{
-                            visibility: visible;
-                            opacity: 1;
-                        }
+                        & .clear-button {
+                            background: none;
+                            border: none;
+                            color: var(--color-text-secondary);
+                            cursor: pointer;
+                            padding: calc(var(--spacing-2xs) / 2) calc(var(--spacing-xs) / 2);
+                            line-height: 1;
+                            visibility: hidden;
+                            opacity: 0;
+                            transition: all var(--transform-fast) var(--ease-default);
 
-                        &:hover{
-                            opacity: 0.7;
+                            &.visible{
+                                visibility: visible;
+                                opacity: 1;
+                            }
+
+                            &:hover{
+                                opacity: 0.7;
+                            }
                         }
                     }
                 }
@@ -261,19 +261,19 @@
                     opacity: 1;
                     visibility: visible;
                 }
-            }
 
-            & .search-box {
-                position: sticky;
-                top: 0;
-                border-bottom: 1px solid var(--color-border-subtle);
-            }
+                & .search-box {
+                    position: sticky;
+                    top: 0;
+                    border-bottom: 1px solid var(--color-border-subtle);
+                }
 
-            & .no-results {
-                padding: var(--spacing-sm);
-                color: var(--color-text-secondary);
-                text-align: center;
-                font-style: italic;
+                & .no-results {
+                    padding: var(--spacing-sm);
+                    color: var(--color-text-secondary);
+                    text-align: center;
+                    font-style: italic;
+                }
             }
         }
     }
