@@ -58,10 +58,6 @@
             justify-content: flex-end;
             gap: var(--spacing-xs);
             color: var(--color-text-primary);
-
-            & button {
-                width: auto;
-            }
         }
     }
 </style>
