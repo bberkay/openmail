@@ -1,6 +1,7 @@
 <script lang="ts">
     import { mount, unmount, type Snippet } from "svelte";
     import { Spinner } from "$lib/ui/Elements/Loader";
+    import * as Button from "$lib/ui/Elements/Button";
 
     interface Props {
         onclick: (((e: Event) => void) | ((e: Event) => Promise<void>)),
@@ -34,9 +35,13 @@
     }
 </script>
 
-<button {...attributes} type="button" onclick={makeAnApiRequest}>
+<Button.Basic
+    type="button"
+    onclick={makeAnApiRequest}
+    {...attributes}
+>
     {@render children()}
-</button>
+</Button.Basic>
 
 <style>
 
