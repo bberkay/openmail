@@ -13,10 +13,6 @@
         class: additionalClass,
         ...restAttributes
     } = attributes;
-
-    const combinedClass = additionalClass
-        ? `input ${additionalClass}`
-        : 'input';
 </script>
 
 <input
