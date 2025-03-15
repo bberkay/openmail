@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
-    import type { Snippet } from "svelte";
     import { close } from "./index";
+    import * as Button from "$lib/ui/Elements/Button";
 
     interface Props {
         id: string;
@@ -10,7 +10,12 @@
         onUndo?: (e: Event) => void;
     }
 
-    let { id, content, onUndo, autoCloseDelay }: Props = $props();
+    let {
+        id,
+        content,
+        onUndo,
+        autoCloseDelay
+    }: Props = $props();
     let toast: HTMLElement;
 
     onMount(() => {
@@ -40,56 +45,66 @@
 <div class="toast" bind:this={toast}>
     <div>{@html content}</div>
     {#if onUndo}
-        <button class="toast-close" type="button" onclick={onUndo}>Undo</button>
+        <Button.Basic
+            type="button"
+            class="toast-close"
+            onclick={onUndo}
+        >Undo</Button.Basic>
     {/if}
-    <button class="toast-close" type="button" onclick={dismiss}>X</button>
+    <Button.Basic
+        type="button"
+        class="toast-close"
+        onclick={dismiss}
+    >X</Button.Basic>
 </div>
 
 <style>
-    .toast{
-        width: 400px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        height: 75px;
-        background-color: var(--color-bg-primary);
-        padding: var(--spacing-2xs) var(--spacing-md);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        z-index: var(--z-index-toast);
-
-        & .toast-header, .toast-footer {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            & svg {
-                fill: var(--color-bg-primary);
-                height: 22px;
-                width: 22px;
-            }
-        }
-
-        & .toast-body {
-            color: var(--color-text-secondary);
-            font-size: var(--font-size-sm);
-            margin-left: -10px;
-
-            & .toast-title {
-                color: var(--color-text-primary);
-            }
-        }
-
-        & .toast-footer {
+    :global {
+        .toast{
+            width: 400px;
             display: flex;
             flex-direction: row;
-            gap: var(--spacing-2xs);
+            align-items: center;
+            justify-content: space-between;
+            height: 75px;
+            background-color: var(--color-bg-primary);
+            padding: var(--spacing-2xs) var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            z-index: var(--z-index-toast);
 
-            & button {
-                padding: 6px 10px;
-                width: auto;
+            & .toast-header, .toast-footer {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                & svg {
+                    fill: var(--color-bg-primary);
+                    height: 22px;
+                    width: 22px;
+                }
+            }
+
+            & .toast-body {
+                color: var(--color-text-secondary);
+                font-size: var(--font-size-sm);
+                margin-left: -10px;
+
+                & .toast-title {
+                    color: var(--color-text-primary);
+                }
+            }
+
+            & .toast-footer {
+                display: flex;
+                flex-direction: row;
+                gap: var(--spacing-2xs);
+
+                & button {
+                    padding: var(--spacing-xs) var(--spacing-sm);
+                    width: auto;
+                }
             }
         }
     }
