@@ -6,6 +6,7 @@
     import { onMount, onDestroy } from "svelte";
     import { close } from "./index";
     import * as Button from "$lib/ui/Elements/Button";
+    import Icon from "$lib/ui/Elements/Icon";
 
     interface Props {
         id: string;
@@ -39,6 +40,9 @@
 </script>
 
 <div class="alert {type}" bind:this={alert}>
+    <div class="alert-icon">
+        <Icon name={type} />
+    </div>
     <div>{@html content}</div>
     {#if closeable}
         <Button.Basic
@@ -54,19 +58,19 @@
 <style>
     :global {
         .alert {
-            background-color: #333;
-            color: white;
-            padding: 16px 24px;
-            border-radius: 4px;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
+            /* TODO: Check this later */
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-sm);
             opacity: 0;
             transform: translateX(-100%);
-            transition: all 0.3s ease-in;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all var(--transition-normal) var(--ease-default);
+            box-shadow: var(--shadow-sm);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: var/(--spacing-sm);
             min-width: 200px;
             max-width: 300px;
 
