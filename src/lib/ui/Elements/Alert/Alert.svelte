@@ -1,5 +1,5 @@
 <script module lang="ts">
-    export type AlertType = "info" | "success" | "error";
+    export type AlertType = "error" | "warning " | "info" | "success";
 </script>
 
 <script lang="ts">
@@ -43,7 +43,14 @@
     <div class="alert-icon">
         <Icon name={type} />
     </div>
-    <div>{@html content}</div>
+    <div class="alert-body">
+        <div class="alert-type">
+            <span>{type}</span>
+        </div>
+        <div class="alert-content">
+            {@html content}
+        </div>
+    </div>
     {#if closeable}
         <Button.Basic
             type="button"
@@ -58,7 +65,6 @@
 <style>
     :global {
         .alert {
-            /* TODO: Check this later */
             background-color: var(--color-bg-primary);
             color: var(--color-text-primary);
             padding: var(--spacing-md) var(--spacing-lg);
@@ -70,20 +76,28 @@
             box-shadow: var(--shadow-sm);
             display: flex;
             align-items: center;
-            gap: var/(--spacing-sm);
-            min-width: 200px;
-            max-width: 300px;
+            justify-content:space-between;
+            gap: var(--spacing-sm);
+            width: max-content;
 
             &.error {
-                background-color: red;
+                border: 1px solid var(--color-error);
+                color: var(--color-error);
             }
 
-            &.success {
-                background-color: green;
+            &.warning {
+                border: 1px solid var(--color-warning);
+                color: var(--color-warning);
             }
 
             &.info {
-                background-color: blue;
+                border: 1px solid var(--color-info);
+                color: var(--color-info);
+            }
+
+            &.success {
+                border: 1px solid var(--color-success);
+                color: var(--color-success);
             }
 
             &.show {
@@ -91,20 +105,28 @@
                 transform: translateX(0);
             }
 
+            & .alert-icon svg {
+                width: var(--font-size-lg)!important;
+                height: var(--font-size-lg)!important;
+            }
+
+            & .alert-body{
+                flex-grow:1;
+                margin-left: var(--spacing-2xs);
+                margin-right: var(--spacing-md);
+
+                & .alert-type {
+                    text-transform: capitalize;
+                    font-weight: bold;
+                }
+            }
+
             & .alert-close {
                 background: none;
                 border: none;
-                color: white;
-                font-size: 18px;
+                font-size: var(--font-size-md);
                 cursor: pointer;
                 padding: 0;
-                margin-left: 8px;
-                opacity: 0.7;
-                transition: opacity 0.2s;
-
-                &:hover {
-                    opacity: 1;
-                }
             }
         }
     }
