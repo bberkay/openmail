@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { close } from "./index";
+    import * as Button from "$lib/ui/Elements/Button";
 
     interface Props {
         content: string;
@@ -36,23 +37,22 @@
 
 <div class="modal confirm">
     {@html content}
-    <button type="button" onclick={onCancelWrapper}>
+    <Button.Basic
+        type="button"
+        onclick={onCancelWrapper}
+    >
         {onCancelText || "Cancel"}
-    </button>
-    <button type="button" onclick={onConfirmWrapper}>{onConfirmText}</button>
+    </Button.Basic>
+    <Button.Basic
+        type="button"
+        onclick={onConfirmWrapper}
+    >
+        {onConfirmText}
+    </Button.Basic>
 </div>
 
 <style>
-    .modal {
-        background-color: #2e2e2e;
-        border: 1px solid #5a5a5a;
-        border-radius: 5px;
-        padding: 1rem;
-        margin-bottom: 5px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 99999;
+    .confirm {
+        opacity: 1; /* temporary for prevent empty ruleset warning */
     }
 </style>
