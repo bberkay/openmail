@@ -19,7 +19,6 @@
 </script>
 
 <button
-    type="button"
     class={combine("btn", additionalClass)}
     {...restAttributes}
 >
