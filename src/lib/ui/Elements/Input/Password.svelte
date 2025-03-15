@@ -19,11 +19,16 @@
         required=true,
         ...attributes
     }: Props  = $props();
+
+    const togglePassword = (e: Event) => {
+        /* TODO: Check this */
+    }
 </script>
 
 <Input.WithButton
     {...attributes}
     type="password"
+    onclick={togglePassword}
     {name}
     {id}
     {placeholder}

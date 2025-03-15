@@ -1,7 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import * as Select from "$lib/ui/Elements/Select";
-    import { getDays, getMonths, convertToIMAPDate, range } from "$lib/utils";
+    import { getDays, getMonths, convertToIMAPDate } from "$lib/utils";
 
     interface Props {
         placeholder?: string,
@@ -14,7 +13,7 @@
         value,
         onchange
     }: Props = $props();
-    
+
     let currentDate = new Date();
     let currentYear = currentDate.getFullYear();
     let currentMonth = currentDate.getMonth();
@@ -51,7 +50,7 @@
         );
         const prevSelectedDate = calendarBody.querySelector(`.selected-date`);
         if (prevSelectedDate) prevSelectedDate.classList.remove("selected-date");
-        calendarBody.querySelector(`td[data-date="${selectedDayNumber}"]`).classList.add("selected-date");
+        calendarBody.querySelector(`td[data-date="${selectedDayNumber}"]`)!.classList.add("selected-date");
         isDatePickerOpen = false;
         if(onchange) onchange(selectedDate);
     }
@@ -94,7 +93,7 @@
 
             for (let j = 0; j < 7; j++) {
                 let displayedDay = date;
-                
+
                 const classes = [];
                 if (i === 0 && j < startingDay) {
                     classes.push("other-month");
@@ -111,7 +110,7 @@
                     classes.push("next-month");
                     displayedDay = date - totalDays;
                 }
-                            
+
                 const isCurrentDate =
                     displayedDay === currentDate.getDate() &&
                     displayedMonth === currentDate.getMonth() &&
@@ -145,13 +144,13 @@
         calendarBody
             .querySelectorAll<HTMLElement>("td[data-date]")
             .forEach((cell: HTMLElement) => {
-                cell.addEventListener("click", () => { 
+                cell.addEventListener("click", () => {
                   if (cell.classList.contains("next-month")) {
                       goNextMonth();
                   } else if (cell.classList.contains("prev-month")) {
                       goPrevMonth();
                   }
-                  selectDate(cell.dataset.date!); 
+                  selectDate(cell.dataset.date!);
                 });
             });
     }
@@ -193,123 +192,125 @@
 </div>
 
 <style>
-    .date-input-wrapper :global{
-        position: relative;
-        width: 200px;
+    :global {
+        .date-input-wrapper{
+            position: relative;
+            width: 200px;
 
-        & .date-input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        & .datepicker-container {
-            visibility: hidden;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 300px;
-            font-family: Arial, sans-serif;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            background: #fff;
-            z-index: 1000;
-            margin-top: 5px;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-            &.visible {
-                opacity: 1;
-                visibility: visible;
-            }
-        }
-
-        & .datepicker-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        & .month-year-selector {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        & .nav-button {
-            background: #f0f0f0;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s;
-
-            &:hover {
-                background: #e0e0e0;
-            }
-        }
-
-        & .clear-button {
-            background: #ff4444;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s;
-
-            &:hover {
-                background: #ff0000;
-            }
-        }
-
-        & .calendar {
-            width: 100%;
-            border-collapse: collapse;
-
-            & th {
+            & .date-input {
+                width: 100%;
                 padding: 8px;
-                background: #f0f0f0;
-                color: #333;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                cursor: pointer;
             }
-        }
 
-        & .calendar td {
-            padding: 8px;
-            text-align: center;
-            cursor: pointer;
-            border: 1px solid #eee;
-            position: relative;
+            & .datepicker-container {
+                visibility: hidden;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 300px;
+                font-family: Arial, sans-serif;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 10px;
+                background: #fff;
+                z-index: 1000;
+                margin-top: 5px;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-            &:hover {
-                background: #f0f0f0;
+                &.visible {
+                    opacity: 1;
+                    visibility: visible;
+                }
             }
-        }
 
-        & .date {
-          color: black;
-        }
+            & .datepicker-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+            }
 
-        & .current-date {
-            background: #007bff;
-            color: white !important;
-            border-radius: 50%;
-            position: relative;
-        }
+            & .month-year-selector {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
 
-        & .selected-date {
-            background: #e3f2fd;
-            border: 2px solid #007bff;
-        }
+            & .nav-button {
+                background: #f0f0f0;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background 0.3s;
 
-        .other-month {
-            color: #ccc;
+                &:hover {
+                    background: #e0e0e0;
+                }
+            }
+
+            & .clear-button {
+                background: #ff4444;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background 0.3s;
+
+                &:hover {
+                    background: #ff0000;
+                }
+            }
+
+            & .calendar {
+                width: 100%;
+                border-collapse: collapse;
+
+                & th {
+                    padding: 8px;
+                    background: #f0f0f0;
+                    color: #333;
+                }
+            }
+
+            & .calendar td {
+                padding: 8px;
+                text-align: center;
+                cursor: pointer;
+                border: 1px solid #eee;
+                position: relative;
+
+                &:hover {
+                    background: #f0f0f0;
+                }
+            }
+
+            & .date {
+            color: black;
+            }
+
+            & .current-date {
+                background: #007bff;
+                color: white !important;
+                border-radius: 50%;
+                position: relative;
+            }
+
+            & .selected-date {
+                background: #e3f2fd;
+                border: 2px solid #007bff;
+            }
+
+            .other-month {
+                color: #ccc;
+            }
         }
     }
 </style>
