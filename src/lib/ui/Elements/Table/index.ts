@@ -7,7 +7,7 @@ import Cell from './Cell.svelte';
 import Footer from './Footer.svelte';
 
 export {
-    Table,
+    Table as Root,
     Header,
     Body,
     Row,
