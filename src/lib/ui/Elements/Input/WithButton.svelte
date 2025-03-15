@@ -3,14 +3,12 @@
     import * as Button from "$lib/ui/Elements/Button";
 
     interface Props {
-        type: string;
         onclick?: (e: Event) => void;
         children: Snippet;
         [attribute: string]: unknown;
     }
 
     let {
-        type,
         onclick,
         children,
         ...attributes
@@ -18,7 +16,7 @@
 </script>
 
 <div class="input-with-button">
-    <input {...attributes} {type}>
+    <input {...attributes}>
     <div>
         <Button.Basic
             type="button"
