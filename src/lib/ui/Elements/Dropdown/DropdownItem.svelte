@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { Snippet } from "svelte";
+    import * as Button from "$lib/ui/Elements/Button";
 
     interface Props {
         children: Snippet;
@@ -14,6 +15,11 @@
     }: Props = $props();
 </script>
 
-<button {...attributes} type="button" onclick={onclick}>
+<Button.Basic
+    type="button"
+    {onclick}
+    {...attributes}
+>
     {@render children()}
-</button>
+
+</Button.Basic>
