@@ -60,7 +60,7 @@
             &.btn-outline {
                 background-color: transparent;
                 color: var(--color-text-primary);
-                border: var(--border-width, 1px) var(--border-type, solid) var(--color-border);
+                border: 1px solid var(--color-border);
 
                 &:hover {
                     background-color: var(--color-hover);
