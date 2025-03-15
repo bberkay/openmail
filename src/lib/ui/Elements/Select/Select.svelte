@@ -127,8 +127,14 @@
 <svelte:body onclick={closeWhenClickedOutside} />
 
 <div class="custom-select-wrapper" bind:this={selectWrapper}>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="custom-select {isOpen ? "open" : ""}" onclick={toggleSelect}>
+    <div
+        class="custom-select {isOpen ? "open" : ""}"
+        role="button"
+        onkeydown={(e) => e.key === "Enter" && toggleSelect()}
+        tabindex="0"
+        aria-expanded={isOpen}
+        onclick={toggleSelect}
+    >
         <div class="select-trigger">
             <div class="select-trigger-content">
                 {#if selectedOption}
