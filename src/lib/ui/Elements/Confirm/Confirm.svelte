@@ -52,7 +52,7 @@
 </div>
 
 <style>
-    .confirm {
+    .modal.confirm {
         opacity: 1; /* temporary for prevent empty ruleset warning */
     }
 </style>
