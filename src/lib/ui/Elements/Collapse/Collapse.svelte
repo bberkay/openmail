@@ -49,8 +49,6 @@
 
 <style>
     .collapse-wrapper {
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
         margin-bottom: var(--spacing-sm);
         overflow: hidden;
 
@@ -59,7 +57,6 @@
             justify-content: space-between;
             align-items: center;
             padding: var(--spacing-sm) var(--spacing-md);
-            background-color: var(--color-bg-primary);
             cursor: pointer;
             user-select: none;
         }
