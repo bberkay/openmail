@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { close } from "./index";
+    import * as Button from "$lib/ui/Elements/Button";
 
     interface Props {
         content: string;
@@ -25,22 +26,18 @@
     };
 </script>
 
-<div class="modal confirm">
+<div class="modal message">
     {@html content}
-    <button type="button" onclick={onOkWrapper}>{onOkText || "Ok"}</button>
+    <Button.Basic
+        type="button"
+        onclick={onOkWrapper}
+    >
+        {onOkText || "Ok"}
+    </Button.Basic>
 </div>
 
 <style>
-    .modal {
-        background-color: #2e2e2e;
-        border: 1px solid #5a5a5a;
-        border-radius: 5px;
-        padding: 1rem;
-        margin-bottom: 5px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 99999;
+    .modal.message{
+        opacity: 1; /* temporary for prevent empty ruleset warning */
     }
 </style>
