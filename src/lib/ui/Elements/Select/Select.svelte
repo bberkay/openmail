@@ -1,5 +1,8 @@
 <script lang="ts">
     import { onMount, type Snippet } from "svelte";
+    import * as Button from "$lib/ui/Elements/Button";
+    import * as Input from "$lib/ui/Elements/Input";
+    import Icon from "$lib/ui/Elements/Icon";
 
     interface Props {
         children: Snippet;
@@ -30,6 +33,7 @@
     const noResultWarning = `<div class="no-results">No matching options found</div>`;
 
     onMount(() => {
+        searchInput = selectWrapper.querySelector(".search-input")!;
         options = Array.from(selectWrapper.querySelectorAll(".option")) as HTMLElement[];
         if (value) selectOption(value)
         filterOptions();
@@ -64,7 +68,7 @@
 
     function selectOption(value: string) {
         if(selectedOption) selectedOption.classList.remove("selected");
-        selectedOption = options.find(option => option.dataset.value == value);
+        selectedOption = options.find(option => option.dataset.value == value)!;
         selectedOption.classList.add("selected");
         if(onchange) onchange(value.toString());
         if(resetAfterSelect) selectedOption = null;
@@ -129,173 +133,148 @@
 <div class="custom-select-wrapper" bind:this={selectWrapper}>
     <div
         class="custom-select {isOpen ? "open" : ""}"
-        role="button"
+        onclick={toggleSelect}
         onkeydown={(e) => e.key === "Enter" && toggleSelect()}
         tabindex="0"
+        role="button"
         aria-expanded={isOpen}
-        onclick={toggleSelect}
     >
         <div class="select-trigger">
             <div class="select-trigger-content">
                 {#if selectedOption}
                     <span data-value={selectedOption.getAttribute("data-value")!}>{selectedOption.textContent}</span>
-                    <button class="clear-button {selectedOption ? "visible" : ""}" onclick={clearSelection}>×</button>
+                    <Button.Basic
+                        type="button"
+                        class="clear-button {selectedOption ? "visible" : ""}"
+                        onclick={clearSelection}
+                    >×</Button.Basic>
                 {:else}
                     <span data-value="">{placeholder}</span>
                 {/if}
             </div>
-            <div class="arrow"></div>
+            <Icon name="dropdown" />
         </div>
     </div>
     <div class="options-container {isOpen ? "open" : ""}">
         {#if enableSearch}
             <div class="search-box">
-                <input type="text" class="search-input" placeholder="Search..." onclick={(e) => { e.stopPropagation() }} oninput={handleSearch} bind:this={searchInput}/>
+                <Input.Basic
+                    type="text"
+                    class="search-input"
+                    placeholder="Search"
+                    onclick={(e: Event) => { e.stopPropagation() }}
+                    oninput={handleSearch}
+                />
             </div>
         {/if}
-        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-        <div class="options-list" onclick={handleSelection} bind:this={optionsList}>
+        <div
+            class="options-list"
+            onclick={handleSelection}
+            onkeydown={(e) => e.key === "Enter" && handleSelection(e)}
+            tabindex="0"
+            role="button"
+            aria-expanded={isOpen}
+            bind:this={optionsList}
+        >
             {@render children()}
         </div>
     </div>
 </div>
 
 <style>
-    .custom-select-wrapper {
-        position: relative;
-        width: 300px;
-        font-family: Arial, sans-serif;
-        user-select: none;
-        text-align: left;
-
-        & .custom-select {
+    :global {
+        .custom-select-wrapper {
             position: relative;
-            border: 1px solid #e1e1e1;
-            border-radius: 4px;
-            padding: 7px 10px;
-            cursor: pointer;
-            background-color: white;
-            color: black;
-            font-size:14px;
+            width: max-content;
+            user-select: none;
+            text-align: left;
 
-            &.open {
-                border-color: #007bff;
-                box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+            & .custom-select {
+                position: relative;
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                border-bottom-left-radius: none;
+                border-bottom-right-radius: none;
+                padding: var(--spacing-xs) var(--spacing-sm);
+                cursor: pointer;
+                background-color: var(--color-bg-primary);
 
-                & .arrow {
-                    transform: rotate(180deg);
+                &.open {
+                    border-color: var(--color-text-primary);
                 }
             }
-        }
 
-        & .select-trigger {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #333;
-
-            & .select-trigger-content {
+            & .select-trigger {
                 display: flex;
+                justify-content: space-between;
                 align-items: center;
-                gap: 8px;
-                flex: 1;
+                color: var(--color-text-primary);
 
-                & .clear-button {
-                    background: none;
-                    border: none;
-                    color: #999;
-                    cursor: pointer;
-                    padding: 2px 6px;
-                    font-size: 18px;
-                    line-height: 1;
-                    visibility: hidden;
-                    opacity: 0;
-                    transition: all 0.2s ease;
+                & .select-trigger-content {
+                    display: flex;
+                    align-items: center;
+                    gap: var(--spacing-xs);
+                    flex: 1;
 
-                    &.visible{
-                        visibility: visible;
-                        opacity: 1;
-                    }
+                    & .clear-button {
+                        background: none;
+                        border: none;
+                        color: var(--color-text-secondary);
+                        cursor: pointer;
+                        padding: calc(var(--spacing-2xs) / 2) calc(var(--spacing-xs) / 2);
+                        line-height: 1;
+                        visibility: hidden;
+                        opacity: 0;
+                        transition: all var(--transform-fast) var(--ease-default);
 
-                    &:hover{
-                        color: #666;
+                        &.visible{
+                            visibility: visible;
+                            opacity: 1;
+                        }
+
+                        &:hover{
+                            opacity: 0.7;
+                        }
                     }
                 }
             }
 
-            & .arrow {
-                border-style: solid;
-                border-width: 5px 5px 0 5px;
-                border-color: #999 transparent transparent transparent;
-                transition: transform 0.3s ease;
-            }
-        }
+            & .options-container {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--color-bg-primary);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                border-top-left-radius: none;
+                border-top-right-radius: none;
+                max-height: var(--container-sm);
+                overflow-y: auto;
+                z-index: var(--z-index-dropdown);
+                opacity: 0;
+                visibility: hidden;
+                transition: all var(--transform-fast) var(--ease-default);
+                box-shadow: var(--shadow-sm);
 
-        & .options-container {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #e1e1e1;
-            border-radius: 4px;
-            margin-top: 4px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-            &.open{
-                opacity: 1;
-                visibility: visible;
+                &.open{
+                    opacity: 1;
+                    visibility: visible;
+                }
             }
 
-            /* Custom scrollbar */
-            &::-webkit-scrollbar {
-                width: 6px;
+            & .search-box {
+                position: sticky;
+                top: 0;
+                border-bottom: 1px solid var(--color-border-subtle);
             }
 
-            &::-webkit-scrollbar-track {
-                background: #f1f1f1;
+            & .no-results {
+                padding: var(--spacing-sm);
+                color: var(--color-text-secondary);
+                text-align: center;
+                font-style: italic;
             }
-
-            &::-webkit-scrollbar-thumb {
-                background: #ccc;
-                border-radius: 3px;
-            }
-
-            &::-webkit-scrollbar-thumb:hover {
-                background: #999;
-            }
-        }
-
-        & .search-box {
-            position: sticky;
-            top: 0;
-            background: white;
-            border-bottom: 1px solid #e1e1e1;
-        }
-
-        & .search-input {
-            width: 100%;
-            padding: 6px;
-            border: 1px solid #e1e1e1;
-            border-radius: 4px;
-            outline: none;
-
-            &:focus {
-                border-color: #007bff;
-            }
-        }
-
-        & .no-results {
-            padding: 10px;
-            color: #666;
-            text-align: center;
-            font-style: italic;
         }
     }
 </style>

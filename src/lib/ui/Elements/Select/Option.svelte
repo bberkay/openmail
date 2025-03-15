@@ -15,21 +15,19 @@
 
 <style>
     :global {
-        .option{
-            padding: 7px 10px;
+        .option {
+            padding: var(--spacing-xs) var(--spacing-sm);
             cursor: pointer;
-            transition: background-color 0.2s ease;
-            color: grey;
-            font-size:14px;
+            transition: background-color var(--transition-fast) var(--ease-default);
+            color: var(--color-text-secondary);
 
             &:hover{
-                background-color: #f8f9fa;
+                background-color: var(--color-hover);
             }
 
             &.selected {
-                background-color: #e3f2fd;
-                color: #007bff;
-                font-weight: 500;
+                background-color: var(--color-border);
+                color: var(--color-text-primary);
             }
 
             &.hidden {
