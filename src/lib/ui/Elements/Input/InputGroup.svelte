@@ -20,7 +20,7 @@
     } = attributes;
 </script>
 
-<tr
+<div
     class={combine(
         `input-group-${direction}`,
         additionalClass
@@ -28,7 +28,7 @@
     {...restAttributes}
 >
     {@render children()}
-</tr>
+</div>
 
 <style>
     :global {
