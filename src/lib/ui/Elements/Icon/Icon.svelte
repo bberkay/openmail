@@ -16,6 +16,7 @@
     onMount(async () => {
         const svgContent = (await import(`$lib/assets/${name}.svg?raw`)).default;
         const svgElement = createDomElement(svgContent);
+        svgElement.setAttribute("name", name);
         if (svgElement) {
             Object.entries(attributes).forEach(([key, value]) => {
                 svgElement.setAttribute(key, value);
