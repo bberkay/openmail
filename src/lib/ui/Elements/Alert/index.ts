@@ -1,10 +1,10 @@
 import Alert from "./Alert.svelte";
-import type AlertType from "./Alert.svelte";
 import { mount, unmount } from "svelte";
 import { generateRandomId } from "$lib/utils";
 
-let mountedAlerts: Record<string, Record<string, any>> = {};
+export type AlertType = "error" | "warning " | "info" | "success";
 
+let mountedAlerts: Record<string, Record<string, any>> = {};
 export function show(
     targetIdOrElement: string | HTMLElement,
     content: string,
@@ -33,5 +33,3 @@ export function close(alertId: string) {
         delete mountedAlerts[alertId];
     }
 }
-
-export type { AlertType };

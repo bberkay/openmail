@@ -1,10 +1,6 @@
-<script module lang="ts">
-    export type AlertType = "error" | "warning " | "info" | "success";
-</script>
-
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
-    import { close } from "./index";
+    import { close, type AlertType } from "./index";
     import * as Button from "$lib/ui/Elements/Button";
     import Icon from "$lib/ui/Elements/Icon";
 
