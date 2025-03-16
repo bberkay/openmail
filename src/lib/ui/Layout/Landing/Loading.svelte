@@ -2,8 +2,7 @@
     import { Spinner } from "$lib/ui/Elements/Loader";
 </script>
 
-<div>
-    <h3>Accounts are loading...</h3>
-    <hr>
+<h3>
     <Spinner />
-</div>
+    Connecting to accounts...
+</h3>
