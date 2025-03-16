@@ -2,8 +2,10 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import { type Account } from "$lib/types";
-    import Form from "$lib/ui/Elements/Form";
+    import { Form, FormGroup } from "$lib/ui/Elements/Form";
     import * as Input from "$lib/ui/Elements/Input";
+    import * as Button from "$lib/ui/Elements/Button";
+    import Label from "$lib/ui/Elements/Label";
 
     const accountController = new AccountController();
 
@@ -36,31 +38,47 @@
 {#if isEditingAccount}
     <Form onsubmit={editAccount}>
         <div>
-            <div class="form-group">
-                <label for="email_address">Email Address</label>
-                <input
+            <FormGroup>
+                <Label for="email_address">Email Address</Label>
+                <Input.Basic
                     type="email"
                     name="email_address"
                     id="email_address"
-                    autocomplete="off"
                     value={isEditingAccount.email_address}
+                    autocomplete="off"
                     readonly
                     required
                 />
-            </div>
-            <div class="form-group">
-                <label for="password" class="form-label">Password</label>
+            </FormGroup>
+            <FormGroup>
+                <Label for="password">Password</Label>
                 <Input.Password/>
-            </div>
-            <div class="form-group">
-                <label for="fullname" class="form-label">Full Name (Optional)</label>
-                <input type="text" name="fullname" id="fullname" placeholder="Alex Doe" class="form-input" autocomplete="off" value={isEditingAccount.fullname}>
-                <p class="hint">Example: Alex Doe &lt;alex.doe@openmail.com&gt;</p>
-            </div>
-            <button type="submit" id="edit-account-btn" style="margin-right:10px;">Edit Account</button>
-            <button type="button" class="inline" onclick={() => { isEditingAccount = null; }}>
+            </FormGroup>
+            <FormGroup>
+                <Label for="fullname">Full Name (Optional)</Label>
+                <Input.Basic
+                    type="text"
+                    name="fullname"
+                    id="fullname"
+                    placeholder="Alex Doe"
+                    value={isEditingAccount.fullname}
+                    autocomplete="off"
+                />
+                <span class="muted">Example: Alex Doe &lt;alex.doe@openmail.com&gt;</span>
+            </FormGroup>
+            <Button.Action
+                type="submit"
+                onclick={async (e): Promise<void> => { editAccount(e) }}
+            >
+                Connect to account
+            </Button.Action>
+            <Button.Basic
+                type="button"
+                class="inline"
+                onclick={() => { isEditingAccount = null; }}
+            >
                 Cancel
-            </button>
+            </Button.Basic>
         </div>
     </Form>
 {/if}
