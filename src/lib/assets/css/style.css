@@ -188,46 +188,6 @@ pre {
     height: 100%;
 }
 
-/* List Table */
-.list-table {
-    & .checkbox-cell {
-        width: 30px;
-        padding-left: var(--spacing-xs) !important;
-        padding-bottom: 0 !important;
-    }
-
-    & .body-cell {
-        padding-left: 9px;
-        padding-top: 11px;
-        text-align: left;
-    }
-
-    & .action-cell {
-        padding-right: 4px;
-        white-space: nowrap;
-        width: 70px;
-        text-align: right;
-
-        & .action-button {
-            padding: 4px 6px;
-            opacity: 0.7;
-            transition: opacity var(--transition-fast) var(--ease-default);
-
-            &:hover {
-                opacity: 1;
-            }
-
-            &.edit-button svg {
-                fill: var(--color-text-primary);
-            }
-
-            &.remove-button svg {
-                fill: var(--color-danger);
-            }
-        }
-    }
-}
-
 /* Navbar */
 nav {
     display: flex;

@@ -59,7 +59,7 @@
             }
         }
 
-        & .landing-footer {
+        & .landing-body-footer {
             display: flex;
             flex-direction: column;
             gap: var(--spacing-lg);

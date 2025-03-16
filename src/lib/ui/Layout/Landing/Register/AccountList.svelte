@@ -136,6 +136,17 @@
     });
 </script>
 
+<!--
+TODO: Burada patladık çünkü eski tabloya göre yaptık
+halbuki yeni list.html a göre yapmak lazımdı özellikle
+checkbox-cell gibi css ler falan  yok, o yüzden sen
+bunu bir daha list.html a yaparak yap. Ayrıca
+hem buradaki style.css .landing-container a
+hem de list.html da kullanılan css de ki .landing-container
+a dikkat et.
+
+Bir de landing footer muhabbeti var o ne olacak?
+-->
 <div>
     <div class="alert-container" style="margin-bottom:15px;"></div>
     {#if
@@ -146,16 +157,16 @@
         <Table.Root>
             <Table.Header>
                 <Table.Row>
-                    <Table.Head>
+                    <Table.Head class="checkbox-cell">
                         <Input.Basic
                             type="checkbox"
                             onclick={selectAllAccounts}
                         />
                     </Table.Head>
-                    <Table.Head>
+                    <Table.Head class="body-cell">
                         Account{accountSelection.length > 0 ? ` (${accountSelection.length} selected)` : ""}
                     </Table.Head>
-                    <Table.Head colspan="2">
+                    <Table.Head>
                         {#if accountSelection.length > 0}
                             <Button.Action
                                 class="inline"
@@ -176,18 +187,18 @@
             <Table.Body>
                 {#each SharedStore.failedAccounts.concat(SharedStore.accounts) as account, index}
                 <Table.Row class={index < failedAccountLength ? "failed" : ""}>
-                    <Table.Cell>
+                    <Table.Cell class="checkbox-cell">
                         <Input.Basic
                             type="checkbox"
                             bind:group={accountSelection}
                             value={account.email_address}
                         />
                     </Table.Cell>
-                    <Table.Cell>
+                    <Table.Cell class="body-cell">
                         {index < failedAccountLength ? "Warning" : ""}
                         {account.fullname} &lt;{account.email_address}&gt;
                     </Table.Cell>
-                    <Table.Cell>
+                    <Table.Cell class="action-cell">
                         <Button.Basic
                             type="button"
                             class="inline"
@@ -196,8 +207,6 @@
                         >
                             Edit
                         </Button.Basic>
-                    </Table.Cell>
-                    <Table.Cell>
                         <Button.Action
                             class="inline"
                             onclick={removeAccount}
@@ -211,21 +220,46 @@
             </Table.Body>
         </Table.Root>
 
-        {#if failedAccountLength === 0}
-            <Button.Action
-                onclick={initMailboxes}
-                disabled={!SharedStore.accounts || SharedStore.accounts.length == 0}
-            >
-                Continue to mailbox.
-            </Button.Action>
-        {/if}
+        <div class="landing-body-footer">
+            {#if failedAccountLength === 0}
+                <Button.Action
+                    onclick={initMailboxes}
+                    disabled={!SharedStore.accounts || SharedStore.accounts.length == 0}
+                >
+                    Continue to mailbox.
+                </Button.Action>
+                {/if}
 
-        <Button.Basic
-            type="button"
-            class="inline"
-            onclick={() => { isListingAccount = false; }}
-        >
-            I want to add another account.
-        </Button.Basic>
+            <Button.Basic
+                type="button"
+                class="inline"
+                onclick={() => { isListingAccount = false; }}
+            >
+                I want to add another account.
+            </Button.Basic>
+        </div>
     {/if}
 </div>
+
+<style>
+    :global {
+        .checkbox-cell {
+            width: var(--font-size-2xl);
+            padding-left: var(--spacing-xs) !important;
+            padding-bottom: 0 !important;
+        }
+
+        .body-cell {
+            padding-left: var(--spacing-xs);
+            padding-top: var(--spacing-md);
+            text-align: left;
+        }
+
+        .action-cell {
+            padding-right: var(--spacing-2xs);
+            white-space: nowrap;
+            width: calc(2 * var(--font-size-2xl));
+            text-align: right;
+        }
+    }
+</style>

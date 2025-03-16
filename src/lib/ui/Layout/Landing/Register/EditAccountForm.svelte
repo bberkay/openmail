@@ -67,19 +67,21 @@
                 />
                 <span class="muted">Example: Alex Doe &lt;alex.doe@openmail.com&gt;</span>
             </FormGroup>
-            <Button.Action
-                type="submit"
-                onclick={async (e): Promise<void> => { editAccount(e) }}
-            >
-                Connect to account
-            </Button.Action>
-            <Button.Basic
-                type="button"
-                class="inline"
-                onclick={() => { isEditingAccount = null; }}
-            >
-                Cancel
-            </Button.Basic>
+            <div class="landing-body-footer">
+                <Button.Action
+                    type="submit"
+                    onclick={async (e): Promise<void> => { editAccount(e) }}
+                >
+                    Connect to account
+                </Button.Action>
+                <Button.Basic
+                    type="button"
+                    class="inline"
+                    onclick={() => { isEditingAccount = null; }}
+                >
+                    Cancel
+                </Button.Basic>
+            </div>
         </div>
     </Form>
 {/if}
