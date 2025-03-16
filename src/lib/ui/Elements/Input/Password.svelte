@@ -21,20 +21,35 @@
     }: Props  = $props();
 
     const togglePassword = (e: Event) => {
-        /* TODO: Check this */
+        const input = e.target as HTMLInputElement;
+        const eyeOpen = input.closest("input-group")!
+            .querySelector('[name="eye-open"]') as HTMLElement;
+        const eyeClosed = input.closest("input-group")!
+            .querySelector('[name="eye-closed"]') as HTMLElement;
+        if (input.getAttribute("type") == "text") {
+            input.setAttribute("type", "password");
+            eyeOpen.classList.remove("hidden");
+            eyeClosed.classList.add("hidden");
+        } else {
+            input.setAttribute("type", "text");
+            eyeOpen.classList.add("hidden");
+            eyeClosed.classList.remove("hidden");
+        }
     }
 </script>
 
-<Input.WithButton
-    {...attributes}
-    type="password"
-    onclick={togglePassword}
-    {name}
-    {id}
-    {placeholder}
-    {autocomplete}
-    {required}
->
-    <Icon name="eye-icon" class="open" />
-    <Icon name="eye-closed" class="closed" />
-</Input.WithButton>
+<Input.Group>
+    <Icon name="search" />
+    <Input.Basic
+        {...attributes}
+        type="password"
+        onclick={togglePassword}
+        {name}
+        {id}
+        {placeholder}
+        {autocomplete}
+        {required}
+    />
+    <Icon name="eye-open" />
+    <Icon name="eye-closed" class="hidden" />
+</Input.Group>
