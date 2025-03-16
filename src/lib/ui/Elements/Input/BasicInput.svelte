@@ -2,10 +2,12 @@
     import { combine } from "$lib/utils";
 
     interface Props {
+        group?: unknown;
         [attribute: string]: unknown;
     }
 
     let {
+        group = $bindable(undefined),
         ...attributes
     }: Props  = $props();
 
@@ -17,6 +19,7 @@
 
 <input
     class={combine("input", additionalClass)}
+    bind:group={group}
     {...restAttributes}
 />
 
