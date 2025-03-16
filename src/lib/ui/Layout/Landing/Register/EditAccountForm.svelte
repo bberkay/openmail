@@ -2,7 +2,8 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import { type Account } from "$lib/types";
-    import { Form, FormGroup } from "$lib/ui/Elements/Form";
+    import Form from "$lib/ui/Elements/Form";
+    import { FormGroup } from "$lib/ui/Elements/Form";
     import * as Input from "$lib/ui/Elements/Input";
     import * as Button from "$lib/ui/Elements/Button";
     import Label from "$lib/ui/Elements/Label";
