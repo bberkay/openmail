@@ -182,58 +182,6 @@ pre {
     }
 }
 
-/* Landing */
-.landing-container {
-    width: 100%;
-    max-width: var(--container-sm);
-
-    & .landing-header {
-        text-align: center;
-
-        .landing-title {
-            margin-bottom: var(--spacing-xs);
-            font-size: var(--font-size-2xl);
-            font-weight: var(--font-weight-bold);
-            text-align: center;
-            color: var(--color-text-primary);
-        }
-
-        .landing-subtitle {
-            margin-bottom: var(--spacing-xl);
-            font-size: var(--font-size-sm);
-            text-align: center;
-            color: var(--color-text-secondary);
-        }
-    }
-
-    & .landing-body {
-        & table {
-            & .remove-selected-button {
-                visibility: hidden;
-                opacity: 0;
-                transition: opacity var(--transition-fast) var(--ease-default);
-
-                & svg {
-                    fill: var(--color-danger);
-                }
-
-                &.visible {
-                    visibility: visible;
-                    opacity: 1;
-                }
-            }
-        }
-    }
-
-    & .landing-footer {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-lg);
-        text-align: center;
-        margin-top: var(--spacing-lg);
-    }
-}
-
 /* Compose */
 .compose-container {
     width: var(--container-md);

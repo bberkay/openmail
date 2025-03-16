@@ -25,8 +25,8 @@
 
 <section class="landing-container" bind:this={componentContainer}>
     <div class="landing-header">
-        <h1 class="title">Openmail</h1>
-        <p class="subtitle">Secure and Fast Email Communication</p>
+        <h1 class="landing-title">Openmail</h1>
+        <p class="landing-subtitle">Secure and Fast Email Communication</p>
     </div>
     <div class="landing-body">
         {#if !isMounted}
@@ -37,14 +37,34 @@
 
 <style>
     .landing-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
         width: 100%;
-        max-width: 37px;
+        max-width: var(--container-sm);
 
         & .landing-header {
             text-align: center;
+
+            .landing-title {
+                margin-bottom: var(--spacing-xs);
+                font-size: var(--font-size-2xl);
+                font-weight: var(--font-weight-bold);
+                text-align: center;
+                color: var(--color-text-primary);
+            }
+
+            .landing-subtitle {
+                margin-bottom: var(--spacing-xl);
+                font-size: var(--font-size-sm);
+                text-align: center;
+                color: var(--color-text-secondary);
+            }
+        }
+
+        & .landing-footer {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+            text-align: center;
+            margin-top: var(--spacing-lg);
         }
     }
 </style>

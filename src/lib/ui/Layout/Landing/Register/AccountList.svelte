@@ -9,6 +9,9 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, type Account, type Email, type OpenMailTaskResults } from "$lib/types";
     import * as Button from "$lib/ui/Elements/Button";
+    import * as Input from "$lib/ui/Elements/Input";
+    import * as Table from "$lib/ui/Elements/Table";
+    import { show as showAlert } from "$lib/ui/Elements/Alert";
 
     const accountController = new AccountController();
     const mailboxController = new MailboxController();
@@ -120,29 +123,39 @@
             }
         }
     }
+
+    $effect(() => {
+        if (SharedStore.failedAccounts.length > 0) {
+            showAlert(
+                "alert-container",
+                `There were ${SharedStore.failedAccounts.length} accounts that failed to
+                connect.`,
+                "error"
+            );
+        }
+    });
 </script>
 
 <div>
-    {#if SharedStore.failedAccounts.length > 0}
-        <div class="alert error" style="margin-bottom:15px;">
-            <span>
-                ⚠ There were {SharedStore.failedAccounts.length} accounts that failed to
-                connect.
-            </span>
-        </div>
-    {/if}
-
+    <div class="alert-container" style="margin-bottom:15px;"></div>
     {#if
         (SharedStore.accounts && SharedStore.accounts.length > 0)
         || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)
     }
         {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
-        <table>
-            <thead>
-                <tr>
-                    <th><input type="checkbox" onclick={selectAllAccounts}></th>
-                    <th>Account{accountSelection.length > 0 ? ` (${accountSelection.length} selected)` : ""}</th>
-                    <th colspan="2">
+        <Table.Root>
+            <Table.Header>
+                <Table.Row>
+                    <Table.Head>
+                        <Input.Basic
+                            type="checkbox"
+                            onclick={selectAllAccounts}
+                        />
+                    </Table.Head>
+                    <Table.Head>
+                        Account{accountSelection.length > 0 ? ` (${accountSelection.length} selected)` : ""}
+                    </Table.Head>
+                    <Table.Head colspan="2">
                         {#if accountSelection.length > 0}
                             <Button.Action
                                 class="inline"
@@ -155,33 +168,36 @@
                                 class="inline"
                                 style="visibility: hidden;"
                                 onclick={() => {}}
-                            >
-                                invisible
-                            </Button.Action>
+                            >hidden</Button.Action>
                         {/if}
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
+                    </Table.Head>
+                </Table.Row>
+            </Table.Header>
+            <Table.Body>
                 {#each SharedStore.failedAccounts.concat(SharedStore.accounts) as account, index}
-                <tr class={index < failedAccountLength ? "failed" : ""}>
-                    <td><input type="checkbox" bind:group={accountSelection} value={account.email_address}></td>
-                    <td>
+                <Table.Row class={index < failedAccountLength ? "failed" : ""}>
+                    <Table.Cell>
+                        <Input.Basic
+                            type="checkbox"
+                            bind:group={accountSelection}
+                            value={account.email_address}
+                        />
+                    </Table.Cell>
+                    <Table.Cell>
                         {index < failedAccountLength ? "Warning" : ""}
                         {account.fullname} &lt;{account.email_address}&gt;
-                    </td>
-                    <td>
-                        <button
+                    </Table.Cell>
+                    <Table.Cell>
+                        <Button.Basic
+                            type="button"
                             class="inline"
                             style="margin-right: 5px;"
-                            onclick={() => {
-                                isEditingAccount = account;
-                            }}
+                            onclick={() => { isEditingAccount = account; }}
                         >
                             Edit
-                        </button>
-                    </td>
-                    <td>
+                        </Button.Basic>
+                    </Table.Cell>
+                    <Table.Cell>
                         <Button.Action
                             class="inline"
                             onclick={removeAccount}
@@ -189,27 +205,27 @@
                         >
                             Remove
                         </Button.Action>
-                    </td>
-                </tr>
+                    </Table.Cell>
+                </Table.Row>
                 {/each}
-            </tbody>
-        </table>
+            </Table.Body>
+        </Table.Root>
 
         {#if failedAccountLength === 0}
-            <Button.Action onclick={initMailboxes} disabled={!SharedStore.accounts || SharedStore.accounts.length == 0}>
+            <Button.Action
+                onclick={initMailboxes}
+                disabled={!SharedStore.accounts || SharedStore.accounts.length == 0}
+            >
                 Continue to mailbox.
             </Button.Action>
         {/if}
 
-        <div class="add-account-navigation">
-            <button onclick={() => { isListingAccount = false; }}>I want to add another account.</button>
-        </div>
+        <Button.Basic
+            type="button"
+            class="inline"
+            onclick={() => { isListingAccount = false; }}
+        >
+            I want to add another account.
+        </Button.Basic>
     {/if}
 </div>
-
-<style>
-    .add-account-navigation {
-        text-align: center;
-        margin-top: 20px;
-    }
-</style>
