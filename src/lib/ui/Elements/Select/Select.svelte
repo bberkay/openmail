@@ -158,13 +158,16 @@
     <div class="options-container {isOpen ? "open" : ""}">
         {#if enableSearch}
             <div class="search-box">
-                <Input.Basic
-                    type="text"
-                    class="search-input"
-                    placeholder="Search"
-                    onclick={(e: Event) => { e.stopPropagation() }}
-                    oninput={handleSearch}
-                />
+                <Input.Group>
+                    <Icon name="search" />
+                    <Input.Basic
+                        type="text"
+                        class="search-input"
+                        placeholder="Search"
+                        onclick={(e: Event) => { e.stopPropagation() }}
+                        oninput={handleSearch}
+                    />
+                </Input.Group>
             </div>
         {/if}
         <div
