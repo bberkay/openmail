@@ -136,17 +136,6 @@
     });
 </script>
 
-<!--
-TODO: Burada patladık çünkü eski tabloya göre yaptık
-halbuki yeni list.html a göre yapmak lazımdı özellikle
-checkbox-cell gibi css ler falan  yok, o yüzden sen
-bunu bir daha list.html a yaparak yap. Ayrıca
-hem buradaki style.css .landing-container a
-hem de list.html da kullanılan css de ki .landing-container
-a dikkat et.
-
-Bir de landing footer muhabbeti var o ne olacak?
--->
 <div>
     <div class="alert-container" style="margin-bottom:15px;"></div>
     {#if
