@@ -3,7 +3,7 @@
     import { combine } from "$lib/utils";
 
     interface Props {
-        children: Snippet
+        children: Snippet;
         [attribute: string]: unknown;
     }
 
@@ -34,6 +34,9 @@
             cursor: pointer;
             transition: all var(--transition-fast) var(--ease-default);
             font-size: var(--font-size-sm);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
 
             &:hover {
                 opacity: 0.9;
