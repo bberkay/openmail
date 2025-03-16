@@ -1,7 +1,9 @@
 <script lang="ts">
     import { AccountController } from "$lib/controllers/AccountController";
-    import Form from "$lib/ui/Elements/Form";
+    import { Form, FormGroup } from "$lib/ui/Elements/Form";
     import * as Input from "$lib/ui/Elements/Input";
+    import * as Button from "$lib/ui/Elements/Button";
+    import Label from "$lib/ui/Elements/Label";
 
     const accountController = new AccountController();
 
@@ -28,23 +30,47 @@
 
 <Form onsubmit={addAccount}>
     <div>
-        <div class="form-group">
-            <label for="email_address" class="form-label">Email Address</label>
-            <!-- svelte-ignore a11y_autofocus -->
-            <input type="email" name="email_address" id="email_address" placeholder="alexdoe@domain.com" class="form-input" autofocus autocomplete="off" required>
-        </div>
-        <div class="form-group">
-            <label for="password" class="form-label">Password</label>
+        <FormGroup>
+            <Label for="email_address">Email Address</Label>
+            <Input.Basic
+                type="email"
+                name="email_address"
+                id="email_address"
+                placeholder="alexdoe@gmail.com"
+                autocomplete="off"
+                autofocus
+                required
+            />
+        </FormGroup>
+        <FormGroup>
+            <Label for="password">Password</Label>
             <Input.Password/>
-        </div>
-        <div class="form-group">
-            <label for="fullname" class="form-label">Full Name (Optional)</label>
-            <input type="text" name="fullname" id="fullname" placeholder="Alex Doe" class="form-input">
-            <p class="hint">Example: Alex Doe &lt;alex.doe@openmail.com&gt;</p>
-        </div>
-        <button type="submit" id="add-account-btn">Connect to account.</button>
+        </FormGroup>
+        <FormGroup>
+            <Label for="fullname">Full Name (Optional)</Label>
+            <Input.Basic
+                type="text"
+                name="fullname"
+                id="fullname"
+                placeholder="Alex Doe"
+            />
+            <span class="muted">Example: Alex Doe &lt;alex.doe@openmail.com&gt;</span>
+        </FormGroup>
+        <Button.Action
+            type="submit"
+            id="add-account-btn"
+            onclick={async (e): Promise<void> => { addAccount(e) }}
+        >
+            Connect to accounts.
+        </Button.Action>
         <div class="list-accounts-navigation">
-            <button onclick={() => { isListingAccount = true; }}>Which accounts have I added?</button>
+            <Button.Basic
+                type="button"
+                class="inline"
+                onclick={() => { isListingAccount = true; }}
+            >
+                Which accounts have I added?
+            </Button.Basic>
         </div>
     </div>
 </Form>
