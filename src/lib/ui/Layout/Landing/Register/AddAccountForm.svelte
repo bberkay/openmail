@@ -53,31 +53,22 @@
                 name="fullname"
                 id="fullname"
                 placeholder="Alex Doe"
+                autocomplete="off"
             />
             <span class="muted">Example: Alex Doe &lt;alex.doe@openmail.com&gt;</span>
         </FormGroup>
         <Button.Action
             type="submit"
-            id="add-account-btn"
             onclick={async (e): Promise<void> => { addAccount(e) }}
         >
-            Connect to accounts.
+            Connect to account.
         </Button.Action>
-        <div class="list-accounts-navigation">
-            <Button.Basic
-                type="button"
-                class="inline"
-                onclick={() => { isListingAccount = true; }}
-            >
-                Which accounts have I added?
-            </Button.Basic>
-        </div>
+        <Button.Basic
+            type="button"
+            class="inline"
+            onclick={() => { isListingAccount = true; }}
+        >
+            Which accounts have I added?
+        </Button.Basic>
     </div>
 </Form>
-
-<style>
-    .list-accounts-navigation {
-        text-align: center;
-        margin-top: 20px;
-    }
-</style>
