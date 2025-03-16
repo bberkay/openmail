@@ -45,8 +45,8 @@
             padding: 0;
             appearance: none;
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
+            width: var(--font-size-md);
+            height: var(--font-size-md);
             border-radius: var(--radius-sm);
             background-color: transparent;
             border: 1px solid var(--color-border);
@@ -59,12 +59,12 @@
                 &::after {
                     content: "";
                     position: absolute;
-                    top: 2px;
-                    left: 5px;
-                    width: 3px;
-                    height: 8px;
+                    top: calc(var(--font-size-md) / 8);
+                    left: calc(var(--font-size-md) / 3);
+                    width: calc(var(--font-size-md) / 5);
+                    height: calc(var(--font-size-md) / 2);
                     border: solid var(--color-bg-primary);
-                    border-width: 0 2px 2px 0;
+                    border-width: 0 calc(var(--font-size-md) / 8) calc(var(--font-size-md) / 8) 0;
                     transform: rotate(45deg);
                 }
             }
