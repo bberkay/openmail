@@ -7,7 +7,6 @@
         content: string;
         lefticon?: Icon;
         righticon?: Icon;
-        removeable?: boolean;
         [attribute: string]: unknown;
     }
 
@@ -15,7 +14,6 @@
         content,
         lefticon,
         righticon,
-        removeable,
         ...attributes
     }: Props  = $props();
 
@@ -37,13 +35,6 @@
     </span>
     {#if righticon}
         {righticon}
-    {/if}
-    {#if removeable}
-        <Button.Basic
-            type="button"
-            class="inline"
-            onclick={close}
-        >X</Button.Basic>
     {/if}
 </div>
 
