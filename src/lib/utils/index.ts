@@ -25,17 +25,18 @@ export function generateRandomId(): string {
 }
 
 export function removeWhitespaces(text: string): string {
-    return text.replace(/\s+/g, '');
+    return text.replace(/\s+/g, "");
 }
 
 export function isObjEmpty(obj: Record<string, any>): boolean {
     return Object.values(obj).every(
-        (value) => !!value === false || (Array.isArray(value) && value.length === 0)
+        (value) =>
+            !!value === false || (Array.isArray(value) && value.length === 0),
     );
 }
 
 export function removeFalsyParamsAndEmptyLists(
-    params: Record<string, any>
+    params: Record<string, any>,
 ): Record<string, string> {
     return Object.fromEntries(
         Object.entries(params).filter(([_, value]) => {
@@ -43,7 +44,7 @@ export function removeFalsyParamsAndEmptyLists(
                 return value.length > 0;
             }
             return !!value;
-        })
+        }),
     );
 }
 
@@ -51,7 +52,10 @@ export function makeSizeHumanReadable(bytes: number): string {
     const sizes: Size[] = Object.values(Size);
     if (bytes === 0) return "n/a";
     const i = Math.floor(Math.log2(bytes) / 10);
-    return concatValueAndUnit(Math.round(bytes / Math.pow(2, i * 10)), sizes[i]);
+    return concatValueAndUnit(
+        Math.round(bytes / Math.pow(2, i * 10)),
+        sizes[i],
+    );
 }
 
 export function convertSizeToBytes(size: [number, Size] | string): number {
@@ -61,7 +65,8 @@ export function convertSizeToBytes(size: [number, Size] | string): number {
         [Size.MB]: 1024 ** 2,
     };
 
-    const [humanSizeValue, humanSizeType] = typeof size === "string" ? parseValueAndUnit(size) : size;
+    const [humanSizeValue, humanSizeType] =
+        typeof size === "string" ? parseValueAndUnit(size) : size;
     if (!humanSizeValue || !humanSizeType) {
         throw new Error("Invalid human-readable size format");
     }
@@ -84,30 +89,44 @@ export function concatValueAndUnit(value: number | string, unit: Size): string {
 }
 
 export function escapeHTML(str: string): string {
-    return str.replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/&/g, "&amp;")
-              .replace(/"/g, "&quot;")
-              .replace(/'/g, "&#39;");
+    return str
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
-export function adjustSizes(smaller: string | [number, Size], larger: string | [number, Size], adjustToSmaller: boolean = true): [string | [number, Size], string | [number, Size]]  {
-    let [smallerValue, smallerUnit] = typeof smaller === "string" ? parseValueAndUnit(smaller) : smaller;
-    let [largerValue, largerUnit] = typeof larger === "string" ? parseValueAndUnit(larger) : larger;
+export function adjustSizes(
+    smaller: string | [number, Size],
+    larger: string | [number, Size],
+    adjustToSmaller: boolean = true,
+): [string | [number, Size], string | [number, Size]] {
+    let [smallerValue, smallerUnit] =
+        typeof smaller === "string" ? parseValueAndUnit(smaller) : smaller;
+    let [largerValue, largerUnit] =
+        typeof larger === "string" ? parseValueAndUnit(larger) : larger;
 
-    if (convertSizeToBytes([smallerValue, smallerUnit]) <= convertSizeToBytes([largerValue, largerUnit])) {
+    if (
+        convertSizeToBytes([smallerValue, smallerUnit]) <=
+        convertSizeToBytes([largerValue, largerUnit])
+    ) {
         if (adjustToSmaller) {
             largerValue = Math.max(smallerValue - 1, 0);
-            largerUnit = smallerUnit
+            largerUnit = smallerUnit;
         } else {
             smallerValue = largerValue + 1;
-            smallerUnit = largerUnit
+            smallerUnit = largerUnit;
         }
     }
 
     return [
-        typeof smaller === "string" ? concatValueAndUnit(smallerValue, smallerUnit) : [smallerValue, smallerUnit],
-        typeof larger === "string" ? concatValueAndUnit(largerValue, largerUnit) : [largerValue, largerUnit]
+        typeof smaller === "string"
+            ? concatValueAndUnit(smallerValue, smallerUnit)
+            : [smallerValue, smallerUnit],
+        typeof larger === "string"
+            ? concatValueAndUnit(largerValue, largerUnit)
+            : [largerValue, largerUnit],
     ];
 }
 
@@ -116,12 +135,16 @@ export function capitalize(s: string): string {
 }
 
 export function isEmailValid(email: string): boolean {
-    return email.match(
-        /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/,
-    ) !== null;
+    return (
+        email.match(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/) !== null
+    );
 }
 
-export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: number): T[] {
+export function swap<T extends unknown>(
+    arr: T[],
+    fromIndex: number,
+    toIndex: number,
+): T[] {
     if (
         fromIndex < 0 ||
         fromIndex >= arr.length ||
@@ -136,8 +159,11 @@ export function swap<T extends unknown>(arr: T[], fromIndex: number, toIndex: nu
 }
 
 export function convertToIMAPDate(dateStringOrDate: string | Date): string {
-    const date = typeof dateStringOrDate === "string" ? new Date(dateStringOrDate) : dateStringOrDate;
-    return `${date.getDate()}-${date.toLocaleString('en-GB', { month: 'short' })}-${date.getFullYear()}`;
+    const date =
+        typeof dateStringOrDate === "string"
+            ? new Date(dateStringOrDate)
+            : dateStringOrDate;
+    return `${date.getDate()}-${date.toLocaleString("en-GB", { month: "short" })}-${date.getFullYear()}`;
 }
 
 export function range(start: number, stop: number, step: number): number[] {
@@ -147,9 +173,25 @@ export function range(start: number, stop: number, step: number): number[] {
     );
 }
 
-export function createSenderAddress(email_address: string, fullname: string | null = null): string {
-    if (fullname && fullname.length > 0) return `${fullname} <${email_address}>`
-    return email_address;
+export function createSenderAddress(
+    emailAddress: string,
+    fullname: string | null = null,
+): string {
+    if (fullname && fullname.length > 0) return `${fullname} <${emailAddress}>`;
+    return emailAddress;
+}
+
+export function extractEmailAddress(sender: string): string {
+    /**
+     * Extract the email address from a full name <email@address> string
+     */
+    return (
+        sender.includes("<")
+            ? sender.split("<")[1].replace(">", "")
+            : sender.includes("@")
+              ? sender
+              : ""
+    ).trim();
 }
 
 export function getMonths(): string[] {
