@@ -6,22 +6,22 @@ export type AlertType = "error" | "warning " | "info" | "success";
 
 let mountedAlerts: Record<string, Record<string, any>> = {};
 export function show(
-    targetIdOrElement: string | HTMLElement,
-    content: string,
-    type: AlertType,
-    closeable?: boolean,
+    target: string | HTMLElement,
+    props: {
+        content: string,
+        type: AlertType,
+        closeable?: boolean,
+    }
 ) {
     const alertId = generateRandomId();
     const mountedAlert = mount(Alert, {
         target:
-            typeof targetIdOrElement === "string"
-                ? document.getElementById(targetIdOrElement)!
-                : targetIdOrElement,
+            typeof target === "string"
+                ? document.getElementById(target)!
+                : target,
         props: {
             id: alertId,
-            content,
-            type,
-            closeable,
+            ...props
         },
     });
     mountedAlerts[alertId] = mountedAlert;

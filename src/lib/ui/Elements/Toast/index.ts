@@ -4,20 +4,18 @@ import { generateRandomId } from "$lib/utils";
 
 let mountedToasts: Record<string, Record<string, any>> = {};
 
-export function show(
+export function show(props: {
     content: string,
     autoCloseDelay?: number,
     onUndo?: (e: Event) => void,
-) {
+}) {
     const toastId = generateRandomId();
     const mountedToast = mount(Toast, {
         target: document.getElementById("toast-container")!,
         props: {
             id: toastId,
-            content,
-            autoCloseDelay,
-            onUndo,
-        },
+            ...props,
+        }
     });
     mountedToasts[toastId] = mountedToast;
 }

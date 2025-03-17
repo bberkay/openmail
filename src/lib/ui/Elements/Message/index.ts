@@ -3,16 +3,16 @@ import { mount, unmount } from "svelte";
 
 let mountedMessage: Record<string, any> | null = null;
 
-export function show(
+export function show(props: {
     content: string,
     onOkText?: string,
     onOk?: (e: Event) => void,
-) {
+}) {
     if (mountedMessage) return;
 
     mountedMessage = mount(Message, {
         target: document.getElementById("modal-container")!,
-        props: { content, onOkText, onOk },
+        props: props,
     });
 }
 

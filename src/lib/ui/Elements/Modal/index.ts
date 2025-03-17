@@ -4,12 +4,12 @@ import type { Component } from "svelte";
 
 let mountedModal: Record<string, any> | null = null;
 
-export function show(modal: Component, modalProps?: any) {
+export function show(modal: Component, props?: any) {
     if (mountedModal) return;
 
     mountedModal = mount(modal, {
         target: document.getElementById("modal-container")!,
-        props: modalProps,
+        props: props,
     });
 }
 
