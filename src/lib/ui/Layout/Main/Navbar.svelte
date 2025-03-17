@@ -1,30 +1,9 @@
-<script module lang="ts">
-    import { display, destroy } from "../Component.svelte";
-    import { type Snippet } from "svelte";
-
-    let componentContainer: HTMLElement;
-    let isMounted = $state(false);
-    export function showThis(component: any, props?: any) {
-        isMounted = true;
-        display(component, componentContainer, props);
-    }
-
-    export function backToDefault() {
-        destroy();
-        isMounted = false;
-    }
-</script>
-
 <script lang="ts">
-    interface Props {
-        children: Snippet;
-    }
+    import Account from "$lib/ui/Layout/Main/Navbar/Account.svelte";
+    import SearchBar from "$lib/ui/Layout/Main/Navbar/SearchBar.svelte";
 
-    let { children }: Props = $props();
+    let navbar: HTMLElement;
 </script>
 
-<div bind:this={componentContainer}>
-    {#if !isMounted}
-        {@render children()}
-    {/if}
-</div>
+<nav bind:this={navbar}>
+</nav>
