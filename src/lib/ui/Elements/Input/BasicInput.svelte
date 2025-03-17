@@ -3,11 +3,13 @@
 
     interface Props {
         group?: unknown;
+        files?: FileList | null | undefined;
         [attribute: string]: unknown;
     }
 
     let {
         group = $bindable(undefined),
+        files = $bindable(undefined),
         ...attributes
     }: Props  = $props();
 
@@ -19,7 +21,8 @@
 
 <input
     class={combine("input", additionalClass)}
-    bind:group={group}
+    bind:group
+    bind:files
     {...restAttributes}
 />
 

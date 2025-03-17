@@ -1,49 +1,21 @@
 <script lang="ts">
     import { SharedStore } from '$lib/stores/shared.svelte';
+    import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from '$lib/constants';
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onMount } from 'svelte';
     import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
-    import { createDomElement, makeSizeHumanReadable, isEmailValid, createSenderAddress, escapeHTML } from '$lib/utils';
+    import { makeSizeHumanReadable, isEmailValid, createSenderAddress, extractEmailAddress, escapeHTML } from '$lib/utils';
     import * as Select from "$lib/ui/Elements/Select";
-    import Form from "$lib/ui/Elements/Form";
-    import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
+    import * as Input from "$lib/ui/Elements/Input";
+    import * as Button from "$lib/ui/Elements/Button";
+    import Label from "$lib/ui/Elements/Label";
+    import Collapse from "$lib/ui/Elements/Collapse";
+    import Form, { FormGroup } from "$lib/ui/Elements/Form";
+    import Badge from "$lib/ui/Elements/Badge";
 
     /* Constants */
 
     const mailboxController = new MailboxController();
-    const fileTemplate = `
-        <span class="tag">
-            <span class="value">{name}</span>
-            <button type="button" style="margin-left:5px;">X</button>
-        </span>
-    `;
-    const tagTemplate = `
-        <span class="tag">
-            <span class="value">{tag}</span>
-            <button type="button" style="margin-left:5px;" onclick="this.parentElement.remove()">X</button>
-        </span>
-    `;
-    const replyTemplate = `
-        <br/><br/>
-        <div>
-            On {original_date}, {original_sender} wrote:<br/>
-            <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
-                {original_body}
-            </blockquote>
-        </div>
-    `;
-    const forwardTemplate = `
-        <div>
-            ---------- Forwarded message ----------<br/>
-            From: {original_sender}<br/>
-            Date: {original_date}<br/>
-            Subject: {original_subject}<br/>
-            To: {original_receiver}<br/>
-            <blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">
-                {original_body}
-            </blockquote>
-        </div>
-    `;
 
     /* Variables */
 
@@ -66,96 +38,72 @@
         original_body,
         original_date,
     }: Props = $props();
-    let sender: string = $state(createSenderAddress(
-        SharedStore.accounts[0].email_address,
-        SharedStore.accounts[0].fullname
-    ));
+
     let body: WYSIWYGEditor;
-    let attachments: File[] | null = null;
-    let subjectInput: HTMLInputElement;
-    let composeSenderList: HTMLElement;
+    let senders: string[] = $state([]);
+    let receivers: string[] = $state([]);
+    let cc: string[] = $state([]);
+    let bcc: string[] = $state([]);
+    let attachments: FileList | undefined = $state();
+
     onMount(() => {
         body = new WYSIWYGEditor('body');
         body.init();
         if (compose_type) {
             body.addFullHTMLPage(
-                (compose_type == "reply" ? replyTemplate : forwardTemplate)
+                (compose_type == "reply" ? REPLY_TEMPLATE : FORWARD_TEMPLATE)
                     .replace("{original_sender}", escapeHTML((original_sender || "")))
                     .replace("{original_receiver}", escapeHTML((original_receiver || "")))
                     .replace("{original_subject}", original_subject || "")
                     .replace("{original_body}", original_body || "")
                     .replace("{original_date}", original_date || "")
             )
-            if (original_subject) {
-                subjectInput.value = (compose_type == "reply" ? "Re: " : "Fwd: ") + original_subject
-            }
         }
     });
 
-    /* Compose Form Handling Functions */
+    /* Form Handling Functions */
 
-    const addSender = (email_address: string | null) => {
-        if (!email_address) return;
-        composeSenderList.style.display = "flex";
-        composeSenderList.innerHTML += tagTemplate.replace("{tag}", email_address);
+    const addAddress = (address: string | null, addressList: string[]) => {
+        if (!address || address == "") return;
+        addressList.push(address);
     }
 
-    const addEnteredEmail = (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const email_address = target.value.trim();
-        const emails = target.closest(".form-group")?.querySelector(".emails") as HTMLElement;
+    const removeAddress = (address: string | null, addressList: string[]) => {
+        if (!address || address == "") return;
+        addressList = addressList.filter(addr => addr !== address);
+    }
 
-        if (!emails) return;
+    const addEnteredAddress = (e: Event, addressList: string[]) => {
+        const target = e.target as HTMLInputElement;
+        const emails = target.closest(".form-group")!.querySelector(".tags") as HTMLElement;
+        if (!emails)
+            return;
+
+        const address = target.value.trim();
+        if (address == "")
+            return;
 
         if (e instanceof KeyboardEvent && (e.key === " " || e.key === "Spacebar")) {
             e.preventDefault();
-            processEmail(target, emails, email_address);
+        } else if (!(e instanceof FocusEvent)) {
+            return;
         }
-        else if (e instanceof FocusEvent) {
-            processEmail(target, emails, email_address);
-        }
-    };
 
-    function processEmail(target: HTMLInputElement, emails: HTMLElement, email_address: string) {
-        if (email_address !== "" && isEmailValid(email_address)) {
-            emails.style.display = "flex";
-            emails.innerHTML += tagTemplate.replace("{tag}", email_address);
-            target.value = "";
-        } else if (email_address !== "") {
+        if (!isEmailValid(extractEmailAddress(address))) {
             target.style.transform = "scale(1.02)";
             setTimeout(() => {
                 target.style.transform = "scale(1)";
             }, 100);
+            return;
         }
+
+        addAddress(address, addressList);
+        target.value = "";
     };
-
-    const addFile = (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        attachments = Array.from(target.files as FileList);
-        const tags = target.parentElement!.parentElement!.querySelector('.tags')! as HTMLElement;
-        Array.from(attachments).forEach((file, index) => {
-            const name = `${file.name} (${makeSizeHumanReadable(file.size)})`;
-            const fileNode = createDomElement(fileTemplate.replace('{name}', name));
-            fileNode!.querySelector('button')!.addEventListener('click', (e: Event) => {
-                removeFile(e, index);
-            });
-            tags.appendChild(fileNode!);
-        });
-    }
-
-    const removeAllFiles = (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const fileInput = target.closest(".form-group")!.querySelector('input') as HTMLInputElement;
-        fileInput.value = '';
-        attachments = null;
-        const tags = target.closest(".form-group")!.querySelector('.tags')! as HTMLElement;
-        tags.innerHTML = '';
-    }
 
     const removeFile = (e: Event, index: number) => {
         if(!attachments)
             return;
-
         const target = e.target as HTMLButtonElement;
         const fileInput = target.closest(".form-group")!.querySelector('input') as HTMLInputElement;
         fileInput.value = '';
@@ -163,116 +111,219 @@
         target.parentElement?.remove();
     }
 
-    function getEmailAddresses(id: string): string {
-        return Array.from(
-            document.getElementById(id)!.querySelectorAll("span.value")
-        ).map(span => span.textContent).join(',');
+    const removeAllFiles = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const fileInput = target.closest(".form-group")!.querySelector('input') as HTMLInputElement;
+        fileInput.value = '';
+        attachments = new DataTransfer().files;
+        const tags = target.closest(".form-group")!.querySelector('.tags')! as HTMLElement;
+        tags.innerHTML = '';
     }
 
     /* Main Operation */
 
     const sendEmail = async (e: Event): Promise<void> => {
+        if (
+            (compose_type == "reply" || compose_type == "forward") &&
+            !original_message_id
+        ) {
+            alert("Unexpected error while replying/forwarding.")
+            console.error("`original_message_id` required when sending reply or forwarding message.");
+        }
+
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
 
-        formData.set('sender', getEmailAddresses("compose-sender-list"));
-        formData.set('body', body.getHTMLContent());
-        formData.set('receiver', getEmailAddresses("compose-receiver-list"));
-        formData.set('cc', getEmailAddresses("compose-cc-list"));
-        formData.set('bcc', getEmailAddresses("compose-bcc-list"));
+        formData.set('sender', senders.join(","));
+        formData.set('receiver', receivers.join(","));
 
-        if (!formData.get("compose-sender-list")) {
+        if (!formData.get("sender")) {
             alert("At least one sender must be added");
         }
-        if (!formData.get("compose-receiver-list")) {
+        if (!formData.get("receiver")) {
             alert("At least one receiver must be added");
         }
 
-        let response;
-        if (compose_type !== "reply" && compose_type !== "forward") {
-            response = await mailboxController.sendEmail(formData);
-        } else if (!original_message_id) {
-            alert("original_message_id required when sending reply or forwarding message.");
-        } else {
-            if (compose_type == "reply") {
-                response = await mailboxController.replyEmail(
-                    formData,
-                    original_message_id
-                );
-            } else if (compose_type == "forward") {
-                response = await mailboxController.forwardEmail(
-                    formData,
-                    original_message_id
-                );
-            }
-        }
+        formData.set('cc', cc.join(","));
+        formData.set('bcc', bcc.join(","));
+        formData.set('body', body.getHTMLContent());
 
-        alert(response!.message);
-        body.clear();
+        let response;
+        if (compose_type == "reply") {
+            response = await mailboxController.replyEmail(
+                formData,
+                original_message_id!
+            );
+        } else if (compose_type == "forward") {
+           response = await mailboxController.forwardEmail(
+               formData,
+               original_message_id!
+           );
+       } else {
+           response = await mailboxController.sendEmail(formData);
+       }
+
+       if (!response.success) {
+           alert("Unexpected error while replying/forwarding.");
+           console.error(response!.message);
+       } else {
+           // TODO: Mount sent folder
+           body.clear();
+       }
     }
 </script>
 
-<div class="header">
-    <h2>Compose</h2>
-    <button onclick={backToDefault}>X</button>
+<div class="compose">
+    <Form onsubmit={sendEmail}>
+        <div>
+            <FormGroup>
+                <Label for="senders">Sender(s)</Label>
+                <Select.Root onchange={(addr) => addAddress(addr, senders)} placeholder="Add sender">
+                    {#each SharedStore.accounts as account}
+                        {@const sender = createSenderAddress(account.email_address, account.fullname)}
+                        <Select.Option value={sender}>
+                            {sender}
+                        </Select.Option>
+                    {/each}
+                </Select.Root>
+                <div class="tags">
+                    {#each senders as sender}
+                        <Badge
+                            content={sender}
+                            onclick={() => removeAddress(sender, senders)}
+                        />
+                    {/each}
+                </div>
+            </FormGroup>
+            <FormGroup>
+                <Label for="receiver">Receiver(s)</Label>
+                <Input.Basic
+                    type="email"
+                    name="receiver"
+                    id="receiver"
+                    placeholder="someone@domain.xyz"
+                    onkeyup={(e: Event) => addEnteredAddress(e, receivers)}
+                    onblur={(e: Event) => addEnteredAddress(e, receivers)}
+                />
+                <div class="tags">
+                    {#each receivers as receiver}
+                        <Badge
+                            content={receiver}
+                            onclick={() => removeAddress(receiver, receivers)}
+                        />
+                    {/each}
+                </div>
+            </FormGroup>
+            <FormGroup>
+                <Label for="subject">Subject</Label>
+                <Input.Basic
+                    type="text"
+                    name="subject"
+                    id="subject"
+                    placeholder="Subject"
+                    value={
+                        compose_type && original_subject
+                            ? (compose_type == "reply" ? "Re: " : "Fwd: ") + original_subject
+                            : ""
+                    }
+                    required
+                />
+            </FormGroup>
+            <FormGroup>
+                <Collapse title="Cc">
+                    <Label for="cc">Cc</Label>
+                    <Input.Basic
+                        type="email"
+                        name="cc"
+                        id="cc"
+                        placeholder="someone@domain.xyz"
+                        onkeyup={addEnteredAddress}
+                        onblur={addEnteredAddress}
+                    />
+                </Collapse>
+                <div class="tags">
+                    {#each cc as ccAddr}
+                        <Badge
+                            content={ccAddr}
+                            onclick={() => removeAddress(ccAddr, cc)}
+                        />
+                    {/each}
+                </div>
+            </FormGroup>
+            <FormGroup>
+                <Collapse title="Bcc">
+                    <Label for="bcc">Bcc</Label>
+                    <Input.Basic
+                        type="email"
+                        name="bcc"
+                        id="bcc"
+                        placeholder="someone@domain.xyz"
+                        onkeyup={addEnteredAddress}
+                        onblur={addEnteredAddress}
+                        />
+                </Collapse>
+                <div class="tags">
+                    {#each bcc as bccAddr}
+                        <Badge
+                            content={bccAddr}
+                            onclick={() => removeAddress(bccAddr, bcc)}
+                        />
+                    {/each}
+                </div>
+            </FormGroup>
+            <FormGroup>
+                <Label for="body">Body</Label>
+                <div id="body"></div>
+            </FormGroup>
+            <FormGroup>
+                <Label for="attachments">Attachment(s)</Label>
+                <Input.Group>
+                    <Input.Basic
+                        type="file"
+                        name="attachments"
+                        id="attachments"
+                        bind:files={attachments}
+                        multiple
+                    />
+                    <Button.Basic
+                        type="button"
+                        onclick={removeAllFiles}
+                    >
+                        Remove All
+                    </Button.Basic>
+                </Input.Group>
+                <div class="tags">
+                    {#each Array.from(attachments) as attachment, index}
+                        <Badge
+                            content={`${attachment.name} (${makeSizeHumanReadable(attachment.size)})`}
+                            onclick={(e: Event) => removeFile(e, index)}
+                        />
+                    {/each}
+                </div>
+            </FormGroup>
+            <Button.Basic
+                type="submit"
+                id="send-email"
+                style="margin-top:10px"
+                onclick={() => {}}
+            >
+                Send Email
+            </Button.Basic>
+        </div>
+    </Form>
 </div>
 
-<Form onsubmit={sendEmail}>
-    <div>
-        <div class="form-group">
-            <label for="sender">Sender</label>
-            <Select.Menu onchange={addSender} placeholder="Add sender">
-                {#each SharedStore.accounts as account}
-                    <Select.Option value={account.email_address}>
-                        {account.fullname} &lt;{account.email_address}&gt;
-                    </Select.Option>
-                {/each}
-            </Select.Menu>
-             <div class="tags emails" id = "compose-sender-list" bind:this={composeSenderList}></div>
-        </div>
-        <div class="form-group">
-            <label for="receiver">Receiver(s)</label>
-            <input type="email" name="receiver" id="receiver" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail} onblur={addEnteredEmail}>
-            <div class="tags emails" id = "compose-receiver-list"></div>
-        </div>
-        <div class="form-group">
-            <label for="subject">Subject</label>
-            <input type="text" name="subject" id="subject" placeholder="Subject" bind:this={subjectInput} required>
-        </div>
-        <div class="form-group">
-            <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail} onblur={addEnteredEmail}>
-            <div class="tags emails" id = "compose-cc-list"></div>
-        </div>
-        <div class="form-group">
-            <label for="bcc">Bcc</label>
-            <input type="email" name="bcc" id="bcc" placeholder="someone@domain.xyz" onkeyup={addEnteredEmail} onblur={addEnteredEmail}>
-            <div class="tags emails" id = "compose-bcc-list"></div>
-        </div>
-        <div class="form-group">
-            <label for="body">Body</label>
-            <div id="body"></div>
-        </div>
-        <div class="form-group">
-            <label for="attachments">Attachment(s)</label>
-            <div class="input-group">
-                <input type="file" name="attachments" id="attachments" onchange={addFile} multiple>
-                <button type="button" onclick={removeAllFiles}>Remove All</button>
-            </div>
-            <div class="tags"></div>
-        </div>
-        <button type="submit" id="send-email" style="margin-top:10px;">Send</button>
-    </div>
-</Form>
-
 <style>
-    .header{
+    .compose {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
+        flex-direction: column;
+        padding: var(--spacing-lg);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-sm);
 
-    .header :first-child{
-        flex-grow:1;
+        & .tags {
+            margin-top: var(--spacing-2xs);
+            font-size: var(--font-size-sm);
+        }
     }
 </style>
