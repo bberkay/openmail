@@ -1,14 +1,22 @@
 <script lang="ts">
     import { combine } from "$lib/utils";
-    import { type Snippet } from "svelte";
+    import Icon from "$lib/ui/Elements/Icon";
+    import { close } from "./index";
+    import * as Button from "$lib/ui/Elements/Button";
 
     interface Props {
-        children: Snippet
+        content: string;
+        lefticon?: Icon;
+        righticon?: Icon;
+        closeable?: boolean;
         [attribute: string]: unknown;
     }
 
     let {
-        children,
+        content,
+        lefticon,
+        righticon,
+        closeable,
         ...attributes
     }: Props  = $props();
 
@@ -18,16 +26,35 @@
     } = attributes;
 </script>
 
-<span
+<div
     class={combine("badge", additionalClass)}
     {...restAttributes}
 >
-    {@render children()}
-</span>
+    {#if lefticon}
+        {lefticon}
+    {/if}
+    <span>
+        {@html content}
+    </span>
+    {#if righticon}
+        {righticon}
+    {/if}
+    {#if closeable}
+        <Button.Basic
+            type="button"
+            class="inline"
+            onclick={close}
+        >X</Button.Basic>
+    {/if}
+</div>
 
 <style>
     :global {
         .badge {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
             padding: var(--spacing-xs);
             padding-top: calc(var(--spacing-2xs) / 2);
             padding-bottom: var(--spacing-2xs);
