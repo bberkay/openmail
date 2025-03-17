@@ -11,7 +11,7 @@ export function show(
         content: string,
         lefticon?: Icon,
         righticon?: Icon,
-        closeable?: boolean,
+        removeable?: boolean,
         [attribute: string]: unknown
     }
 ) {
