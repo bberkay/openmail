@@ -22,7 +22,7 @@
 
 <div
     class={combine(
-        `form-group-${direction}`,
+        `form-group form-group-${direction}`,
         additionalClass
     )}
     {...restAttributes}
@@ -32,20 +32,22 @@
 
 <style>
     :global {
-        .form-group-vertical {
+        .form-group {
             display: flex;
-            flex-direction: column;
-            text-align: left;
-            margin-bottom: var(--spacing-xs);
-        }
 
-        .form-group-horizontal {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-lg);
+            &.form-group-vertical {
+                flex-direction: column;
+                text-align: left;
+                margin-bottom: var(--spacing-xs);
+            }
 
-            & input[type="checkbox"] + label {
-                margin-top: 7px;
+            &.form-group-horizontal {
+                align-items: center;
+                gap: var(--spacing-lg);
+
+                & input[type="checkbox"] + label {
+                    margin-top: 7px;
+                }
             }
         }
     }
