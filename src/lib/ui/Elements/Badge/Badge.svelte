@@ -1,7 +1,6 @@
 <script lang="ts">
     import { combine } from "$lib/utils";
     import Icon from "$lib/ui/Elements/Icon";
-    import { close } from "./index";
     import * as Button from "$lib/ui/Elements/Button";
 
     interface Props {
