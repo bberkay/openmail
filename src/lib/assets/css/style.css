@@ -141,13 +141,6 @@ pre {
     box-sizing: border-box;
 }
 
-.tags {
-    /* TODO: Bu mevcut search-menu-contaier
-    içine vs. eklenecek. */
-    margin-top: var(--spacing-2xs);
-    font-size: var(--font-size-sm);
-}
-
 /* Search */
 .search-menu-container {
     & .search-button {
@@ -182,11 +175,7 @@ pre {
     }
 }
 
-/* Compose */
-.compose-container {
-    width: var(--container-md);
-    height: 100%;
-}
+/* INBOX BELOW */
 
 /* Navbar */
 nav {
