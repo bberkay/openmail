@@ -23,8 +23,25 @@
     let { children }: Props = $props();
 </script>
 
-<div bind:this={componentContainer}>
+<div class="content" bind:this={componentContainer}>
     {#if !isMounted}
         {@render children()}
     {/if}
 </div>
+
+<style>
+    :global {
+        .content {
+            width: 80%;
+            margin-top: var(--spacing-xl);
+
+            &:has(.compose) {
+                width: 50%;
+            }
+
+            &:has(.email) {
+                width: 70%;
+            }
+        }
+    }
+</style>
