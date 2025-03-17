@@ -8,7 +8,7 @@
         content: string;
         lefticon?: Icon;
         righticon?: Icon;
-        closeable?: boolean;
+        removeable?: boolean;
         [attribute: string]: unknown;
     }
 
@@ -16,7 +16,7 @@
         content,
         lefticon,
         righticon,
-        closeable,
+        removeable,
         ...attributes
     }: Props  = $props();
 
@@ -39,7 +39,7 @@
     {#if righticon}
         {righticon}
     {/if}
-    {#if closeable}
+    {#if removeable}
         <Button.Basic
             type="button"
             class="inline"
