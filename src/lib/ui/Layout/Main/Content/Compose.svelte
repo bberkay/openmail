@@ -4,7 +4,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onMount } from 'svelte';
     import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
-    import { makeSizeHumanReadable, isEmailValid, createSenderAddress, extractEmailAddress, escapeHTML } from '$lib/utils';
+    import { isEmailValid, createSenderAddress, extractEmailAddress, escapeHTML, pulseTarget } from '$lib/utils';
     import * as Select from "$lib/ui/Elements/Select";
     import * as Input from "$lib/ui/Elements/Input";
     import * as Button from "$lib/ui/Elements/Button";
@@ -44,7 +44,6 @@
     let receivers: string[] = $state([]);
     let cc: string[] = $state([]);
     let bcc: string[] = $state([]);
-    let attachments: FileList | undefined = $state();
 
     onMount(() => {
         body = new WYSIWYGEditor('body');
@@ -90,35 +89,13 @@
         }
 
         if (!isEmailValid(extractEmailAddress(address))) {
-            target.style.transform = "scale(1.02)";
-            setTimeout(() => {
-                target.style.transform = "scale(1)";
-            }, 100);
+            pulseTarget(target);
             return;
         }
 
         addAddress(address, addressList);
         target.value = "";
     };
-
-    const removeFile = (e: Event, index: number) => {
-        if(!attachments)
-            return;
-        const target = e.target as HTMLButtonElement;
-        const fileInput = target.closest(".form-group")!.querySelector('input') as HTMLInputElement;
-        fileInput.value = '';
-        attachments.splice(index, 1);
-        target.parentElement?.remove();
-    }
-
-    const removeAllFiles = (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const fileInput = target.closest(".form-group")!.querySelector('input') as HTMLInputElement;
-        fileInput.value = '';
-        attachments = new DataTransfer().files;
-        const tags = target.closest(".form-group")!.querySelector('.tags')! as HTMLElement;
-        tags.innerHTML = '';
-    }
 
     /* Main Operation */
 
@@ -277,29 +254,11 @@
             </FormGroup>
             <FormGroup>
                 <Label for="attachments">Attachment(s)</Label>
-                <Input.Group>
-                    <Input.Basic
-                        type="file"
-                        name="attachments"
-                        id="attachments"
-                        bind:files={attachments}
-                        multiple
-                    />
-                    <Button.Basic
-                        type="button"
-                        onclick={removeAllFiles}
-                    >
-                        Remove All
-                    </Button.Basic>
-                </Input.Group>
-                <div class="tags">
-                    {#each Array.from(attachments) as attachment, index}
-                        <Badge
-                            content={`${attachment.name} (${makeSizeHumanReadable(attachment.size)})`}
-                            onclick={(e: Event) => removeFile(e, index)}
-                        />
-                    {/each}
-                </div>
+                <Input.File
+                    name="attachments"
+                    id="attachments"
+                    multiple
+                />
             </FormGroup>
             <Button.Basic
                 type="submit"
