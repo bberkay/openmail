@@ -206,9 +206,27 @@ class SMTPManager(smtplib.SMTP):
                 - A string containing a success message or an error message.
         """
         try:
-            receivers = ", ".join(extract_email_addresses(([email.receivers] if isinstance(email.receivers, str) else email.receivers) or []))
-            cc = ", ".join(extract_email_addresses(([email.cc] if isinstance(email.cc, str) else email.cc) or []))
-            bcc = ", ".join(extract_email_addresses(([email.bcc] if isinstance(email.bcc, str) else email.bcc) or []))
+            all_emails = []
+            receivers = set([email.receivers] if isinstance(email.receivers, str) else email.receivers)
+            receivers = extract_email_addresses(receivers or [])
+            all_emails.extend(receivers)
+            receivers = ", ".join(receivers)
+
+            cc = None
+            if email.cc:
+                cc = set([email.cc] if isinstance(email.cc, str) else email.cc)
+                cc = extract_email_addresses(cc or [])
+                cc = [address for address in cc if address not in all_emails]
+                all_emails.extend(cc)
+                cc = ", ".join(cc)
+
+            bcc = None
+            if email.bcc:
+                bcc = set([email.bcc] if isinstance(email.bcc, str) else email.bcc)
+                bcc = extract_email_addresses(bcc or [])
+                bcc = [address for address in bcc if address not in all_emails]
+                del all_emails
+                bcc = ", ".join(bcc)
         except Exception as e:
             raise SMTPManagerException(f"Error while getting email recipients: {str(e)}") from None
 

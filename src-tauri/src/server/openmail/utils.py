@@ -6,6 +6,7 @@ including domain extraction, date conversion, and other utility tasks.
 """
 
 from datetime import datetime
+from typing import Iterable
 
 def extract_username(email: str) -> str:
     """Extract the user name from an email address."""
@@ -23,7 +24,7 @@ def extract_email_address(sender: str) -> str:
     """Extract the email address from a full name <email@address> string"""
     return (sender.split("<")[1].replace(">", "") if "<" in sender else sender if "@" in sender else "").strip()
 
-def extract_email_addresses(senders: list[str]) -> list[str]:
+def extract_email_addresses(senders: Iterable[str]) -> list[str]:
     """Extract and remove nullish email addressses from senders."""
     return list(filter(lambda x: bool(x) is not None, map(extract_email_address, senders)))
 
