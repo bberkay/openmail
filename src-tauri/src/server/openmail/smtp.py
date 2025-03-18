@@ -206,7 +206,7 @@ class SMTPManager(smtplib.SMTP):
                 - A string containing a success message or an error message.
         """
         try:
-            receiver = ", ".join(extract_email_addresses(([email.receiver] if isinstance(email.receiver, str) else email.receiver) or []))
+            receivers = ", ".join(extract_email_addresses(([email.receivers] if isinstance(email.receivers, str) else email.receivers) or []))
             cc = ", ".join(extract_email_addresses(([email.cc] if isinstance(email.cc, str) else email.cc) or []))
             bcc = ", ".join(extract_email_addresses(([email.bcc] if isinstance(email.bcc, str) else email.bcc) or []))
         except Exception as e:
@@ -220,7 +220,7 @@ class SMTPManager(smtplib.SMTP):
                 username=extract_username(sender),
                 domain=extract_domain(sender, True)
             )
-            msg['To'] = receiver
+            msg['To'] = receivers
             msg['Subject'] = email.subject
             if cc: msg['Cc'] = cc
             if bcc: msg['Bcc'] = bcc
@@ -398,7 +398,7 @@ class SMTPManager(smtplib.SMTP):
         email: Draft,
         original_message_id: str,
         original_sender: tuple[str, str] | str = "",
-        original_receiver: str = "", # mail addresses separated by comma
+        original_receivers: str = "", # mail addresses separated by comma
         original_subject: str = "",
         original_body: str = "",
         original_date: str = "",
@@ -412,7 +412,7 @@ class SMTPManager(smtplib.SMTP):
             email (Draft): The email to be forwarded.
             original_message_id (str): The Message-ID of the email being forwarded.
             original_sender (tuple[str, str] | str, optional): The sender of the original email.
-            original_receiver (str, optional): The receiver email addresses of the original
+            original_receivers (str, optional): The receivers email addresses of the original
             email (separated by comma).
             original_subject (str, optional): The subject of the original email.
             original_body (str, optional): The body content of the original email.
@@ -446,7 +446,7 @@ class SMTPManager(smtplib.SMTP):
                     {f"From: {tuple_to_sender_string(original_sender)}<br/>" if original_sender else ""}
                     {f"Date: {original_date}<br/>" if original_date else ""}
                     {f"Subject: {original_subject}<br/>" if original_subject else ""}
-                    {f"To: {original_receiver}<br/>" if original_receiver else ""}
+                    {f"To: {original_receivers}<br/>" if original_receivers else ""}
                     <blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">
                         {original_body}
                     </blockquote>

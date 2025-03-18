@@ -11,7 +11,7 @@ export interface Email {
     message_id: string;
     uid: string;
     sender: string; // Name Surname <namesurname@domain.com> or namesurname@domain.com
-    receiver: string; // mail addresses separated by comma
+    receivers: string; // mail addresses separated by comma
     date: string;
     subject: string;
     body: string;
@@ -50,7 +50,7 @@ export interface Attachment {
 }
 
 export interface Draft {
-    receiver: string | string[];
+    receivers: string | string[];
     //date: string;
     subject: string;
     body: string;

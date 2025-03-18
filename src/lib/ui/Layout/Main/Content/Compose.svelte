@@ -23,7 +23,7 @@
         compose_type?: "reply" | "forward";
         original_message_id?: string;
         original_sender?: string;
-        original_receiver?: string;
+        original_receivers?: string;
         original_subject?: string;
         original_body?: string;
         original_date?: string;
@@ -33,7 +33,7 @@
         compose_type,
         original_message_id,
         original_sender,
-        original_receiver,
+        original_receivers,
         original_subject,
         original_body,
         original_date,
@@ -53,7 +53,7 @@
             body.addFullHTMLPage(
                 (compose_type == "reply" ? REPLY_TEMPLATE : FORWARD_TEMPLATE)
                     .replace("{original_sender}", escapeHTML((original_sender || "")))
-                    .replace("{original_receiver}", escapeHTML((original_receiver || "")))
+                    .replace("{original_receivers}", escapeHTML((original_receivers || "")))
                     .replace("{original_subject}", original_subject || "")
                     .replace("{original_body}", original_body || "")
                     .replace("{original_date}", original_date || "")
@@ -135,12 +135,12 @@
         const formData = new FormData(form);
 
         formData.set('sender', senders.join(","));
-        formData.set('receiver', receivers.join(","));
+        formData.set('receivers', receivers.join(","));
 
         if (!formData.get("sender")) {
             alert("At least one sender must be added");
         }
-        if (!formData.get("receiver")) {
+        if (!formData.get("receivers")) {
             alert("At least one receiver must be added");
         }
 
@@ -196,11 +196,11 @@
                 </div>
             </FormGroup>
             <FormGroup>
-                <Label for="receiver">Receiver(s)</Label>
+                <Label for="receivers">Receiver(s)</Label>
                 <Input.Basic
                     type="email"
-                    name="receiver"
-                    id="receiver"
+                    name="receivers"
+                    id="receivers"
                     placeholder="someone@domain.xyz"
                     onkeyup={(e: Event) => addEnteredAddress(e, receivers)}
                     onblur={(e: Event) => addEnteredAddress(e, receivers)}

@@ -46,7 +46,7 @@ class MessageHeaders(TypedDict):
     """Header fields of a email message."""
     subject: str
     sender: str
-    receiver: str
+    receivers: str
     date: str
     cc: NotRequired[str]
     bcc: NotRequired[str]
@@ -58,7 +58,7 @@ class MessageHeaders(TypedDict):
 MESSAGE_HEADER_PATTERN_MAP = {
     "subject": re.compile(rb'Subject:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
     "sender": re.compile(rb'From:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
-    "receiver": re.compile(rb'To:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "receivers": re.compile(rb'To:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
     "date": re.compile(rb'Date:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
     "cc": re.compile(rb'Cc:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
     "bcc": re.compile(rb'Bcc:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
@@ -622,7 +622,7 @@ class MessageParser:
                 "content_type": "text/plain; charset=utf-8",
                 'subject': 'Hello',
                 'sender': 'a@gmail.com',
-                'receiver': 'b@gmail.com',
+                'receivers': 'b@gmail.com',
                 ...
                 'message_id': '<caef..@dom.com>',
                 'references': '<5121..@dom.com>'
@@ -631,7 +631,7 @@ class MessageParser:
         headers: MessageHeaders = {
             "subject": "",
             "sender": "",
-            "receiver": "",
+            "receivers": "",
             "date": ""
         }
 
@@ -649,7 +649,7 @@ class MessageParser:
             field = field.strip()
 
             # Special cases
-            if field_type in ["sender", "receiver", "cc", "bcc"]:
+            if field_type in ["sender", "receivers", "cc", "bcc"]:
                 field = field.replace('"', '')
 
             headers[field_type] = field

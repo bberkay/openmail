@@ -82,7 +82,7 @@ class DummyOperator:
             '1'
             >>> OpenMailDummyOperator.send_test_email_to_self_and_get_uid(openmail, Draft(
             ...     sender="someone@domain.com",
-            ...     receiver="someone@domain.com",
+            ...     receivers="someone@domain.com",
             ...     subject="test subject",
             ...     body="test body"
             ... ))
@@ -97,7 +97,7 @@ class DummyOperator:
         else:
             subject = cast(str, NameGenerator.subject()[0])
             draft = Draft(
-                receiver=sender,
+                receivers=sender,
                 subject=subject,
                 body=NameGenerator.body()[0]
             )

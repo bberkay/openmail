@@ -44,7 +44,7 @@ class TestFetchOperations(unittest.TestCase):
 
         # Send Basic Test Email
         cls._test_sent_basic_email = Draft(
-            receiver=cls._receiver_emails[0],
+            receivers=cls._receiver_emails[0],
             subject=NameGenerator.subject()[0],
             body=NameGenerator.body()[0],
         )
@@ -57,7 +57,7 @@ class TestFetchOperations(unittest.TestCase):
 
         # Send Complex Text Email
         cls._test_sent_complex_email = Draft(
-            receiver=cls._receiver_emails,
+            receivers=cls._receiver_emails,
             subject=NameGenerator.subject()[0],
             cc=cls._receiver_emails[1:],
             bcc=cls._sender_email,
@@ -197,13 +197,13 @@ class TestFetchOperations(unittest.TestCase):
         self.assertGreaterEqual(found_emails.total, 1)
         self.assertIn(self.__class__._sender_email, found_emails.emails[0].sender)
 
-    def test_basic_search_with_receiver(self):
-        print("test_basic_search_with_receiver...")
+    def test_basic_search_with_receivers(self):
+        print("test_basic_search_with_receivers...")
 
-        self.__class__._openmail.imap.search_emails(search=cast(str, self.__class__._test_sent_basic_email.receiver))
+        self.__class__._openmail.imap.search_emails(search=cast(str, self.__class__._test_sent_basic_email.receivers))
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(found_emails.total, 1)
-        self.assertIn(self.__class__._test_sent_basic_email.receiver, found_emails.emails[0].receiver)
+        self.assertIn(self.__class__._test_sent_basic_email.receivers, found_emails.emails[0].receivers)
 
     def test_basic_search_with_subject(self):
         print("test_basic_search_with_subject...")
@@ -223,19 +223,19 @@ class TestFetchOperations(unittest.TestCase):
         email_content = self.__class__._openmail.imap.get_email_content(found_emails.folder, found_emails.emails[0].uid)
         self.assertIn(self.__class__._test_sent_basic_email.body, email_content.body)
 
-    def test_complex_search_with_multiple_receiver(self):
-        print("test_complex_search_with_multiple_receiver...")
+    def test_complex_search_with_multiple_receivers(self):
+        print("test_complex_search_with_multiple_receivers...")
 
         self.__class__._openmail.imap.search_emails(search=SearchCriteria(
-            receivers=cast(list[str], self.__class__._test_sent_complex_email.receiver),
+            receivers=cast(list[str], self.__class__._test_sent_complex_email.receivers),
         ))
 
         found_emails = self.__class__._openmail.imap.get_emails()
         self.assertGreaterEqual(found_emails.total, 1)
 
         self.assertCountEqual(
-            [email.strip() for email in found_emails.emails[0].receiver.split(",")],
-            self.__class__._test_sent_complex_email.receiver
+            [email.strip() for email in found_emails.emails[0].receivers.split(",")],
+            self.__class__._test_sent_complex_email.receivers
         )
 
     def test_complex_search_with_cc(self):
@@ -359,7 +359,7 @@ class TestFetchOperations(unittest.TestCase):
         for email in mailbox.emails:
             self.assertIsNotNone(email.uid)
             self.assertIsNotNone(email.sender)
-            self.assertIsNotNone(email.receiver)
+            self.assertIsNotNone(email.receivers)
             self.assertIsNotNone(email.subject)
             self.assertIsNotNone(email.body)
 
@@ -372,7 +372,7 @@ class TestFetchOperations(unittest.TestCase):
         )
 
         # Recipients
-        for key in ["sender", "receiver", "cc"]:
+        for key in ["sender", "receivers", "cc"]:
             self.assertCountEqual(
                 [email.strip() for email in email_content[key].split(",")],
                 (
@@ -545,7 +545,7 @@ class TestFetchOperations(unittest.TestCase):
                 self.__class__._openmail,
                 self.__class__._sender_email,
                 Draft(
-                    receiver=self.__class__._sender_email,
+                    receivers=self.__class__._sender_email,
                     subject=random_subject,
                     body=NameGenerator.body()[0]
                 )

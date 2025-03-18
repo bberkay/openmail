@@ -194,7 +194,7 @@ class TestIdleOperations(unittest.TestCase):
         print(f"Connecting to {sender_email}")
         subject = cast(str, NameGenerator.subject()[0])
         sender.smtp.send_email(sender_email, Draft(
-            receiver=self.__class__._email,
+            receivers=self.__class__._email,
             subject=subject,
             body=NameGenerator.body()[0]
         ))
@@ -379,7 +379,7 @@ class TestIdleOperations(unittest.TestCase):
         print(f"Connecting to {sender_email}")
         subject = cast(str, NameGenerator.subject()[0])
         sender.smtp.send_email(sender_email, Draft(
-            receiver=self.__class__._email,
+            receivers=self.__class__._email,
             subject=subject,
             body=NameGenerator.body()[0]
         ))

@@ -53,7 +53,7 @@ class Email():
     message_id: str
     uid: str
     sender: str # Name Surname <namesurname@domain.com> or namesurname@domain.com
-    receiver: str  # mail addresses separated by comma
+    receivers: str  # mail addresses separated by comma
     date: str
     subject: str
     body: str
@@ -80,7 +80,7 @@ class Draft():
     If the email is being replied or forwarded, the
     `uid` field must be provided.
     """
-    receiver: str | list[str]
+    receivers: str | list[str]
     #date: str
     subject: str
     body: str
