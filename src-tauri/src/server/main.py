@@ -9,7 +9,7 @@ import concurrent.futures
 import sys
 import time
 from urllib.parse import unquote
-from typing import Annotated, Callable, Generic, Optional, TypeVar, Any, cast
+from typing import Annotated, Callable, Generic, Optional, Sequence, TypeVar, Any, cast
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 
@@ -382,16 +382,32 @@ def remove_accounts() -> Response:
 
 
 ################ EMAIL OPERATIONS ###################
+def get_unique_email_addresses(accounts: str) -> set[str]:
+    """
+    Get unique email addresses of given accounts.
+
+    Args:
+        accounts (str): Email addresses with or without fullnames separated
+        by comma.
+
+    Returns:
+        set[str]: Unique email addresses.
+
+    Example:
+        >>> get_unique_email_addresses("Alex Doe <alex@domain.com>, John Doe <john@domain.com>, Jane Doe <alex@domain.com>")
+        set("alex@domain.com", "john@domain.com")
+    """
+    return set(extract_email_addresses(accounts.split(",")))
+
 class OpenMailTaskResult(BaseModel):
     email_address: str
     result: Any
 
 def execute_openmail_task_concurrently(
-    accounts: list[str] | str,
+    accounts: set[str], # unique email addresses
     func: Callable[...],
     **params
 ) -> list[OpenMailTaskResult]:
-    if isinstance(accounts, str): accounts = accounts.split(",")
     results: list[OpenMailTaskResult] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONNECTION_WORKER) as executor:
         future_to_emails = {
@@ -411,10 +427,9 @@ def execute_openmail_task_concurrently(
 
         return results
 
-def check_openmail_connection_availability(accounts: str | list[str]) -> Response | bool:
-    if isinstance(accounts, str):
-        accounts = accounts.split(",")
-
+def check_openmail_connection_availability(
+    accounts: set[str] # unique email addresses
+) -> Response | bool:
     connected_openmail_clients = openmail_clients.keys()
     terminated_openmail_clients = []
     for account in accounts:
@@ -442,13 +457,16 @@ async def notifications_socket(websocket: WebSocket, accounts: str):
     uvicorn_logger.websocket(websocket, "New notification subscription created")
     try:
         while True:
-            response = check_openmail_connection_availability(accounts)
+            unique_email_addresses = get_unique_email_addresses(accounts)
+            response = check_openmail_connection_availability(unique_email_addresses)
             if isinstance(response, Response):
                 await websocket.close(reason=response.message)
                 uvicorn_logger.websocket(websocket, response.message)
                 break
 
-            """for account in accounts.split(","):
+            """
+            TODO: Independent openmail clients just for recent messages.
+            for account in unique_email_addresses:
                 openmail_clients_for_new_messages[account] = OpenMail()"""
 
             # Listen for new messages and send notification when
@@ -458,8 +476,8 @@ async def notifications_socket(websocket: WebSocket, accounts: str):
                     await asyncio.sleep(NEW_EMAIL_CHECK_INTERVAL)
                     print("Checking for new emails for these accounts: ", accounts)
                     any_new_email: Callable[[OpenMail], bool] = lambda client: client.imap.any_new_email()
-                    task_results = execute_openmail_task_concurrently(accounts, any_new_email)
-                    new_email_accounts = [account.email_address for account in task_results if account.result]
+                    task_results = execute_openmail_task_concurrently(unique_email_addresses, any_new_email)
+                    new_email_accounts = set(account.email_address for account in task_results if account.result)
                     if len(new_email_accounts) > 0:
                         print("These accounts has new emails: ", accounts)
                         get_recent_emails: Callable[[OpenMail], list[Email]] = lambda client: client.imap.get_recent_emails()
@@ -483,12 +501,14 @@ async def get_mailboxes(
     offset_end: Optional[int] = None,
 ) -> Response[list[OpenMailTaskResult]]:
     try:
-        response = check_openmail_connection_availability(accounts)
-        if isinstance(response, Response): return response
+        unique_email_addresses = get_unique_email_addresses(accounts)
+        response = check_openmail_connection_availability(unique_email_addresses)
+        if isinstance(response, Response):
+            return response
 
         # Search emails.
         execute_openmail_task_concurrently(
-            accounts,
+            unique_email_addresses,
             lambda client, **params: client.imap.search_emails(**params),
             folder=folder,
             search=SearchCriteria.parse_raw(search) if search else None,
@@ -499,7 +519,7 @@ async def get_mailboxes(
             success=True,
             message="Emails fetched successfully.",
             data=execute_openmail_task_concurrently(
-                accounts,
+                unique_email_addresses,
                 lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
                 offset_end=offset_end,
@@ -515,14 +535,16 @@ async def paginate_mailboxes(
     offset_end: int,
 ) -> Response[list[OpenMailTaskResult]]:
     try:
-        response = check_openmail_connection_availability(accounts)
-        if isinstance(response, Response): return response
+        unique_email_addresses = get_unique_email_addresses(accounts)
+        response = check_openmail_connection_availability(unique_email_addresses)
+        if isinstance(response, Response):
+            return response
 
         return Response[list[OpenMailTaskResult]](
             success=True,
             message="Emails paginated successfully.",
             data=execute_openmail_task_concurrently(
-                accounts,
+                unique_email_addresses,
                 lambda client, **params: client.imap.get_emails(**params),
                 offset_start=offset_start,
                 offset_end=offset_end,
@@ -536,14 +558,16 @@ async def get_folders(
     accounts: str,
 ) -> Response[list[OpenMailTaskResult]]:
     try:
-        response = check_openmail_connection_availability(accounts)
-        if isinstance(response, Response): return response
+        unique_email_addresses = get_unique_email_addresses(accounts)
+        response = check_openmail_connection_availability(unique_email_addresses)
+        if isinstance(response, Response):
+            return response
 
         return Response[list[OpenMailTaskResult]](
             success=True,
             message="Folders fetched successfully.",
             data=execute_openmail_task_concurrently(
-                accounts,
+                unique_email_addresses,
                 lambda client: client.imap.get_folders(tagged=True),
             ),
         )
@@ -557,8 +581,11 @@ def get_email_content(
     uid: str
 ) -> Response[Email]:
     try:
-        response = check_openmail_connection_availability(account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(account)
+        )
+        if isinstance(response, Response):
+            return response
 
         return Response[Email](
             success=True,
@@ -577,8 +604,11 @@ def download_attachment(
     cid: str = ""
 ) -> Response[Attachment]:
     try:
-        response = check_openmail_connection_availability(account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(account)
+        )
+        if isinstance(response, Response):
+            return response
 
         return Response[Attachment](
             success=True,
@@ -626,13 +656,18 @@ async def send_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_openmail_connection_availability(form_data.senders)
-        if isinstance(response, Response): return response
+        unique_email_addresses = get_unique_email_addresses(form_data.senders)
+        response = check_openmail_connection_availability(unique_email_addresses)
+        if isinstance(response, Response):
+            return response
 
         results = execute_openmail_task_concurrently(
-            extract_email_addresses(form_data.senders.split(",")),
+            unique_email_addresses,
             lambda client, **params: client.smtp.send_email(
-                sender=get_key_by_value(openmail_clients, client),
+                sender=[
+                    sender for sender in form_data.senders.split(",")
+                    if cast(str, get_key_by_value(openmail_clients, client)) in sender
+                ],
                 **params
             ),
             email=Draft(
@@ -672,13 +707,18 @@ async def reply_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_openmail_connection_availability(form_data.senders)
-        if isinstance(response, Response): return response
+        unique_email_addresses = get_unique_email_addresses(form_data.senders)
+        response = check_openmail_connection_availability(unique_email_addresses)
+        if isinstance(response, Response):
+            return response
 
         results = execute_openmail_task_concurrently(
-            extract_email_addresses(form_data.senders.split(",")),
+            unique_email_addresses,
             lambda client, **params: client.smtp.reply_email(
-                sender=get_key_by_value(openmail_clients, client),
+                sender=[
+                    sender for sender in form_data.senders.split(",")
+                    if cast(str, get_key_by_value(openmail_clients, client)) in sender
+                ],
                 **params
             ),
             email=Draft(
@@ -718,13 +758,18 @@ async def forward_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_openmail_connection_availability(form_data.senders)
-        if isinstance(response, Response): return response
+        unique_email_addresses = get_unique_email_addresses(form_data.senders)
+        response = check_openmail_connection_availability(unique_email_addresses)
+        if isinstance(response, Response):
+            return response
 
         results = execute_openmail_task_concurrently(
-            extract_email_addresses(form_data.senders.split(",")),
+            unique_email_addresses,
             lambda client, **params: client.smtp.forward_email(
-                sender=get_key_by_value(openmail_clients, client),
+                sender=[
+                    sender for sender in form_data.senders.split(",")
+                    if cast(str, get_key_by_value(openmail_clients, client)) in sender
+                ],
                 **params
             ),
             email=Draft(
@@ -768,8 +813,11 @@ class MarkEmailRequest(BaseModel):
 @app.post("/mark-email")
 async def mark_email(request_body: MarkEmailRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
 
         status, msg = openmail_clients[request_body.account].imap.mark_email(
             request_body.mark,
@@ -791,8 +839,11 @@ class UnmarkEmailRequest(BaseModel):
 @app.post("/unmark-email")
 async def unmark_email(request_body: UnmarkEmailRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
 
         status, msg = openmail_clients[request_body.account].imap.unmark_email(
             request_body.mark,
@@ -814,8 +865,11 @@ class MoveEmailRequest(BaseModel):
 @app.post("/move-email")
 async def move_email(request_body: MoveEmailRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
 
         status, msg = openmail_clients[request_body.account].imap.move_email(
             request_body.source_folder,
@@ -837,9 +891,11 @@ class CopyEmailRequest(BaseModel):
 @app.post("/copy-email")
 async def copy_email(request_body: CopyEmailRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
-
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
         status, msg = openmail_clients[request_body.account].imap.copy_email(
             request_body.source_folder,
             request_body.destination_folder,
@@ -859,8 +915,11 @@ class DeleteEmailRequest(BaseModel):
 @app.post("/delete-email")
 async def delete_email(request_body: DeleteEmailRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
 
         status, msg = openmail_clients[request_body.account].imap.delete_email(
             request_body.folder, request_body.sequence_set
@@ -879,8 +938,11 @@ class CreateFolderRequest(BaseModel):
 @app.post("/create-folder")
 async def create_folder(request_body: CreateFolderRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
 
         status, msg = openmail_clients[
             request_body.account
@@ -901,8 +963,11 @@ class RenameFolderRequest(BaseModel):
 @app.post("/rename-folder")
 async def rename_folder(request_body: RenameFolderRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
 
         status, msg = openmail_clients[
             request_body.account
@@ -923,8 +988,11 @@ class MoveFolderRequest(BaseModel):
 @app.post("/move-folder")
 async def move_folder(request_body: MoveFolderRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
 
         status, msg = openmail_clients[request_body.account].imap.move_folder(
             request_body.folder_name, request_body.destination_folder
@@ -942,8 +1010,11 @@ class DeleteFolderRequest(BaseModel):
 @app.post("/delete-folder")
 async def delete_folder(request_body: DeleteFolderRequest) -> Response:
     try:
-        response = check_openmail_connection_availability(request_body.account)
-        if isinstance(response, Response): return response
+        response = check_openmail_connection_availability(
+            get_unique_email_addresses(request_body.account)
+        )
+        if isinstance(response, Response):
+            return response
 
         status, msg = openmail_clients[
             request_body.account

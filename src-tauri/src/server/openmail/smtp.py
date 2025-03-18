@@ -207,14 +207,14 @@ class SMTPManager(smtplib.SMTP):
         """
         try:
             all_emails = []
-            receivers = set([email.receivers] if isinstance(email.receivers, str) else email.receivers)
+            receivers = set(email.receivers if isinstance(email.receivers, str) else email.receivers)
             receivers = extract_email_addresses(receivers or [])
             all_emails.extend(receivers)
             receivers = ", ".join(receivers)
 
             cc = None
             if email.cc:
-                cc = set([email.cc] if isinstance(email.cc, str) else email.cc)
+                cc = set(email.cc if isinstance(email.cc, str) else email.cc)
                 cc = extract_email_addresses(cc or [])
                 cc = [address for address in cc if address not in all_emails]
                 all_emails.extend(cc)
@@ -222,7 +222,7 @@ class SMTPManager(smtplib.SMTP):
 
             bcc = None
             if email.bcc:
-                bcc = set([email.bcc] if isinstance(email.bcc, str) else email.bcc)
+                bcc = set(email.bcc if isinstance(email.bcc, str) else email.bcc)
                 bcc = extract_email_addresses(bcc or [])
                 bcc = [address for address in bcc if address not in all_emails]
                 del all_emails

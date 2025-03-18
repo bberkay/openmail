@@ -24,7 +24,7 @@ class TestSecureStorage(unittest.TestCase):
             self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey),
         ]
         self.assertEqual(
-            len(set([key_value["value"] for key_value in key_values if key_value])),
+            len(set(key_value["value"] for key_value in key_values if key_value)),
             1
         )
 
