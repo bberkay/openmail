@@ -12,6 +12,8 @@
     import * as Input from "$lib/ui/Elements/Input";
     import * as Table from "$lib/ui/Elements/Table";
     import { show as showAlert } from "$lib/ui/Elements/Alert";
+    import { show as showMessage } from "$lib/ui/Elements/Message";
+    import { show as showConfirm } from "$lib/ui/Elements/Confirm";
 
     const accountController = new AccountController();
     const mailboxController = new MailboxController();
@@ -34,7 +36,8 @@
             const response = await accountController.remove(account);
 
             if (!response.success) {
-                alert(response.message);
+                showMessage({content: "Unexpected error while removing account."});
+                console.error(response.message);
             }
         }
     };
@@ -44,7 +47,8 @@
             const response = await accountController.removeAll();
 
             if (!response.success) {
-                alert(response.message);
+                showMessage({content: "Unexpected error while removing accounts."});
+                console.error(response.message);
             }
         }
     };
@@ -119,19 +123,17 @@
 
         ws.onclose = (e: CloseEvent) => {
             if(e.reason && e.reason.toLowerCase().includes("error")) {
-                alert(e.reason);
+                console.error(e.reason);
             }
         }
     }
 
     $effect(() => {
         if (SharedStore.failedAccounts.length > 0) {
-            showAlert(
-                "alert-container",
-                `There were ${SharedStore.failedAccounts.length} accounts that failed to
-                connect.`,
-                "error"
-            );
+            showAlert("alert-container", {
+                content: `There were ${SharedStore.failedAccounts.length} accounts that failed to connect.`,
+                type: "error"
+            });
         }
     });
 </script>
