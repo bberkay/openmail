@@ -5,6 +5,7 @@
     import * as Input from "$lib/ui/Elements/Input";
     import * as Button from "$lib/ui/Elements/Button";
     import Label from "$lib/ui/Elements/Label";
+    import { show as showMessage } from "$lib/ui/Elements/Message";
 
     const accountController = new AccountController();
 
@@ -24,7 +25,8 @@
         );
 
         if (!response.success) {
-            alert(response.message);
+            showMessage({content: "Error while adding account."});
+            console.error(response.message);
         }
     };
 </script>
