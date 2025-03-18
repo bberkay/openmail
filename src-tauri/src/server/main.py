@@ -613,7 +613,7 @@ async def convert_uploadfile_to_attachment(attachments: list[UploadFile]) -> lis
 
 class SendEmailFormData(BaseModel):
     sender: str # list of Name Surname <namesurname@domain.com> or namesurname@domain.com, separated by comma
-    receiver: str  # mail addresses separated by comma
+    receivers: str  # mail addresses separated by comma
     subject: str
     body: str
     uid: Optional[str] = None
@@ -636,7 +636,7 @@ async def send_email(
                 **params
             ),
             email=Draft(
-                receiver=form_data.receiver,
+                receivers=form_data.receivers,
                 subject=form_data.subject,
                 body=form_data.body,
                 cc=form_data.cc,
@@ -682,7 +682,7 @@ async def reply_email(
                 **params
             ),
             email=Draft(
-                receiver=form_data.receiver,
+                receivers=form_data.receivers,
                 subject=form_data.subject,
                 body=form_data.body,
                 cc=form_data.cc,
@@ -728,7 +728,7 @@ async def forward_email(
                 **params
             ),
             email=Draft(
-                receiver=form_data.receiver,
+                receivers=form_data.receivers,
                 subject=form_data.subject,
                 body=form_data.body,
                 cc=form_data.cc,
