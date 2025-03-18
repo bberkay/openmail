@@ -612,7 +612,7 @@ async def convert_uploadfile_to_attachment(attachments: list[UploadFile]) -> lis
     return converted_to_attachment_list
 
 class SendEmailFormData(BaseModel):
-    sender: str # list of Name Surname <namesurname@domain.com> or namesurname@domain.com, separated by comma
+    senders: str # list of Name Surname <namesurname@domain.com> or namesurname@domain.com, separated by comma
     receivers: str  # mail addresses separated by comma
     subject: str
     body: str
@@ -626,11 +626,11 @@ async def send_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_openmail_connection_availability(form_data.sender)
+        response = check_openmail_connection_availability(form_data.senders)
         if isinstance(response, Response): return response
 
         results = execute_openmail_task_concurrently(
-            extract_email_addresses(form_data.sender.split(",")),
+            extract_email_addresses(form_data.senders.split(",")),
             lambda client, **params: client.smtp.send_email(
                 sender=get_key_by_value(openmail_clients, client),
                 **params
@@ -672,11 +672,11 @@ async def reply_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_openmail_connection_availability(form_data.sender)
+        response = check_openmail_connection_availability(form_data.senders)
         if isinstance(response, Response): return response
 
         results = execute_openmail_task_concurrently(
-            extract_email_addresses(form_data.sender.split(",")),
+            extract_email_addresses(form_data.senders.split(",")),
             lambda client, **params: client.smtp.reply_email(
                 sender=get_key_by_value(openmail_clients, client),
                 **params
@@ -718,11 +718,11 @@ async def forward_email(
     form_data: Annotated[SendEmailFormData, Form()]
 ) -> Response:
     try:
-        response = check_openmail_connection_availability(form_data.sender)
+        response = check_openmail_connection_availability(form_data.senders)
         if isinstance(response, Response): return response
 
         results = execute_openmail_task_concurrently(
-            extract_email_addresses(form_data.sender.split(",")),
+            extract_email_addresses(form_data.senders.split(",")),
             lambda client, **params: client.smtp.forward_email(
                 sender=get_key_by_value(openmail_clients, client),
                 **params
