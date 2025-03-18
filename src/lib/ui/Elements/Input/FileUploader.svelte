@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { makeSizeHumanReadable } from "$lib/utils";
+    import { makeSizeHumanReadable, combine } from "$lib/utils";
     import * as Button from "$lib/ui/Elements/Button";
     import * as Input from "$lib/ui/Elements/Input";
 
@@ -50,13 +50,20 @@
         const dt = new DataTransfer();
 		[...(targetFiles ?? []), ...(files ?? [])].forEach(file => dt.items.add(file));
         files = dt.files;
+        fileInput.files = files;
     }
 
     const removeFile = (index: number) => {
         const dt = new DataTransfer();
         Array.from(files ?? []).forEach((file, i) => i !== index && dt.items.add(file));
         files = dt.files;
+        fileInput.files = files;
     };
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 </script>
 
 <div class="file-uploader-container" bind:this={fileUploaderWrapper}>
@@ -65,8 +72,8 @@
             Upload a file.
             <Input.Basic
                 type="file"
-                class="file-input"
-                multiple
+                class={combine("file-input", additionalClass)}
+                {...restAttributes}
             />
         </label>
         <div
@@ -146,6 +153,7 @@
 
             & .file-list {
                 margin-top: var(--spacing-md);
+                gap: var(--spacing-xs);
 
                 & .file-item {
                     display: flex;
@@ -153,7 +161,7 @@
                     align-items: center;
                     padding: var(--spacing-xs) var(--spacing-sm);
                     border-radius: var(--radius-sm);
-                    font-size: var(--font-size-sm);
+                    font-size: var(--font-size-xs);
 
                     & .file-name {
                         white-space: nowrap;
