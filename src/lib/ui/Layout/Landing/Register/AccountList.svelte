@@ -158,14 +158,14 @@
                     <Table.Head>
                         {#if accountSelection.length > 0}
                             <Button.Action
-                                class="inline"
+                                class="btn-inline"
                                 onclick={removeAllAccounts}
                             >
                                 Remove All
                             </Button.Action>
                         {:else}
                             <Button.Action
-                                class="inline"
+                                class="btn-inline"
                                 style="visibility: hidden;"
                                 onclick={() => {}}
                             >hidden</Button.Action>
@@ -190,14 +190,14 @@
                     <Table.Cell class="action-cell">
                         <Button.Basic
                             type="button"
-                            class="inline"
+                            class="btn-inline"
                             style="margin-right: 5px;"
                             onclick={() => { isEditingAccount = account; }}
                         >
                             Edit
                         </Button.Basic>
                         <Button.Action
-                            class="inline"
+                            class="btn-inline"
                             onclick={removeAccount}
                             data-email-address={account.email_address}
                         >
@@ -221,7 +221,7 @@
 
             <Button.Basic
                 type="button"
-                class="inline"
+                class="btn-inline"
                 onclick={() => { isListingAccount = false; }}
             >
                 I want to add another account.

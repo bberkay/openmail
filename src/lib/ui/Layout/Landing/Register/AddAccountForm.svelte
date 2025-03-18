@@ -67,7 +67,7 @@
             </Button.Action>
             <Button.Basic
                 type="button"
-                class="inline"
+                class="btn-inline"
                 onclick={() => { isListingAccount = true; }}
             >
                 Which accounts have I added?

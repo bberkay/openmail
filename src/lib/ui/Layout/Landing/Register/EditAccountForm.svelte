@@ -76,7 +76,7 @@
                 </Button.Action>
                 <Button.Basic
                     type="button"
-                    class="inline"
+                    class="btn-inline"
                     onclick={() => { isEditingAccount = null; }}
                 >
                     Cancel
