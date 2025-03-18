@@ -30,27 +30,35 @@
     let accountSelection: string[] = $state([]);
 
     const removeAccount = async (e: Event): Promise<void> => {
-        if (confirm("Are you certain? Deleting an account cannot be undone.")) {
-            const target = e.target as HTMLButtonElement;
-            const account = target.getAttribute("data-email-address")!;
-            const response = await accountController.remove(account);
+        showConfirm({
+            content: "Are you certain? Deleting an account cannot be undone.",
+            onConfirmText: "Yes, remove.",
+            onConfirm: async (e: Event) => {
+                const target = e.target as HTMLButtonElement;
+                const account = target.getAttribute("data-email-address")!;
+                const response = await accountController.remove(account);
 
-            if (!response.success) {
-                showMessage({content: "Unexpected error while removing account."});
-                console.error(response.message);
-            }
-        }
+                if (!response.success) {
+                    showMessage({content: "Unexpected error while removing account."});
+                    console.error(response.message);
+                }
+            },
+        })
     };
 
     const removeAllAccounts = async (): Promise<void> => {
-        if (confirm("Are you certain? You are about to remove all accounts.")) {
-            const response = await accountController.removeAll();
+        showConfirm({
+            content: "Are you certain? You are about to remove all accounts.",
+            onConfirmText: "Yes, remove all.",
+            onConfirm: async (e: Event) => {
+                const response = await accountController.removeAll();
 
-            if (!response.success) {
-                showMessage({content: "Unexpected error while removing accounts."});
-                console.error(response.message);
-            }
-        }
+                if (!response.success) {
+                    showMessage({content: "Unexpected error while removing accounts."});
+                    console.error(response.message);
+                }
+            },
+        })
     };
 
     const selectAllAccounts = (event: Event) => {
