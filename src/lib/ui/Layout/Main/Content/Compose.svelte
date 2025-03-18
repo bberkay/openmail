@@ -15,6 +15,7 @@
     import Badge from "$lib/ui/Elements/Badge";
     import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import { show as showMessage } from "$lib/ui/Elements/Message";
 
     /* Constants */
 
@@ -107,8 +108,9 @@
             (compose_type == "reply" || compose_type == "forward") &&
             !original_message_id
         ) {
-            alert("Unexpected error while replying/forwarding.")
+            showMessage({content: "Unexpected error while replying/forwarding."});
             console.error("`original_message_id` required when sending reply or forwarding message.");
+            return;
         }
 
         const form = e.target as HTMLFormElement;
@@ -118,10 +120,14 @@
         formData.set('receivers', receivers.join(","));
 
         if (!formData.get("sender")) {
-            alert("At least one sender must be added");
+            showMessage({content: "At least one sender must be added"});
+            console.error("At least one sender must be added");
+            return;
         }
         if (!formData.get("receivers")) {
-            alert("At least one receiver must be added");
+            showMessage({content: "At least one receiver must be added"});
+            console.error("At least one receiver must be added");
+            return;
         }
 
         formData.set('cc', cc.join(","));
@@ -144,20 +150,22 @@
         }
 
         if (!response.success) {
-            alert("Unexpected error while replying/forwarding.");
+            showMessage({content: "Unexpected error while replying/forwarding."});
             console.error(response!.message);
-        } else {
-            body.clear();
-            // Set current folder to Folder.Sent and
-            // mount Inbox.
-            const firstSenderIndex = SharedStore.standardFolders.findIndex(
-                account => account.email_address === senders[0]
-            );
-            SharedStore.currentFolder = SharedStore.standardFolders[firstSenderIndex].result.filter(
-                (folder: string) => folder.toLowerCase().includes(Folder.Sent.toLowerCase())
-            )[0];
-            showContent(Inbox);
+            return;
         }
+
+        body.clear();
+
+        // Set current folder to Folder.Sent and
+        // mount Inbox.
+        const firstSenderIndex = SharedStore.standardFolders.findIndex(
+            account => account.email_address === senders[0]
+        );
+        SharedStore.currentFolder = SharedStore.standardFolders[firstSenderIndex].result.filter(
+            (folder: string) => folder.toLowerCase().includes(Folder.Sent.toLowerCase())
+        )[0];
+        showContent(Inbox);
     }
 </script>
 
