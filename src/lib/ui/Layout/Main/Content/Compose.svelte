@@ -1,6 +1,7 @@
 <script lang="ts">
     import { SharedStore } from '$lib/stores/shared.svelte';
     import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from '$lib/constants';
+    import { Folder } from '$lib/types';
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onMount } from 'svelte';
     import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
@@ -12,6 +13,8 @@
     import Collapse from "$lib/ui/Elements/Collapse";
     import Form, { FormGroup } from "$lib/ui/Elements/Form";
     import Badge from "$lib/ui/Elements/Badge";
+    import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 
     /* Constants */
 
@@ -136,17 +139,25 @@
                formData,
                original_message_id!
            );
-       } else {
-           response = await mailboxController.sendEmail(formData);
-       }
+        } else {
+            response = await mailboxController.sendEmail(formData);
+        }
 
-       if (!response.success) {
-           alert("Unexpected error while replying/forwarding.");
-           console.error(response!.message);
-       } else {
-           // TODO: Mount sent folder
-           body.clear();
-       }
+        if (!response.success) {
+            alert("Unexpected error while replying/forwarding.");
+            console.error(response!.message);
+        } else {
+            body.clear();
+            // Set current folder to Folder.Sent and
+            // mount Inbox.
+            const firstSenderIndex = SharedStore.standardFolders.findIndex(
+                account => account.email_address === senders[0]
+            );
+            SharedStore.currentFolder = SharedStore.standardFolders[firstSenderIndex].result.filter(
+                (folder: string) => folder.toLowerCase().includes(Folder.Sent.toLowerCase())
+            )[0];
+            showContent(Inbox);
+        }
     }
 </script>
 
