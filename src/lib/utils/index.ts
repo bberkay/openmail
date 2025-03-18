@@ -102,7 +102,6 @@ export function pulseTarget(target: HTMLElement): void {
     setTimeout(() => {
         target.style.transform = "scale(1)";
     }, 100);
-    return;
 }
 
 export function adjustSizes(
