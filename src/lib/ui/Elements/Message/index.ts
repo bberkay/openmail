@@ -5,8 +5,8 @@ let mountedMessage: Record<string, any> | null = null;
 
 export function show(props: {
     content: string,
-    onOkText?: string,
-    onOk?: (e: Event) => void,
+    onCloseText?: string,
+    onClose?: (e: Event) => void,
 }) {
     if (mountedMessage) return;
 

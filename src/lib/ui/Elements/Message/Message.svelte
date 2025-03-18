@@ -5,14 +5,14 @@
 
     interface Props {
         content: string;
-        onOkText?: string;
-        onOk?: (e: Event) => void;
+        onCloseText?: string;
+        onClose?: (e: Event) => void;
     }
 
     let {
         content,
-        onOkText,
-        onOk
+        onCloseText,
+        onClose
     }: Props = $props();
 
     onMount(() => {
@@ -21,7 +21,7 @@
     });
 
     const onOkWrapper = (e: Event) => {
-        if (onOk) onOk(e);
+        if (onClose) onClose(e);
         close();
     };
 </script>
@@ -32,7 +32,7 @@
         type="button"
         onclick={onOkWrapper}
     >
-        {onOkText || "Ok"}
+        {onCloseText || "Close"}
     </Button.Basic>
 </div>
 
