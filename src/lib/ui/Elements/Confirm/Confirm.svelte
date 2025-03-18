@@ -6,9 +6,9 @@
     interface Props {
         content: string;
         onConfirmText: string;
-        onConfirm: (e: Event) => void;
+        onConfirm: (((e: Event) => void) | ((e: Event) => Promise<void>));
         onCancelText?: string;
-        onCancel?: (e: Event) => void;
+        onCancel?: (((e: Event) => void) | ((e: Event) => Promise<void>));
     }
 
     let {
@@ -24,13 +24,13 @@
         document.body.scrollTop = 0;
     });
 
-    const onCancelWrapper = (e: Event) => {
-        if (onCancel) onCancel(e);
+    const onCancelWrapper = async (e: Event): Promise<void> => {
+        if (onCancel) await onCancel(e);
         close();
     };
 
-    const onConfirmWrapper = (e: Event) => {
-        onConfirm(e);
+    const onConfirmWrapper = async (e: Event): Promise<void> => {
+        await onConfirm(e);
         close();
     };
 </script>

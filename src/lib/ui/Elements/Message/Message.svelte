@@ -6,7 +6,7 @@
     interface Props {
         content: string;
         onCloseText?: string;
-        onClose?: (e: Event) => void;
+        onClose?: (((e: Event) => void) | ((e: Event) => Promise<void>));
     }
 
     let {
@@ -20,8 +20,8 @@
         document.body.scrollTop = 0;
     });
 
-    const onOkWrapper = (e: Event) => {
-        if (onClose) onClose(e);
+    const onOkWrapper = async (e: Event) => {
+        if (onClose) await onClose(e);
         close();
     };
 </script>
