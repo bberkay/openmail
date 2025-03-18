@@ -97,6 +97,14 @@ export function escapeHTML(str: string): string {
         .replace(/'/g, "&#39;");
 }
 
+export function pulseTarget(target: HTMLElement): void {
+    target.style.transform = "scale(1.02)";
+    setTimeout(() => {
+        target.style.transform = "scale(1)";
+    }, 100);
+    return;
+}
+
 export function adjustSizes(
     smaller: string | [number, Size],
     larger: string | [number, Size],
