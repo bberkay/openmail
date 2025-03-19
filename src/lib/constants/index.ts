@@ -20,3 +20,11 @@ export const FORWARD_TEMPLATE = `
         </blockquote>
     </div>
 `;
+
+export const SENDER_TO_RECEIVER_TEMPLATE = `
+    {sender_fullname} <a>&lt;{sender_email}&gt;</a> to You and <u>others</u> at {sent_at}
+`;
+
+export const ATTACHMENT_TEMPLATE = `
+    {attachment_name} ({attachment_size})
+`;

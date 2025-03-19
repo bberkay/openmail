@@ -2,13 +2,16 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
+    import { ATTACHMENT_TEMPLATE, SENDER_TO_RECEIVER_TEMPLATE } from '$lib/constants';
     import { onMount } from "svelte";
-    import type { Account, Attachment, Email } from "$lib/types";
-    import { makeSizeHumanReadable } from "$lib/utils";
-    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
+    import type { Account, Email } from "$lib/types";
+    import { extractEmailAddress, extractFullname, makeSizeHumanReadable } from "$lib/utils";
     import * as Button from "$lib/ui/Elements/Button";
-    import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
+    import * as Dropdown from "$lib/ui/Elements/Dropdown";
+    import Badge from "$lib/ui/Elements/Badge";
+    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import { show as showMessage } from "$lib/ui/Elements/Message";
 
     const mailboxController = new MailboxController();
 
@@ -22,19 +25,18 @@
         email
     }: Props = $props();
 
-    let contentBody: HTMLElement;
+    /* Email Handling */
 
+    let body: HTMLElement;
     onMount(() => {
-        contentBody.innerHTML = "";
-
-        printBody(email.body);
+        renderBody();
     });
 
-    function printBody(body: string): void {
-        // Body
+    function renderBody(): void {
+        body.innerHTML = "";
+
         let iframe = document.createElement("iframe");
-        iframe.classList.add("email-body")
-        contentBody.appendChild(iframe);
+        body.appendChild(iframe);
 
         let iframeDoc: Document | null;
         iframeDoc = iframe.contentWindow
@@ -42,43 +44,42 @@
             : iframe.contentDocument;
         if (iframeDoc) {
             iframeDoc.open();
-            iframeDoc.writeln(body);
+            iframeDoc.writeln(email.body);
             iframeDoc.close();
 
-            contentBody.style.height = iframeDoc.body.scrollHeight + "px";
+            body.style.height = iframeDoc.body.scrollHeight + "px";
         }
     }
 
-    async function downloadAttachment(e: Event): Promise<void> {
-        const target = e.target as HTMLButtonElement;
-        const name = target.getAttribute("data-name")!;
-        const cid = target.getAttribute("data-cid");
-
+    const downloadAttachment = async (index: number) => {
+        const attachment = email.attachments![index];
         const response = await mailboxController.downloadAttachment(
             account,
             SharedStore.currentFolder!,
             email.uid,
-            name,
-            cid || undefined
+            attachment.name,
+            attachment.cid || undefined
         );
 
-        if (!response.success) {
-            alert(response.message);
-        } else if (!response.data) {
-            alert("Error, attachment could not be downloaded.");
-        } else {
-            const file = await create(response.data.name, { baseDir: BaseDirectory.Download });
-            await file.write(Uint8Array.from(atob(response.data.data), (char) => char.charCodeAt(0)));
-            await file.close();
+        if (!response.success || !response.data) {
+            showMessage({content: "Error, attachment could not be downloaded properly."});
+            console.error(response.message);
+            return;
         }
+
+        const file = await create(response.data.name, { baseDir: BaseDirectory.Download });
+        await file.write(Uint8Array.from(atob(response.data.data), (char) => char.charCodeAt(0)));
+        await file.close();
     }
+
+    /* Toolbox Operations */
 
     const reply = () => {
         showContent(Compose, {
             compose_type: "reply",
             original_message_id: email.message_id,
             original_sender: email.sender,
-            original_receiver: email.receiver,
+            original_receiver: email.receivers,
             original_subject: email.subject,
             original_body: email.body,
             original_date: email.date
@@ -90,7 +91,7 @@
             compose_type: "forward",
             original_message_id: email.message_id,
             original_sender: email.sender,
-            original_receiver: email.receiver,
+            original_receiver: email.receivers,
             original_subject: email.subject,
             original_body: email.body,
             original_date: email.date
@@ -98,73 +99,217 @@
     }
 </script>
 
-<div class="send-operations">
-    <div>
-        <button onclick={backToDefault}>Back</button>
+<div class="toolbox">
+    <div class="toolbox-left">
+        <div class="tool">
+            <Dropdown.Root>
+                <Dropdown.Toggle>⋮</Dropdown.Toggle>
+                {#snippet content()}
+                    <Dropdown.Item onclick={() => {}}>Flag</Dropdown.Item>
+                    <Dropdown.Item onclick={() => {}}>Spam</Dropdown.Item>
+                    <Dropdown.Item onclick={() => {}}>Print</Dropdown.Item>
+                    <Dropdown.Item onclick={() => {}}>MIME</Dropdown.Item>
+                {/snippet}
+            </Dropdown.Root>
+        </div>
+        <div class="tool-separator"></div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Archive
+            </Button.Basic>
+        </div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Star
+            </Button.Basic>
+        </div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Read / Unread
+            </Button.Basic>
+        </div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Move
+            </Button.Basic>
+        </div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Copy
+            </Button.Basic>
+        </div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Delete
+            </Button.Basic>
+        </div>
+        <div class="tool-separator"></div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Reply
+            </Button.Basic>
+        </div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Forward
+            </Button.Basic>
+        </div>
+        <div class="tool">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={() => {}}
+            >
+                Reply All
+            </Button.Basic>
+        </div>
     </div>
-    <div>
-        <button onclick={reply}>Reply ↩</button>
-        <button onclick={forward}>Forward ↪</button>
+    <div class="toolbox-right">
+        <div class="pagination">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+            >
+                Prev
+            </Button.Basic>
+            <span>21 of 1290</span>
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+            >
+                Next
+            </Button.Basic>
+        </div>
     </div>
 </div>
-<div id="subject" style="margin-bottom: 5px;">
-    <h3>{email.subject || ""}</h3>
-    <p>From: {email.receiver || ""}</p>
-    <p>To: {email.sender || ""}</p>
-    <p>Date: {email.date || ""}</p>
-    {#if Object.hasOwn(email, "flags") && email.flags}
-        {#each email.flags as flag}
-            <span class = "tag">{flag}</span>
-        {/each}
+
+<div class="email-content">
+    <div class="flags">
+        {#if Object.hasOwn(email, "flags") && email.flags}
+            {#each email.flags as flag}
+                <Badge content={flag} />
+            {/each}
+        {/if}
+    </div>
+    <div class="subject">
+        {email.subject || ""}
+    </div>
+    <div class="sender-to-receiver">
+        {
+            SENDER_TO_RECEIVER_TEMPLATE
+                .replace("{sender_fullname}", extractFullname(email.sender))
+                .replace("{sender_email}", extractEmailAddress(email.sender))
+                .replace("{sent_at}", email.date)
+                .trim()
+        }
+    </div>
+    <div class="separator"></div>
+    <div class="body" bind:this={body}></div>
+    {#if Object.hasOwn(email, "attachments") && email.attachments}
+        <div class="separator"></div>
+        <div id="attachments">
+            {#each email.attachments as attachment, index}
+                <Button.Action
+                    class="btn-outline"
+                    download={attachment.name}
+                    onclick={() => downloadAttachment(index)}
+                >
+                    {
+                        ATTACHMENT_TEMPLATE
+                            .replace("{attachment_name}", attachment.name)
+                            .replace("{attachment_size}", makeSizeHumanReadable(parseInt(attachment.size)))
+                            .trim()
+                    }
+                </Button.Action>
+            {/each}
+        </div>
     {/if}
 </div>
-<div id="body" bind:this={contentBody}></div>
-{#if Object.hasOwn(email, "attachments") && email.attachments}
-<div id="attachments">
-    {#each email.attachments as attachment}
-        <Button.Action
-            class="attachment"
-            download={attachment.name}
-            onclick={downloadAttachment}
-            data-name={attachment.name}
-            data-cid={attachment.cid}
-        >
-            {attachment.name + " (" + makeSizeHumanReadable(parseInt(attachment.size)) + ")"} ⇓
-        </Button.Action>
-    {/each}
-</div>
-{/if}
 
 <style>
     :global {
-        iframe.email-body{
+        .toolbox {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
             width: 100%;
-            height: 100%;
-            border: none;
-            background-color: var(--color-bg-primary);
+            padding: var(--spacing-sm) var(--spacing-lg);
+
+            & .toolbox-left {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: var(--spacing-xl);
+            }
+
+            & .toolbox-right {
+                & .pagination {
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    font-size: var(--font-size-sm);
+                    gap: var(--spacing-md);
+                    color: var(--color-text-secondary);
+
+                    & svg {
+                        margin-top: var(--spacing-2xs);
+                    }
+                }
+            }
         }
-    }
 
-    #body:not(:has(iframe)) {
-        background-color: #f5f5f5;
-        color: #333;
-        padding: 10px;
-        overflow-y: scroll;
-        overflow-x: hidden;
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-    }
+        .email-content {
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-lg);
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-sm);
 
-    #attachments {
-        margin-top: 1.5rem;
-    }
+            & .subject {
+                margin-top: var(--spacing-md);
+                display: flex;
+                flex-direction: column;
+                font-size: var(--font-size-lg);
+            }
 
-    .send-operations{
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+            & .sender-to-receiver {
+                margin-top: var(--spacing-xs);
+                color: var(--color-text-secondary);
+                font-size: var(--font-size-sm);
+            }
+        }
     }
 </style>
