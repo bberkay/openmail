@@ -101,25 +101,21 @@
 
 <div class="toolbox">
     <div class="toolbox-left">
-        <div class="tool">
-            <Dropdown.Root>
-                <Dropdown.Toggle>⋮</Dropdown.Toggle>
-                {#snippet content()}
-                    <Dropdown.Item onclick={() => {}}>Flag</Dropdown.Item>
-                    <Dropdown.Item onclick={() => {}}>Spam</Dropdown.Item>
-                    <Dropdown.Item onclick={() => {}}>Print</Dropdown.Item>
-                    <Dropdown.Item onclick={() => {}}>MIME</Dropdown.Item>
-                {/snippet}
-            </Dropdown.Root>
-        </div>
-        <div class="tool-separator"></div>
+        <Button.Basic
+            type="button"
+            class="btn-inline"
+            style="margin-right: var(--spacing-sm)";
+            onclick={() => {}}
+        >
+            Back
+        </Button.Basic>
         <div class="tool">
             <Button.Basic
                 type="button"
                 class="btn-inline"
                 onclick={() => {}}
             >
-                Archive
+                Star
             </Button.Basic>
         </div>
         <div class="tool">
@@ -128,7 +124,7 @@
                 class="btn-inline"
                 onclick={() => {}}
             >
-                Star
+                Archive
             </Button.Basic>
         </div>
         <div class="tool">
@@ -146,9 +142,10 @@
                 class="btn-inline"
                 onclick={() => {}}
             >
-                Move
+                Delete
             </Button.Basic>
         </div>
+        <div class="tool-separator"></div>
         <div class="tool">
             <Button.Basic
                 type="button"
@@ -164,7 +161,7 @@
                 class="btn-inline"
                 onclick={() => {}}
             >
-                Delete
+                Move
             </Button.Basic>
         </div>
         <div class="tool-separator"></div>
@@ -194,6 +191,18 @@
             >
                 Reply All
             </Button.Basic>
+        </div>
+        <div class="tool-separator"></div>
+        <div class="tool">
+            <Dropdown.Root>
+                <Dropdown.Toggle>⋮</Dropdown.Toggle>
+                {#snippet content()}
+                    <Dropdown.Item onclick={() => {}}>Spam</Dropdown.Item>
+                    <Dropdown.Item onclick={() => {}}>Print</Dropdown.Item>
+                    <Dropdown.Item onclick={() => {}}>MIME</Dropdown.Item>
+                    <Dropdown.Item onclick={() => {}}>Unsubscribe</Dropdown.Item>
+                {/snippet}
+            </Dropdown.Root>
         </div>
     </div>
     <div class="toolbox-right">
