@@ -16,6 +16,10 @@ export function debounce(func: Function, delay: number) {
     };
 }
 
+export function startsWithAnyOf(key: string, keys: string[]): boolean {
+    return keys.some((k) => key.toLowerCase().startsWith(k.toLowerCase()));
+}
+
 export function combine(strA: string, strB: any): string {
     return strA + (strB ? " " + strB : "");
 }
