@@ -28,3 +28,15 @@ export const SENDER_TO_RECEIVER_TEMPLATE = `
 export const ATTACHMENT_TEMPLATE = `
     {attachment_name} ({attachment_size})
 `;
+
+export const MAILBOX_PAGINATION_TEMPLATE = `
+    {offset_start} - {offset_end} of {total}
+`;
+
+export const MAILBOX_SELECTION_INFO_TEMPLATE = `
+    <b>{selection_count}</b> emails in this page selected.
+`;
+
+export const MAILBOX_SELECTION_ALL_TEMPLATE = `
+    Select all <b>{total}</b> emails in this page.
+`;
