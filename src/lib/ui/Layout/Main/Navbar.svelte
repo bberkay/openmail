@@ -7,3 +7,22 @@
 
 <nav bind:this={navbar}>
 </nav>
+
+<style>
+    :global {
+        nav {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            width: 100%;
+            padding: var(--spacing-lg);
+
+            & .nav-section {
+                display: flex;
+                flex-direction: row;
+                gap: var(--spacing-lg);
+                align-items: center;
+            }
+        }
+    }
+</style>
