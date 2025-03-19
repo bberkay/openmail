@@ -188,10 +188,14 @@ export function createSenderAddress(
     return emailAddress;
 }
 
+export function extractFullname(sender: string): string {
+  return (sender.includes("<") && sender.includes("@") ?
+    sender.split("<")[0] :
+    ""
+  ).trim();
+}
+
 export function extractEmailAddress(sender: string): string {
-    /**
-     * Extract the email address from a full name <email@address> string
-     */
     return (
         sender.includes("<")
             ? sender.split("<")[1].replace(">", "")
