@@ -19,13 +19,22 @@
             isContentShown = false;
         }
     }
+
+    const toggleDropdown = () => {
+        isContentShown = !isContentShown
+    }
 </script>
 
 <svelte:body onclick={closeWhenClickedOutside} />
 
 <div class="dropdown-container" bind:this={dropdownContainer}>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="dropdown-toggle-container" onclick={() => { isContentShown = !isContentShown }}>
+    <div
+        class="dropdown-toggle-container"
+        onclick={toggleDropdown}
+        onkeydown={toggleDropdown}
+        role="button"
+        tabindex="0"
+    >
         {@render children()}
     </div>
     {#if isContentShown}
@@ -36,19 +45,22 @@
 </div>
 
 <style>
-    /* TODO: Check this later */
-    .dropdown-content {
-        position: absolute;
-        display: flex;
-        background-color: #f3f3f3;
-        color: #000;
-        flex-direction: column;
-        padding: 1px;
-        border: 1px solid #c2c2c2;
-        border-radius: 5px;
-        right: -80px;
-        top: 30px;
-        z-index: 99;
-        width: 100px;
+    :global {
+        .dropdown-container {
+            & .dropdown-content {
+                position: absolute;
+                display: flex;
+                background-color: var(--color-border-subtle);
+                color: var(--color-text-primary);
+                flex-direction: column;
+                padding: 1px;
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-sm);
+                right: -80px;
+                top: 30px;
+                width: 100px;
+                z-index: var(--z-index-dropdown);
+            }
+        }
     }
 </style>
