@@ -3,6 +3,7 @@ import {
     type Account,
     type Mailbox,
     type OpenMailTaskResults,
+    Folder
 } from "../types";
 
 export enum SharedStoreKeys {
@@ -26,7 +27,7 @@ interface ISharedStore {
     [SharedStoreKeys.standardFolders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.customFolders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.currentAccount]: Account | null;
-    [SharedStoreKeys.currentFolder]: string | null;
+    [SharedStoreKeys.currentFolder]: string;
 }
 
 export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] }  = $state({
@@ -38,5 +39,5 @@ export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] }  = $state({
     [SharedStoreKeys.standardFolders]: [],
     [SharedStoreKeys.customFolders]: [],
     [SharedStoreKeys.currentAccount]: null,
-    [SharedStoreKeys.currentFolder]: null,
+    [SharedStoreKeys.currentFolder]: Folder.Inbox,
 });
