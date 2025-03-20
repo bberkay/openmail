@@ -55,47 +55,6 @@ export class MailboxController {
         }
     }
 
-    public async getMailboxes(
-        accounts: Account | Account[] | null = null,
-        folder: Folder | string | undefined = undefined,
-        searchCriteria: SearchCriteria | string | undefined = undefined,
-    ): Promise<BaseResponse> {
-        const response = await ApiService.get(
-            SharedStore.server,
-            GetRoutes.GET_MAILBOXES,
-            {
-                pathParams: {
-                    accounts: this._get_accounts(accounts),
-                },
-                queryParams: {
-                    folder: folder,
-                    search:
-                        searchCriteria && typeof searchCriteria !== "string"
-                            ? JSON.stringify(searchCriteria)
-                            : searchCriteria,
-                },
-            },
-        );
-
-        if (response.success && response.data) {
-            if (accounts && SharedStore.mailboxes.length > 0) {
-                response.data.forEach(account => {
-                    const targetMailbox = SharedStore.mailboxes.find(current => current.email_address === account.email_address);
-                    if (targetMailbox) {
-                        targetMailbox.result = account.result;
-                    }
-                });
-            } else {
-                SharedStore.mailboxes = response.data;
-            }
-        }
-
-        return {
-            success: response.success,
-            message: response.message,
-        };
-    }
-
     public async getFolders(accounts: Account | Account[] | null = null): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
@@ -165,6 +124,47 @@ export class MailboxController {
                     },
                 );
             });
+        }
+
+        return {
+            success: response.success,
+            message: response.message,
+        };
+    }
+
+    public async getMailboxes(
+        accounts: Account | Account[] | null = null,
+        folder: Folder | string | undefined = undefined,
+        searchCriteria: SearchCriteria | string | undefined = undefined,
+    ): Promise<BaseResponse> {
+        const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_MAILBOXES,
+            {
+                pathParams: {
+                    accounts: this._get_accounts(accounts),
+                },
+                queryParams: {
+                    folder: folder,
+                    search:
+                        searchCriteria && typeof searchCriteria !== "string"
+                            ? JSON.stringify(searchCriteria)
+                            : searchCriteria,
+                },
+            },
+        );
+
+        if (response.success && response.data) {
+            if (accounts && SharedStore.mailboxes.length > 0) {
+                response.data.forEach(account => {
+                    const targetMailbox = SharedStore.mailboxes.find(current => current.email_address === account.email_address);
+                    if (targetMailbox) {
+                        targetMailbox.result = account.result;
+                    }
+                });
+            } else {
+                SharedStore.mailboxes = response.data;
+            }
         }
 
         return {
