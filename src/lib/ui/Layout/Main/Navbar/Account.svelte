@@ -3,14 +3,18 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, type Account } from "$lib/types";
     import * as Select from "$lib/ui/Elements/Select";
+    import { createSenderAddress } from "$lib/utils";
+    import { show as showMessage } from "$lib/ui/Elements/Message";
 
     const mailboxController = new MailboxController();
 
     const handleAccount = (selectedAccountEmailAddr: string | null) => {
         if (selectedAccountEmailAddr) {
-            const selectedAccount = SharedStore.accounts.find((account: Account) => account.email_address === selectedAccountEmailAddr);
+            const selectedAccount = SharedStore.accounts.find(
+                (account: Account) => account.email_address === selectedAccountEmailAddr
+            );
             if (!selectedAccount) {
-                alert("Selected account could not found");
+                showMessage({content: "Selected account could not found"});
                 return;
             }
 
@@ -21,9 +25,15 @@
     }
 </script>
 
-<Select.Menu onchange={handleAccount} value={SharedStore.currentAccount?.email_address} placeholder="Account">
+<Select.Root
+    onchange={handleAccount}
+    value={SharedStore.currentAccount?.email_address}
+    placeholder="Account"
+>
     <Select.Option value="">Home</Select.Option>
     {#each SharedStore.accounts as account}
-        <Select.Option value={account.email_address}>{account.fullname} &lt;{account.email_address}&gt;</Select.Option>
+        <Select.Option value={account.email_address}>
+            {createSenderAddress(account.email_address, account.fullname)}
+        </Select.Option>
     {/each}
-</Select.Menu>
+</Select.Root>
