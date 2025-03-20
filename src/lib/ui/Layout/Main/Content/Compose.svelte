@@ -66,13 +66,11 @@
 
     /* Form Handling Functions */
 
-    const addAddress = (address: string | null, addressList: string[]) => {
-        if (!address || address == "") return;
+    const addAddress = (address: string, addressList: string[]) => {
         addressList.push(address);
     }
 
-    const removeAddress = (address: string | null, addressList: string[]) => {
-        if (!address || address == "") return;
+    const removeAddress = (address: string, addressList: string[]) => {
         addressList = addressList.filter(addr => addr !== address);
     }
 
