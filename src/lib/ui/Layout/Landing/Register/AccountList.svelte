@@ -27,7 +27,15 @@
         isEditingAccount = $bindable(),
         isListingAccount = $bindable()
     }: Props = $props();
+
     let accountSelection: string[] = $state([]);
+
+    const selectAllAccounts = (event: Event) => {
+        const selectAllCheckbox = event.target as HTMLInputElement;
+        accountSelection = selectAllCheckbox.checked
+            ? SharedStore.failedAccounts.concat(SharedStore.accounts).map((account) => account.email_address)
+            : [];
+    }
 
     const removeAccount = async (e: Event): Promise<void> => {
         showConfirm({
@@ -61,19 +69,12 @@
         })
     };
 
-    const selectAllAccounts = (event: Event) => {
-        const selectAllCheckbox = event.target as HTMLInputElement;
-        accountSelection = selectAllCheckbox.checked
-            ? SharedStore.failedAccounts.concat(SharedStore.accounts).map((account) => account.email_address)
-            : [];
-    }
-
     async function initMailboxes(): Promise<void> {
         const response = await mailboxController.init();
         if (!response.success) {
             alert(response.message);
         } else {
-            SharedStore.currentAccount = null;
+            SharedStore.currentAccount = SharedStore.accounts[0];
             SharedStore.currentFolder = Folder.Inbox;
             //await listenForNotifications();
         }
@@ -185,36 +186,36 @@
             </Table.Header>
             <Table.Body>
                 {#each SharedStore.failedAccounts.concat(SharedStore.accounts) as account, index}
-                <Table.Row class={index < failedAccountLength ? "failed" : ""}>
-                    <Table.Cell class="checkbox-cell">
-                        <Input.Basic
-                            type="checkbox"
-                            bind:group={accountSelection}
-                            value={account.email_address}
-                        />
-                    </Table.Cell>
-                    <Table.Cell class="body-cell">
-                        {index < failedAccountLength ? "Warning" : ""}
-                        {account.fullname} &lt;{account.email_address}&gt;
-                    </Table.Cell>
-                    <Table.Cell class="action-cell">
-                        <Button.Basic
-                            type="button"
-                            class="btn-inline"
-                            style="margin-right: 5px;"
-                            onclick={() => { isEditingAccount = account; }}
-                        >
-                            Edit
-                        </Button.Basic>
-                        <Button.Action
-                            class="btn-inline"
-                            onclick={removeAccount}
-                            data-email-address={account.email_address}
-                        >
-                            Remove
-                        </Button.Action>
-                    </Table.Cell>
-                </Table.Row>
+                    <Table.Row class={index < failedAccountLength ? "failed" : ""}>
+                        <Table.Cell class="checkbox-cell">
+                            <Input.Basic
+                                type="checkbox"
+                                bind:group={accountSelection}
+                                value={account.email_address}
+                            />
+                        </Table.Cell>
+                        <Table.Cell class="body-cell">
+                            {index < failedAccountLength ? "Warning" : ""}
+                            {account.fullname} &lt;{account.email_address}&gt;
+                        </Table.Cell>
+                        <Table.Cell class="action-cell">
+                            <Button.Basic
+                                type="button"
+                                class="btn-inline"
+                                style="margin-right: 5px;"
+                                onclick={() => { isEditingAccount = account; }}
+                            >
+                                Edit
+                            </Button.Basic>
+                            <Button.Action
+                                class="btn-inline"
+                                onclick={removeAccount}
+                                data-email-address={account.email_address}
+                            >
+                                Remove
+                            </Button.Action>
+                        </Table.Cell>
+                    </Table.Row>
                 {/each}
             </Table.Body>
         </Table.Root>
