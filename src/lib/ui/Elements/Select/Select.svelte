@@ -8,7 +8,7 @@
         children: Snippet;
         placeholder?: string;
         value?: string;
-        onchange?: (selectedOption: string | null) => void;
+        onchange?: (selectedOption: string) => void;
         enableSearch?: boolean;
         resetAfterSelect?: boolean;
     }
