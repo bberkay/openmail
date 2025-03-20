@@ -31,16 +31,18 @@
     let currentMailbox = $derived(SharedStore.mailboxes.find(
         task => task.result.folder === SharedStore.currentFolder
     )!.result);
+
     let totalEmailCount = $derived(currentMailbox.total);
     let currentOffset = $derived(currentMailbox.emails.findIndex(
         em => em.uid === email.uid
     ) + 1);
 
-    const isEmailInCustomFolder = SharedStore.currentFolder &&
-        !startsWithAnyOf(SharedStore.currentFolder, Object.values(Folder));
     const customFoldersOfAccount = SharedStore.customFolders.find(
         acc => acc.email_address === account!.email_address
-    )!.result
+    )!.result;
+    const isEmailInCustomFolder = $derived(
+        !startsWithAnyOf(currentMailbox.folder, Object.values(Folder))
+    );
 
     /* Render Body */
 
@@ -133,7 +135,7 @@
         await removeMark(Mark.Seen);
     }
 
-    const copyTo = async (destinationFolder: string) => {
+    const copyTo = async (destinationFolder: string | Folder) => {
         const response = await mailboxController.copyEmails(
             account,
             [email.uid],
@@ -146,7 +148,7 @@
         }
     }
 
-    const moveTo = async (destinationFolder: string) => {
+    const moveTo = async (destinationFolder: string | Folder) => {
         const response = await mailboxController.moveEmails(
             account,
             [email.uid],
@@ -162,6 +164,10 @@
 
         SharedStore.currentFolder = destinationFolder;
         showContent(Inbox);
+    }
+
+    const moveToArchive = async () => {
+        moveTo(Folder.Archive);
     }
 
     const deleteFrom = async () => {
@@ -205,6 +211,8 @@
             original_date: email.date
         })
     }
+
+    /* Pagination operations */
 
     const setEmailByUid = async (uid: string): Promise<void> => {
         const response = await mailboxController.getEmailContent(
@@ -273,15 +281,6 @@
             {/if}
         </div>
         <div class="tool">
-            <Button.Action
-                type="button"
-                class="btn-inline"
-                onclick={deleteFrom}
-            >
-                Archive
-            </Button.Action>
-        </div>
-        <div class="tool">
             {#if Object.hasOwn(email, "flags") && email.flags && email.flags.includes(Mark.Seen)}
                 <Button.Action
                     type="button"
@@ -304,6 +303,15 @@
             <Button.Action
                 type="button"
                 class="btn-inline"
+                onclick={moveToArchive}
+            >
+                Archive
+            </Button.Action>
+        </div>
+        <div class="tool">
+            <Button.Action
+                type="button"
+                class="btn-inline"
                 onclick={deleteFrom}
             >
                 Delete
@@ -313,7 +321,9 @@
         <div class="tool">
             <Select.Root onchange={copyTo} placeholder='Copy To'>
                 {#each customFoldersOfAccount as customFolder}
-                    <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                    {#if customFolder !== currentMailbox.folder}
+                        <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                    {/if}
                 {/each}
                 {#if isEmailInCustomFolder}
                     <!-- Add inbox option if email is in custom folder -->
@@ -324,7 +334,9 @@
         <div class="tool">
             <Select.Root onchange={moveTo} placeholder='Move To'>
                 {#each customFoldersOfAccount as customFolder}
-                    <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                    {#if customFolder !== currentMailbox.folder}
+                        <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                    {/if}
                 {/each}
                 {#if isEmailInCustomFolder}
                     <!-- Add inbox option if email is in custom folder -->
