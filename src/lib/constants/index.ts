@@ -1,3 +1,17 @@
+/**
+ * ----------------------------------------------------------------------------
+ * Generally used constants
+ * ----------------------------------------------------------------------------
+ */
+export const NOT_IMPLEMENTED_TEMPLATE = `
+    {feature} feature does not implemented yet.
+`
+
+/**
+ * ----------------------------------------------------------------------------
+ * Constants generally used in Main/Content/Compose.svelte
+ * ----------------------------------------------------------------------------
+ */
 export const REPLY_TEMPLATE = `
     <br/><br/>
     <div>
@@ -29,6 +43,20 @@ export const ATTACHMENT_TEMPLATE = `
     {attachment_name} ({attachment_size})
 `;
 
+/**
+ * ----------------------------------------------------------------------------
+ * Constants generally used in Main/Content/Email.svelte
+ * ----------------------------------------------------------------------------
+ */
+export const EMAIL_PAGINATION_TEMPLATE = `
+    {current} of {total}
+`;
+
+/**
+ * ----------------------------------------------------------------------------
+ * Constants generally used in Main/Content/Inbox.svelte
+ * ----------------------------------------------------------------------------
+ */
 export const MAILBOX_PAGINATION_TEMPLATE = `
     {offset_start} - {offset_end} of {total}
 `;
@@ -37,14 +65,10 @@ export const MAILBOX_SELECTION_INFO_TEMPLATE = `
     <b>{selection_count}</b> emails in this page selected.
 `;
 
-export const MAILBOX_SELECTION_ALL_TEMPLATE = `
+export const MAILBOX_SELECT_ALL_TEMPLATE = `
     Select all <b>{total}</b> emails in this page.
 `;
 
-export const EMAIL_PAGINATION_TEMPLATE = `
-    {current} of {total}
+export const MAILBOX_CLEAR_SELECTION_TEMPLATE = `
+    Clear selection
 `;
-
-export const NOT_IMPLEMENTED_TEMPLATE = `
-    {feature} feature does not implemented yet.
-`
