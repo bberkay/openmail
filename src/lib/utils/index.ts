@@ -10,10 +10,43 @@ export function debounce(func: Function, delay: number) {
     let timer = -1;
     return (...args: any) => {
         clearTimeout(timer);
+        // @ts-ignore
         timer = setTimeout(() => {
             func(...args);
         }, delay);
     };
+}
+
+export function findMatchingObject<T extends Record<string, any>>(
+    objectList: T[],
+    searchObject: Record<string, any>,
+    keyToMatch: string,
+): T | undefined {
+    if (!Object.hasOwn(searchObject, keyToMatch)) {
+        return undefined;
+    }
+
+    return objectList.find(
+        (obj) =>
+            Object.hasOwn(obj, keyToMatch) &&
+            obj[keyToMatch] === searchObject[keyToMatch],
+    );
+}
+
+export function findMatchingIndex<T extends Record<string, any>>(
+    objectList: T[],
+    searchObject: Record<string, any>,
+    keyToMatch: string,
+): number | undefined {
+    if (!Object.hasOwn(searchObject, keyToMatch)) {
+        return undefined;
+    }
+
+    return objectList.findIndex(
+        (obj) =>
+            Object.hasOwn(obj, keyToMatch) &&
+            obj[keyToMatch] === searchObject[keyToMatch],
+    );
 }
 
 export function startsWithAnyOf(key: string, keys: string[]): boolean {
@@ -193,10 +226,9 @@ export function createSenderAddress(
 }
 
 export function extractFullname(sender: string): string {
-  return (sender.includes("<") && sender.includes("@") ?
-    sender.split("<")[0] :
-    ""
-  ).trim();
+    return (
+        sender.includes("<") && sender.includes("@") ? sender.split("<")[0] : ""
+    ).trim();
 }
 
 export function extractEmailAddress(sender: string): string {
