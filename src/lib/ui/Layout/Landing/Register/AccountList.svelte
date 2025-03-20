@@ -72,8 +72,11 @@
     async function initMailboxes(): Promise<void> {
         const response = await mailboxController.init();
         if (!response.success) {
-            alert(response.message);
+            showMessage({content: "Unexpected error while initializing mailboxes."});
+            console.error(response.message);
         } else {
+            // The default current account is, the first account.
+            // This might change in the future.
             SharedStore.currentAccount = SharedStore.accounts[0];
             SharedStore.currentFolder = Folder.Inbox;
             //await listenForNotifications();
