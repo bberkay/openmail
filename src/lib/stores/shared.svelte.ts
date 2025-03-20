@@ -26,7 +26,7 @@ interface ISharedStore {
     [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
     [SharedStoreKeys.standardFolders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.customFolders]: OpenMailTaskResults<string[]>;
-    [SharedStoreKeys.currentAccount]: Account | null;
+    [SharedStoreKeys.currentAccount]: Account;
     [SharedStoreKeys.currentFolder]: string;
 }
 
@@ -38,6 +38,6 @@ export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] }  = $state({
     [SharedStoreKeys.mailboxes]: [],
     [SharedStoreKeys.standardFolders]: [],
     [SharedStoreKeys.customFolders]: [],
-    [SharedStoreKeys.currentAccount]: null,
+    [SharedStoreKeys.currentAccount]: {email_address: ""},
     [SharedStoreKeys.currentFolder]: Folder.Inbox,
 });
