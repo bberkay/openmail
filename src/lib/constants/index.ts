@@ -40,3 +40,7 @@ export const MAILBOX_SELECTION_INFO_TEMPLATE = `
 export const MAILBOX_SELECTION_ALL_TEMPLATE = `
     Select all <b>{total}</b> emails in this page.
 `;
+
+export const EMAIL_PAGINATION_TEMPLATE = `
+    {current} of {total}
+`;
