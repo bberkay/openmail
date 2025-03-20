@@ -1,7 +1,7 @@
 <script lang="ts">
     import { combine } from "$lib/utils";
-    import Icon from "$lib/ui/Elements/Icon";
-    import * as Button from "$lib/ui/Elements/Button";
+    import Icon from "$lib/ui/Components/Icon";
+    import * as Button from "$lib/ui/Components/Button";
 
     interface Props {
         content: string;

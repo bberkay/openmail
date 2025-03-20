@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as Button from "$lib/ui/Elements/Button";
+    import * as Button from "$lib/ui/Components/Button";
 
     interface Props {
         opened: boolean;

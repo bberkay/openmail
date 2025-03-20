@@ -1,8 +1,8 @@
 <script lang="ts">
     import { onMount, type Snippet } from "svelte";
-    import * as Button from "$lib/ui/Elements/Button";
-    import * as Input from "$lib/ui/Elements/Input";
-    import Icon from "$lib/ui/Elements/Icon";
+    import * as Button from "$lib/ui/Components/Button";
+    import * as Input from "$lib/ui/Components/Input";
+    import Icon from "$lib/ui/Components/Icon";
 
     interface Props {
         children: Snippet;

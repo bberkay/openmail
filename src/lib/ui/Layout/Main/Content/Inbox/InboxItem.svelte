@@ -2,7 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import type { Account, Email as EmailAsType } from "$lib/types";
-    import * as Button from "$lib/ui/Elements/Button";
+    import * as Button from "$lib/ui/Components/Button";
     import Email from "../Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 

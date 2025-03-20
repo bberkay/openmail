@@ -4,9 +4,9 @@
     import { Folder, Mark, type Account, type SearchCriteria } from "$lib/types";
     import { debounce, isEmailValid, adjustSizes, convertToIMAPDate, concatValueAndUnit, convertSizeToBytes, isObjEmpty } from "$lib/utils";
     import { Size } from "$lib/utils/types";
-    import * as Select from "$lib/ui/Elements/Select";
-    import * as Button from "$lib/ui/Elements/Button";
-    import * as Input from "$lib/ui/Elements/Input";
+    import * as Select from "$lib/ui/Components/Select";
+    import * as Button from "$lib/ui/Components/Button";
+    import * as Input from "$lib/ui/Components/Input";
 
     /* Constants */
 

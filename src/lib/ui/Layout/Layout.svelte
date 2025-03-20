@@ -1,12 +1,12 @@
 <script module lang="ts">
-    import { display, destroy } from "./Component.svelte";
+    import { display, destroy } from "./Section.svelte";
     import { type Snippet } from "svelte";
 
-    let componentContainer: HTMLElement;
+    let sectionContainer: HTMLElement;
     let isMounted = $state(false);
-    export function showThis(component: any, props?: any) {
+    export function showThis(section: any, props?: any) {
         isMounted = true;
-        display(component, componentContainer, props);
+        display(section, sectionContainer, props);
     }
 
     export function backToDefault() {
@@ -23,7 +23,7 @@
     let { children }: Props = $props();
 </script>
 
-<div class="layout-container" bind:this={componentContainer}>
+<div class="layout-container" bind:this={sectionContainer}>
     {#if !isMounted}
         {@render children()}
     {/if}

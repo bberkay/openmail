@@ -1,8 +1,8 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
     import { close, type AlertType } from "./index";
-    import * as Button from "$lib/ui/Elements/Button";
-    import Icon from "$lib/ui/Elements/Icon";
+    import * as Button from "$lib/ui/Components/Button";
+    import Icon from "$lib/ui/Components/Icon";
 
     interface Props {
         id: string;

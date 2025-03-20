@@ -6,15 +6,15 @@
     import { ATTACHMENT_TEMPLATE, SENDER_TO_RECEIVER_TEMPLATE, EMAIL_PAGINATION_TEMPLATE } from '$lib/constants';
     import { type Account, type Email, Folder, Mark } from "$lib/types";
     import { extractEmailAddress, extractFullname, findMatchingIndex, findMatchingObject, makeSizeHumanReadable,startsWithAnyOf } from "$lib/utils";
-    import * as Button from "$lib/ui/Elements/Button";
-    import * as Select from "$lib/ui/Elements/Select";
-    import * as Dropdown from "$lib/ui/Elements/Dropdown";
-    import Badge from "$lib/ui/Elements/Badge";
+    import * as Button from "$lib/ui/Components/Button";
+    import * as Select from "$lib/ui/Components/Select";
+    import * as Dropdown from "$lib/ui/Components/Dropdown";
+    import Badge from "$lib/ui/Components/Badge";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
     import { backToDefault, showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
-    import { show as showMessage } from "$lib/ui/Elements/Message";
-    import { show as showConfirm } from "$lib/ui/Elements/Confirm";
+    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
     const mailboxController = new MailboxController();
 

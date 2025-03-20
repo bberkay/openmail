@@ -1,6 +1,6 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import Modal from "$lib/ui/Elements/Modal";
+    import Modal from "$lib/ui/Components/Modal";
 </script>
 
 <Modal>

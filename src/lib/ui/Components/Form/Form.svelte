@@ -1,6 +1,6 @@
 <script lang="ts">
     import { mount, unmount, type Snippet } from "svelte";
-    import { Spinner } from "$lib/ui/Elements/Loader";
+    import { Spinner } from "$lib/ui/Components/Loader";
     import { combine } from "$lib/utils";
 
     interface Props {

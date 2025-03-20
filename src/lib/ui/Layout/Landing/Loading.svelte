@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Spinner } from "$lib/ui/Elements/Loader";
+    import { Spinner } from "$lib/ui/Components/Loader";
 </script>
 
 <h3>

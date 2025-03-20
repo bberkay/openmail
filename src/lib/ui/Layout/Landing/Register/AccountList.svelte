@@ -8,12 +8,12 @@
     import { AccountController } from "$lib/controllers/AccountController";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, type Account, type Email, type OpenMailTaskResults } from "$lib/types";
-    import * as Button from "$lib/ui/Elements/Button";
-    import * as Input from "$lib/ui/Elements/Input";
-    import * as Table from "$lib/ui/Elements/Table";
-    import { show as showAlert } from "$lib/ui/Elements/Alert";
-    import { show as showMessage } from "$lib/ui/Elements/Message";
-    import { show as showConfirm } from "$lib/ui/Elements/Confirm";
+    import * as Button from "$lib/ui/Components/Button";
+    import * as Input from "$lib/ui/Components/Input";
+    import * as Table from "$lib/ui/Components/Table";
+    import { show as showAlert } from "$lib/ui/Components/Alert";
+    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
     const accountController = new AccountController();
     const mailboxController = new MailboxController();

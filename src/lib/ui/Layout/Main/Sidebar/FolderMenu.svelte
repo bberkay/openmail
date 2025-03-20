@@ -1,14 +1,14 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import * as Dropdown from "$lib/ui/Elements/Dropdown";
-    import * as Button from "$lib/ui/Elements/Button";
+    import * as Dropdown from "$lib/ui/Components/Dropdown";
+    import * as Button from "$lib/ui/Components/Button";
     import CreateFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/CreateFolderModal.svelte";
     import RenameFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/RenameFolderModal.svelte";
     import DeleteFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/DeleteFolderModal.svelte";
     import MoveFolderModal from "$lib/ui/Layout/Main/Sidebar/FolderMenu/MoveFolderModal.svelte";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
-    import * as Modal from "$lib/ui/Elements/Modal";
+    import * as Modal from "$lib/ui/Components/Modal";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 
     /* Constants */

@@ -1,6 +1,6 @@
 <script lang="ts">
-    import * as Input from "$lib/ui/Elements/Input";
-    import Icon from "$lib/ui/Elements/Icon";
+    import * as Input from "$lib/ui/Components/Input";
+    import Icon from "$lib/ui/Components/Icon";
 
     interface Props {
         name?: string;

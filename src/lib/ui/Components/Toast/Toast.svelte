@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
     import { close } from "./index";
-    import * as Button from "$lib/ui/Elements/Button";
+    import * as Button from "$lib/ui/Components/Button";
 
     interface Props {
         id: string;

@@ -1,8 +1,8 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { makeSizeHumanReadable, combine } from "$lib/utils";
-    import * as Button from "$lib/ui/Elements/Button";
-    import * as Input from "$lib/ui/Elements/Input";
+    import * as Button from "$lib/ui/Components/Button";
+    import * as Input from "$lib/ui/Components/Input";
 
     interface Props {
         [attribute: string]: unknown;

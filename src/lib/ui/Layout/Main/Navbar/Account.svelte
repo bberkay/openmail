@@ -2,9 +2,9 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, type Account } from "$lib/types";
-    import * as Select from "$lib/ui/Elements/Select";
+    import * as Select from "$lib/ui/Components/Select";
     import { createSenderAddress } from "$lib/utils";
-    import { show as showMessage } from "$lib/ui/Elements/Message";
+    import { show as showMessage } from "$lib/ui/Components/Message";
 
     const mailboxController = new MailboxController();
 

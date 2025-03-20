@@ -2,9 +2,9 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import Form from "$lib/ui/Elements/Form";
-    import Modal from "$lib/ui/Elements/Modal";
-    import * as Select from "$lib/ui/Elements/Select";
+    import Form from "$lib/ui/Components/Form";
+    import Modal from "$lib/ui/Components/Modal";
+    import * as Select from "$lib/ui/Components/Select";
 
     const mailboxController = new MailboxController();
 

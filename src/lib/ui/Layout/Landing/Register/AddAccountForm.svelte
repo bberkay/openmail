@@ -1,11 +1,11 @@
 <script lang="ts">
     import { AccountController } from "$lib/controllers/AccountController";
-    import Form from "$lib/ui/Elements/Form";
-    import { FormGroup } from "$lib/ui/Elements/Form";
-    import * as Input from "$lib/ui/Elements/Input";
-    import * as Button from "$lib/ui/Elements/Button";
-    import Label from "$lib/ui/Elements/Label";
-    import { show as showMessage } from "$lib/ui/Elements/Message";
+    import Form from "$lib/ui/Components/Form";
+    import { FormGroup } from "$lib/ui/Components/Form";
+    import * as Input from "$lib/ui/Components/Input";
+    import * as Button from "$lib/ui/Components/Button";
+    import Label from "$lib/ui/Components/Label";
+    import { show as showMessage } from "$lib/ui/Components/Message";
 
     const accountController = new AccountController();
 
