@@ -44,3 +44,7 @@ export const MAILBOX_SELECTION_ALL_TEMPLATE = `
 export const EMAIL_PAGINATION_TEMPLATE = `
     {current} of {total}
 `;
+
+export const NOT_IMPLEMENTED_TEMPLATE = `
+    {feature} feature does not implemented yet.
+`

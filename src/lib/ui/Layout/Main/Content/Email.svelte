@@ -3,9 +3,9 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
-    import { ATTACHMENT_TEMPLATE, SENDER_TO_RECEIVER_TEMPLATE, EMAIL_PAGINATION_TEMPLATE } from '$lib/constants';
+    import { ATTACHMENT_TEMPLATE, SENDER_TO_RECEIVER_TEMPLATE, EMAIL_PAGINATION_TEMPLATE, NOT_IMPLEMENTED_TEMPLATE } from '$lib/constants';
     import { type Account, type Email, Folder, Mark } from "$lib/types";
-    import { extractEmailAddress, extractFullname, findMatchingIndex, findMatchingObject, makeSizeHumanReadable,startsWithAnyOf } from "$lib/utils";
+    import { extractEmailAddress, extractFullname, makeSizeHumanReadable, startsWithAnyOf } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
@@ -356,10 +356,42 @@
             <Dropdown.Root>
                 <Dropdown.Toggle>⋮</Dropdown.Toggle>
                 {#snippet content()}
-                    <Dropdown.Item onclick={() => {}}>Spam</Dropdown.Item>
-                    <Dropdown.Item onclick={() => {}}>Print</Dropdown.Item>
-                    <Dropdown.Item onclick={() => {}}>Show Original</Dropdown.Item>
-                    <Dropdown.Item onclick={() => {}}>Unsubcribe</Dropdown.Item>
+                    <Dropdown.Item
+                        onclick={() => {
+                            showMessage({
+                                content: NOT_IMPLEMENTED_TEMPLATE.replace("{feature}", "Spam")
+                            })
+                        }}
+                    >
+                        Spam
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                        onclick={() => {
+                            showMessage({
+                                content: NOT_IMPLEMENTED_TEMPLATE.replace("{feature}", "Print")
+                            })
+                        }}
+                    >
+                        Print
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                        onclick={() => {
+                            showMessage({
+                                content: NOT_IMPLEMENTED_TEMPLATE.replace("{feature}", "Show Original")
+                            })
+                        }}
+                    >
+                        Show Original
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                        onclick={() => {
+                            showMessage({
+                                content: NOT_IMPLEMENTED_TEMPLATE.replace("{feature}", "Unsubscribe")
+                            })
+                        }}
+                    >
+                        Unsubcribe
+                    </Dropdown.Item>
                 {/snippet}
             </Dropdown.Root>
         </div>
