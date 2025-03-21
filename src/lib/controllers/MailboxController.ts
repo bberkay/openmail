@@ -31,9 +31,8 @@ export class MailboxController {
             }).join(",");
     }
 
-    public async init(accounts: Account | Account[] | null = null): Promise<BaseResponse> {
+    public async init(): Promise<BaseResponse> {
         let response;
-
         response = await this.getFolders();
         if (!response.success) {
             return {
@@ -43,7 +42,7 @@ export class MailboxController {
         }
 
         response = await this.getMailboxes(
-            !accounts || (Array.isArray(accounts) && accounts.length < 1) ? SharedStore.accounts : accounts,
+            SharedStore.accounts,
             Folder.Inbox,
             {
                 excluded_flags: [Mark.Seen],
