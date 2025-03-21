@@ -1,0 +1,33 @@
+<script lang="ts">
+    import { type Account, type Email } from "$lib/types";
+    import ToolboxLeft from "$lib/ui/Layout/Main/Content/Email/Toolbox/ToolboxLeft.svelte";
+    import ToolboxRight from "$lib/ui/Layout/Main/Content/Email/Toolbox/ToolboxRight.svelte";
+
+    interface Props {
+        account: Account;
+        email: Email;
+    }
+
+    let {
+        account,
+        email
+    }: Props = $props();
+</script>
+
+<div class="toolbox">
+    <ToolboxLeft {account} {email} />
+    <ToolboxRight {account} {email} />
+</div>
+
+<style>
+    :global {
+        .toolbox {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-lg);
+        }
+    }
+</style>
