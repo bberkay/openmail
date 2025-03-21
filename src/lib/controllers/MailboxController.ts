@@ -54,7 +54,9 @@ export class MailboxController {
         }
     }
 
-    public async getFolders(accounts: Account | Account[] | null = null): Promise<BaseResponse> {
+    public async getFolders(
+        accounts: Account | Account[] | null = null
+    ): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.GET_FOLDERS,
@@ -173,15 +175,16 @@ export class MailboxController {
     }
 
     public async paginateEmails(
-        offset_start: number,
-        offset_end: number
+        accounts: Account | Account[] | null = null,
+        offset_start?: number,
+        offset_end?: number
     ): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.PAGINATE_MAILBOXES,
             {
                 pathParams: {
-                    accounts: this._get_accounts(SharedStore.mailboxes.map(mailbox => mailbox.email_address)),
+                    accounts: this._get_accounts(accounts),
                     offset_start: offset_start,
                     offset_end: offset_end,
                 },
