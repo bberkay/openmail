@@ -18,16 +18,3 @@
     <ToolboxLeft {account} {email} />
     <ToolboxRight {account} {email} />
 </div>
-
-<style>
-    :global {
-        .toolbox {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            padding: var(--spacing-sm) var(--spacing-lg);
-        }
-    }
-</style>
