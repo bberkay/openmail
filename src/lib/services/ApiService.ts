@@ -54,8 +54,8 @@ interface QueryParams {
     [GetRoutes.PAGINATE_MAILBOXES]: {
         pathParams: {
             accounts: string;
-            offset_start: number;
-            offset_end: number;
+            offset_start?: number;
+            offset_end?: number;
         };
     };
     [GetRoutes.GET_FOLDERS]: {
