@@ -313,16 +313,3 @@
         </Dropdown.Root>
     </div>
 </div>
-
-<style>
-    :global {
-        .toolbox {
-            & .toolbox-left {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                gap: var(--spacing-xl);
-            }
-        }
-    }
-</style>

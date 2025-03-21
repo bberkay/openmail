@@ -90,24 +90,3 @@
         </Button.Action>
     </div>
 </div>
-
-<style>
-    :global {
-        .toolbox {
-            & .toolbox-right {
-                & .pagination {
-                    display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    font-size: var(--font-size-sm);
-                    gap: var(--spacing-md);
-                    color: var(--color-text-secondary);
-
-                    & svg {
-                        margin-top: var(--spacing-2xs);
-                    }
-                }
-            }
-        }
-    }
-</style>
