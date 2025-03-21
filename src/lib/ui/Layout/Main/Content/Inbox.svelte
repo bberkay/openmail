@@ -1,180 +1,154 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Email, Mark, type Mailbox, Folder } from "$lib/types";
+    import { onMount } from "svelte";
+    import { type Email, Mark, Folder } from "$lib/types";
+    import { extractEmailAddress, extractFullname, startsWithAnyOf } from "$lib/utils";
+    import { MAILBOX_CLEAR_SELECTION_TEMPLATE, MAILBOX_PAGINATION_TEMPLATE, MAILBOX_SELECT_ALL_TEMPLATE, MAILBOX_SELECTION_INFO_TEMPLATE } from "$lib/constants";
     import InboxItem from "$lib/ui/Layout/Main/Content/Inbox/InboxItem.svelte";
-    import * as Select from "$lib/ui/Elements/Select";
-    import * as Input from "$lib/ui/Elements/Input";
-    import * as Button from "$lib/ui/Elements/Button";
-    import { MAILBOX_PAGINATION_TEMPLATE, MAILBOX_SELECTION_ALL_TEMPLATE, MAILBOX_SELECTION_INFO_TEMPLATE } from "$lib/constants";
+    import Icon from "$lib/ui/Components/Icon";
+    import Badge from "$lib/ui/Components/Badge/Badge.svelte";
+    import * as Select from "$lib/ui/Components/Select";
+    import * as Input from "$lib/ui/Components/Input";
+    import * as Button from "$lib/ui/Components/Button";
+    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
-    /* Constants */
-
+    type DateGroup = "Today" | "Yesterday" | "This Week" | "This Month" | "Older";
     const mailboxController = new MailboxController();
 
-    /* Variables */
+    let currentMailbox = $derived(SharedStore.mailboxes.find(
+        task => task.email_address === SharedStore.currentAccount!.email_address &&
+            task.result.folder === SharedStore.currentFolder
+    )!.result);
+    let currentMailboxUids: string[] = $derived(
+        currentMailbox.emails.map((email: Email) => email.uid).flat()
+    );
 
-    let totalEmailCount = $derived(SharedStore.mailboxes.reduce((a, b) => a + b.result.total, 0));
     let currentOffset = $state(1);
+    let totalEmailCount = $derived(currentMailbox.total);
+    let isAllEmailsSelected = $state(false);
     let emailSelection: string[] = $state([]);
 
-    /* Inbox Functions */
+    const customFoldersOfAccount = SharedStore.currentAccount
+        ? SharedStore.customFolders.find(
+            acc => acc.email_address === SharedStore.currentAccount!.email_address
+        )!.result
+        : [];
+    const isEmailInCustomFolder = $derived(
+        !startsWithAnyOf(currentMailbox.folder, Object.values(Folder))
+    );
 
-    const refreshMailbox = async (): Promise<void> => {
-        const response = await mailboxController.getMailboxes();
-        if (!response.success) {
-            alert(response.message);
-        }
+    let selectShownCheckbox: HTMLInputElement;
+    onMount(() => {
+        selectShownCheckbox = document.getElementById("select-shown") as HTMLInputElement;
+    });
+
+    function groupEmailsByDate() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const lastWeekStart = new Date(today);
+        lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+        const lastMonthStart = new Date(today);
+        lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+
+        const groupedEmails: Record<DateGroup, Email[]> = {
+          "Today": [],
+          "Yesterday": [],
+          "This Week": [],
+          "This Month": [],
+          "Older": []
+        };
+
+        currentMailbox.emails.forEach(email => {
+            const emailDate = new Date(email.date);
+            emailDate.setHours(0, 0, 0, 0);
+
+            if (emailDate.getTime() === today.getTime()) {
+                groupedEmails["Today"].push(email);
+            } else if (emailDate.getTime() === yesterday.getTime()) {
+                groupedEmails["Yesterday"].push(email);
+            } else if (emailDate >= lastWeekStart && emailDate < yesterday) {
+                groupedEmails["This Week"].push(email);
+            } else if (emailDate >= lastMonthStart && emailDate < lastWeekStart) {
+                groupedEmails["This Month"].push(email);
+            } else {
+                groupedEmails["Older"].push(email);
+            }
+        });
+
+        return groupedEmails;
     }
 
-    const getPreviousEmails = async () => {
-        if (currentOffset <= 10)
-            return;
+    /* Handle Selection */
 
-        const offset_start = Math.max(0, currentOffset - 10);
-        const offset_end = Math.max(0, currentOffset);
-        const response = await mailboxController.paginateEmails(offset_start, offset_end);
-        if (response.success) {
-            currentOffset = Math.max(0, offset_start);
-        } else {
-            alert(response.message);
-        }
-    }
-
-    const getNextEmails = async () => {
-        if (currentOffset >= totalEmailCount)
-            return;
-
-        const offset_start = Math.min(totalEmailCount, currentOffset + 10);
-        const offset_end = Math.min(totalEmailCount, currentOffset + 10 + 10);
-        const response = await mailboxController.paginateEmails(offset_start, offset_end);
-        if (response.success) {
-            currentOffset = Math.max(0, offset_start);
-        } else {
-            alert(response.message);
-        }
-    }
-
-    /* Selection Functions */
-
-    const selectAllShownEmails = (event: Event) => {
-        const selectAllCheckbox = event.target as HTMLInputElement;
-        emailSelection = selectAllCheckbox.checked
-            ? SharedStore.mailboxes.map((account) => account.result.emails.map((email) => email.uid)).flat()
+    const selectShownEmails = (event: Event) => {
+        /* TODO: Burada shown değil hepsi seçiliyor fakat shown
+        seçilmeli, e-postalar yazdırılınca burayı da düzelt */
+        emailSelection = selectShownCheckbox.checked
+            ? currentMailbox.emails.map((email: Email) => email.uid).flat()
             : [];
     }
 
     const selectAllEmails = (event: Event) => {
         const selectAllButton = event.target as HTMLButtonElement;
-        const selectAllCheckbox = document.getElementById("select-all") as HTMLInputElement;
-        if (emailSelection.includes("*")) {
-            emailSelection = [];
-            selectAllButton.innerText = "Select all";
-            selectAllCheckbox.checked = false;
+        emailSelection = currentMailboxUids;
+        selectAllButton.innerHTML = MAILBOX_CLEAR_SELECTION_TEMPLATE;
+        selectShownCheckbox.checked = true;
+        isAllEmailsSelected = true;
+    }
+
+    const deselectAllEmails = (event: Event) => {
+        const selectAllButton = event.target as HTMLButtonElement;
+        emailSelection = [];
+        selectAllButton.innerHTML = MAILBOX_SELECT_ALL_TEMPLATE
+            .replace("{total}", totalEmailCount.toString())
+        selectShownCheckbox.checked = false;
+        isAllEmailsSelected = false;
+    }
+
+    function isSelectedEmailsIncludesGivenMark(mark: Mark): boolean {
+        if (isAllEmailsSelected) {
+            return currentMailbox.emails.every(
+                (email: Email) => Object.hasOwn(email, "flags") &&
+                    email.flags!.includes(mark)
+            );
         } else {
-            emailSelection.push("*");
-            selectAllButton.innerText = "Clear selection";
+            return emailSelection.every((uid) => {
+                return currentMailbox.emails.find(
+                    (email: Email) => email.uid == uid &&
+                        Object.hasOwn(email, "flags") &&
+                        email.flags!.includes(mark)
+                );
+            });
         }
     }
 
-    function isAllSelectedEmailsAreMarked(mark: Mark): boolean {
-        return emailSelection.every((uid) => {
-            return SharedStore.mailboxes[0].result.emails.find((email: Email) => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && email.flags.includes(mark));
-        });
-    }
-
-    function isAllSelectedEmailsAreUnmarked(mark: Mark, unmark: Mark): boolean {
-        return emailSelection.every((uid) => {
-            return SharedStore.mailboxes[0].result.emails.find((email: Email) => email.uid == uid && Object.hasOwn(email, "flags") && email.flags && (!email.flags.includes(mark) || email.flags.includes(unmark)));
-        });
-    }
-
-    function isAllSelectedEmailsAreMarkedAsFlagged(): boolean {
-        return isAllSelectedEmailsAreMarked(Mark.Flagged);
-    }
-
-    function isAllSelectedEmailsAreMarkedAsSeen(): boolean {
-        return isAllSelectedEmailsAreMarked(Mark.Seen);
-    }
-
-    function isAllSelectedEmailsAreMarkedAsNotFlagged(): boolean {
-        return isAllSelectedEmailsAreUnmarked(Mark.Flagged, Mark.Unflagged);
-    }
-
-    function isAllSelectedEmailsAreMarkedAsNotSeen(): boolean {
-        return isAllSelectedEmailsAreUnmarked(Mark.Seen, Mark.Unseen);
+    function isSelectedEmailsExcludesGivenMark(mark: Mark): boolean {
+        if (isAllEmailsSelected) {
+            return currentMailbox.emails.every(
+                (email: Email) => Object.hasOwn(email, "flags") &&
+                    !email.flags!.includes(mark)
+            );
+        } else {
+            return emailSelection.every((uid) => {
+                return currentMailbox.emails.find(
+                    (email: Email) => email.uid == uid &&
+                        Object.hasOwn(email, "flags") &&
+                        !email.flags!.includes(mark)
+                );
+            });
+        }
     }
 
     /* Email Operations */
 
-    const deleteEmails = async (): Promise<void> => {
-        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
-            alert("Current account and folder should be selected");
-            return;
-        }
-
-        if (confirm("Are you sure you want to delete these emails?")) {
-            const response = await mailboxController.deleteEmails(
-                SharedStore.currentAccount,
-                emailSelection,
-                SharedStore.currentFolder
-            );
-            if(!response.success) {
-                alert(response.message);
-            }
-        }
-    }
-
-    const moveEmails = async (destinationFolder: string | null): Promise<void> => {
-        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
-            alert("Current account and folder should be selected");
-            return;
-        }
-
-        if(!destinationFolder) {
-            alert("Destination folder is not selected");
-            return;
-        }
-
-        const response = await mailboxController.moveEmails(
-            SharedStore.currentAccount,
-            emailSelection,
-            SharedStore.currentFolder,
-            destinationFolder
-        );
-        if(!response.success) {
-            alert(response.message);
-        }
-    }
-
-    const copyEmails = async (destinationFolder: string | null): Promise<void> => {
-        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
-            alert("Current account and folder should be selected");
-            return;
-        }
-
-        if(!destinationFolder) {
-            alert("Destination folder is not selected");
-            return;
-        }
-
-        const response = await mailboxController.moveEmails(
-            SharedStore.currentAccount,
-            emailSelection,
-            SharedStore.currentFolder,
-            destinationFolder
-        );
-        if(!response.success) {
-            alert(response.message);
-        }
-    }
-
-    const markEmail = async (mark: string | Mark): Promise<void> => {
-        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
-            alert("Current account and folder should be selected");
-            return;
-        }
-
+    async function markEmails(mark: string | Mark) {
         const response = await mailboxController.markEmails(
             SharedStore.currentAccount,
             emailSelection,
@@ -182,16 +156,12 @@
             SharedStore.currentFolder
         );
         if(!response.success) {
-            alert(response.message);
+            showMessage({content: `Unexpected error while marking email as ${mark}`});
+            console.error(response.message);
         }
     }
 
-    const unmarkEmail = async (mark: string | Mark): Promise<void> => {
-        if (!SharedStore.currentAccount || !SharedStore.currentFolder) {
-            alert("Current account and folder should be selected");
-            return;
-        }
-
+    async function unmarkEmails(mark: string | Mark) {
         const response = await mailboxController.unmarkEmails(
             SharedStore.currentAccount,
             emailSelection,
@@ -199,24 +169,124 @@
             SharedStore.currentFolder
         );
         if(!response.success) {
-            alert(response.message);
+            showMessage({content: `Unexpected error while marking email as ${mark}`});
+            console.error(response.message);
         }
     }
 
-    const markEmailsAsRead = async (): Promise<void> => {
-        await markEmail(Mark.Seen);
+    const markAsRead = async (): Promise<void> => {
+        await markEmails(Mark.Seen);
     }
 
-    const markEmailsAsUnread = async (): Promise<void> => {
-        await unmarkEmail(Mark.Seen);
+    const markAsUnread = async (): Promise<void> => {
+        await unmarkEmails(Mark.Seen);
     }
 
-    const markEmailsAsImportant = async (): Promise<void> => {
-        markEmail(Mark.Flagged);
+    const markAsImportant = async (): Promise<void> => {
+        await markEmails(Mark.Flagged);
     }
 
-    const markEmailsAsNotImportant = async (): Promise<void> => {
-        unmarkEmail(Mark.Flagged);
+    const markAsNotImportant = async (): Promise<void> => {
+        await unmarkEmails(Mark.Flagged);
+    }
+
+    const copyTo = async (destinationFolder: string | Folder): Promise<void> => {
+        const response = await mailboxController.copyEmails(
+            SharedStore.currentAccount,
+            emailSelection,
+            SharedStore.currentFolder,
+            destinationFolder
+        );
+
+        if(!response.success) {
+            showMessage({content: "Unexpected error while copying email."});
+            console.error(response.message);
+        }
+    }
+
+    const moveTo = async (destinationFolder: string | Folder): Promise<void> => {
+        const response = await mailboxController.moveEmails(
+            SharedStore.currentAccount,
+            emailSelection,
+            SharedStore.currentFolder,
+            destinationFolder
+        );
+
+        if(!response.success) {
+            showMessage({content: "Unexpected error while moving email."});
+            console.error(response.message);
+            return;
+        }
+    }
+
+    const moveToArchive = async (): Promise<void> => {
+        moveTo(Folder.Archive);
+    }
+
+    const deleteFrom = async (): Promise<void> => {
+        showConfirm({
+            content: "Are you certain? Deleting an email cannot be undone.",
+            onConfirmText: "Yes, delete.",
+            onConfirm: async (e: Event) => {
+                const response = await mailboxController.deleteEmails(
+                    SharedStore.currentAccount,
+                    emailSelection,
+                    SharedStore.currentFolder
+                );
+                if(!response.success) {
+                    showMessage({content: "Unexpected error while deleting email."});
+                    console.error(response.message);
+                }
+            },
+        })
+    }
+
+    /* Mailbox Functions */
+
+    const refresh = async (): Promise<void> => {
+        const response = await mailboxController.getMailboxes();
+        if (!response.success) {
+            showMessage({content: "Error while refreshing mailboxes."});
+            console.error(response.message);
+        }
+    }
+
+    const getPreviousEmails = async (): Promise<void> => {
+        if (currentOffset <= 10)
+            return;
+
+        const offset_start = Math.max(1, currentOffset - 10);
+        const offset_end = Math.max(1, currentOffset);
+        const response = await mailboxController.paginateEmails(
+            SharedStore.currentAccount,
+            offset_start,
+            offset_end
+        );
+        if (response.success) {
+            currentOffset = Math.max(1, offset_start);
+        } else {
+            showMessage({content: "Error while getting previous emails."});
+            console.error(response.message)
+        }
+    }
+
+    const getNextEmails = async (): Promise<void> => {
+        if (currentOffset >= totalEmailCount)
+            return;
+
+        const offset_start = Math.min(totalEmailCount, currentOffset + 10);
+        const offset_end = Math.min(totalEmailCount, currentOffset + 10 + 10);
+        const response = await mailboxController.paginateEmails(
+            SharedStore.currentAccount,
+            offset_start,
+            offset_end
+        );
+        if (response.success) {
+            currentOffset = Math.max(1, offset_start);
+        } else {
+            showMessage({content: "Error while getting next emails."});
+            console.error(response.message)
+        }
     }
 </script>
 
@@ -225,89 +295,110 @@
         <div class="tool">
             <Input.Basic
                 type="checkbox"
-                onclick={selectAllShownEmails}
+                id="select-shown"
+                onclick={selectShownEmails}
             />
         </div>
         {#if emailSelection.length > 0}
-            <div class="tool">
-                <Button.Action
-                    type="button"
-                    class="btn-inline"
-                    onclick={deleteEmails}
-                >
-                    Delete
-                </Button.Action>
-            </div>
-            <div class="tool">
-                <Select.Root onchange={moveEmails} placeholder='Move To'>
-                    {#each SharedStore.customFolders[0].result as customFolder}
-                        <Select.Option value={customFolder}>{customFolder}</Select.Option>
-                    {/each}
-                     {#if SharedStore.currentFolder && !SharedStore.standardFolders[0].result.includes(SharedStore.currentFolder)}
-                        <Select.Option value={Folder.Inbox}>{Folder.Inbox}</Select.Option>
-                    {/if}
-                </Select.Root>
-            </div>
-            <div class="tool">
-                <Select.Root onchange={copyEmails} placeholder='Copy To'>
-                    {#each SharedStore.customFolders[0].result as customFolder}
-                        <Select.Option value={customFolder}>{customFolder}</Select.Option>
-                    {/each}
-                    {#if SharedStore.currentFolder && !SharedStore.standardFolders[0].result.includes(SharedStore.currentFolder)}
-                        <Select.Option value={Folder.Inbox}>{Folder.Inbox}</Select.Option>
-                    {/if}
-                </Select.Root>
-            </div>
-            {#if !isAllSelectedEmailsAreMarkedAsNotFlagged()}
+            {#if !isSelectedEmailsIncludesGivenMark(Mark.Flagged)}
                 <div class="tool">
                     <Button.Action
                         type="button"
                         class="btn-inline"
-                        onclick={markEmailsAsNotImportant}
+                        onclick={markAsImportant}
                     >
-                        Mark as Not Important
+                        Star
                     </Button.Action>
                 </div>
             {/if}
-            {#if !isAllSelectedEmailsAreMarkedAsFlagged()}
+            {#if !isSelectedEmailsExcludesGivenMark(Mark.Flagged)}
                 <div class="tool">
                     <Button.Action
                         type="button"
                         class="btn-inline"
-                        onclick={markEmailsAsImportant}
+                        onclick={markAsNotImportant}
                     >
-                        Mark as Important
+                        Remove Star
                     </Button.Action>
                 </div>
             {/if}
-            {#if !isAllSelectedEmailsAreMarkedAsSeen()}
+            {#if !isSelectedEmailsIncludesGivenMark(Mark.Seen)}
                 <div class="tool">
                     <Button.Action
                         type="button"
                         class="btn-inline"
-                        onclick={markEmailsAsRead}
+                        onclick={markAsRead}
                     >
                         Mark as Read
                     </Button.Action>
                 </div>
             {/if}
-            {#if !isAllSelectedEmailsAreMarkedAsNotSeen()}
+            {#if !isSelectedEmailsExcludesGivenMark(Mark.Seen)}
                 <div class="tool">
                     <Button.Action
                         type="button"
                         class="btn-inline"
-                        onclick={markEmailsAsUnread}
+                        onclick={markAsUnread}
                     >
                         Mark as Unread
                     </Button.Action>
                 </div>
             {/if}
+            <div class="tool">
+                <Button.Action
+                    type="button"
+                    class="btn-inline"
+                    onclick={moveToArchive}
+                >
+                    Archive
+                </Button.Action>
+            </div>
+            <div class="tool">
+                <Button.Action
+                    type="button"
+                    class="btn-inline"
+                    onclick={deleteFrom}
+                >
+                    Delete
+                </Button.Action>
+            </div>
+            <div class="tool-separator"></div>
+            <div class="tool">
+                {#if customFoldersOfAccount}
+                    <Select.Root onchange={copyTo} placeholder='Copy To'>
+                        {#each customFoldersOfAccount as customFolder}
+                            {#if customFolder !== currentMailbox.folder}
+                                <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                            {/if}
+                        {/each}
+                        {#if isEmailInCustomFolder}
+                            <!-- Add inbox option if email is in custom folder -->
+                            <Select.Option value={Folder.Inbox}>{Folder.Inbox}</Select.Option>
+                        {/if}
+                    </Select.Root>
+                {/if}
+            </div>
+            <div class="tool">
+                {#if customFoldersOfAccount}
+                    <Select.Root onchange={moveTo} placeholder='Move To'>
+                        {#each customFoldersOfAccount as customFolder}
+                            {#if customFolder !== currentMailbox.folder}
+                                <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                                {/if}
+                            {/each}
+                        {#if isEmailInCustomFolder}
+                            <!-- Add inbox option if email is in custom folder -->
+                            <Select.Option value={Folder.Inbox}>{Folder.Inbox}</Select.Option>
+                            {/if}
+                    </Select.Root>
+                {/if}
+            </div>
         {:else}
             <div class="tool">
                 <Button.Action
                     type="button"
                     class="btn-inline"
-                    onclick={refreshMailbox}
+                    onclick={refresh}
                 >
                     Refresh
                 </Button.Action>
@@ -352,7 +443,7 @@
                         .replace(
                             "{selection_count}",
                             (
-                                emailSelection.includes("*")
+                                isAllEmailsSelected
                                     ? totalEmailCount
                                     : emailSelection.length
                             ).toString()
@@ -362,52 +453,60 @@
             <Button.Basic
                 type="button"
                 class="btn-inline"
-                onclick={selectAllEmails}
+                onclick={isAllEmailsSelected ? deselectAllEmails : selectAllEmails}
             >
                 {
-                    MAILBOX_SELECTION_ALL_TEMPLATE
+                    MAILBOX_SELECT_ALL_TEMPLATE
                         .replace("{total}", totalEmailCount.toString())
                 }
             </Button.Basic>
         </div>
     {/if}
-    <div class="group-separator">
-        <div class="timeline-label">
-            <span>Today</span>
-        </div>
-    </div>
-    <div class="email-group">
-        <div class="email">
-            <div class="email-sender">
-                <input type="checkbox" class="select-email-checkbox">
-                <span>Emily Davis</span>
-                <div class="new-message-icon">
-                    <span>New</span>
-                </div>
-            </div>
-            <div class="email-message">
-                <div class="message-attachment-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-                        <path d="M209.66,122.34a8,8,0,0,1,0,11.32l-82.05,82a56,56,0,0,1-79.2-79.21L147.67,35.73a40,40,0,1,1,56.61,56.55L105,193A24,24,0,1,1,71,159L154.3,74.38A8,8,0,1,1,165.7,85.6L82.39,170.31a8,8,0,1,0,11.27,11.36L192.93,81A24,24,0,1,0,159,47L59.76,147.68a40,40,0,1,0,56.53,56.62l82.06-82A8,8,0,0,1,209.66,122.34Z"></path>
-                    </svg>
-                </div>
-                <div class="message-subject">
-                    <span>Meeting Tomorrow</span>
-                </div>
-                <span class="message-separator">---</span>
-                <div class="message-body">
-                    <span>Hi, let's have a meet reviewing the project details and have
-                    some ideas I'd like to share...</span>
-                </div>
-                <div class="message-flags tags">
-                    <span class="badge">Important</span>
-                </div>
-            </div>
-            <div class="email-date">
-                <span>12 Jun 1902</span>
+
+    {#each Object.entries(groupEmailsByDate()) as group}
+        <div class="group-separator">
+            <div class="timeline-label">
+                <span>{group[0]}</span>
             </div>
         </div>
-    </div>
+        <div class="email-group">
+            {#each group[1] as email}
+                <div class="email">
+                    <div class="email-sender">
+                        <input type="checkbox" class="select-email-checkbox" bind:group={emailSelection} value={email.uid}>
+                        <span>{extractFullname(email.sender) || extractEmailAddress(email.sender)}</span>
+                        <div class="new-message-icon">
+                            <span>New</span>
+                        </div>
+                    </div>
+                    <div class="email-message">
+                        {#if Object.hasOwn(email, "attachments") && email.attachments!.length > 0}
+                            <div class="message-attachment-icon">
+                                <Icon name="attachment" />
+                            </div>
+                        {/if}
+                        <div class="message-subject">
+                            <span>{email.subject}</span>
+                        </div>
+                        <span class="message-separator">---</span>
+                        <div class="message-body">
+                            <span>{email.body}</span>
+                        </div>
+                        <div class="message-flags tags">
+                            {#if Object.hasOwn(email, "flags") && email.flags!.length > 0}
+                                {#each email.flags! as flag}
+                                    <Badge content={flag} />
+                                {/each}
+                            {/if}
+                        </div>
+                    </div>
+                    <div class="email-date">
+                        <span>{email.date}</span>
+                    </div>
+                </div>
+            {/each}
+        </div>
+    {/each}
 </div>
 
 <div>
