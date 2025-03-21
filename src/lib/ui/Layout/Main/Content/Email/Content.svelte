@@ -22,10 +22,6 @@
         email
     }: Props = $props();
 
-    let currentMailbox = $derived(SharedStore.mailboxes.find(
-        task => task.result.folder === SharedStore.currentFolder
-    )!.result);
-
     let body: HTMLElement;
     onMount(() => { renderBody() });
 
