@@ -364,43 +364,38 @@
 </div>
 
 <style>
-    #advanced-search-menu {
-        display: none;
-        border: 1px solid #5a5a5a;
-        padding: 10px;
-        border-radius: 5px;
-        box-shadow: 0 0 10px #202020;
-        background-color: #202020;
+    :global {
+        .search-menu-container {
+            & .search-button {
+                height: var(--font-size-2xl);
+                width: var(--font-size-2xl);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 0;
+            }
 
-        &.open {
-            display: flex;
-            flex-direction: column;
+            & .search-menu {
+                display: none;
+                width: var(--container-md);
+                z-index: var(--z-index-dropdown);
+
+                & .search-extra-options {
+                    display: none;
+                    width: var(--container-md);
+                    z-index: var(--z-index-dropdown);
+                    border: 1px solid var(--color-border);
+                    border-top: none;
+                    border-bottom-left-radius: var(--radius-lg);
+                    border-bottom-right-radius: var(--radius-lg);
+                    padding: var(--spacing-xs) var(--spacing-md);
+                }
+            }
+
+            & .open {
+                display: flex !important;
+                flex-direction: column;
+            }
         }
-
-        & input + label,
-        & label + input {
-            margin-left: 5px;
-        }
-    }
-
-    .row {
-        display: flex;
-        flex-direction: row;
-
-        & > .form-group {
-            flex-grow: 1;
-        }
-
-        & > .form-group + .form-group {
-            margin-left: 5px;
-        }
-    }
-
-    .input-group :first-child:not([type="checkbox"]) {
-        flex-grow: 1;
-    }
-
-    .input-group :last-child {
-        margin-left: 5px;
     }
 </style>
