@@ -41,8 +41,6 @@
     });
 
     const selectShownEmails = (event: Event) => {
-        /* TODO: Burada shown değil hepsi seçiliyor fakat shown
-        seçilmeli, e-postalar yazdırılınca burayı da düzelt */
         emailSelection = selectShownCheckbox.checked
             ? currentMailbox.emails.map((email: Email) => email.uid).flat()
             : [];
