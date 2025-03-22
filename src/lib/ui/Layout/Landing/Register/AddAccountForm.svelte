@@ -59,12 +59,9 @@
             <span class="muted">Example: Alex Doe &lt;alex.doe@openmail.com&gt;</span>
         </FormGroup>
         <div class="landing-body-footer">
-            <Button.Action
-                type="submit"
-                onclick={async (e): Promise<void> => { addAccount(e) }}
-            >
+            <Button.Basic type="submit">
                 Connect to account.
-            </Button.Action>
+            </Button.Basic>
             <Button.Basic
                 type="button"
                 class="btn-inline"

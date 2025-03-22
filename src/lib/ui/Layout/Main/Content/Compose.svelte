@@ -277,7 +277,6 @@
                 type="submit"
                 id="send-email"
                 style="margin-top:10px"
-                onclick={() => {}}
             >
                 Send Email
             </Button.Basic>
