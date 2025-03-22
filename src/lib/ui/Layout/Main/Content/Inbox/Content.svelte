@@ -1,29 +1,54 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { type Email } from "$lib/types";
-    import { extractEmailAddress, extractFullname, startsWithAnyOf } from "$lib/utils";
-    import { MAILBOX_CLEAR_SELECTION_TEMPLATE, MAILBOX_SELECT_ALL_TEMPLATE, MAILBOX_SELECTION_INFO_TEMPLATE } from "$lib/constants";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { type Email as TEmail } from "$lib/types";
+    import {
+        extractEmailAddress,
+        extractFullname,
+    } from "$lib/utils";
+    import {
+        MAILBOX_CLEAR_SELECTION_TEMPLATE,
+        MAILBOX_SELECT_ALL_TEMPLATE,
+        MAILBOX_SELECTION_INFO_TEMPLATE,
+    } from "$lib/constants";
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
     import Badge from "$lib/ui/Components/Badge/Badge.svelte";
+    import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import { show as showMessage } from "$lib/ui/Components/Message";
 
-    type DateGroup = "Today" | "Yesterday" | "This Week" | "This Month" | "Older";
+    const mailboxController = new MailboxController();
 
     interface Props {
         emailSelection: string[];
     }
 
-    let {
-        emailSelection = $bindable([])
-    }: Props = $props();
+    type DateGroup =
+        | "Today"
+        | "Yesterday"
+        | "This Week"
+        | "This Month"
+        | "Older";
 
-    let currentMailbox = $derived(SharedStore.mailboxes.find(
-        task => task.email_address === SharedStore.currentAccount!.email_address &&
-            task.result.folder === SharedStore.currentFolder
-    )!.result);
+    let { emailSelection = $bindable([]) }: Props = $props();
+
+    let currentMailbox = $derived(
+        SharedStore.mailboxes.find(
+            (task) =>
+                task.email_address ===
+                    SharedStore.currentAccount!.email_address &&
+                task.result.folder === SharedStore.currentFolder,
+        )!.result,
+    );
     let currentMailboxUids: string[] = $derived(
-        currentMailbox.emails.map((email: Email) => email.uid).flat()
+        currentMailbox.emails.map((email: TEmail) => email.uid).flat(),
+    );
+    let recentEmailUids = $derived(
+        SharedStore.recentEmails.find(
+            (task) => task.email_address === SharedStore.currentAccount!.email_address
+        )?.result
     );
 
     let totalEmailCount = $derived(currentMailbox.total);
@@ -31,7 +56,9 @@
 
     let selectShownCheckbox: HTMLInputElement;
     onMount(() => {
-        selectShownCheckbox = document.getElementById("select-shown") as HTMLInputElement;
+        selectShownCheckbox = document.getElementById(
+            "select-shown",
+        ) as HTMLInputElement;
     });
 
     const selectAllEmails = (event: Event) => {
@@ -40,16 +67,18 @@
         selectAllButton.innerHTML = MAILBOX_CLEAR_SELECTION_TEMPLATE;
         selectShownCheckbox.checked = true;
         isAllEmailsSelected = true;
-    }
+    };
 
     const deselectAllEmails = (event: Event) => {
         const selectAllButton = event.target as HTMLButtonElement;
         emailSelection = [];
-        selectAllButton.innerHTML = MAILBOX_SELECT_ALL_TEMPLATE
-            .replace("{total}", totalEmailCount.toString())
+        selectAllButton.innerHTML = MAILBOX_SELECT_ALL_TEMPLATE.replace(
+            "{total}",
+            totalEmailCount.toString(),
+        );
         selectShownCheckbox.checked = false;
         isAllEmailsSelected = false;
-    }
+    };
 
     function groupEmailsByDate() {
         const today = new Date();
@@ -64,15 +93,15 @@
         const lastMonthStart = new Date(today);
         lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
 
-        const groupedEmails: Record<DateGroup, Email[]> = {
-          "Today": [],
-          "Yesterday": [],
-          "This Week": [],
-          "This Month": [],
-          "Older": []
+        const groupedEmails: Record<DateGroup, TEmail[]> = {
+            Today: [],
+            Yesterday: [],
+            "This Week": [],
+            "This Month": [],
+            Older: [],
         };
 
-        currentMailbox.emails.forEach(email => {
+        currentMailbox.emails.forEach((email: TEmail) => {
             const emailDate = new Date(email.date);
             emailDate.setHours(0, 0, 0, 0);
 
@@ -82,7 +111,10 @@
                 groupedEmails["Yesterday"].push(email);
             } else if (emailDate >= lastWeekStart && emailDate < yesterday) {
                 groupedEmails["This Week"].push(email);
-            } else if (emailDate >= lastMonthStart && emailDate < lastWeekStart) {
+            } else if (
+                emailDate >= lastMonthStart &&
+                emailDate < lastWeekStart
+            ) {
                 groupedEmails["This Month"].push(email);
             } else {
                 groupedEmails["Older"].push(email);
@@ -91,37 +123,52 @@
 
         return groupedEmails;
     }
+
+    const showEmailContent = async (selectedEmail: TEmail): Promise<void> => {
+        const response = await mailboxController.getEmailContent(
+            SharedStore.currentAccount,
+            SharedStore.currentFolder,
+            selectedEmail.uid
+        );
+        if (!response.success || !response.data) {
+            showMessage({content: "Error, email content not fetch properly."});
+            console.error(response.message);
+            return;
+        }
+
+        showContent(Email, {
+            account: SharedStore.currentAccount,
+            email: response.data,
+        });
+    };
 </script>
 
 <div class="mailbox">
     {#if emailSelection.length > 0}
         <div class="selection-info">
             <span>
-                {
-                    MAILBOX_SELECTION_INFO_TEMPLATE
-                        .replace(
-                            "{selection_count}",
-                            (
-                                isAllEmailsSelected
-                                    ? totalEmailCount
-                                    : emailSelection.length
-                            ).toString()
-                        )
-                }
+                {MAILBOX_SELECTION_INFO_TEMPLATE.replace(
+                    "{selection_count}",
+                    (isAllEmailsSelected
+                        ? totalEmailCount
+                        : emailSelection.length
+                    ).toString(),
+                )}
             </span>
             <Button.Basic
                 type="button"
                 class="btn-inline"
-                onclick={isAllEmailsSelected ? deselectAllEmails : selectAllEmails}
+                onclick={isAllEmailsSelected
+                    ? deselectAllEmails
+                    : selectAllEmails}
             >
-                {
-                    MAILBOX_SELECT_ALL_TEMPLATE
-                        .replace("{total}", totalEmailCount.toString())
-                }
+                {MAILBOX_SELECT_ALL_TEMPLATE.replace(
+                    "{total}",
+                    totalEmailCount.toString(),
+                )}
             </Button.Basic>
         </div>
     {/if}
-
     {#each Object.entries(groupEmailsByDate()) as group}
         <div class="group-separator">
             <div class="timeline-label">
@@ -130,13 +177,33 @@
         </div>
         <div class="email-group">
             {#each group[1] as email}
-                <div class="email">
+                <div
+                    class="email"
+                    onclick={() => {
+                        showEmailContent(email);
+                    }}
+                    onkeydown={() => {
+                        showEmailContent(email);
+                    }}
+                    tabindex="0"
+                    role="button"
+                >
                     <div class="email-sender">
-                        <input type="checkbox" class="select-email-checkbox" bind:group={emailSelection} value={email.uid}>
-                        <span>{extractFullname(email.sender) || extractEmailAddress(email.sender)}</span>
-                        <div class="new-message-icon">
-                            <span>New</span>
-                        </div>
+                        <input
+                            type="checkbox"
+                            class="select-email-checkbox"
+                            bind:group={emailSelection}
+                            value={email.uid}
+                        />
+                        <span>
+                            {extractFullname(email.sender) ||
+                                extractEmailAddress(email.sender)}
+                        </span>
+                        {#if recentEmailUids && recentEmailUids.includes(email.uid)}
+                            <div class="new-message-icon">
+                                <span>New</span>
+                            </div>
+                        {/if}
                     </div>
                     <div class="email-message">
                         {#if Object.hasOwn(email, "attachments") && email.attachments!.length > 0}
@@ -208,7 +275,7 @@
                 flex-direction: column;
 
                 &:last-child {
-                    & .email:last-child{
+                    & .email:last-child {
                         border-bottom: none;
                     }
                 }
