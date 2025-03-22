@@ -20,8 +20,9 @@
         }
     }
 
-    const toggleDropdown = () => {
-        isContentShown = !isContentShown
+    const toggleDropdown = (e: Event) => {
+        e.stopPropagation();
+        isContentShown = !isContentShown;
     }
 </script>
 
@@ -47,6 +48,9 @@
 <style>
     :global {
         .dropdown-container {
+            position: relative;
+            z-index: var(--z-index-dropdown);
+
             & .dropdown-content {
                 position: absolute;
                 display: flex;
@@ -59,7 +63,6 @@
                 right: -80px;
                 top: 30px;
                 width: 100px;
-                z-index: var(--z-index-dropdown);
             }
         }
     }

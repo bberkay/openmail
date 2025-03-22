@@ -13,5 +13,6 @@
 </script>
 
 <div {...attributes}>
+    <span style="display:none;">#dt#</span>
     {@render children()}
 </div>
