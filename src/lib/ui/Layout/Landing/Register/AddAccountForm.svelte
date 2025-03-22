@@ -7,8 +7,6 @@
     import Label from "$lib/ui/Components/Label";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
-    const accountController = new AccountController();
-
     interface Props {
         isListingAccount: boolean;
     }
@@ -18,7 +16,7 @@
     const addAccount = async (e: Event): Promise<void> => {
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
-        const response = await accountController.add(
+        const response = await AccountController.add(
             formData.get("email_address") as string,
             formData.get("password") as string,
             formData.get("fullname") as string,

@@ -11,8 +11,8 @@ import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 import type { Account } from "$lib/types";
 
 export class AccountController {
-    public async init(): Promise<BaseResponse> {
-        const response = await this.list();
+    public static async init(): Promise<BaseResponse> {
+        const response = await AccountController.list();
         if (response.success && response.data) {
             SharedStore.accounts = response.data.connected;
             SharedStore.failedAccounts = response.data.failed;
@@ -24,11 +24,11 @@ export class AccountController {
         }
     }
 
-    public async list(): Promise<GetResponse<GetRoutes.GET_ACCOUNTS>> {
+    public static async list(): Promise<GetResponse<GetRoutes.GET_ACCOUNTS>> {
         return await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS);
     }
 
-    public async add(
+    public static async add(
         email_address: string,
         plain_password: string,
         fullname: string | null = null,
@@ -56,7 +56,7 @@ export class AccountController {
         return response;
     }
 
-    public async edit(
+    public static async edit(
         email_address: string,
         plain_password: string,
         fullname: string | null = null,
@@ -102,7 +102,7 @@ export class AccountController {
         return response;
     }
 
-    public async remove(account: string): Promise<PostResponse> {
+    public static async remove(account: string): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.REMOVE_ACCOUNT,
@@ -120,7 +120,7 @@ export class AccountController {
         return response;
     }
 
-    public async removeAll(): Promise<PostResponse> {
+    public static async removeAll(): Promise<PostResponse> {
         const response: PostResponse = await ApiService.post(
             SharedStore.server,
             PostRoutes.REMOVE_ACCOUNTS,

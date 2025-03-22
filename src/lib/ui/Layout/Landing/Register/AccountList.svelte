@@ -15,8 +15,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
-    const accountController = new AccountController();
-
     interface Props {
         isEditingAccount: Account | null;
         isListingAccount: boolean;
@@ -43,7 +41,7 @@
             onConfirm: async (e: Event) => {
                 const target = e.target as HTMLButtonElement;
                 const account = target.getAttribute("data-email-address")!;
-                const response = await accountController.remove(account);
+                const response = await AccountController.remove(account);
 
                 if (!response.success) {
                     showMessage({content: "Unexpected error while removing account."});
@@ -58,7 +56,7 @@
             content: "Are you certain? You are about to remove all accounts.",
             onConfirmText: "Yes, remove all.",
             onConfirm: async (e: Event) => {
-                const response = await accountController.removeAll();
+                const response = await AccountController.removeAll();
 
                 if (!response.success) {
                     showMessage({content: "Unexpected error while removing accounts."});

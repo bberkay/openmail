@@ -19,8 +19,7 @@ async function loadAccounts() {
     if(!SharedStore.server)
         return;
 
-    const accountController = new AccountController();
-    const response = await accountController.init();
+    const response = await AccountController.init();
     if (!response.success) {
         error(500, response.message);
     }
