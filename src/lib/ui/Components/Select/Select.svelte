@@ -11,6 +11,7 @@
         onchange?: (selectedOption: string) => void;
         enableSearch?: boolean;
         resetAfterSelect?: boolean;
+        disabled: boolean;
     }
 
     let {
@@ -19,7 +20,8 @@
         value,
         onchange,
         enableSearch,
-        resetAfterSelect
+        resetAfterSelect,
+        disabled
     }: Props = $props();
 
     let isOpen = $state(false);
@@ -132,9 +134,9 @@
 
 <div class="custom-select-wrapper" bind:this={selectWrapper}>
     <div
-        class="custom-select {isOpen ? "open" : ""}"
-        onclick={toggleSelect}
-        onkeydown={(e) => e.key === "Enter" && toggleSelect()}
+        class="custom-select {isOpen ? "open" : ""} {disabled ? "disabled" : ""}"
+        onclick={!disabled ? toggleSelect : () => {}}
+        onkeydown={(e) => !disabled && e.key === "Enter" && toggleSelect()}
         tabindex="0"
         role="button"
         aria-expanded={isOpen}
@@ -146,7 +148,7 @@
                     <Button.Basic
                         type="button"
                         class="clear-button {selectedOption ? "visible" : ""}"
-                        onclick={clearSelection}
+                        onclick={!disabled ? clearSelection : () => {}}
                     >×</Button.Basic>
                 {:else}
                     <span data-value="">{placeholder}</span>
@@ -204,6 +206,11 @@
 
                 &.open {
                     border-color: var(--color-text-primary);
+                }
+
+                &.disabled {
+                    cursor: auto;
+                    opacity: 0.9;
                 }
 
                 & .select-trigger {
