@@ -11,7 +11,7 @@
         onchange?: (selectedOption: string) => void;
         enableSearch?: boolean;
         resetAfterSelect?: boolean;
-        disabled: boolean;
+        disabled?: boolean;
     }
 
     let {
