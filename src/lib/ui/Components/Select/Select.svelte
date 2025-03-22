@@ -6,6 +6,7 @@
 
     interface Props {
         children: Snippet;
+        id?: string;
         placeholder?: string;
         value?: string;
         onchange?: (selectedOption: string) => void;
@@ -16,6 +17,7 @@
 
     let {
         children,
+        id,
         placeholder,
         value,
         onchange,
@@ -134,6 +136,7 @@
 
 <div class="custom-select-wrapper" bind:this={selectWrapper}>
     <div
+        id={id}
         class="custom-select {isOpen ? "open" : ""} {disabled ? "disabled" : ""}"
         onclick={!disabled ? toggleSelect : () => {}}
         onkeydown={(e) => !disabled && e.key === "Enter" && toggleSelect()}

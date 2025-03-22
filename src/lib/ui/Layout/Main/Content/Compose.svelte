@@ -168,7 +168,7 @@
         <div>
             <FormGroup>
                 <Label for="senders">Sender(s)</Label>
-                <Select.Root onchange={(addr) => addAddress(addr, senders)} placeholder="Add sender">
+                <Select.Root id="senders" onchange={(addr) => addAddress(addr, senders)} placeholder="Add sender">
                     {#each SharedStore.accounts as account}
                         {@const sender = createSenderAddress(account.email_address, account.fullname)}
                         <Select.Option value={sender}>
