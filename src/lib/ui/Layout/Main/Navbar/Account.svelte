@@ -4,17 +4,15 @@
     import * as Select from "$lib/ui/Components/Select";
     import { createSenderAddress } from "$lib/utils";
 
-    type OperationType = "home" | "minimize" | "settings" | "logout" | "quit";
+    const AccountOperation = {
+        Home: "create",
+        Minimize: "refresh",
+        Settings: "settings",
+        Logout: "logout",
+        Quit: "quit"
+    } as const;
 
-    const OPERATIONS: Record<OperationType, string> = {
-        home: "Home",
-        minimize: "Minimize to tray",
-        settings: "Settings",
-        logout: `Logout from ${SharedStore.currentAccount.fullname || SharedStore.currentAccount.email_address}`,
-        quit: "Quit",
-    };
-
-    function setCurrentAccount(selectedAccountEmailAddr: string) {
+    const setCurrentAccount = (selectedAccountEmailAddr: string) => {
         const selectedAccount = SharedStore.accounts.find(
             (account: Account) =>
                 account.email_address === selectedAccountEmailAddr,
@@ -22,43 +20,33 @@
 
         SharedStore.currentAccount = selectedAccount;
         SharedStore.currentFolder = Folder.Inbox;
-    }
+    };
 
-    function showHome() {
+    const showHome = () => {};
 
-    }
+    const minimize = () => {};
 
-    function minimize() {
+    const showSettings = () => {};
 
-    }
+    const logout = () => {};
 
-    function showSettings() {
+    const quit = () => {};
 
-    }
-
-    function logout() {
-
-    }
-
-    function quit() {
-
-    }
-
-    function handleOperation(selectedOperation: OperationType | string) {
+    const handleOperation = (selectedOperation: string) => {
         switch (selectedOperation) {
-            case "home":
+            case AccountOperation.Home:
                 showHome();
                 break;
-            case "minimize":
+            case AccountOperation.Minimize:
                 minimize();
                 break;
-            case "settings":
+            case AccountOperation.Settings:
                 showSettings();
                 break;
-            case "logout":
+            case AccountOperation.Logout:
                 logout();
                 break;
-            case "quit":
+            case AccountOperation.Quit:
                 quit();
                 break;
             default:
@@ -67,7 +55,7 @@
                 setCurrentAccount(selectedOperation);
                 break;
         }
-    }
+    };
 </script>
 
 <Select.Root
@@ -76,13 +64,20 @@
     placeholder="Account"
     enableSearch={true}
 >
+    <Select.Option value={AccountOperation.Home}>Home</Select.Option>
+    <Select.Separator />
     {#each SharedStore.accounts as account}
         <Select.Option value={account.email_address}>
             {createSenderAddress(account.email_address, account.fullname)}
         </Select.Option>
     {/each}
     <Select.Separator />
-    {#each Object.entries(OPERATIONS) as operation}
-        <Select.Option value={operation[0]}>{operation[1]}</Select.Option>
-    {/each}
+    <Select.Option value={AccountOperation.Minimize}>Minimize to tray</Select.Option>
+    <Select.Option value={AccountOperation.Settings}>Settings</Select.Option>
+    <Select.Option value={AccountOperation.Logout}>
+        Logout from
+        {SharedStore.currentAccount.fullname ||
+            SharedStore.currentAccount.email_address}
+    </Select.Option>
+    <Select.Option value={AccountOperation.Quit}>Quit</Select.Option>
 </Select.Root>
