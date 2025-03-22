@@ -1,10 +1,10 @@
 import Modal from "./Modal.svelte";
 import { mount, unmount } from "svelte";
-import type { Component } from "svelte";
+import type { Component, ComponentProps } from "svelte";
 
 let mountedModal: Record<string, any> | null = null;
 
-export function show(modal: Component, props?: any) {
+export function show<T extends Component<any>>(modal: T, props?: ComponentProps<T>) {
     if (mountedModal) return;
 
     mountedModal = mount(modal, {
