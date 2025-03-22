@@ -528,11 +528,11 @@ async def get_mailboxes(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching emails.", str(e)))
 
-@app.get("/paginate-mailboxes/{accounts}/{offset_start}/{offset_end}")
+@app.get("/paginate-mailboxes/{accounts}")
 async def paginate_mailboxes(
     accounts: str,
-    offset_start: int,
-    offset_end: int,
+    offset_start: int | None = None,
+    offset_end: int | None = None
 ) -> Response[list[OpenMailTaskResult]]:
     try:
         unique_email_addresses = get_unique_email_addresses(accounts)
