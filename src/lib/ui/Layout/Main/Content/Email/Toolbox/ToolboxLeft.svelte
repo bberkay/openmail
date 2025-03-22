@@ -2,14 +2,17 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email, Folder, Mark } from "$lib/types";
-    import { NOT_IMPLEMENTED_TEMPLATE } from '$lib/constants';
+    import { NOT_IMPLEMENTED_TEMPLATE } from "$lib/constants";
     import { startsWithAnyOf } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
-    import { backToDefault, showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import {
+        backToDefault,
+        showThis as showContent,
+    } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
@@ -18,21 +21,21 @@
         email: Email;
     }
 
-    let {
-        account,
-        email
-    }: Props = $props();
+    let { account, email }: Props = $props();
 
+    let currentMailbox = $derived(
+        SharedStore.mailboxes.find(
+            (task) => task.result.folder === SharedStore.currentFolder,
+        )!.result,
+    );
 
-    let currentMailbox = $derived(SharedStore.mailboxes.find(
-        task => task.result.folder === SharedStore.currentFolder
-    )!.result);
-
-    const customFoldersOfAccount = SharedStore.customFolders.find(
-        acc => acc.email_address === account!.email_address
-    )!.result;
-    const isEmailInCustomFolder = $derived(
-        !startsWithAnyOf(currentMailbox.folder, Object.values(Folder))
+    let customFoldersOfAccount = $derived(
+        SharedStore.customFolders.find(
+            (acc) => acc.email_address === account!.email_address,
+        )!.result,
+    );
+    let isEmailInCustomFolder = $derived(
+        !startsWithAnyOf(currentMailbox.folder, Object.values(Folder)),
     );
 
     async function markAs(mark: string | Mark) {
@@ -40,10 +43,12 @@
             account,
             [email.uid],
             mark,
-            SharedStore.currentFolder
+            SharedStore.currentFolder,
         );
-        if(!response.success) {
-            showMessage({content: `Unexpected error while marking email as ${mark}`});
+        if (!response.success) {
+            showMessage({
+                content: `Unexpected error while marking email as ${mark}`,
+            });
             console.error(response.message);
         }
     }
@@ -53,64 +58,66 @@
             account,
             [email.uid],
             mark,
-            SharedStore.currentFolder
+            SharedStore.currentFolder,
         );
-        if(!response.success) {
-            showMessage({content: `Unexpected error while marking email as ${mark}`});
+        if (!response.success) {
+            showMessage({
+                content: `Unexpected error while marking email as ${mark}`,
+            });
             console.error(response.message);
         }
     }
 
     const markAsImportant = async (): Promise<void> => {
         await markAs(Mark.Flagged);
-    }
+    };
 
     const markAsNotImportant = async (): Promise<void> => {
         await removeMark(Mark.Flagged);
-    }
+    };
 
     const markAsRead = async (): Promise<void> => {
         await markAs(Mark.Seen);
-    }
+    };
 
     const markAsUnread = async (): Promise<void> => {
         await removeMark(Mark.Seen);
-    }
+    };
 
     const copyTo = async (destinationFolder: string | Folder) => {
         const response = await MailboxController.copyEmails(
             account,
             [email.uid],
             SharedStore.currentFolder,
-            destinationFolder
+            destinationFolder,
         );
-        if(!response.success) {
-            showMessage({content: "Unexpected error while copying email."});
+        if (!response.success) {
+            showMessage({ content: "Unexpected error while copying email." });
             console.error(response.message);
         }
-    }
+    };
 
     const moveTo = async (destinationFolder: string | Folder) => {
         const response = await MailboxController.moveEmails(
             account,
             [email.uid],
             SharedStore.currentFolder,
-            destinationFolder
+            destinationFolder,
         );
 
-        if(!response.success) {
-            showMessage({content: "Unexpected error while moving email."});
+        if (!response.success) {
+            showMessage({ content: "Unexpected error while moving email." });
             console.error(response.message);
             return;
         }
 
         SharedStore.currentFolder = destinationFolder;
         showContent(Inbox);
-    }
+    };
 
     const moveToArchive = async () => {
         moveTo(Folder.Archive);
-    }
+    };
 
     const deleteFrom = async () => {
         showConfirm({
@@ -120,15 +127,17 @@
                 const response = await MailboxController.deleteEmails(
                     account,
                     [email.uid],
-                    SharedStore.currentFolder
+                    SharedStore.currentFolder,
                 );
-                if(!response.success) {
-                    showMessage({content: "Unexpected error while deleting email."});
+                if (!response.success) {
+                    showMessage({
+                        content: "Unexpected error while deleting email.",
+                    });
                     console.error(response.message);
                 }
             },
-        })
-    }
+        });
+    };
 
     const reply = async () => {
         showContent(Compose, {
@@ -138,9 +147,9 @@
             original_receiver: email.receivers,
             original_subject: email.subject,
             original_body: email.body,
-            original_date: email.date
+            original_date: email.date,
         });
-    }
+    };
 
     const forward = async () => {
         showContent(Compose, {
@@ -150,16 +159,17 @@
             original_receiver: email.receivers,
             original_subject: email.subject,
             original_body: email.body,
-            original_date: email.date
-        })
-    }
+            original_date: email.date,
+        });
+    };
 </script>
 
 <div class="toolbox-left">
     <Button.Basic
         type="button"
         class="btn-inline"
-        style="margin-right: var(--spacing-sm)";
+        style="margin-right: var(--spacing-sm)"
+        ;
         onclick={backToDefault}
     >
         Back
@@ -203,66 +213,58 @@
         {/if}
     </div>
     <div class="tool">
-        <Button.Action
-            type="button"
-            class="btn-inline"
-            onclick={moveToArchive}
-        >
+        <Button.Action type="button" class="btn-inline" onclick={moveToArchive}>
             Archive
         </Button.Action>
     </div>
     <div class="tool">
-        <Button.Action
-            type="button"
-            class="btn-inline"
-            onclick={deleteFrom}
-        >
+        <Button.Action type="button" class="btn-inline" onclick={deleteFrom}>
             Delete
         </Button.Action>
     </div>
     <div class="tool-separator"></div>
     <div class="tool">
-        <Select.Root onchange={copyTo} placeholder='Copy To'>
+        <Select.Root onchange={copyTo} placeholder="Copy To">
             {#each customFoldersOfAccount as customFolder}
                 {#if customFolder !== currentMailbox.folder}
-                    <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                    <Select.Option value={customFolder}>
+                        {customFolder}
+                    </Select.Option>
                 {/if}
             {/each}
             {#if isEmailInCustomFolder}
                 <!-- Add inbox option if email is in custom folder -->
-                <Select.Option value={Folder.Inbox}>{Folder.Inbox}</Select.Option>
+                <Select.Option value={Folder.Inbox}>
+                    {Folder.Inbox}
+                </Select.Option>
             {/if}
         </Select.Root>
     </div>
     <div class="tool">
-        <Select.Root onchange={moveTo} placeholder='Move To'>
+        <Select.Root onchange={moveTo} placeholder="Move To">
             {#each customFoldersOfAccount as customFolder}
                 {#if customFolder !== currentMailbox.folder}
-                    <Select.Option value={customFolder}>{customFolder}</Select.Option>
+                    <Select.Option value={customFolder}>
+                        {customFolder}
+                    </Select.Option>
                 {/if}
             {/each}
             {#if isEmailInCustomFolder}
                 <!-- Add inbox option if email is in custom folder -->
-                <Select.Option value={Folder.Inbox}>{Folder.Inbox}</Select.Option>
+                <Select.Option value={Folder.Inbox}>
+                    {Folder.Inbox}
+                </Select.Option>
             {/if}
         </Select.Root>
     </div>
     <div class="tool-separator"></div>
     <div class="tool">
-        <Button.Basic
-            type="button"
-            class="btn-inline"
-            onclick={reply}
-        >
+        <Button.Basic type="button" class="btn-inline" onclick={reply}>
             Reply
         </Button.Basic>
     </div>
     <div class="tool">
-        <Button.Basic
-            type="button"
-            class="btn-inline"
-            onclick={forward}
-        >
+        <Button.Basic type="button" class="btn-inline" onclick={forward}>
             Forward
         </Button.Basic>
     </div>
@@ -274,8 +276,11 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: NOT_IMPLEMENTED_TEMPLATE.replace("{feature}", "Spam")
-                        })
+                            content: NOT_IMPLEMENTED_TEMPLATE.replace(
+                                "{feature}",
+                                "Spam",
+                            ),
+                        });
                     }}
                 >
                     Spam
@@ -283,8 +288,11 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: NOT_IMPLEMENTED_TEMPLATE.replace("{feature}", "Print")
-                        })
+                            content: NOT_IMPLEMENTED_TEMPLATE.replace(
+                                "{feature}",
+                                "Print",
+                            ),
+                        });
                     }}
                 >
                     Print
@@ -292,8 +300,11 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: NOT_IMPLEMENTED_TEMPLATE.replace("{feature}", "Show Original")
-                        })
+                            content: NOT_IMPLEMENTED_TEMPLATE.replace(
+                                "{feature}",
+                                "Show Original",
+                            ),
+                        });
                     }}
                 >
                     Show Original
@@ -301,8 +312,11 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: NOT_IMPLEMENTED_TEMPLATE.replace("{feature}", "Unsubscribe")
-                        })
+                            content: NOT_IMPLEMENTED_TEMPLATE.replace(
+                                "{feature}",
+                                "Unsubscribe",
+                            ),
+                        });
                     }}
                 >
                     Unsubcribe
