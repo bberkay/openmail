@@ -147,7 +147,9 @@
         <div class="select-trigger">
             <div class="select-trigger-content">
                 {#if selectedOption}
-                    <span data-value={selectedOption.getAttribute("data-value")!}>{selectedOption.textContent}</span>
+                    <span data-value={selectedOption.getAttribute("data-value")!}>
+                        {selectedOption.textContent!.split("#dt#")[0].trim()}
+                    </span>
                     <Button.Basic
                         type="button"
                         class="clear-button {selectedOption ? "visible" : ""}"

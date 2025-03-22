@@ -34,6 +34,12 @@
                 opacity: 0;
                 visibility: hidden;
             }
+
+            &:has(.dropdown-container) {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
         }
     }
 </style>
