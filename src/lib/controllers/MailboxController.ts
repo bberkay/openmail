@@ -18,7 +18,7 @@ import { removeWhitespaces } from "$lib/utils";
 
 
 export class MailboxController {
-    private _get_accounts(accounts: Account | Account[] | string[] | null = null): string {
+    private static _get_accounts(accounts: Account | Account[] | string[] | null = null): string {
         if (accounts && !Array.isArray(accounts)) {
             accounts = [accounts];
         }
@@ -31,9 +31,9 @@ export class MailboxController {
             }).join(",");
     }
 
-    public async init(): Promise<BaseResponse> {
+    public static async init(): Promise<BaseResponse> {
         let response;
-        response = await this.getFolders();
+        response = await MailboxController.getFolders();
         if (!response.success) {
             return {
                 success: response.success,
@@ -41,7 +41,7 @@ export class MailboxController {
             }
         }
 
-        response = await this.getMailboxes(
+        response = await MailboxController.getMailboxes(
             SharedStore.accounts,
             Folder.Inbox,
             {
@@ -54,7 +54,7 @@ export class MailboxController {
         }
     }
 
-    public async getFolders(
+    public static async getFolders(
         accounts: Account | Account[] | null = null
     ): Promise<BaseResponse> {
         const response = await ApiService.get(
@@ -62,7 +62,7 @@ export class MailboxController {
             GetRoutes.GET_FOLDERS,
             {
                 pathParams: {
-                    accounts: this._get_accounts(accounts)
+                    accounts: MailboxController._get_accounts(accounts)
                 },
             },
         );
@@ -133,7 +133,7 @@ export class MailboxController {
         };
     }
 
-    public async getMailboxes(
+    public static async getMailboxes(
         accounts: Account | Account[] | null = null,
         folder: Folder | string | undefined = undefined,
         searchCriteria: SearchCriteria | string | undefined = undefined,
@@ -143,7 +143,7 @@ export class MailboxController {
             GetRoutes.GET_MAILBOXES,
             {
                 pathParams: {
-                    accounts: this._get_accounts(accounts),
+                    accounts: MailboxController._get_accounts(accounts),
                 },
                 queryParams: {
                     folder: folder,
@@ -174,7 +174,7 @@ export class MailboxController {
         };
     }
 
-    public async paginateEmails(
+    public static async paginateEmails(
         accounts: Account | Account[] | null = null,
         offset_start?: number,
         offset_end?: number
@@ -184,7 +184,7 @@ export class MailboxController {
             GetRoutes.PAGINATE_MAILBOXES,
             {
                 pathParams: {
-                    accounts: this._get_accounts(accounts),
+                    accounts: MailboxController._get_accounts(accounts),
                     offset_start: offset_start,
                     offset_end: offset_end,
                 },
@@ -206,7 +206,7 @@ export class MailboxController {
         };
     }
 
-    public async getEmailContent(
+    public static async getEmailContent(
         account: Account,
         folder: string,
         uid: string,
@@ -216,7 +216,7 @@ export class MailboxController {
             GetRoutes.GET_EMAIL_CONTENT,
             {
                 pathParams: {
-                    account: this._get_accounts(account),
+                    account: MailboxController._get_accounts(account),
                     folder: folder,
                     uid: uid,
                 },
@@ -224,7 +224,7 @@ export class MailboxController {
         );
     }
 
-    public async downloadAttachment(
+    public static async downloadAttachment(
         account: Account,
         folder: string,
         uid: string,
@@ -236,7 +236,7 @@ export class MailboxController {
             GetRoutes.DOWNLOAD_ATTACHMENT,
             {
                 pathParams: {
-                    account: this._get_accounts(account),
+                    account: MailboxController._get_accounts(account),
                     folder: folder,
                     uid: uid,
                     name: name
@@ -248,7 +248,7 @@ export class MailboxController {
         );
     }
 
-    public async sendEmail(formData: FormData): Promise<PostResponse> {
+    public static async sendEmail(formData: FormData): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.SEND_EMAIL,
@@ -256,7 +256,7 @@ export class MailboxController {
         );
     }
 
-    public async replyEmail(formData: FormData, original_message_id: string): Promise<PostResponse> {
+    public static async replyEmail(formData: FormData, original_message_id: string): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.REPLY_EMAIL,
@@ -269,7 +269,7 @@ export class MailboxController {
         );
     }
 
-    public async forwardEmail(formData: FormData, original_message_id: string): Promise<PostResponse> {
+    public static async forwardEmail(formData: FormData, original_message_id: string): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.FORWARD_EMAIL,
@@ -282,7 +282,7 @@ export class MailboxController {
         );
     }
 
-    public async deleteEmails(
+    public static async deleteEmails(
         account: Account,
         selection: string[],
         folder: string
@@ -291,7 +291,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.DELETE_EMAIL,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 sequence_set: selection.includes("*")
                     ? "1:*"
                     : selection.join(","),
@@ -300,7 +300,7 @@ export class MailboxController {
         );
 
         if (response.success) {
-            this.getMailboxes(account);
+            MailboxController.getMailboxes(account);
         }
 
         return {
@@ -309,7 +309,7 @@ export class MailboxController {
         };
     }
 
-    public async moveEmails(
+    public static async moveEmails(
         account: Account,
         selection: string[],
         sourceFolder: string,
@@ -319,7 +319,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.MOVE_EMAIL,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 sequence_set: selection.includes("*")
                     ? "1:*"
                     : selection.join(","),
@@ -329,7 +329,7 @@ export class MailboxController {
         );
 
         if (response.success) {
-            this.getMailboxes(account);
+            MailboxController.getMailboxes(account);
         }
 
         return {
@@ -338,7 +338,7 @@ export class MailboxController {
         };
     }
 
-    public async copyEmails(
+    public static async copyEmails(
         account: Account,
         selection: string[],
         sourceFolder: string,
@@ -348,7 +348,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.COPY_EMAIL,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 sequence_set: selection.includes("*")
                     ? "1:*"
                     : selection.join(","),
@@ -363,7 +363,7 @@ export class MailboxController {
         };
     }
 
-    public async markEmails(
+    public static async markEmails(
         account: Account,
         selection: string[],
         mark: string | Mark,
@@ -374,7 +374,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.MARK_EMAIL,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 mark: mark,
                 sequence_set: selection.includes("*")
                     ? "1:*"
@@ -406,7 +406,7 @@ export class MailboxController {
         };
     }
 
-    public async unmarkEmails(
+    public static async unmarkEmails(
         account: Account,
         selection: string[],
         mark: string | Mark,
@@ -417,7 +417,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.UNMARK_EMAIL,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 mark: mark,
                 sequence_set: selection.includes("*")
                     ? "1:*"
@@ -451,7 +451,7 @@ export class MailboxController {
         };
     }
 
-    public async createFolder(
+    public static async createFolder(
         account: Account,
         folderName: string,
         parentFolder: string | undefined,
@@ -460,7 +460,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.CREATE_FOLDER,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 folder_name: folderName,
                 parent_folder: parentFolder,
             },
@@ -482,7 +482,7 @@ export class MailboxController {
         };
     }
 
-    public async moveFolder(
+    public static async moveFolder(
         account: Account,
         folderName: string,
         destinationFolder: string,
@@ -491,7 +491,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.MOVE_FOLDER,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 folder_name: folderName,
                 destination_folder: destinationFolder,
             },
@@ -520,7 +520,7 @@ export class MailboxController {
         };
     }
 
-    public async renameFolder(
+    public static async renameFolder(
         account: Account,
         folderPath: string,
         newFolderName: string,
@@ -529,7 +529,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.RENAME_FOLDER,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 folder_name: folderPath,
                 new_folder_name: newFolderName,
             },
@@ -556,7 +556,7 @@ export class MailboxController {
         };
     }
 
-    public async deleteFolder(
+    public static async deleteFolder(
         account: Account,
         folderName: string,
         subfolders: boolean,
@@ -565,7 +565,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.DELETE_FOLDER,
             {
-                account: this._get_accounts(account),
+                account: MailboxController._get_accounts(account),
                 folder_name: folderName,
                 subfolders: subfolders,
             },

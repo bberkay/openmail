@@ -16,7 +16,6 @@
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
     const accountController = new AccountController();
-    const mailboxController = new MailboxController();
 
     interface Props {
         isEditingAccount: Account | null;
@@ -70,7 +69,7 @@
     };
 
     async function initMailboxes(): Promise<void> {
-        const response = await mailboxController.init();
+        const response = await MailboxController.init();
         if (!response.success) {
             showMessage({content: "Unexpected error while initializing mailboxes."});
             console.error(response.message);

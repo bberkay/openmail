@@ -6,8 +6,6 @@
     import * as Button from "$lib/ui/Components/Button";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
-    const mailboxController = new MailboxController();
-
     interface Props {
         account: Account;
         email: Email;
@@ -28,7 +26,7 @@
     ) + 1);
 
     const setEmailByUid = async (uid: string): Promise<void> => {
-        const response = await mailboxController.getEmailContent(
+        const response = await MailboxController.getEmailContent(
             account,
             currentMailbox.folder,
             uid

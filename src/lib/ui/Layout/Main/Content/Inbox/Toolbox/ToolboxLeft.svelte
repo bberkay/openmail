@@ -10,8 +10,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
-    const mailboxController = new MailboxController();
-
     interface Props {
         emailSelection: string[];
     }
@@ -81,7 +79,7 @@
     }
 
     async function markEmails(mark: string | Mark) {
-        const response = await mailboxController.markEmails(
+        const response = await MailboxController.markEmails(
             SharedStore.currentAccount,
             emailSelection,
             mark,
@@ -94,7 +92,7 @@
     }
 
     async function unmarkEmails(mark: string | Mark) {
-        const response = await mailboxController.unmarkEmails(
+        const response = await MailboxController.unmarkEmails(
             SharedStore.currentAccount,
             emailSelection,
             mark,
@@ -123,7 +121,7 @@
     }
 
     const copyTo = async (destinationFolder: string | Folder): Promise<void> => {
-        const response = await mailboxController.copyEmails(
+        const response = await MailboxController.copyEmails(
             SharedStore.currentAccount,
             emailSelection,
             SharedStore.currentFolder,
@@ -137,7 +135,7 @@
     }
 
     const moveTo = async (destinationFolder: string | Folder): Promise<void> => {
-        const response = await mailboxController.moveEmails(
+        const response = await MailboxController.moveEmails(
             SharedStore.currentAccount,
             emailSelection,
             SharedStore.currentFolder,
@@ -160,7 +158,7 @@
             content: "Are you certain? Deleting an email cannot be undone.",
             onConfirmText: "Yes, delete.",
             onConfirm: async (e: Event) => {
-                const response = await mailboxController.deleteEmails(
+                const response = await MailboxController.deleteEmails(
                     SharedStore.currentAccount,
                     emailSelection,
                     SharedStore.currentFolder
@@ -174,7 +172,7 @@
     }
 
     const refresh = async (): Promise<void> => {
-        const response = await mailboxController.getMailboxes();
+        const response = await MailboxController.getMailboxes();
         if (!response.success) {
             showMessage({content: "Error while refreshing mailboxes."});
             console.error(response.message);

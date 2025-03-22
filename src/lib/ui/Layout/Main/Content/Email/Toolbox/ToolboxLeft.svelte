@@ -13,8 +13,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
-    const mailboxController = new MailboxController();
-
     interface Props {
         account: Account;
         email: Email;
@@ -38,7 +36,7 @@
     );
 
     async function markAs(mark: string | Mark) {
-        const response = await mailboxController.markEmails(
+        const response = await MailboxController.markEmails(
             account,
             [email.uid],
             mark,
@@ -51,7 +49,7 @@
     }
 
     async function removeMark(mark: string | Mark) {
-        const response = await mailboxController.unmarkEmails(
+        const response = await MailboxController.unmarkEmails(
             account,
             [email.uid],
             mark,
@@ -80,7 +78,7 @@
     }
 
     const copyTo = async (destinationFolder: string | Folder) => {
-        const response = await mailboxController.copyEmails(
+        const response = await MailboxController.copyEmails(
             account,
             [email.uid],
             SharedStore.currentFolder,
@@ -93,7 +91,7 @@
     }
 
     const moveTo = async (destinationFolder: string | Folder) => {
-        const response = await mailboxController.moveEmails(
+        const response = await MailboxController.moveEmails(
             account,
             [email.uid],
             SharedStore.currentFolder,
@@ -119,7 +117,7 @@
             content: "Are you certain? Deleting an email cannot be undone.",
             onConfirmText: "Yes, delete.",
             onConfirm: async (e: Event) => {
-                const response = await mailboxController.deleteEmails(
+                const response = await MailboxController.deleteEmails(
                     account,
                     [email.uid],
                     SharedStore.currentFolder

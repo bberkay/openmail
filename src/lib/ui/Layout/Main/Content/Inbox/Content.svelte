@@ -19,8 +19,6 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
-    const mailboxController = new MailboxController();
-
     interface Props {
         emailSelection: string[];
     }
@@ -125,7 +123,7 @@
     }
 
     const showEmailContent = async (selectedEmail: TEmail): Promise<void> => {
-        const response = await mailboxController.getEmailContent(
+        const response = await MailboxController.getEmailContent(
             SharedStore.currentAccount,
             SharedStore.currentFolder,
             selectedEmail.uid

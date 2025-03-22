@@ -5,8 +5,6 @@
     import * as Button from "$lib/ui/Components/Button";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
-    const mailboxController = new MailboxController();
-
     let currentMailbox = $derived(
         SharedStore.mailboxes.find(
             (task) =>
@@ -24,7 +22,7 @@
 
         const offset_start = Math.max(1, currentOffset - 10);
         const offset_end = Math.max(1, currentOffset);
-        const response = await mailboxController.paginateEmails(
+        const response = await MailboxController.paginateEmails(
             SharedStore.currentAccount,
             offset_start,
             offset_end,
@@ -42,7 +40,7 @@
 
         const offset_start = Math.min(totalEmailCount, currentOffset + 10);
         const offset_end = Math.min(totalEmailCount, currentOffset + 10 + 10);
-        const response = await mailboxController.paginateEmails(
+        const response = await MailboxController.paginateEmails(
             SharedStore.currentAccount,
             offset_start,
             offset_end,

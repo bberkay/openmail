@@ -17,10 +17,6 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
-    /* Constants */
-
-    const mailboxController = new MailboxController();
-
     /* Variables */
 
     interface Props {
@@ -134,17 +130,17 @@
 
         let response;
         if (compose_type == "reply") {
-            response = await mailboxController.replyEmail(
+            response = await MailboxController.replyEmail(
                 formData,
                 original_message_id!
             );
         } else if (compose_type == "forward") {
-           response = await mailboxController.forwardEmail(
+           response = await MailboxController.forwardEmail(
                formData,
                original_message_id!
            );
         } else {
-            response = await mailboxController.sendEmail(formData);
+            response = await MailboxController.sendEmail(formData);
         }
 
         if (!response.success) {

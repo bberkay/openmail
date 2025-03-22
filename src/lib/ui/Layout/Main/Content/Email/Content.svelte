@@ -10,8 +10,6 @@
     import Badge from "$lib/ui/Components/Badge";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
-    const mailboxController = new MailboxController();
-
     interface Props {
         account: Account;
         email: Email;
@@ -46,7 +44,7 @@
 
     const downloadAttachment = async (index: number) => {
         const attachment = email.attachments![index];
-        const response = await mailboxController.downloadAttachment(
+        const response = await MailboxController.downloadAttachment(
             account,
             SharedStore.currentFolder!,
             email.uid,
