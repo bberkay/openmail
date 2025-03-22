@@ -3,7 +3,18 @@
     import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import * as Select from "$lib/ui/Components/Select";
+    import * as Dropdown from "$lib/ui/Components/Dropdown";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import CreateFolder from "$lib/ui/Layout/Main/Navbar/Folders/CreateFolder.svelte";
+    import RenameFolder from "$lib/ui/Layout/Main/Navbar/Folders/RenameFolder.svelte";
+    import MoveFolder from "$lib/ui/Layout/Main/Navbar/Folders/MoveFolder.svelte";
+    import DeleteFolder from "$lib/ui/Layout/Main/Navbar/Folders/DeleteFolder.svelte";
+    import { show as showModal } from "$lib/ui/Components/Modal";
+
+    const FolderOperation = {
+        Create: "create",
+        Refresh: "refresh"
+    } as const;
 
     let standardFoldersOfAccount = $derived(
         SharedStore.standardFolders.find(
@@ -19,7 +30,7 @@
         )!.result,
     );
 
-    async function setCurrentFolder(selectedFolder: string | Folder) {
+    const setCurrentFolder = async (selectedFolder: string | Folder): Promise<void> => {
         let isSelectedFolderFound = SharedStore.standardFolders.find(
             (task) =>
                 task.email_address === SharedStore.currentAccount!.email_address &&
@@ -41,11 +52,27 @@
         SharedStore.currentFolder = selectedFolder;
     }
 
-    function createFolder() {
-
+    const showCreateFolder = () => {
+        showModal(CreateFolder);
     }
 
-    async function refreshFolders() {
+    const showCreateSubfolder = (parentFolderName: string) => {
+        showModal(CreateFolder, { parentFolderName });
+    }
+
+    const showRenameFolder = (folderName: string) => {
+        showModal(RenameFolder, { folderName });
+    }
+
+    const showMoveFolder = (folderName: string) => {
+        showModal(MoveFolder, { folderName });
+    }
+
+    const showDeleteFolder = (folderName: string) => {
+        showModal(DeleteFolder, { folderName });
+    }
+
+    const refreshFolders = async () => {
         const response = await MailboxController.getFolders(
             SharedStore.currentAccount,
         );
@@ -55,12 +82,12 @@
         }
     }
 
-    function handleOperation(selectedOperation: string) {
+    const handleOperation = (selectedOperation: string) => {
         switch (selectedOperation) {
-            case "create":
-                createFolder();
+            case FolderOperation.Create:
+                showCreateFolder();
                 break;
-            case "refresh":
+            case FolderOperation.Refresh:
                 refreshFolders();
                 break;
             default:
@@ -83,9 +110,20 @@
     {/each}
     <Select.Separator />
     {#each customFoldersOfAccount as customFolder}
-        <Select.Option value={customFolder}>{customFolder}</Select.Option>
+        <Select.Option value={customFolder}>
+            <span>{customFolder}</span>
+            <Dropdown.Root>
+                <Dropdown.Toggle>⋮</Dropdown.Toggle>
+                {#snippet content()}
+                    <Dropdown.Item onclick={() => showCreateSubfolder(customFolder)}>Create Subfolder</Dropdown.Item>
+                    <Dropdown.Item onclick={() => showRenameFolder(customFolder)}>Rename Folder</Dropdown.Item>
+                    <Dropdown.Item onclick={() => showMoveFolder(customFolder)}>Move Folder</Dropdown.Item>
+                    <Dropdown.Item onclick={() => showDeleteFolder(customFolder)}>Delete Folder</Dropdown.Item>
+                {/snippet}
+            </Dropdown.Root>
+        </Select.Option>
     {/each}
     <Select.Separator />
-    <Select.Option value="create">Create Folder</Select.Option>
-    <Select.Option value="refresh">Refresh folders</Select.Option>
+    <Select.Option value={FolderOperation.Create}>Create Folder</Select.Option>
+    <Select.Option value={FolderOperation.Refresh}>Refresh folders</Select.Option>
 </Select.Root>
