@@ -1,400 +1,566 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { Folder, Mark, type Account, type SearchCriteria } from "$lib/types";
-    import { debounce, isEmailValid, adjustSizes, convertToIMAPDate, concatValueAndUnit, convertSizeToBytes, isObjEmpty } from "$lib/utils";
+    import { Folder, Mark, type SearchCriteria } from "$lib/types";
+    import {
+        debounce,
+        addEmailToAddressList,
+        adjustSizes,
+        convertToIMAPDate,
+        concatValueAndUnit,
+        convertSizeToBytes,
+        isObjEmpty,
+    } from "$lib/utils";
     import { Size } from "$lib/utils/types";
     import * as Select from "$lib/ui/Components/Select";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
+    import Icon from "$lib/ui/Components/Icon";
+    import Label from "$lib/ui/Components/Label";
+    import Badge from "$lib/ui/Components/Badge";
+    import { FormGroup } from "$lib/ui/Components/Form";
+    import { show as showMessage } from "$lib/ui/Components/Message";
 
-    /* Constants */
+    const REALTIME_SEARCH_DELAY = 300;
 
-    const mailboxController = new MailboxController();
-    const tagTemplate = `
-        <span class="tag">
-            <span class="value">{tag}</span>
-            <button type="button" style="margin-left:5px;" onclick="this.parentElement.remove()">X</button>
-        </span>
-    `;
+    let isSimpleSearchHidden = $state(true);
+    let isExtraOptionsHidden = $state(true);
 
-    /* Variables */
+    let searchingFolder: string | Folder = $state(Folder.All);
+    let searchCriteria: SearchCriteria = $state({});
 
-    let advancedSearchMenu: HTMLElement;
+    let extraOptionsWrapper: HTMLElement;
     let simpleSearchInput: HTMLInputElement;
 
-    let folder: string | undefined = $state(Folder.All);
-    let isAdvancedSearchMenuOpen = $state(false);
-    let selectedSince: Date | undefined = $state(undefined);
-    let selectedBefore: Date | undefined = $state(undefined);
-    let smallerThanUnit: string | undefined = $state(undefined);
-    let largerThanUnit: string | undefined = $state(undefined);
+    let selectedSince: Date | undefined = $state();
+    let selectedBefore: Date | undefined = $state();
 
-    /* Criteria Handling Functions */
+    let largerThanInput: HTMLInputElement;
+    let largerThanUnit: Size | undefined = $state();
+    let smallerThanInput: HTMLInputElement;
+    let smallerThanUnit: Size | undefined = $state();
 
-    const addSearchAccount = (selectedAccount: string | null) => {
-        const tags = document.getElementById("search-accounts") as HTMLDivElement;
-        if (selectedAccount) {
-            tags.innerHTML += tagTemplate.replace("{tag}", selectedAccount);
-        }
-    }
+    onMount(() => {
+        simpleSearchInput = extraOptionsWrapper.querySelector(
+            'input[id="simple-search"]',
+        )!;
+        largerThanInput = extraOptionsWrapper.querySelector(
+            'input[id="larger-than"]',
+        )!;
+        smallerThanInput = extraOptionsWrapper.querySelector(
+            'input[id="smaller-than"]',
+        )!;
+    });
 
-    const setSelectedFolder = (selectedFolder: string | null) => {
-        if (selectedFolder) {
-            folder = selectedFolder;
-        }
-    }
+    let standardFoldersOfAccount = $derived(
+        SharedStore.standardFolders.find(
+            (acc) =>
+                acc.email_address === SharedStore.currentAccount.email_address,
+        )!.result,
+    );
 
-    const addEnteredEmail = (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const email_address = target.value.trim();
-        const emails = target.closest(".form-group")?.querySelector(".emails") as HTMLElement;
+    let customFoldersOfAccount = $derived(
+        SharedStore.customFolders.find(
+            (acc) =>
+                acc.email_address === SharedStore.currentAccount.email_address,
+        )!.result,
+    );
 
-        if (!emails) return;
-
-        if (e instanceof KeyboardEvent && (e.key === " " || e.key === "Spacebar")) {
-            e.preventDefault();
-            processEmail(target, emails, email_address);
-        }
-        else if (e instanceof FocusEvent) {
-            processEmail(target, emails, email_address);
+    const search = async (): Promise<void> => {
+        const response = await MailboxController.getMailboxes(
+            SharedStore.currentAccount,
+            searchingFolder,
+            isExtraOptionsHidden
+                ? simpleSearchInput.value
+                : isObjEmpty(searchCriteria)
+                  ? searchCriteria
+                  : undefined,
+        );
+        if (!response.success) {
+            showMessage({ content: "Error while searching for emails." });
+            console.error(response.message);
         }
     };
 
-    function processEmail(target: HTMLInputElement, emails: HTMLElement, email_address: string) {
-        if (email_address !== "" && isEmailValid(email_address)) {
-            emails.style.display = "flex";
-            emails.innerHTML += tagTemplate.replace("{tag}", email_address);
-            target.value = "";
-        } else if (email_address !== "") {
-            target.style.transform = "scale(1.02)";
-            setTimeout(() => {
-                target.style.transform = "scale(1)";
-            }, 100);
+    const debouncedSearch = debounce((e: Event) => {
+        search();
+    }, REALTIME_SEARCH_DELAY);
+
+    const toggleSimpleSearch = () => {
+        isSimpleSearchHidden = !isSimpleSearchHidden;
+    };
+
+    const toggleExtraOptions = () => {
+        isExtraOptionsHidden = !isExtraOptionsHidden;
+    };
+
+    const selectFolder = (selectedFolder: string | Folder) => {
+        searchingFolder = selectedFolder;
+    };
+
+    const addSender = (e: Event) => {
+        if (!searchCriteria.senders) searchCriteria.senders = [];
+        const targetInput = (e.target as HTMLElement)
+            .closest(".form-group")!
+            .querySelector<HTMLInputElement>('input[id="searching-senders"]')!;
+        addEmailToAddressList(e, targetInput, searchCriteria.senders);
+    };
+
+    const addReceiver = (e: Event) => {
+        if (!searchCriteria.receivers) searchCriteria.receivers = [];
+        const targetInput = (e.target as HTMLElement)
+            .closest(".form-group")!
+            .querySelector<HTMLInputElement>(
+                'input[id="searching-receivers"]',
+            )!;
+        addEmailToAddressList(e, targetInput, searchCriteria.receivers);
+    };
+
+    const addCc = (e: Event) => {
+        if (!searchCriteria.cc) searchCriteria.cc = [];
+        const targetInput = (e.target as HTMLElement)
+            .closest(".form-group")!
+            .querySelector<HTMLInputElement>('input[id="searching-cc"]')!;
+        addEmailToAddressList(e, targetInput, searchCriteria.cc);
+    };
+
+    const setSubject = (e: Event): void => {
+        searchCriteria.subject = (e.target as HTMLInputElement).value;
+    };
+
+    const setSince = (selectedDate: Date) => {
+        selectedSince = selectedDate;
+        searchCriteria.since = convertToIMAPDate(selectedSince);
+        if (selectedSince && selectedBefore && selectedSince > selectedBefore) {
+            selectedBefore.setDate(selectedSince.getDate() + 1);
         }
     };
 
-    const setEnteredSizeValue = debounce((e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const row = target.closest(".row")!;
+    const setBefore = (selectedDate: Date) => {
+        selectedBefore = selectedDate;
+        searchCriteria.before = convertToIMAPDate(selectedBefore);
+        if (selectedSince && selectedBefore && selectedSince > selectedBefore) {
+            selectedSince.setDate(selectedBefore.getDate() - 1);
+        }
+    };
 
-        if (!smallerThanUnit || !largerThanUnit)
-            return;
+    const setInclude = (e: Event): void => {
+        searchCriteria.include = (e.target as HTMLInputElement).value;
+    };
 
-        const smallerThanInput = row.querySelector(
-            'input[name="smaller_than"]',
-        ) as HTMLInputElement;
+    const setExclude = (e: Event): void => {
+        searchCriteria.exclude = (e.target as HTMLInputElement).value;
+    };
 
-        const largerThanInput = row.querySelector(
-            'input[name="larger_than"]',
-        ) as HTMLInputElement;
+    const addIncludedFlag = (flag: Mark) => {
+        if (!searchCriteria.included_flags) searchCriteria.included_flags = [];
+        if (searchCriteria.excluded_flags?.includes(flag))
+            searchCriteria.excluded_flags =
+                searchCriteria.excluded_flags.filter(
+                    (excluded_flag) => excluded_flag !== flag,
+                );
+        searchCriteria.included_flags.push(flag);
+    };
+
+    const addExcludedFlag = (flag: Mark) => {
+        if (!searchCriteria.excluded_flags) searchCriteria.excluded_flags = [];
+        if (searchCriteria.included_flags?.includes(flag))
+            searchCriteria.included_flags =
+                searchCriteria.included_flags.filter(
+                    (included_flag) => included_flag !== flag,
+                );
+        searchCriteria.excluded_flags.push(flag);
+    };
+
+    function updateSizes() {
+        if (smallerThanInput.value && smallerThanUnit) {
+            searchCriteria.smaller_than = convertSizeToBytes(
+                concatValueAndUnit(smallerThanInput.value, smallerThanUnit),
+            );
+        }
+        if (largerThanInput.value && largerThanUnit) {
+            searchCriteria.larger_than = convertSizeToBytes(
+                concatValueAndUnit(largerThanInput.value, largerThanUnit),
+            );
+        }
+    }
+
+    const setLargerThanUnit = (selectedLargerThanUnit: string) => {
+        largerThanUnit = selectedLargerThanUnit as Size;
+        updateSizes();
+    };
+
+    const setSmallerThanUnit = (selectedSmallerThanUnit: string) => {
+        smallerThanUnit = selectedSmallerThanUnit as Size;
+        updateSizes();
+    };
+
+    const setEnteredSize = (e: Event): void => {
+        if (!smallerThanUnit || !largerThanUnit) return;
 
         const adjustedSizes = adjustSizes(
-            [
-                Number(smallerThanInput.value),
-                smallerThanUnit as Size
-            ],
-            [
-                Number(largerThanInput.value),
-                largerThanUnit as Size
-            ]
+            [Number(smallerThanInput.value), smallerThanUnit],
+            [Number(largerThanInput.value), largerThanUnit],
         );
 
         smallerThanInput.value = adjustedSizes[0][0].toString();
-        smallerThanUnit = adjustedSizes[0][1]
+        smallerThanUnit = adjustedSizes[0][1] as Size;
 
         largerThanInput.value = adjustedSizes[1][0].toString();
-        largerThanUnit = adjustedSizes[1][1]
-    }, 100);
-
-    const setSelectedSmallerThanUnit = (selectedUnit: string | null) => {
-        smallerThanUnit = selectedUnit || undefined;
-    }
-
-    const setSelectedLargerThanUnit = (selectedUnit: string | null) => {
-        largerThanUnit = selectedUnit || undefined;
-    }
-
-    const setSelectedSinceDate = (selectedDate: Date) => {
-        selectedSince = selectedDate;
-        if (selectedSince && selectedBefore && selectedSince > selectedBefore) {
-            selectedBefore.setDate(selectedSince.getDate() + 1)
-        }
-    }
-
-    const setSelectedBeforeDate = (selectedDate: Date) => {
-        selectedBefore = selectedDate;
-        if (selectedSince && selectedBefore && selectedSince > selectedBefore) {
-            selectedSince.setDate(selectedBefore.getDate() - 1)
-        }
-    }
-
-    const addIncludedFlag = (selectedFlag: string | null) => {
-        const tags = document.getElementById("search-included-flags") as HTMLDivElement;
-        if (selectedFlag) {
-            tags.innerHTML += tagTemplate.replace("{tag}", selectedFlag);
-        }
-    }
-
-    const addExcludedFlag = (selectedFlag: string | null) => {
-        const tags = document.getElementById("search-excluded-flags") as HTMLDivElement;
-        if (selectedFlag) {
-            tags.innerHTML += tagTemplate.replace("{tag}", selectedFlag);
-        }
-    }
-
-    /* Search Criteria Creator Functions */
-
-    function extractAsArray(selector: string): string[] {
-        return Array.from<HTMLElement>(
-            advancedSearchMenu
-                .querySelector(selector)!
-                .querySelectorAll("span.value"),
-        ).map((span: HTMLElement) => {
-            return span.textContent || "";
-        });
+        largerThanUnit = adjustedSizes[1][1] as Size;
+        updateSizes();
     };
 
-    function getSearchCriteria(): SearchCriteria | null {
-        const searchCriteria: SearchCriteria = {
-            senders: extractAsArray("#search-senders"),
-            receivers: extractAsArray("#search-receivers"),
-            cc: extractAsArray("#search-cc"),
-            included_flags: extractAsArray("#search-included-flags"),
-            excluded_flags: extractAsArray("#search-excluded-flags"),
-            subject: advancedSearchMenu.querySelector<HTMLInputElement>(
-                'input[name="subject"]',
-            )!.value,
-            include: advancedSearchMenu.querySelector<HTMLInputElement>(
-                'input[name="include"]',
-            )!.value,
-            exclude: advancedSearchMenu.querySelector<HTMLInputElement>(
-                'input[name="exclude"]',
-            )!.value,
-            has_attachments:
-                advancedSearchMenu.querySelector<HTMLInputElement>(
-                    'input[name="has_attachments"]',
-                )!.checked,
-            since: selectedSince ? convertToIMAPDate(selectedSince) : undefined,
-            before: selectedBefore ? convertToIMAPDate(selectedBefore) : undefined,
-            smaller_than: smallerThanUnit ? convertSizeToBytes(concatValueAndUnit(advancedSearchMenu.querySelector<HTMLInputElement>(
-                'input[name="smaller_than"]',
-            )!.value, smallerThanUnit as Size)) : undefined,
-            larger_than: largerThanUnit ? convertSizeToBytes(concatValueAndUnit(advancedSearchMenu.querySelector<HTMLInputElement>(
-                'input[name="larger_than"]',
-            )!.value, largerThanUnit as Size)) : undefined
-        };
+    const setHasAttachments = (e: Event) => {
+        searchCriteria.has_attachments = (e.target as HTMLInputElement).checked;
+    };
 
-        if (isObjEmpty(searchCriteria))
-            return null;
-
-        return searchCriteria;
-    }
-
-    /* Main Operation */
-
-    const search = async (): Promise<void> => {
-        let searchCriteria: SearchCriteria | string | undefined = undefined;
-        searchCriteria = isAdvancedSearchMenuOpen
-            ? (getSearchCriteria() || undefined)
-            : simpleSearchInput.value;
-
-        const response = await mailboxController.getMailboxes(
-            SharedStore.currentAccount,
-            folder,
-            searchCriteria
-        );
-        if (!response.success) {
-            alert(response.message);
-        }
-    }
+    const clear = () => {
+        searchCriteria = {};
+    };
 </script>
 
-<div class="card" id="search-menu">
-    <div class="input-group">
-        <input type="text" style="width:100%" placeholder="Search" id="simple-search-input" bind:this={simpleSearchInput}/>
-        <button type="button" onclick={() => { isAdvancedSearchMenuOpen = !isAdvancedSearchMenuOpen }}>⇅</button>
+<Button.Basic
+    type="button"
+    class="btn-cta nav-button"
+    onclick={toggleSimpleSearch}
+>
+    <Icon name="search" />
+</Button.Basic>
+
+{#if !isSimpleSearchHidden}
+    <div class="search-menu">
+        <Input.Group>
+            <Button.Action type="button" onclick={search}>
+                <Icon name="search" />
+            </Button.Action>
+            <Input.Basic
+                type="text"
+                id="simple-search"
+                placeholder="Search 'someone@mail.xyz' or 'meeting notes'..."
+                onkeyup={debouncedSearch}
+                onblur={debouncedSearch}
+            />
+            <Button.Basic type="button" onclick={toggleSimpleSearch}>
+                <Icon name="close" />
+            </Button.Basic>
+            <Button.Basic type="button" onclick={toggleExtraOptions}>
+                <Icon name="funnel" />
+            </Button.Basic>
+        </Input.Group>
+        {#if !isExtraOptionsHidden}
+            <div class="search-extra-options" bind:this={extraOptionsWrapper}>
+                <FormGroup>
+                    <Label for="searching-folder">Folder</Label>
+                    <Select.Root
+                        id="searching-folder"
+                        value={Folder.All}
+                        onchange={selectFolder}
+                    >
+                        {#each standardFoldersOfAccount as standardFolder}
+                            {@const [folderTag, folderName] =
+                                standardFolder.split(":")}
+                            <Select.Option value={folderTag}>
+                                {folderName}
+                            </Select.Option>
+                        {/each}
+                        <Select.Separator />
+                        {#each customFoldersOfAccount as customFolder}
+                            <Select.Option value={customFolder}>
+                                {customFolder}
+                            </Select.Option>
+                        {/each}
+                    </Select.Root>
+                </FormGroup>
+                <FormGroup>
+                    <Label for="searching-senders">Sender(s)</Label>
+                    <Input.Group>
+                        <Input.Basic
+                            type="email"
+                            id="searching-senders"
+                            placeholder="Enter sender@mail.xyz then press 'Space'"
+                            onkeyup={addSender}
+                            onblur={addSender}
+                        />
+                        <Button.Basic type="button" onclick={addSender}>
+                            <Icon name="add" />
+                        </Button.Basic>
+                    </Input.Group>
+                    <div class="tags">
+                        {#if searchCriteria.senders}
+                            {#each searchCriteria.senders as sender}
+                                <Badge
+                                    content={sender}
+                                    onclick={() => {
+                                        searchCriteria.senders =
+                                            searchCriteria.senders!.filter(
+                                                (addr) => addr !== sender,
+                                            );
+                                    }}
+                                />
+                            {/each}
+                        {/if}
+                    </div>
+                </FormGroup>
+                <FormGroup>
+                    <Label for="searching-receivers">Receiver(s)</Label>
+                    <Input.Group>
+                        <Input.Basic
+                            type="email"
+                            id="searching-receivers"
+                            placeholder="Enter sender@mail.xyz then press 'Space'"
+                            onkeyup={addReceiver}
+                            onblur={addReceiver}
+                        />
+                        <Button.Basic type="button" onclick={addReceiver}>
+                            <Icon name="add" />
+                        </Button.Basic>
+                    </Input.Group>
+                    <div class="tags">
+                        {#if searchCriteria.receivers}
+                            {#each searchCriteria.receivers as receiver}
+                                <Badge
+                                    content={receiver}
+                                    onclick={() => {
+                                        searchCriteria.receivers =
+                                            searchCriteria.receivers!.filter(
+                                                (addr) => addr !== receiver,
+                                            );
+                                    }}
+                                />
+                            {/each}
+                        {/if}
+                    </div>
+                </FormGroup>
+                <FormGroup>
+                    <Label for="searching-cc">Cc</Label>
+                    <Input.Group>
+                        <Input.Basic
+                            type="email"
+                            id="searching-cc"
+                            placeholder="Enter sender@mail.xyz then press 'Space'"
+                            onkeyup={addCc}
+                            onblur={addCc}
+                        />
+                        <Button.Basic type="button" onclick={addCc}>
+                            <Icon name="add" />
+                        </Button.Basic>
+                    </Input.Group>
+                    <div class="tags">
+                        {#if searchCriteria.cc}
+                            {#each searchCriteria.cc as cc}
+                                <Badge
+                                    content={cc}
+                                    onclick={() => {
+                                        searchCriteria.cc =
+                                            searchCriteria.cc!.filter(
+                                                (addr) => addr !== cc,
+                                            );
+                                    }}
+                                />
+                            {/each}
+                        {/if}
+                    </div>
+                </FormGroup>
+                <FormGroup>
+                    <Label for="searching-subject">Subject</Label>
+                    <Input.Basic
+                        type="text"
+                        id="searching-subject"
+                        placeholder="For example: Project Proposal, Meeting Notes"
+                        onkeydown={setSubject}
+                    />
+                </FormGroup>
+                <FormGroup>
+                    <Label>Date Range</Label>
+                    <FormGroup direction="horizontal">
+                        <Label for="since">Since</Label>
+                        <Input.Date
+                            id="since"
+                            value={selectedSince}
+                            onchange={setSince}
+                        />
+                    </FormGroup>
+                    <FormGroup direction="horizontal">
+                        <Label for="before">Before</Label>
+                        <Input.Date
+                            id="before"
+                            value={selectedBefore}
+                            onchange={setBefore}
+                        />
+                    </FormGroup>
+                </FormGroup>
+                <FormGroup>
+                    <Label for="searching-include">Includes</Label>
+                    <Input.Basic
+                        type="text"
+                        id="searching-include"
+                        placeholder="Words to include in search..."
+                        onkeydown={setInclude}
+                    />
+                </FormGroup>
+                <FormGroup>
+                    <Label for="searching-exclude">Excludes</Label>
+                    <Input.Basic
+                        type="text"
+                        id="searching-exclude"
+                        placeholder="Words to exclude from search..."
+                        onkeydown={setExclude}
+                    />
+                </FormGroup>
+                <FormGroup>
+                    <Label>Flags</Label>
+                    <FormGroup direction="horizontal">
+                        <div>
+                            <Label for="included-flags">Included Flags</Label>
+                            <FormGroup direction="horizontal">
+                                <Select.Root
+                                    id="included-flags"
+                                    resetAfterSelect={true}
+                                >
+                                    {#each Object.entries(Mark) as mark}
+                                        <Select.Option value={mark[1]}>
+                                            {mark[0]}
+                                        </Select.Option>
+                                    {/each}
+                                </Select.Root>
+                                <Button.Basic
+                                    type="button"
+                                    class="btn-inline"
+                                    onclick={addIncludedFlag}
+                                >
+                                    <Icon name="add" />
+                                </Button.Basic>
+                            </FormGroup>
+                            <div class="tags">
+                                {#if searchCriteria.included_flags}
+                                    {#each searchCriteria.included_flags as included_flag}
+                                        <Badge content={included_flag} />
+                                    {/each}
+                                {/if}
+                            </div>
+                        </div>
+                        <div>
+                            <Label for="excluded-flags">Excluded Flags</Label>
+                            <FormGroup direction="horizontal">
+                                <Select.Root
+                                    id="excluded-flags"
+                                    resetAfterSelect={true}
+                                >
+                                    {#each Object.entries(Mark) as mark}
+                                        <Select.Option value={mark[1]}>
+                                            {mark[0]}
+                                        </Select.Option>
+                                    {/each}
+                                </Select.Root>
+                                <Button.Basic
+                                    type="button"
+                                    class="btn-inline"
+                                    onclick={addExcludedFlag}
+                                >
+                                    <Icon name="add" />
+                                </Button.Basic>
+                            </FormGroup>
+                            <div class="tags">
+                                {#if searchCriteria.excluded_flags}
+                                    {#each searchCriteria.excluded_flags as excluded_flag}
+                                        <Badge content={excluded_flag} />
+                                    {/each}
+                                {/if}
+                            </div>
+                        </div>
+                    </FormGroup>
+                </FormGroup>
+                <FormGroup>
+                    <Label>Size</Label>
+                    <FormGroup direction="horizontal">
+                        <Label for="larger-than">Larger Than</Label>
+                        <Input.Basic
+                            type="number"
+                            id="larger-than"
+                            placeholder="1"
+                            onkeydown={setEnteredSize}
+                        />
+                        <Select.Root
+                            placeholder={Size.KB}
+                            value={largerThanUnit}
+                            onchange={setLargerThanUnit}
+                        >
+                            {#each Object.entries(Size) as size}
+                                <Select.Option value={size[0]}>
+                                    {size[1]}
+                                </Select.Option>
+                            {/each}
+                        </Select.Root>
+                    </FormGroup>
+                    <FormGroup direction="horizontal">
+                        <Label for="smaller-than">Smaller Than</Label>
+                        <Input.Basic
+                            type="number"
+                            id="smaller-than"
+                            placeholder="1"
+                            onkeydown={setEnteredSize}
+                        />
+                        <Select.Root
+                            placeholder={Size.MB}
+                            value={smallerThanUnit}
+                            onchange={setSmallerThanUnit}
+                        >
+                            {#each Object.entries(Size) as size}
+                                <Select.Option value={size[0]}>
+                                    {size[1]}
+                                </Select.Option>
+                            {/each}
+                        </Select.Root>
+                    </FormGroup>
+                </FormGroup>
+                <FormGroup direction="horizontal">
+                    <Input.Basic
+                        type="checkbox"
+                        id="has-attachments"
+                        onchange={setHasAttachments}
+                    />
+                    <Label for="has-attachments">Has attachments</Label>
+                </FormGroup>
+                <div>
+                    <Button.Basic
+                        type="button"
+                        class="btn-outline"
+                        onclick={clear}
+                    >
+                        <Icon name="clear" />
+                        Clear
+                    </Button.Basic>
+                    <Button.Action type="button" onclick={search}>
+                        <Icon name="search" />
+                        Search
+                    </Button.Action>
+                </div>
+            </div>
+        {/if}
     </div>
-    <div
-        id="advanced-search-menu"
-        class={isAdvancedSearchMenuOpen ? "open" : ""}
-        bind:this={advancedSearchMenu}
-    >
-        <div class="form-group">
-            <label for="folder">Folder</label>
-            <div class="input-group">
-                {#if SharedStore.currentAccount}
-                    <Select.Menu enableSearch={true} onchange={setSelectedFolder} value={Folder.All}>
-                        {#each SharedStore.standardFolders[0].result as standardFolder}
-                            {@const [folderTag, folderName] = standardFolder.split(":")}
-                            <Select.Option value={folderTag}>{folderName}</Select.Option>
-                        {/each}
-                        {#each SharedStore.customFolders[0].result as customFolder}
-                            <Select.Option value={customFolder}>{customFolder}</Select.Option>
-                        {/each}
-                    </Select.Menu>
-                {/if}
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="senders">Sender(s)</label>
-            <input type="email" name="senders" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="search-senders"></div>
-        </div>
-        <div class="form-group">
-            <label for="receivers">Receiver(s)</label>
-            <input type="email" name="receivers" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="search-receivers"></div>
-        </div>
-        <div class="form-group">
-            <label for="cc">Cc</label>
-            <input type="email" name="cc" id="cc" onkeyup={addEnteredEmail} onblur={addEnteredEmail} placeholder="someone@domain.xyz" />
-            <div class="tags emails" id="search-cc"></div>
-        </div>
-        <div class="form-group">
-            <label for="subject">Subject</label>
-            <input type="text" name="subject" placeholder="Subject" />
-        </div>
-        <div class="row">
-            <div class="form-group">
-                <label for="since">Since</label>
-                <div class="input-group">
-                    <Input.Date
-                        onchange={setSelectedSinceDate}
-                        value={selectedSince}
-                    />
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="before">Before</label>
-                <div class="input-group">
-                    <Input.Date
-                        onchange={setSelectedBeforeDate}
-                        value={selectedBefore}
-                    />
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="form-group">
-                <label for="since">Smaller Than</label>
-                <div class="input-group">
-                    <input
-                        type="number"
-                        name="smaller_than"
-                        min="0"
-                        value="0"
-                        onkeyup={setEnteredSizeValue}
-                    />
-                    <Select.Menu value={smallerThanUnit} onchange={setSelectedSmallerThanUnit}>
-                        {#each Object.values(Size) as size}
-                            <Select.Option value={size}>{size}</Select.Option>
-                        {/each}
-                    </Select.Menu>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="before">Larger Than</label>
-                <div class="input-group">
-                    <input
-                        type="number"
-                        name="larger_than"
-                        min="0"
-                        value="0"
-                        onkeyup={setEnteredSizeValue}
-                    />
-                    <Select.Menu value={largerThanUnit} onchange={setSelectedLargerThanUnit}>
-                        {#each Object.values(Size) as size}
-                            <Select.Option value={size}>{size}</Select.Option>
-                        {/each}
-                    </Select.Menu>
-                </div>
-            </div>
-        </div>
-        <div class="form-group">
-            <span style="margin-bottom:5px;">Has Attachment(s)</span>
-            <div class="input-group">
-                <input
-                    type="checkbox"
-                    name="has_attachments"
-                    value="Yes"
-                    id="has-attachments"
-                />
-                <label for="has-attachments">Yes</label>
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="include">Includes</label>
-            <input type="text" name="include" placeholder="What should be included" />
-        </div>
-        <div class="form-group">
-            <label for="exclude">Excludes</label>
-            <input type="text" name="exclude" placeholder="What should be excluded" />
-        </div>
-        <div class="form-group">
-            <label for="included-flags">Include Flag</label>
-            <div class="input-group" id="included-flags">
-                <Select.Menu onchange={addIncludedFlag} placeholder="Flag" resetAfterSelect={true}>
-                    {#each Object.entries(Mark) as mark}
-                        <Select.Option value={mark[1]}>{mark[0]}</Select.Option>
-                    {/each}
-                </Select.Menu>
-            </div>
-            <div class="tags" id="search-included-flags">
-                <!-- Flags -->
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="excluded-flags">Exclude Flag</label>
-            <div class="input-group" id="excluded-flags">
-                <Select.Menu onchange={addExcludedFlag} placeholder="Flag" resetAfterSelect={true}>
-                    {#each Object.entries(Mark) as mark}
-                        <Select.Option value={mark[1]}>{mark[0]}</Select.Option>
-                    {/each}
-                </Select.Menu>
-            </div>
-            <div class="tags" id="search-excluded-flags">
-                <!-- Flags -->
-            </div>
-        </div>
-    </div>
-    <Button.Action onclick={search} style="margin-top:5px;">
-        Search
-    </Button.Action>
-</div>
+{/if}
 
 <style>
     :global {
-        .search-menu-container {
-            & .search-button {
-                height: var(--font-size-2xl);
-                width: var(--font-size-2xl);
+        .search-menu {
+            /* TODO: Make this absolute */
+            display: flex;
+            flex-direction: column;
+            width: var(--container-lg);
+            z-index: var(--z-index-dropdown);
+
+            & .search-extra-options {
                 display: flex;
-                justify-content: center;
-                align-items: center;
-                padding: 0;
-            }
-
-            & .search-menu {
-                display: none;
-                width: var(--container-md);
-                z-index: var(--z-index-dropdown);
-
-                & .search-extra-options {
-                    display: none;
-                    width: var(--container-md);
-                    z-index: var(--z-index-dropdown);
-                    border: 1px solid var(--color-border);
-                    border-top: none;
-                    border-bottom-left-radius: var(--radius-lg);
-                    border-bottom-right-radius: var(--radius-lg);
-                    padding: var(--spacing-xs) var(--spacing-md);
-                }
-            }
-
-            & .open {
-                display: flex !important;
                 flex-direction: column;
+                width: var(--container-lg);
+                z-index: var(--z-index-dropdown);
+                border: 1px solid var(--color-border);
+                border-top: none;
+                border-bottom-left-radius: var(--radius-lg);
+                border-bottom-right-radius: var(--radius-lg);
+                padding: var(--spacing-xs) var(--spacing-md);
             }
         }
     }
