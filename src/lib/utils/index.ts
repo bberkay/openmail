@@ -267,3 +267,23 @@ export function getMonths(): string[] {
 export function getDays(): string[] {
     return ["Sun", "Mon", "Tue", "Wed", "Thu", "Sat", "Fri"];
 }
+
+export function addEmailToAddressList(
+    e: Event,
+    input: HTMLInputElement,
+    addressList: string[],
+) {
+    if (e instanceof KeyboardEvent && (e.key === " " || e.key === "Spacebar")) {
+        e.preventDefault();
+    } else if (!(e instanceof FocusEvent || e instanceof MouseEvent)) {
+        return;
+    }
+
+    if (!isEmailValid(extractEmailAddress(input.value.trim()))) {
+        pulseTarget(input);
+        return;
+    }
+
+    addressList.push(input.value.trim());
+    input.value = "";
+}
