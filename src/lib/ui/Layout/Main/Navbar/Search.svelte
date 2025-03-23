@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { fade } from 'svelte/transition';
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, Mark, type SearchCriteria } from "$lib/types";
@@ -230,7 +231,7 @@
 </Button.Basic>
 
 {#if !isSimpleSearchHidden}
-    <div class="search-menu">
+    <div class="search-menu" transition:fade>
         <Input.Group>
             <Button.Action type="button" onclick={search}>
                 <Icon name="search" />
@@ -545,7 +546,10 @@
 <style>
     :global {
         .search-menu {
-            /* TODO: Make this absolute */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
             width: var(--container-lg);
