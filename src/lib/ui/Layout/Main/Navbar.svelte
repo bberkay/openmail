@@ -7,29 +7,18 @@
     import * as Button from "$lib/ui/Components/Button";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
-    import { show as showModal } from "$lib/ui/Components/Modal";
 
     let navbar: HTMLElement;
 
     const showCompose = () => {
         showContent(Compose);
     }
-
-    const showSearch = () => {
-        showModal(Search)
-    }
 </script>
 
 <nav bind:this={navbar}>
     <div class="nav-section">
         <Folders />
-        <Button.Basic
-            type="button"
-            class="btn-cta nav-button"
-            onclick={showSearch}
-        >
-            <Icon name="search" />
-        </Button.Basic>
+        <Search />
     </div>
     <div class="nav-section">
         <Button.Basic
