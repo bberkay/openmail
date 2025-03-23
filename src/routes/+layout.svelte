@@ -40,10 +40,10 @@
 
     .toast-container{
         position: fixed;
-        bottom: 20px;
-        left: 20px;
+        bottom: var(--spacing-lg);
+        left: var(--spacing-lg);
         display: flex;
         flex-direction: column-reverse;
-        gap: 8px;
+        gap: var(--spacing-xs);
     }
 </style>
