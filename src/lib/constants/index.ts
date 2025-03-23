@@ -72,3 +72,12 @@ export const MAILBOX_SELECT_ALL_TEMPLATE = `
 export const MAILBOX_CLEAR_SELECTION_TEMPLATE = `
     Clear selection
 `;
+
+/**
+ * ----------------------------------------------------------------------------
+ * Constants generally used in Main/Navbar/Notifications.svelte
+ * ----------------------------------------------------------------------------
+ */
+export const NEW_MESSAGE_TEMPLATE = `
+    {sender_fullname} <a>&lt;{sender_email}&gt;</a> to <a>&lt;{receiver_email}&gt;</a> at {sent_at}
+`;
