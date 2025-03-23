@@ -31,6 +31,10 @@
 
 <style>
     .modal{
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: var(--container-md);
         background-color: var(--color-bg-primary);
         padding: var(--spacing-lg) var(--spacing-xl);
