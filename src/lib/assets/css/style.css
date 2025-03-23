@@ -120,6 +120,11 @@ body {
 }
 
 /* Utilities */
+.tags {
+    margin-top: var(--spacing-2xs);
+    font-size: var(--font-size-sm);
+}
+
 .muted {
     margin-top: var(--spacing-2xs);
     font-size: var(--font-size-xs);
