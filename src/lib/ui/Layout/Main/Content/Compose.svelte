@@ -5,11 +5,12 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onMount } from 'svelte';
     import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
-    import { isEmailValid, createSenderAddress, extractEmailAddress, escapeHTML, pulseTarget } from '$lib/utils';
+    import { createSenderAddress, escapeHTML, addEmailToAddressList } from '$lib/utils';
     import * as Select from "$lib/ui/Components/Select";
     import * as Input from "$lib/ui/Components/Input";
     import * as Button from "$lib/ui/Components/Button";
     import Label from "$lib/ui/Components/Label";
+    import Icon from "$lib/ui/Components/Icon";
     import Collapse from "$lib/ui/Components/Collapse";
     import Form, { FormGroup } from "$lib/ui/Components/Form";
     import Badge from "$lib/ui/Components/Badge";
@@ -60,42 +61,26 @@
         }
     });
 
-    /* Form Handling Functions */
-
-    const addAddress = (address: string, addressList: string[]) => {
-        addressList.push(address);
+    const addReceiver = (e: Event) => {
+        const targetInput = (e.target as HTMLElement)
+            .closest(".form-group")!
+            .querySelector<HTMLInputElement>('input[id="receivers"]')!;
+        addEmailToAddressList(e, targetInput, cc);
     }
 
-    const removeAddress = (address: string, addressList: string[]) => {
-        addressList = addressList.filter(addr => addr !== address);
+    const addCc = (e: Event) => {
+        const targetInput = (e.target as HTMLElement)
+            .closest(".form-group")!
+            .querySelector<HTMLInputElement>('input[id="cc"]')!;
+        addEmailToAddressList(e, targetInput, bcc);
     }
 
-    const addEnteredAddress = (e: Event, addressList: string[]) => {
-        const target = e.target as HTMLInputElement;
-        const emails = target.closest(".form-group")!.querySelector(".tags") as HTMLElement;
-        if (!emails)
-            return;
-
-        const address = target.value.trim();
-        if (address == "")
-            return;
-
-        if (e instanceof KeyboardEvent && (e.key === " " || e.key === "Spacebar")) {
-            e.preventDefault();
-        } else if (!(e instanceof FocusEvent)) {
-            return;
-        }
-
-        if (!isEmailValid(extractEmailAddress(address))) {
-            pulseTarget(target);
-            return;
-        }
-
-        addAddress(address, addressList);
-        target.value = "";
-    };
-
-    /* Main Operation */
+    const addBcc = (e: Event) => {
+        const targetInput = (e.target as HTMLElement)
+            .closest(".form-group")!
+            .querySelector<HTMLInputElement>('input[id="bcc"]')!;
+        addEmailToAddressList(e, targetInput, bcc);
+    }
 
     const sendEmail = async (e: Event): Promise<void> => {
         if (
@@ -168,7 +153,11 @@
         <div>
             <FormGroup>
                 <Label for="senders">Sender(s)</Label>
-                <Select.Root id="senders" onchange={(addr) => addAddress(addr, senders)} placeholder="Add sender">
+                <Select.Root
+                    id="senders"
+                    placeholder="Add sender"
+                    onchange={(addr) => senders.push(addr)}
+                >
                     {#each SharedStore.accounts as account}
                         {@const sender = createSenderAddress(account.email_address, account.fullname)}
                         <Select.Option value={sender}>
@@ -180,26 +169,37 @@
                     {#each senders as sender}
                         <Badge
                             content={sender}
-                            onclick={() => removeAddress(sender, senders)}
+                            onclick={() => {
+                                senders = receivers.filter(addr => addr !== sender)
+                            }}
                         />
                     {/each}
                 </div>
             </FormGroup>
             <FormGroup>
                 <Label for="receivers">Receiver(s)</Label>
-                <Input.Basic
-                    type="email"
-                    name="receivers"
-                    id="receivers"
-                    placeholder="someone@domain.xyz"
-                    onkeyup={(e: Event) => addEnteredAddress(e, receivers)}
-                    onblur={(e: Event) => addEnteredAddress(e, receivers)}
-                />
+                <Input.Group>
+                    <Input.Basic
+                        type="email"
+                        id="receivers"
+                        placeholder="Enter sender@mail.xyz then press 'Space'"
+                        onkeyup={addReceiver}
+                        onblur={addReceiver}
+                    />
+                    <Button.Basic
+                        type="button"
+                        onclick={addReceiver}
+                    >
+                        <Icon name="add" />
+                    </Button.Basic>
+                </Input.Group>
                 <div class="tags">
                     {#each receivers as receiver}
                         <Badge
                             content={receiver}
-                            onclick={() => removeAddress(receiver, receivers)}
+                            onclick={() => {
+                                receivers = receivers.filter(addr => addr !== receiver)
+                            }}
                         />
                     {/each}
                 </div>
@@ -222,20 +222,29 @@
             <FormGroup>
                 <Collapse title="Cc">
                     <Label for="cc">Cc</Label>
-                    <Input.Basic
-                        type="email"
-                        name="cc"
-                        id="cc"
-                        placeholder="someone@domain.xyz"
-                        onkeyup={addEnteredAddress}
-                        onblur={addEnteredAddress}
-                    />
+                    <Input.Group>
+                        <Input.Basic
+                            type="email"
+                            id="cc"
+                            placeholder="Enter sender@mail.xyz then press 'Space'"
+                            onkeyup={addCc}
+                            onblur={addCc}
+                        />
+                        <Button.Basic
+                            type="button"
+                            onclick={addCc}
+                        >
+                            <Icon name="add" />
+                        </Button.Basic>
+                    </Input.Group>
                 </Collapse>
                 <div class="tags">
                     {#each cc as ccAddr}
                         <Badge
                             content={ccAddr}
-                            onclick={() => removeAddress(ccAddr, cc)}
+                            onclick={() => {
+                                cc = cc.filter(addr => addr !== ccAddr)
+                            }}
                         />
                     {/each}
                 </div>
@@ -243,20 +252,29 @@
             <FormGroup>
                 <Collapse title="Bcc">
                     <Label for="bcc">Bcc</Label>
-                    <Input.Basic
-                        type="email"
-                        name="bcc"
-                        id="bcc"
-                        placeholder="someone@domain.xyz"
-                        onkeyup={addEnteredAddress}
-                        onblur={addEnteredAddress}
+                    <Input.Group>
+                        <Input.Basic
+                            type="email"
+                            id="bcc"
+                            placeholder="Enter sender@mail.xyz then press 'Space'"
+                            onkeyup={addBcc}
+                            onblur={addBcc}
                         />
+                        <Button.Basic
+                            type="button"
+                            onclick={addBcc}
+                        >
+                            <Icon name="add" />
+                        </Button.Basic>
+                    </Input.Group>
                 </Collapse>
                 <div class="tags">
                     {#each bcc as bccAddr}
                         <Badge
                             content={bccAddr}
-                            onclick={() => removeAddress(bccAddr, bcc)}
+                            onclick={() => {
+                                bcc = bcc.filter(addr => addr !== bccAddr)
+                            }}
                         />
                     {/each}
                 </div>
@@ -291,10 +309,5 @@
         padding: var(--spacing-lg);
         border: 1px solid var(--color-border-subtle);
         border-radius: var(--radius-sm);
-
-        & .tags {
-            margin-top: var(--spacing-2xs);
-            font-size: var(--font-size-sm);
-        }
     }
 </style>
