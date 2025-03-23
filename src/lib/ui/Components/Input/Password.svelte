@@ -1,4 +1,5 @@
 <script lang="ts">
+    import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
 
@@ -21,11 +22,10 @@
     }: Props  = $props();
 
     const togglePassword = (e: Event) => {
-        const input = e.target as HTMLInputElement;
-        const eyeOpen = input.closest("input-group")!
-            .querySelector('[name="eye-open"]') as HTMLElement;
-        const eyeClosed = input.closest("input-group")!
-            .querySelector('[name="eye-closed"]') as HTMLElement;
+        const inputGroup = (e.target as HTMLInputElement).closest(".input-group")!;
+        const input = inputGroup.querySelector("input") as HTMLInputElement;
+        const eyeOpen = input.querySelector('[name="eye-open"]') as HTMLElement;
+        const eyeClosed = input.querySelector('[name="eye-closed"]') as HTMLElement;
         if (input.getAttribute("type") == "text") {
             input.setAttribute("type", "password");
             eyeOpen.classList.remove("hidden");
@@ -39,17 +39,20 @@
 </script>
 
 <Input.Group>
-    <Icon name="search" />
     <Input.Basic
         {...attributes}
         type="password"
-        onclick={togglePassword}
         {name}
         {id}
         {placeholder}
         {autocomplete}
         {required}
     />
-    <Icon name="eye-open" />
-    <Icon name="eye-closed" class="hidden" />
+    <Button.Basic
+        type="button"
+        onclick={togglePassword}
+    >
+        <Icon name="eye-open" />
+        <Icon name="eye-closed" class="hidden" />
+    </Button.Basic>
 </Input.Group>
