@@ -23,12 +23,20 @@
 <nav bind:this={navbar}>
     <div class="nav-section">
         <Folders />
-        <Button.Basic class="btn-cta" onclick={showSearch}>
+        <Button.Basic
+            type="button"
+            class="btn-cta nav-button"
+            onclick={showSearch}
+        >
             <Icon name="search" />
         </Button.Basic>
     </div>
     <div class="nav-section">
-        <Button.Basic class="btn-cta" onclick={showCompose}>
+        <Button.Basic
+            type="button"
+            class="btn-cta nav-button"
+            onclick={showCompose}
+        >
             <Icon name="compose" />
         </Button.Basic>
         <Account />
@@ -50,6 +58,15 @@
                 flex-direction: row;
                 gap: var(--spacing-lg);
                 align-items: center;
+
+                & .nav-button {
+                    height: var(--font-size-2xl);
+                    width: var(--font-size-2xl);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 0;
+                }
             }
         }
     }
