@@ -216,7 +216,7 @@
                         <div class="message-body">
                             <span>{email.body}</span>
                         </div>
-                        <div class="message-flags tags">
+                        <div class="tags">
                             {#if Object.hasOwn(email, "flags") && email.flags!.length > 0}
                                 {#each email.flags! as flag}
                                     <Badge content={flag} />
@@ -325,10 +325,6 @@
                             white-space: nowrap;
                             overflow: hidden;
                             text-overflow: ellipsis;
-                        }
-
-                        & .message-flags {
-                            font-size: var(--font-size-xs);
                         }
 
                         & .message-attachment-icon {
