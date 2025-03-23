@@ -6,12 +6,14 @@
     import * as Table from "$lib/ui/Components/Table";
 
     interface Props {
+        id?: string,
         placeholder?: string,
         value?: Date,
         onchange?: (selectedDay: Date) => void,
     }
 
     let {
+        id,
         placeholder,
         value,
         onchange
@@ -165,6 +167,7 @@
 
 <div class="date-input-wrapper" bind:this={datePickerWrapper}>
     <Input.Basic
+        id={id}
         type="text"
         class="date-input"
         placeholder={convertToIMAPDate(placeholder)}
