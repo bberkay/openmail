@@ -6,11 +6,17 @@ export function createDomElement(html: string): HTMLElement {
     return template.content.firstElementChild as HTMLElement;
 }
 
-export function debounce(func: Function, delay: number) {
-    let timer = -1;
-    return (...args: any) => {
-        clearTimeout(timer);
-        // @ts-ignore
+export function debounce<T extends (...args: any[]) => any>(
+    func: T,
+    delay: number,
+) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    return (...args: Parameters<T>): void => {
+        if (timer) {
+            clearTimeout(timer);
+        }
+
         timer = setTimeout(() => {
             func(...args);
         }, delay);
