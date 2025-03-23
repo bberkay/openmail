@@ -42,6 +42,7 @@
             }
 
             &.form-group-horizontal {
+                flex-direction: row;
                 align-items: center;
                 gap: var(--spacing-lg);
 
