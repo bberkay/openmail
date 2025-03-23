@@ -106,7 +106,8 @@
     enableSearch={true}
 >
     {#each standardFoldersOfAccount as standardFolder}
-        <Select.Option value={standardFolder}>{standardFolder}</Select.Option>
+        {@const [folderTag, folderName] = standardFolder.split(":")}
+        <Select.Option value={folderTag}>{folderName}</Select.Option>
     {/each}
     <Select.Separator />
     {#each customFoldersOfAccount as customFolder}
