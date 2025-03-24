@@ -69,9 +69,7 @@
                 )
                     .replace(
                         "{original_sender}",
-                        escapeHTML(
-                            originalMessageContext.originalSender || "",
-                        ),
+                        escapeHTML(originalMessageContext.originalSender || ""),
                     )
                     .replace(
                         "{original_receivers}",
@@ -154,8 +152,8 @@
 
         body.clear();
 
-        // Set current folder to Folder.Sent and
-        // mount Inbox.
+        // Set current folder to first sender's sent folder then
+        // show inbox.
         const firstSenderIndex = SharedStore.standardFolders.findIndex(
             (account) => account.email_address === senders[0],
         );
