@@ -1,13 +1,14 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount, onDestroy, mount, unmount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
-    import { ATTACHMENT_TEMPLATE, SENDER_TO_RECEIVER_TEMPLATE } from '$lib/constants';
+    import { ATTACHMENT_TEMPLATE, SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE, SENDER_TO_RECEIVER_TEMPLATE } from '$lib/constants';
     import { type Account, type Email } from "$lib/types";
     import { extractEmailAddress, extractFullname, makeSizeHumanReadable } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import Badge from "$lib/ui/Components/Badge";
+    import Others from "./Others.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
     interface Props {
@@ -21,7 +22,30 @@
     }: Props = $props();
 
     let body: HTMLElement;
-    onMount(() => { renderBody() });
+    let senderToReceiver: HTMLElement;
+    let mountedOthers: Record<string, any> | null = null;
+    onMount(() => {
+        renderBody();
+
+        const others = senderToReceiver.querySelector<HTMLElement>(".others");
+        if (others) {
+            mountedOthers = mount(Others, {
+                target: others,
+                props: {
+                    toggleText: others.innerText,
+                    receivers: email.receivers,
+                    cc: email.cc,
+                    bcc: email.bcc
+                }
+            });
+        }
+    });
+
+    onDestroy(() => {
+        if (mountedOthers) {
+            unmount(mountedOthers);
+        }
+    })
 
     function renderBody(): void {
         body.innerHTML = "";
@@ -75,13 +99,16 @@
     <div class="subject">
         {email.subject || ""}
     </div>
-    <div class="sender-to-receiver">
+    <div class="sender-to-receiver" bind:this={senderToReceiver}>
         {
-            SENDER_TO_RECEIVER_TEMPLATE
-                .replace("{sender_fullname}", extractFullname(email.sender))
-                .replace("{sender_email}", extractEmailAddress(email.sender))
-                .replace("{sent_at}", email.date)
-                .trim()
+            (email.receivers.split(",").length > 1 || email.cc || email.bcc
+                ? SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE
+                : SENDER_TO_RECEIVER_TEMPLATE)
+                    .replace("{sender_fullname}", extractFullname(email.sender))
+                    .replace("{sender_email}", extractEmailAddress(email.sender))
+                    .replace("{receiver_email}", SharedStore.currentAccount.email_address)
+                    .replace("{sent_at}", email.date)
+                    .trim()
         }
     </div>
     <div class="separator"></div>

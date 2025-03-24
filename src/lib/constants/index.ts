@@ -36,7 +36,11 @@ export const FORWARD_TEMPLATE = `
 `;
 
 export const SENDER_TO_RECEIVER_TEMPLATE = `
-    {sender_fullname} <a>&lt;{sender_email}&gt;</a> to You and <u>others</u> at {sent_at}
+    {sender_fullname} <a>&lt;{sender_email}&gt;</a> to {receiver_email} at {sent_at}
+`;
+
+export const SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE = `
+    {sender_fullname} <a>&lt;{sender_email}&gt;</a> to {receiver_email} and <u class="others">others</u> at {sent_at}
 `;
 
 export const ATTACHMENT_TEMPLATE = `
