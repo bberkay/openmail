@@ -124,9 +124,9 @@
     }
 
     const showEmailContent = async (selectedEmail: TEmail): Promise<void> => {
-        let wasHome: boolean = false;
+        let previouslyAtHome: boolean = false;
         if (SharedStore.currentAccount === "home") {
-            wasHome = true;
+            previouslyAtHome = true;
             SharedStore.currentAccount = getAccountByEmail(selectedEmail);
         }
         const response = await MailboxController.getEmailContent(
@@ -142,7 +142,7 @@
         showContent(Email, {
             account: SharedStore.currentAccount,
             email: response.data,
-            wasHome: wasHome
+            previouslyAtHome: previouslyAtHome
         });
     };
 </script>

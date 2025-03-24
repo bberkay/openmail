@@ -19,9 +19,10 @@
     interface Props {
         account: Account;
         email: Email;
+        previouslyAtHome: boolean;
     }
 
-    let { account, email }: Props = $props();
+    let { account, email, previouslyAtHome }: Props = $props();
 
     let currentMailbox = $derived(
         SharedStore.mailboxes.find(
@@ -37,6 +38,11 @@
     let isEmailInCustomFolder = $derived(
         !startsWithAnyOf(currentMailbox.folder, Object.values(Folder)),
     );
+
+    const goBack = () => {
+        if (previouslyAtHome) SharedStore.currentAccount = "home";
+        backToDefault();
+    }
 
     async function markAs(mark: string | Mark) {
         const response = await MailboxController.markEmails(
@@ -173,8 +179,7 @@
         type="button"
         class="btn-inline"
         style="margin-right: var(--spacing-sm)"
-        ;
-        onclick={backToDefault}
+        onclick={goBack}
     >
         Back
     </Button.Basic>

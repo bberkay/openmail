@@ -6,15 +6,17 @@
     interface Props {
         account: Account;
         email: Email;
+        previouslyAtHome: boolean;
     }
 
     let {
         account,
-        email
+        email,
+        previouslyAtHome
     }: Props = $props();
 </script>
 
 <div class="toolbox">
-    <ToolboxLeft {account} {email} />
+    <ToolboxLeft {account} {email} {previouslyAtHome} />
     <ToolboxRight {account} {email} />
 </div>
