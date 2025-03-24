@@ -119,8 +119,7 @@
 
     function isRecentEmail(email: TEmail): boolean {
         return !!SharedStore.recentEmails.find(
-            task => task.email_address === getAccountByEmail(email).email_address
-                && task.result.includes(email.uid)
+            task => task.result.includes(email)
         );
     }
 

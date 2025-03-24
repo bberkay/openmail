@@ -23,7 +23,7 @@ interface ISharedStore {
     [SharedStoreKeys.server]: string;
     [SharedStoreKeys.accounts]: Account[];
     [SharedStoreKeys.failedAccounts]: Account[];
-    [SharedStoreKeys.recentEmails]: OpenMailTaskResults<string[]>; // uid list
+    [SharedStoreKeys.recentEmails]: OpenMailTaskResults<Email[]>;
     [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
     [SharedStoreKeys.standardFolders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.customFolders]: OpenMailTaskResults<string[]>;
@@ -66,4 +66,17 @@ SharedStore.currentMailbox = $derived.by(() => {
                 task.result.folder === SharedStore.currentFolder,
         )!.result
     }
+});
+
+SharedStore.recentEmails = $derived.by(() => {
+    return SharedStore.recentEmails.concat(
+        SharedStore.accounts.map(account => {
+            return {
+                email_address: account.email_address,
+                result: SharedStore.recentEmails.find(
+                    recentAcc => recentAcc.email_address === account.email_address
+                )?.result || []
+            }
+        }).flat()
+    )
 });

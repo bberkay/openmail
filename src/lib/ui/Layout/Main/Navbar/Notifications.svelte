@@ -19,6 +19,20 @@
         isNotificationsHidden = !isNotificationsHidden;
     };
 
+    const showHome = () => {
+        SharedStore.currentAccount = "home";
+        showContent(Inbox);
+    };
+
+    const showInbox = (receiverEmailAddress: string) => {
+        const newAccount = SharedStore.accounts.find(
+            (acc) => acc.email_address == receiverEmailAddress,
+        );
+        if (!newAccount) return;
+        SharedStore.currentAccount = newAccount;
+        showContent(Inbox);
+    };
+
     async function getEmailContent(account: Account, uid: string) {
         const response = await MailboxController.getEmailContent(
             account,
@@ -52,11 +66,6 @@
         });
     };
 
-    const showHome = () => {
-        // TODO: Temporary until "HOME" is implemented.
-        showContent(Inbox);
-    };
-
     const showCompose = async (
         receiverAccount: Account,
         receivedEmail: TEmail,
@@ -77,28 +86,19 @@
         });
     };
 
-    const showInbox = (emailAddress: string) => {
-        const newAccount = SharedStore.accounts.find(
-            (acc) => acc.email_address == emailAddress,
-        );
-        if (!newAccount) return;
-        SharedStore.currentAccount = newAccount;
-        showContent(Inbox);
-    };
-
-    const clear = (
-        emailAddress: string | null = null,
-        recentEmailUid: string | null = null,
+    const clearRecentEmails = (
+        recentEmailReceiverAddress?: string,
+        recentEmailUid?: string,
     ) => {
         SharedStore.recentEmails.forEach((task) => {
-            if (!emailAddress || task.email_address === emailAddress) {
-                if (recentEmailUid) {
-                    task.result = task.result.filter(
-                        (uid) => uid !== recentEmailUid,
-                    );
-                } else {
-                    task.result = [];
-                }
+            if (
+                !recentEmailReceiverAddress ||
+                task.email_address === recentEmailReceiverAddress
+            ) {
+                task.result = task.result.filter(
+                    (recentEmail) =>
+                        recentEmailUid && recentEmail.uid !== recentEmailUid,
+                );
             }
         });
     };
@@ -108,41 +108,38 @@
         notificationsContainer
             .querySelectorAll<HTMLElement>(".sender-to-receiver")
             .forEach((senderToReceiver) => {
-                // Show inbox of the clicked receiver email if the receiver email
-                // is one of the accounts. If there are multiple receiver and more
-                // than one is in accounts then show first one's inbox.
+                // Set current account to clicked receiver email then
+                // show its inbox.
                 const receiverEmail = senderToReceiver.querySelector(
                     ".receiver-email",
                 ) as HTMLElement;
-                receiverEmail.addEventListener("click", () =>
-                    showInbox(extractEmailAddress(receiverEmail.innerText)),
+                const receiverEmailAddress = extractEmailAddress(
+                    receiverEmail.innerText,
                 );
+                receiverEmail.addEventListener("click", () => {
+                    showInbox(receiverEmailAddress);
+                });
 
                 // Show compose as replying to the message sent by the clicked sender.
                 const senderEmail = senderToReceiver.querySelector(
                     ".sender-email",
                 ) as HTMLElement;
-                const receivers = (
-                    senderToReceiver.querySelector(".receivers") as HTMLElement
-                ).innerText.split(",");
-                const uid = (
+                const recentEmailUid = (
                     senderToReceiver.querySelector(".uid") as HTMLElement
-                ).innerText;
-                const receiverAccount = SharedStore.accounts.find((acc) =>
-                    receivers.includes(acc.email_address),
+                ).innerText.trim();
+                const receiverAccount = SharedStore.accounts.find(
+                    (acc) => acc.email_address === receiverEmailAddress,
                 )!;
-                const receivedEmail = SharedStore.mailboxes
-                    .find(
-                        (task) =>
-                            task.email_address ==
-                            receiverAccount!.email_address,
-                    )!
-                    .result.emails.find((email) => email.uid === uid)!;
-                senderEmail.addEventListener(
-                    "click",
-                    async () =>
-                        await showCompose(receiverAccount, receivedEmail),
-                );
+                const receivedEmail = SharedStore.recentEmails
+                    .find((task) => {
+                        return (
+                            task.email_address == receiverAccount!.email_address
+                        );
+                    })!
+                    .result.find((email) => email.uid === recentEmailUid)!;
+                senderEmail.addEventListener("click", async () => {
+                    await showCompose(receiverAccount, receivedEmail);
+                });
             });
     });
 </script>
@@ -163,7 +160,7 @@
                     <Button.Basic
                         type="button"
                         class="btn-inline"
-                        onclick={clear}
+                        onclick={clearRecentEmails}
                     >
                         Clear
                     </Button.Basic>
@@ -171,33 +168,18 @@
             </div>
             <div class="notifications-body">
                 {#each SharedStore.recentEmails as recentEmailTask}
-                    {@const recentEmails = SharedStore.mailboxes
-                        .find(
-                            (task) =>
-                                task.email_address ===
-                                recentEmailTask.email_address,
-                        )!
-                        .result.emails.filter((email) =>
-                            recentEmailTask.result.includes(email.uid),
-                        )}
-                    {#each recentEmails as recentEmail}
-                        {@const receiverEmailAddress =
-                            SharedStore.accounts.filter((acc) =>
-                                recentEmail.receivers.includes(
-                                    acc.email_address,
-                                ),
-                            )[0].email_address}
+                    {#each recentEmailTask.result as recentEmail}
                         <div
                             class="notification-item"
                             onclick={() => {
                                 showEmailContent(
-                                    receiverEmailAddress,
+                                    recentEmailTask.email_address,
                                     recentEmail.uid,
                                 );
                             }}
                             onkeydown={() => {
                                 showEmailContent(
-                                    receiverEmailAddress,
+                                    recentEmailTask.email_address,
                                     recentEmail.uid,
                                 );
                             }}
@@ -225,7 +207,7 @@
                                         )
                                         .replace(
                                             "{receiver_email}",
-                                            receiverEmailAddress,
+                                            recentEmailTask.email_address,
                                         )
                                         .replace("{sent_at}", recentEmail.date)
                                         .trim()}
@@ -242,8 +224,8 @@
                                     type="button"
                                     class="btn-inline"
                                     onclick={() =>
-                                        clear(
-                                            receiverEmailAddress,
+                                        clearRecentEmails(
+                                            recentEmailTask.email_address,
                                             recentEmail.uid,
                                         )}
                                 >
@@ -262,7 +244,7 @@
                     class="btn-inline"
                     onclick={showHome}
                 >
-                    Go to Inbox
+                    Go to Home
                 </Button.Basic>
             </div>
         </div>

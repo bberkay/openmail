@@ -86,7 +86,6 @@
             console.error(response.message);
         } else {
             SharedStore.currentAccount = "home";
-            SharedStore.currentFolder = Folder.Inbox;
             //await listenForNotifications();
         }
     }
@@ -109,14 +108,6 @@
                 const permission = await requestPermission();
                 permissionGranted = permission === "granted";
             }
-
-            // init recentEmails
-            SharedStore.accounts.forEach(account => {
-                SharedStore.recentEmails.push({
-                    email_address: account.email_address,
-                    result: []
-                })
-            })
         };
 
         ws.onmessage = (e: MessageEvent) => {
@@ -128,27 +119,24 @@
                 });
             }
 
-            (e.data as OpenMailTaskResults<Email[]>).forEach((account) => {
-                // Add uid of the email to the recent emails store.
-                const currentRecentEmails = SharedStore.recentEmails.find(
+            (e.data as typeof SharedStore.recentEmails).forEach((account) => {
+                // Add email to mailbox
+                const mailbox = SharedStore.mailboxes.find(
                     (current) =>
                         current.email_address === account.email_address,
                 );
-                if (currentRecentEmails) {
-                    currentRecentEmails.result =
-                        currentRecentEmails.result.concat(
-                            account.result.map((email) => email.uid),
-                        );
+                if (mailbox) {
+                    mailbox.result.emails =
+                        mailbox.result.emails.concat(account.result);
                 }
-
-                // Add email itself to account's mailbox.
-                const mailboxOfAccount = SharedStore.mailboxes.find(
+                // and recent emails.
+                const recentEmails = SharedStore.recentEmails.find(
                     (current) =>
                         current.email_address === account.email_address,
                 );
-                if (mailboxOfAccount) {
-                    mailboxOfAccount.result.emails =
-                        mailboxOfAccount.result.emails.concat(account.result);
+                if (recentEmails) {
+                    recentEmails.result =
+                        recentEmails.result.concat(account.result);
                 }
             });
         };
