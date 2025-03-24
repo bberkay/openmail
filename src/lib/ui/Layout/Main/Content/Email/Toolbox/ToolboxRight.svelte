@@ -16,19 +16,14 @@
         email
     }: Props = $props();
 
-    let currentMailbox = $derived(SharedStore.mailboxes.find(
-        task => task.result.folder === SharedStore.currentFolder
-    )!.result);
-
-    let totalEmailCount = $derived(currentMailbox.total);
-    let currentOffset = $derived(currentMailbox.emails.findIndex(
+    let currentOffset = $derived(SharedStore.currentMailbox.emails.findIndex(
         em => em.uid === email.uid
     ) + 1);
 
     const setEmailByUid = async (uid: string): Promise<void> => {
         const response = await MailboxController.getEmailContent(
             account,
-            currentMailbox.folder,
+            SharedStore.currentMailbox.folder,
             uid
         );
 
@@ -42,23 +37,23 @@
     }
 
     const getPreviousEmail = async () => {
-        const previousUidIndex = currentMailbox.emails.findIndex(
+        const previousUidIndex = SharedStore.currentMailbox.emails.findIndex(
             em => em.uid === email.uid
         ) - 1;
         if (previousUidIndex < 0)
             return;
 
-        setEmailByUid(currentMailbox.emails[previousUidIndex].uid);
+        setEmailByUid(SharedStore.currentMailbox.emails[previousUidIndex].uid);
     }
 
     const getNextEmail = async () => {
-        const nextUidIndex = currentMailbox.emails.findIndex(
+        const nextUidIndex = SharedStore.currentMailbox.emails.findIndex(
             em => em.uid === email.uid
         ) - 1;
         if (nextUidIndex < 0)
             return;
 
-        setEmailByUid(currentMailbox.emails[nextUidIndex].uid);
+        setEmailByUid(SharedStore.currentMailbox.emails[nextUidIndex].uid);
     }
 </script>
 
@@ -75,13 +70,13 @@
             {
                 EMAIL_PAGINATION_TEMPLATE
                     .replace("{current}", Math.max(1, currentOffset).toString())
-                    .replace("{total}", totalEmailCount.toString())
+                    .replace("{total}", SharedStore.currentMailbox.total.toString())
                     .trim()
             }
         </small>
         <Button.Action
             type="button"
-            class="btn-inline {currentOffset >= totalEmailCount ? "disabled" : ""}"
+            class="btn-inline {currentOffset >= SharedStore.currentMailbox.total ? "disabled" : ""}"
             onclick={getNextEmail}
         >
             Next
