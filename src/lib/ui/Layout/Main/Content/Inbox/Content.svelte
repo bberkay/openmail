@@ -32,27 +32,11 @@
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
-    let currentMailbox: Mailbox = $derived.by(() => {
-        if (SharedStore.currentAccount === "home") {
-            return {
-                folder: Folder.Inbox,
-                emails: SharedStore.mailboxes.map(task => task.result.emails).flat(),
-                total: SharedStore.mailboxes.reduce((acc, task) => acc + task.result.total, 0)
-            }
-        } else {
-            return SharedStore.mailboxes.find(
-                (task) =>
-                    task.email_address ===
-                        (SharedStore.currentAccount as Account).email_address &&
-                    task.result.folder === SharedStore.currentFolder,
-            )!.result
-        }
-    });
     let currentMailboxUids: string[] = $derived(
-        currentMailbox.emails.map((email: TEmail) => email.uid).flat(),
+        SharedStore.currentMailbox.emails.map((email: TEmail) => email.uid).flat(),
     );
 
-    let totalEmailCount = $derived(currentMailbox.total);
+    let totalEmailCount = $derived(SharedStore.currentMailbox.total);
     let isAllEmailsSelected = $state(false);
 
     let selectShownCheckbox: HTMLInputElement;
@@ -102,7 +86,7 @@
             Older: [],
         };
 
-        currentMailbox.emails.forEach((email: TEmail) => {
+        SharedStore.currentMailbox.emails.forEach((email: TEmail) => {
             const emailDate = new Date(email.date);
             emailDate.setHours(0, 0, 0, 0);
 
@@ -141,10 +125,13 @@
     }
 
     const showEmailContent = async (selectedEmail: TEmail): Promise<void> => {
+        let wasHome: boolean = false;
+        if (SharedStore.currentAccount === "home") {
+            wasHome = true;
+            SharedStore.currentAccount = getAccountByEmail(selectedEmail);
+        }
         const response = await MailboxController.getEmailContent(
-            SharedStore.currentAccount === "home"
-                ? getAccountByEmail(selectedEmail)
-                : SharedStore.currentAccount,
+            SharedStore.currentAccount,
             SharedStore.currentFolder,
             selectedEmail.uid
         );
@@ -153,10 +140,10 @@
             console.error(response.message);
             return;
         }
-
         showContent(Email, {
             account: SharedStore.currentAccount,
             email: response.data,
+            wasHome: wasHome
         });
     };
 </script>
