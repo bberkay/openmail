@@ -106,7 +106,7 @@
                 : SENDER_TO_RECEIVER_TEMPLATE)
                     .replace("{sender_fullname}", extractFullname(email.sender))
                     .replace("{sender_email}", extractEmailAddress(email.sender))
-                    .replace("{receiver_email}", SharedStore.currentAccount.email_address)
+                    .replace("{receiver_email}", (SharedStore.currentAccount as Account).email_address)
                     .replace("{sent_at}", email.date)
                     .trim()
         }
