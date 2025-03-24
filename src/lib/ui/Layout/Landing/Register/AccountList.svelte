@@ -142,13 +142,13 @@
                 }
 
                 // Add email itself to account's mailbox.
-                const currentMailbox = SharedStore.mailboxes.find(
+                const mailboxOfAccount = SharedStore.mailboxes.find(
                     (current) =>
                         current.email_address === account.email_address,
                 );
-                if (currentMailbox) {
-                    currentMailbox.result.emails =
-                        currentMailbox.result.emails.concat(account.result);
+                if (mailboxOfAccount) {
+                    mailboxOfAccount.result.emails =
+                        mailboxOfAccount.result.emails.concat(account.result);
                 }
             });
         };
