@@ -5,17 +5,8 @@
     import * as Button from "$lib/ui/Components/Button";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
-    let currentMailbox = $derived(
-        SharedStore.mailboxes.find(
-            (task) =>
-                task.email_address ===
-                    SharedStore.currentAccount!.email_address &&
-                task.result.folder === SharedStore.currentFolder,
-        )!.result,
-    );
-
     let currentOffset = $state(1);
-    let totalEmailCount = $derived(currentMailbox.total);
+    let totalEmailCount = $derived(SharedStore.currentMailbox.total);
 
     const getPreviousEmails = async (): Promise<void> => {
         if (currentOffset <= 10) return;
@@ -23,7 +14,9 @@
         const offset_start = Math.max(1, currentOffset - 10);
         const offset_end = Math.max(1, currentOffset);
         const response = await MailboxController.paginateEmails(
-            SharedStore.currentAccount,
+            SharedStore.currentAccount === "home"
+                ? SharedStore.accounts
+                : SharedStore.currentAccount,
             offset_start,
             offset_end,
         );
@@ -41,7 +34,9 @@
         const offset_start = Math.min(totalEmailCount, currentOffset + 10);
         const offset_end = Math.min(totalEmailCount, currentOffset + 10 + 10);
         const response = await MailboxController.paginateEmails(
-            SharedStore.currentAccount,
+            SharedStore.currentAccount === "home"
+                ? SharedStore.accounts
+                : SharedStore.currentAccount,
             offset_start,
             offset_end,
         );

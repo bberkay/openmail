@@ -16,14 +16,6 @@
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
-    let currentMailbox = $derived(
-        SharedStore.mailboxes.find(
-            (task) =>
-                task.email_address ===
-                    SharedStore.currentAccount!.email_address &&
-                task.result.folder === SharedStore.currentFolder,
-        )!.result,
-    );
     let isAllEmailsSelected = $state(false);
 
     let customFoldersOfAccount = $derived(
@@ -194,7 +186,11 @@
     };
 
     const refresh = async (): Promise<void> => {
-        const response = await MailboxController.getMailboxes();
+        const response = await MailboxController.getMailboxes(
+            SharedStore.currentAccount === "home"
+                ? SharedStore.accounts
+                : SharedStore.currentAccount
+        );
         if (!response.success) {
             showMessage({ content: "Error while refreshing mailboxes." });
             console.error(response.message);
