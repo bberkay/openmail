@@ -8,14 +8,12 @@
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 
-    let navbar: HTMLElement;
-
     const showCompose = () => {
         showContent(Compose);
     }
 </script>
 
-<nav bind:this={navbar}>
+<nav>
     <div class="nav-section">
         <Folders />
         <Search />
