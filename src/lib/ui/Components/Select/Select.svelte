@@ -148,7 +148,7 @@
             <div class="select-trigger-content">
                 {#if selectedOption}
                     <span data-value={selectedOption.getAttribute("data-value")!}>
-                        {selectedOption.textContent!.split("#dt#")[0].trim()}
+                        {selectedOption.textContent!.split("#separator#")[0].trim()}
                     </span>
                     <Button.Basic
                         type="button"
