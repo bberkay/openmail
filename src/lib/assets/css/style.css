@@ -80,6 +80,7 @@ body {
 
     /* Z-index */
     --z-index-dropdown: 100;
+    --z-index-popover: 100;
     --z-index-toast: 200;
     --z-index-overlay: 300;
     --z-index-modal: 400;
