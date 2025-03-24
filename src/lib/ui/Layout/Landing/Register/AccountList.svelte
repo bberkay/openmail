@@ -85,9 +85,7 @@
             });
             console.error(response.message);
         } else {
-            // The default current account is, the first account.
-            // This might change in the future.
-            SharedStore.currentAccount = SharedStore.accounts[0];
+            SharedStore.currentAccount = "home";
             SharedStore.currentFolder = Folder.Inbox;
             //await listenForNotifications();
         }

@@ -9,7 +9,7 @@
         Minimize: "refresh",
         Settings: "settings",
         Logout: "logout",
-        Quit: "quit"
+        Quit: "quit",
     } as const;
 
     const setCurrentAccount = (selectedAccountEmailAddr: string) => {
@@ -22,7 +22,10 @@
         SharedStore.currentFolder = Folder.Inbox;
     };
 
-    const showHome = () => {};
+    const showHome = () => {
+        SharedStore.currentAccount = "home";
+        SharedStore.currentFolder = Folder.Inbox;
+    };
 
     const minimize = () => {};
 
@@ -60,7 +63,9 @@
 
 <Select.Root
     onchange={handleOperation}
-    value={SharedStore.currentAccount!.email_address}
+    value={SharedStore.currentAccount === "home"
+        ? "Home"
+        : SharedStore.currentAccount.email_address}
     placeholder="Account"
     enableSearch={true}
 >
@@ -72,12 +77,16 @@
         </Select.Option>
     {/each}
     <Select.Separator />
-    <Select.Option value={AccountOperation.Minimize}>Minimize to tray</Select.Option>
-    <Select.Option value={AccountOperation.Settings}>Settings</Select.Option>
-    <Select.Option value={AccountOperation.Logout}>
-        Logout from
-        {SharedStore.currentAccount.fullname ||
-            SharedStore.currentAccount.email_address}
+    <Select.Option value={AccountOperation.Minimize}>
+        Minimize to tray
     </Select.Option>
+    <Select.Option value={AccountOperation.Settings}>Settings</Select.Option>
+    {#if SharedStore.currentAccount !== "home"}
+        <Select.Option value={AccountOperation.Logout}>
+            Logout from
+            {SharedStore.currentAccount.fullname ||
+                SharedStore.currentAccount.email_address}
+        </Select.Option>
+    {/if}
     <Select.Option value={AccountOperation.Quit}>Quit</Select.Option>
 </Select.Root>

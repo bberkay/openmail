@@ -1,6 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import { type Account } from "$lib/types";
     import Form, { FormGroup } from "$lib/ui/Components/Form";
     import Modal from "$lib/ui/Components/Modal";
     import * as Select from "$lib/ui/Components/Select";
@@ -18,7 +19,8 @@
     let customFoldersOfAccount = $derived(
         SharedStore.customFolders.find(
             (acc) =>
-                acc.email_address === SharedStore.currentAccount.email_address,
+                acc.email_address ===
+                (SharedStore.currentAccount as Account).email_address,
         )!.result,
     );
 
@@ -29,7 +31,7 @@
         )!.value;
 
         const response = await MailboxController.createFolder(
-            SharedStore.currentAccount,
+            SharedStore.currentAccount as Account,
             folderName,
             parentFolderName || undefined,
         );

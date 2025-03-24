@@ -1,6 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import { type Account } from "$lib/types";
     import Form, { FormGroup } from "$lib/ui/Components/Form";
     import Modal from "$lib/ui/Components/Modal";
     import * as Select from "$lib/ui/Components/Select";
@@ -10,7 +11,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
 
     interface Props {
-        folderName: string
+        folderName: string;
     }
 
     let { folderName }: Props = $props();
@@ -19,7 +20,8 @@
     let customFoldersOfAccount = $derived(
         SharedStore.customFolders.find(
             (acc) =>
-                acc.email_address === SharedStore.currentAccount.email_address,
+                acc.email_address ===
+                (SharedStore.currentAccount as Account).email_address,
         )!.result,
     );
 
@@ -30,9 +32,9 @@
         )!.value;
 
         const response = await MailboxController.moveFolder(
-            SharedStore.currentAccount,
+            SharedStore.currentAccount as Account,
             folderName,
-            destinationFolder
+            destinationFolder,
         );
         if (!response.success) {
             showMessage({ content: "Error while moving folder." });
@@ -40,7 +42,7 @@
         }
 
         target.reset();
-    }
+    };
 
     const handleDestinationFolder = (selectedOption: string) => {
         destinationFolder = selectedOption;

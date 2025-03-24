@@ -3,7 +3,7 @@
     import { fade } from 'svelte/transition';
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { Folder, Mark, type SearchCriteria } from "$lib/types";
+    import { Folder, Mark, type SearchCriteria, type Account } from "$lib/types";
     import {
         debounce,
         addEmailToAddressList,
@@ -54,23 +54,29 @@
         )!;
     });
 
-    let standardFoldersOfAccount = $derived(
-        SharedStore.standardFolders.find(
-            (acc) =>
-                acc.email_address === SharedStore.currentAccount.email_address,
-        )!.result,
-    );
+    let standardFoldersOfAccount = $derived.by(() => {
+        if (SharedStore.currentAccount !== "home") {
+            return SharedStore.standardFolders.find(
+                (acc) =>
+                acc.email_address === (SharedStore.currentAccount as Account).email_address,
+            )!.result
+        }
+    });
 
-    let customFoldersOfAccount = $derived(
-        SharedStore.customFolders.find(
-            (acc) =>
-                acc.email_address === SharedStore.currentAccount.email_address,
-        )!.result,
-    );
+    let customFoldersOfAccount = $derived.by(() => {
+        if (SharedStore.currentAccount !== "home") {
+            return SharedStore.customFolders.find(
+                (acc) =>
+                acc.email_address === (SharedStore.currentAccount as Account).email_address,
+            )!.result
+        }
+    });
 
     const search = async (): Promise<void> => {
         const response = await MailboxController.getMailboxes(
-            SharedStore.currentAccount,
+            SharedStore.currentAccount === "home"
+                ? SharedStore.accounts
+                : SharedStore.currentAccount,
             searchingFolder,
             isExtraOptionsHidden
                 ? simpleSearchInput.value
@@ -252,28 +258,30 @@
         </Input.Group>
         {#if !isExtraOptionsHidden}
             <div class="search-extra-options" bind:this={extraOptionsWrapper}>
-                <FormGroup>
-                    <Label for="searching-folder">Folder</Label>
-                    <Select.Root
-                        id="searching-folder"
-                        value={Folder.All}
-                        onchange={selectFolder}
-                    >
-                        {#each standardFoldersOfAccount as standardFolder}
-                            {@const [folderTag, folderName] =
-                                standardFolder.split(":")}
-                            <Select.Option value={folderTag}>
-                                {folderName}
-                            </Select.Option>
-                        {/each}
-                        <Select.Separator />
-                        {#each customFoldersOfAccount as customFolder}
-                            <Select.Option value={customFolder}>
-                                {customFolder}
-                            </Select.Option>
-                        {/each}
-                    </Select.Root>
-                </FormGroup>
+                {#if SharedStore.currentAccount !== "home"}
+                    <FormGroup>
+                        <Label for="searching-folder">Folder</Label>
+                        <Select.Root
+                            id="searching-folder"
+                            value={Folder.All}
+                            onchange={selectFolder}
+                        >
+                            {#each standardFoldersOfAccount! as standardFolder}
+                                {@const [folderTag, folderName] =
+                                    standardFolder.split(":")}
+                                <Select.Option value={folderTag}>
+                                    {folderName}
+                                </Select.Option>
+                                {/each}
+                            <Select.Separator />
+                            {#each customFoldersOfAccount! as customFolder}
+                                <Select.Option value={customFolder}>
+                                    {customFolder}
+                                </Select.Option>
+                                {/each}
+                        </Select.Root>
+                    </FormGroup>
+                {/if}
                 <FormGroup>
                     <Label for="searching-senders">Sender(s)</Label>
                     <Input.Group>

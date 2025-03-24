@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Email as TEmail } from "$lib/types";
+    import { type Email as TEmail, type Account, Folder, type Mailbox } from "$lib/types";
     import {
         extractEmailAddress,
         extractFullname,
@@ -32,21 +32,24 @@
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
-    let currentMailbox = $derived(
-        SharedStore.mailboxes.find(
-            (task) =>
-                task.email_address ===
-                    SharedStore.currentAccount!.email_address &&
-                task.result.folder === SharedStore.currentFolder,
-        )!.result,
-    );
+    let currentMailbox: Mailbox = $derived.by(() => {
+        if (SharedStore.currentAccount === "home") {
+            return {
+                folder: Folder.Inbox,
+                emails: SharedStore.mailboxes.map(task => task.result.emails).flat(),
+                total: SharedStore.mailboxes.reduce((acc, task) => acc + task.result.total, 0)
+            }
+        } else {
+            return SharedStore.mailboxes.find(
+                (task) =>
+                    task.email_address ===
+                        (SharedStore.currentAccount as Account).email_address &&
+                    task.result.folder === SharedStore.currentFolder,
+            )!.result
+        }
+    });
     let currentMailboxUids: string[] = $derived(
         currentMailbox.emails.map((email: TEmail) => email.uid).flat(),
-    );
-    let recentEmailUids = $derived(
-        SharedStore.recentEmails.find(
-            (task) => task.email_address === SharedStore.currentAccount!.email_address
-        )?.result
     );
 
     let totalEmailCount = $derived(currentMailbox.total);
@@ -122,9 +125,26 @@
         return groupedEmails;
     }
 
+    function getAccountByEmail(emailOfSearchingAccount: TEmail): Account {
+        return SharedStore.accounts.find((account) => {
+            return account.email_address === SharedStore.mailboxes.find(
+                task => task.result.emails.find(email => email === emailOfSearchingAccount)
+            )!.email_address;
+        })!;
+    }
+
+    function isRecentEmail(email: TEmail): boolean {
+        return !!SharedStore.recentEmails.find(
+            task => task.email_address === getAccountByEmail(email).email_address
+                && task.result.includes(email.uid)
+        );
+    }
+
     const showEmailContent = async (selectedEmail: TEmail): Promise<void> => {
         const response = await MailboxController.getEmailContent(
-            SharedStore.currentAccount,
+            SharedStore.currentAccount === "home"
+                ? getAccountByEmail(selectedEmail)
+                : SharedStore.currentAccount,
             SharedStore.currentFolder,
             selectedEmail.uid
         );
@@ -197,7 +217,7 @@
                             {extractFullname(email.sender) ||
                                 extractEmailAddress(email.sender)}
                         </span>
-                        {#if recentEmailUids && recentEmailUids.includes(email.uid)}
+                        {#if isRecentEmail(email)}
                             <div class="new-message-icon">
                                 <span>New</span>
                             </div>
