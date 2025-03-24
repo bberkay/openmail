@@ -1,11 +1,16 @@
 <script lang="ts">
-    import { SharedStore } from '$lib/stores/shared.svelte';
-    import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from '$lib/constants';
-    import { Folder } from '$lib/types';
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { extractEmailAddress } from "$lib/utils";
+    import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from "$lib/constants";
+    import { Folder } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { onMount } from 'svelte';
-    import { WYSIWYGEditor } from '@bberkay/wysiwygeditor';
-    import { createSenderAddress, escapeHTML, addEmailToAddressList } from '$lib/utils';
+    import { onMount } from "svelte";
+    import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
+    import {
+        createSenderAddress,
+        escapeHTML,
+        addEmailToAddressList,
+    } from "$lib/utils";
     import * as Select from "$lib/ui/Components/Select";
     import * as Input from "$lib/ui/Components/Input";
     import * as Button from "$lib/ui/Components/Button";
@@ -18,118 +23,131 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
-    /* Variables */
-
     interface Props {
-        compose_type?: "reply" | "forward";
-        original_message_id?: string;
-        original_sender?: string;
-        original_receivers?: string;
-        original_subject?: string;
-        original_body?: string;
-        original_date?: string;
+        originalMessageContext?: {
+            composeType: "reply" | "forward";
+            originalMessageId: string;
+            originalSender: string;
+            originalReceivers: string;
+            originalSubject: string;
+            originalBody: string;
+            originalDate: string;
+        };
     }
 
-    let {
-        compose_type,
-        original_message_id,
-        original_sender,
-        original_receivers,
-        original_subject,
-        original_body,
-        original_date,
-    }: Props = $props();
+    let { originalMessageContext }: Props = $props();
+
+    let composeWrapper: HTMLElement;
+    let receiverInput: HTMLInputElement;
+    let ccInput: HTMLInputElement;
+    let bccInput: HTMLInputElement;
 
     let body: WYSIWYGEditor;
     let senders: string[] = $state([]);
-    let receivers: string[] = $state([]);
+    let receivers: string[] = $state(
+        originalMessageContext
+            ? originalMessageContext.originalReceivers
+                  .split(",")
+                  .map((receiver) => extractEmailAddress(receiver))
+            : [],
+    );
     let cc: string[] = $state([]);
     let bcc: string[] = $state([]);
 
     onMount(() => {
-        body = new WYSIWYGEditor('body');
+        receiverInput = composeWrapper.querySelector('input[id="receivers"]')!;
+        ccInput = composeWrapper.querySelector('input[id="cc"]')!;
+        bccInput = composeWrapper.querySelector('input[id="bcc"]')!;
+
+        body = new WYSIWYGEditor("body");
         body.init();
-        if (compose_type) {
+        if (originalMessageContext) {
             body.addFullHTMLPage(
-                (compose_type == "reply" ? REPLY_TEMPLATE : FORWARD_TEMPLATE)
-                    .replace("{original_sender}", escapeHTML((original_sender || "")))
-                    .replace("{original_receivers}", escapeHTML((original_receivers || "")))
-                    .replace("{original_subject}", original_subject || "")
-                    .replace("{original_body}", original_body || "")
-                    .replace("{original_date}", original_date || "")
-            )
+                (originalMessageContext.composeType == "reply"
+                    ? REPLY_TEMPLATE
+                    : FORWARD_TEMPLATE
+                )
+                    .replace(
+                        "{original_sender}",
+                        escapeHTML(
+                            originalMessageContext.originalSender || "",
+                        ),
+                    )
+                    .replace(
+                        "{original_receivers}",
+                        escapeHTML(
+                            originalMessageContext.originalReceivers || "",
+                        ),
+                    )
+                    .replace(
+                        "{original_subject}",
+                        originalMessageContext.originalSubject || "",
+                    )
+                    .replace(
+                        "{original_body}",
+                        originalMessageContext.originalBody || "",
+                    )
+                    .replace(
+                        "{original_date}",
+                        originalMessageContext.originalDate || "",
+                    ),
+            );
         }
     });
 
     const addReceiver = (e: Event) => {
-        const targetInput = (e.target as HTMLElement)
-            .closest(".form-group")!
-            .querySelector<HTMLInputElement>('input[id="receivers"]')!;
-        addEmailToAddressList(e, targetInput, cc);
-    }
+        addEmailToAddressList(e, receiverInput, receivers);
+    };
 
     const addCc = (e: Event) => {
-        const targetInput = (e.target as HTMLElement)
-            .closest(".form-group")!
-            .querySelector<HTMLInputElement>('input[id="cc"]')!;
-        addEmailToAddressList(e, targetInput, bcc);
-    }
+        addEmailToAddressList(e, ccInput, cc);
+    };
 
     const addBcc = (e: Event) => {
-        const targetInput = (e.target as HTMLElement)
-            .closest(".form-group")!
-            .querySelector<HTMLInputElement>('input[id="bcc"]')!;
-        addEmailToAddressList(e, targetInput, bcc);
-    }
+        addEmailToAddressList(e, bccInput, bcc);
+    };
 
     const sendEmail = async (e: Event): Promise<void> => {
-        if (
-            (compose_type == "reply" || compose_type == "forward") &&
-            !original_message_id
-        ) {
-            showMessage({content: "Unexpected error while replying/forwarding."});
-            console.error("`original_message_id` required when sending reply or forwarding message.");
-            return;
-        }
-
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
 
-        formData.set('sender', senders.join(","));
-        formData.set('receivers', receivers.join(","));
+        formData.set("sender", senders.join(","));
+        formData.set("receivers", receivers.join(","));
 
         if (!formData.get("sender")) {
-            showMessage({content: "At least one sender must be added"});
+            showMessage({ content: "At least one sender must be added" });
             console.error("At least one sender must be added");
             return;
         }
         if (!formData.get("receivers")) {
-            showMessage({content: "At least one receiver must be added"});
+            showMessage({ content: "At least one receiver must be added" });
             console.error("At least one receiver must be added");
             return;
         }
 
-        formData.set('cc', cc.join(","));
-        formData.set('bcc', bcc.join(","));
-        formData.set('body', body.getHTMLContent());
+        formData.set("cc", cc.join(","));
+        formData.set("bcc", bcc.join(","));
+        formData.set("body", body.getHTMLContent());
 
         let response;
-        if (compose_type == "reply") {
-            response = await MailboxController.replyEmail(
-                formData,
-                original_message_id!
-            );
-        } else if (compose_type == "forward") {
-           response = await MailboxController.forwardEmail(
-               formData,
-               original_message_id!
-           );
+        if (originalMessageContext) {
+            if (originalMessageContext.composeType === "reply") {
+                response = await MailboxController.replyEmail(
+                    formData,
+                    originalMessageContext.originalMessageId,
+                );
+            } else {
+                response = await MailboxController.forwardEmail(
+                    formData,
+                    originalMessageContext.originalMessageId,
+                );
+            }
         } else {
             response = await MailboxController.sendEmail(formData);
         }
 
         if (!response.success) {
-            showMessage({content: "Unexpected error while replying/forwarding."});
+            showMessage({ content: "Error, email could not sent." });
             console.error(response!.message);
             return;
         }
@@ -139,16 +157,18 @@
         // Set current folder to Folder.Sent and
         // mount Inbox.
         const firstSenderIndex = SharedStore.standardFolders.findIndex(
-            account => account.email_address === senders[0]
+            (account) => account.email_address === senders[0],
         );
-        SharedStore.currentFolder = SharedStore.standardFolders[firstSenderIndex].result.filter(
-            (folder: string) => folder.toLowerCase().includes(Folder.Sent.toLowerCase())
+        SharedStore.currentFolder = SharedStore.standardFolders[
+            firstSenderIndex
+        ].result.filter((folder: string) =>
+            folder.toLowerCase().includes(Folder.Sent.toLowerCase()),
         )[0];
         showContent(Inbox);
-    }
+    };
 </script>
 
-<div class="compose">
+<div class="compose" bind:this={composeWrapper}>
     <Form onsubmit={sendEmail}>
         <div>
             <FormGroup>
@@ -159,7 +179,10 @@
                     onchange={(addr) => senders.push(addr)}
                 >
                     {#each SharedStore.accounts as account}
-                        {@const sender = createSenderAddress(account.email_address, account.fullname)}
+                        {@const sender = createSenderAddress(
+                            account.email_address,
+                            account.fullname,
+                        )}
                         <Select.Option value={sender}>
                             {sender}
                         </Select.Option>
@@ -170,7 +193,9 @@
                         <Badge
                             content={sender}
                             onclick={() => {
-                                senders = receivers.filter(addr => addr !== sender)
+                                senders = receivers.filter(
+                                    (addr) => addr !== sender,
+                                );
                             }}
                         />
                     {/each}
@@ -186,10 +211,7 @@
                         onkeyup={addReceiver}
                         onblur={addReceiver}
                     />
-                    <Button.Basic
-                        type="button"
-                        onclick={addReceiver}
-                    >
+                    <Button.Basic type="button" onclick={addReceiver}>
                         <Icon name="add" />
                     </Button.Basic>
                 </Input.Group>
@@ -198,7 +220,9 @@
                         <Badge
                             content={receiver}
                             onclick={() => {
-                                receivers = receivers.filter(addr => addr !== receiver)
+                                receivers = receivers.filter(
+                                    (addr) => addr !== receiver,
+                                );
                             }}
                         />
                     {/each}
@@ -211,11 +235,12 @@
                     name="subject"
                     id="subject"
                     placeholder="Subject"
-                    value={
-                        compose_type && original_subject
-                            ? (compose_type == "reply" ? "Re: " : "Fwd: ") + original_subject
-                            : ""
-                    }
+                    value={originalMessageContext
+                        ? (originalMessageContext.composeType == "reply"
+                              ? "Re: "
+                              : "Fwd: ") +
+                          originalMessageContext.originalSubject
+                        : ""}
                     required
                 />
             </FormGroup>
@@ -230,10 +255,7 @@
                             onkeyup={addCc}
                             onblur={addCc}
                         />
-                        <Button.Basic
-                            type="button"
-                            onclick={addCc}
-                        >
+                        <Button.Basic type="button" onclick={addCc}>
                             <Icon name="add" />
                         </Button.Basic>
                     </Input.Group>
@@ -243,7 +265,7 @@
                         <Badge
                             content={ccAddr}
                             onclick={() => {
-                                cc = cc.filter(addr => addr !== ccAddr)
+                                cc = cc.filter((addr) => addr !== ccAddr);
                             }}
                         />
                     {/each}
@@ -260,10 +282,7 @@
                             onkeyup={addBcc}
                             onblur={addBcc}
                         />
-                        <Button.Basic
-                            type="button"
-                            onclick={addBcc}
-                        >
+                        <Button.Basic type="button" onclick={addBcc}>
                             <Icon name="add" />
                         </Button.Basic>
                     </Input.Group>
@@ -273,7 +292,7 @@
                         <Badge
                             content={bccAddr}
                             onclick={() => {
-                                bcc = bcc.filter(addr => addr !== bccAddr)
+                                bcc = bcc.filter((addr) => addr !== bccAddr);
                             }}
                         />
                     {/each}
@@ -285,17 +304,9 @@
             </FormGroup>
             <FormGroup>
                 <Label for="attachments">Attachment(s)</Label>
-                <Input.File
-                    name="attachments"
-                    id="attachments"
-                    multiple
-                />
+                <Input.File name="attachments" id="attachments" multiple />
             </FormGroup>
-            <Button.Basic
-                type="submit"
-                id="send-email"
-                style="margin-top:10px"
-            >
+            <Button.Basic type="submit" id="send-email" style="margin-top:10px">
                 Send Email
             </Button.Basic>
         </div>

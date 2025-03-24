@@ -1,11 +1,13 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Email as TEmail, Folder } from "$lib/types";
+    import { type Email as TEmail, type Account, Folder } from "$lib/types";
     import { NEW_MESSAGE_TEMPLATE } from "$lib/constants";
     import { extractEmailAddress, extractFullname } from "$lib/utils";
     import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
+    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
@@ -15,7 +17,67 @@
 
     const toggleNotifications = () => {
         isNotificationsHidden = !isNotificationsHidden;
-    };
+    }
+
+    async function getEmailContent(account: Account, uid: string) {
+        const response = await MailboxController.getEmailContent(
+            account,
+            Folder.Inbox,
+            uid,
+        );
+        if (!response.success || !response.data) {
+            showMessage({
+                content: "Error, email content not fetch properly.",
+            });
+            console.error(response.message);
+            return;
+        }
+        return response;
+    }
+
+    const showEmailContent = async (
+        receiverEmailAddress: string,
+        uid: string,
+    ): Promise<void> => {
+        const receiverAccount = SharedStore.accounts.find(
+            (acc) => acc.email_address == receiverEmailAddress,
+        )!;
+
+        const response = await getEmailContent(receiverAccount, uid);
+        if (!response)
+            return;
+
+        showContent(Email, {
+            account: receiverAccount,
+            email: response.data,
+        });
+    }
+
+    const showInbox = () => {
+        // TODO: Temporary until "HOME" is implemented.
+        showContent(Inbox);
+    }
+
+    const showCompose = async (repliedEmail: TEmail) => {
+        showContent(Compose, {
+            message: {
+                composeType: "reply",
+                originalMessageId: repliedEmail.message_id,
+                originalSender: repliedEmail.sender,
+                originalReceivers: repliedEmail.receivers,
+                originalSubject: repliedEmail.subject,
+                originalBody: (await getEmailContent(repliedEmail.uid))!.data!.body,
+                originalDate: repliedEmail.date,
+            }
+        });
+    }
+
+    const setAccount = (emailAddress: string) => {
+        const newAccount = SharedStore.accounts.find(acc => acc.email_address == emailAddress);
+        if (!newAccount)
+            return;
+        SharedStore.currentAccount = newAccount;
+    }
 
     const clear = (
         emailAddress: string | null = null,
@@ -32,41 +94,20 @@
                 }
             }
         });
-    };
+    }
 
-    const showAll = () => {
-        // TODO: Temporary until "HOME" is implemented.
-        showContent(Inbox);
-    };
-
-    const showEmailContent = async (
-        receiverEmailAddress: string,
-        selectedEmail: TEmail,
-    ): Promise<void> => {
-        const receiverAccount = SharedStore.accounts.find(
-            (acc) => acc.email_address == receiverEmailAddress,
-        )!;
-        const response = await MailboxController.getEmailContent(
-            receiverAccount,
-            Folder.Inbox,
-            selectedEmail.uid,
-        );
-        if (!response.success || !response.data) {
-            showMessage({
-                content: "Error, email content not fetch properly.",
-            });
-            console.error(response.message);
-            return;
-        }
-
-        showContent(Email, {
-            account: receiverAccount,
-            email: response.data,
+    let notificationsContainer: HTMLElement;
+    onMount(() => {
+        notificationsContainer.querySelectorAll<HTMLElement>(".receiver-email").forEach((receiverEmail) => {
+            receiverEmail.addEventListener("click", () => setAccount(receiverEmail.innerText))
         });
-    };
+        notificationsContainer.querySelectorAll<HTMLElement>(".sender-email").forEach((senderEmail) => {
+            senderEmail.addEventListener("click", async () => await showCompose(senderEmail))
+        })
+    });
 </script>
 
-<div class="notifications-container">
+<div class="notifications-container" bind:this={notificationsContainer}>
     <Button.Basic
         type="button"
         class="btn-cta nav-button"
@@ -111,13 +152,13 @@
                             onclick={() => {
                                 showEmailContent(
                                     receiverEmailAddress,
-                                    recentEmail,
+                                    recentEmail.uid,
                                 );
                             }}
                             onkeydown={() => {
                                 showEmailContent(
                                     receiverEmailAddress,
-                                    recentEmail,
+                                    recentEmail.uid,
                                 );
                             }}
                             tabindex="0"
@@ -173,9 +214,9 @@
                 <Button.Basic
                     type="button"
                     class="btn-inline"
-                    onclick={showAll}
+                    onclick={showInbox}
                 >
-                    Show All
+                    Go to Inbox
                 </Button.Basic>
             </div>
         </div>

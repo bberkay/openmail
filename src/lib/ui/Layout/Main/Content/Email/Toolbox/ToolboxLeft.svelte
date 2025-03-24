@@ -141,25 +141,29 @@
 
     const reply = async () => {
         showContent(Compose, {
-            compose_type: "reply",
-            original_message_id: email.message_id,
-            original_sender: email.sender,
-            original_receiver: email.receivers,
-            original_subject: email.subject,
-            original_body: email.body,
-            original_date: email.date,
+            originalMessageContext: {
+                composeType: "reply",
+                originalMessageId: email.message_id,
+                originalSender: email.sender,
+                originalReceiver: email.receivers,
+                originalSubject: email.subject,
+                originalBody: email.body,
+                originalDate: email.date,
+            }
         });
     };
 
     const forward = async () => {
         showContent(Compose, {
-            compose_type: "forward",
-            original_message_id: email.message_id,
-            original_sender: email.sender,
-            original_receiver: email.receivers,
-            original_subject: email.subject,
-            original_body: email.body,
-            original_date: email.date,
+            originalMessageContext: {
+                composeType: "forward",
+                originalMessageId: email.message_id,
+                originalSender: email.sender,
+                originalReceiver: email.receivers,
+                originalSubject: email.subject,
+                originalBody: email.body,
+                originalDate: email.date,
+            }
         });
     };
 </script>
