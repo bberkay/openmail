@@ -15,6 +15,6 @@
     tabindex="0"
     {...attributes}
 >
-    <span style="display:none;">#dt#</span>
+    <span style="display:none;">#separator#</span>
     {@render children()}
 </div>
