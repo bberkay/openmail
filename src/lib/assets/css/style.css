@@ -132,6 +132,20 @@ body {
     color: var(--color-text-secondary);
 }
 
+.hidden {
+    display: none;
+}
+
+.invisible {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
 /* Dev */
 pre {
     overflow: scroll;

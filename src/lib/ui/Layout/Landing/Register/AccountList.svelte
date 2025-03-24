@@ -200,11 +200,10 @@
                             </Button.Action>
                         {:else}
                             <Button.Action
-                                class="btn-inline"
-                                style="visibility: hidden;"
+                                class="btn-inline invisible"
                                 onclick={() => {}}
                             >
-                                hidden
+                                invisible
                             </Button.Action>
                         {/if}
                     </Table.Head>

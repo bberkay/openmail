@@ -30,11 +30,6 @@
                 color: var(--color-text-primary);
             }
 
-            &.hidden {
-                opacity: 0;
-                visibility: hidden;
-            }
-
             &:has(.dropdown-container) {
                 display: flex;
                 justify-content: space-between;

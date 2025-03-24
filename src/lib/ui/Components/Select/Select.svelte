@@ -55,13 +55,13 @@
                     option.getAttribute("data-value")!.toString().toLowerCase().includes(searchTerm)
                     || option.innerText!.toString().toLowerCase().includes(searchTerm)
                 ) {
-                    option.classList.remove("hidden");
+                    option.classList.remove("invisible");
                     isAnyOptionFound = true;
                 } else {
-                    option.classList.add("hidden");
+                    option.classList.add("invisible");
                 }
             } else {
-                option.classList.remove("hidden");
+                option.classList.remove("invisible");
             }
         })
 
@@ -162,7 +162,7 @@
             <Icon name="dropdown" />
         </div>
     </div>
-    <div class="options-container {isOpen ? "open" : ""}">
+    <div class="options-container {isOpen ? "visible" : ""}">
         {#if enableSearch}
             <div class="search-box">
                 <Input.Group>
@@ -241,11 +241,6 @@
                             opacity: 0;
                             transition: all var(--transform-fast) var(--ease-default);
 
-                            &.visible{
-                                visibility: visible;
-                                opacity: 1;
-                            }
-
                             &:hover{
                                 opacity: 0.7;
                             }
@@ -271,11 +266,6 @@
                 visibility: hidden;
                 transition: all var(--transform-fast) var(--ease-default);
                 box-shadow: var(--shadow-sm);
-
-                &.open{
-                    opacity: 1;
-                    visibility: visible;
-                }
 
                 & .search-box {
                     position: sticky;

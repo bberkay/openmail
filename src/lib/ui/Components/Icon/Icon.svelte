@@ -37,10 +37,6 @@
             stroke-width: 2;
             transition: all var(--transition-fast) var(--ease-default);
             fill: var(--color-text-secondary);
-
-            &.hidden {
-                display: none;
-            }
         }
     }
 </style>

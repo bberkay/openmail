@@ -26,10 +26,6 @@
             right: -80px;
             top: 30px;
             width: 100px;
-
-            &.hidden {
-                display: none;
-            }
         }
     }
 </style>

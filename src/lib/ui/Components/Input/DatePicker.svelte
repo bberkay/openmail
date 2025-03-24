@@ -221,7 +221,6 @@
             }
 
             & .datepicker-container {
-                visibility: hidden;
                 position: absolute;
                 top: 100%;
                 left: 0;
@@ -237,11 +236,6 @@
                 visibility: hidden;
                 transition: all var(--transform-fast) var(--ease-default);
                 box-shadow: var(--shadow-sm);
-
-                &.visible {
-                    opacity: 1;
-                    visibility: visible;
-                }
 
                 & .datepicker-header {
                     display: flex;
