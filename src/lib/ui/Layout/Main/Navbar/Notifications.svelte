@@ -17,7 +17,7 @@
 
     const toggleNotifications = () => {
         isNotificationsHidden = !isNotificationsHidden;
-    }
+    };
 
     async function getEmailContent(account: Account, uid: string) {
         const response = await MailboxController.getEmailContent(
@@ -44,40 +44,47 @@
         )!;
 
         const response = await getEmailContent(receiverAccount, uid);
-        if (!response)
-            return;
+        if (!response) return;
 
         showContent(Email, {
             account: receiverAccount,
             email: response.data,
         });
-    }
+    };
 
-    const showInbox = () => {
+    const showHome = () => {
         // TODO: Temporary until "HOME" is implemented.
         showContent(Inbox);
-    }
+    };
 
-    const showCompose = async (repliedEmail: TEmail) => {
+    const showCompose = async (
+        receiverAccount: Account,
+        receivedEmail: TEmail,
+    ) => {
         showContent(Compose, {
             message: {
                 composeType: "reply",
-                originalMessageId: repliedEmail.message_id,
-                originalSender: repliedEmail.sender,
-                originalReceivers: repliedEmail.receivers,
-                originalSubject: repliedEmail.subject,
-                originalBody: (await getEmailContent(repliedEmail.uid))!.data!.body,
-                originalDate: repliedEmail.date,
-            }
+                originalMessageId: receivedEmail.message_id,
+                originalSender: receivedEmail.sender,
+                originalReceivers: receivedEmail.receivers,
+                originalSubject: receivedEmail.subject,
+                originalBody: (await getEmailContent(
+                    receiverAccount,
+                    receivedEmail.uid,
+                ))!.data!.body,
+                originalDate: receivedEmail.date,
+            },
         });
-    }
+    };
 
-    const setAccount = (emailAddress: string) => {
-        const newAccount = SharedStore.accounts.find(acc => acc.email_address == emailAddress);
-        if (!newAccount)
-            return;
+    const showInbox = (emailAddress: string) => {
+        const newAccount = SharedStore.accounts.find(
+            (acc) => acc.email_address == emailAddress,
+        );
+        if (!newAccount) return;
         SharedStore.currentAccount = newAccount;
-    }
+        showContent(Inbox);
+    };
 
     const clear = (
         emailAddress: string | null = null,
@@ -94,16 +101,49 @@
                 }
             }
         });
-    }
+    };
 
     let notificationsContainer: HTMLElement;
     onMount(() => {
-        notificationsContainer.querySelectorAll<HTMLElement>(".receiver-email").forEach((receiverEmail) => {
-            receiverEmail.addEventListener("click", () => setAccount(receiverEmail.innerText))
-        });
-        notificationsContainer.querySelectorAll<HTMLElement>(".sender-email").forEach((senderEmail) => {
-            senderEmail.addEventListener("click", async () => await showCompose(senderEmail))
-        })
+        notificationsContainer
+            .querySelectorAll<HTMLElement>(".sender-to-receiver")
+            .forEach((senderToReceiver) => {
+                // Show inbox of the clicked receiver email if the receiver email
+                // is one of the accounts. If there are multiple receiver and more
+                // than one is in accounts then show first one's inbox.
+                const receiverEmail = senderToReceiver.querySelector(
+                    ".receiver-email",
+                ) as HTMLElement;
+                receiverEmail.addEventListener("click", () =>
+                    showInbox(extractEmailAddress(receiverEmail.innerText)),
+                );
+
+                // Show compose as replying to the message sent by the clicked sender.
+                const senderEmail = senderToReceiver.querySelector(
+                    ".sender-email",
+                ) as HTMLElement;
+                const receivers = (
+                    senderToReceiver.querySelector(".receivers") as HTMLElement
+                ).innerText.split(",");
+                const uid = (
+                    senderToReceiver.querySelector(".uid") as HTMLElement
+                ).innerText;
+                const receiverAccount = SharedStore.accounts.find((acc) =>
+                    receivers.includes(acc.email_address),
+                )!;
+                const receivedEmail = SharedStore.mailboxes
+                    .find(
+                        (task) =>
+                            task.email_address ==
+                            receiverAccount!.email_address,
+                    )!
+                    .result.emails.find((email) => email.uid === uid)!;
+                senderEmail.addEventListener(
+                    "click",
+                    async () =>
+                        await showCompose(receiverAccount, receivedEmail),
+                );
+            });
     });
 </script>
 
@@ -167,6 +207,12 @@
                             >
                             <div class="body">
                                 <span class="sender-to-receiver">
+                                    <span class="uid hidden">
+                                        {recentEmail.uid}
+                                    </span>
+                                    <span class="receivers hidden">
+                                        {recentEmail.receivers}
+                                    </span>
                                     {NEW_MESSAGE_TEMPLATE.replace(
                                         "{sender_fullname}",
                                         extractFullname(recentEmail.sender),
@@ -214,7 +260,7 @@
                 <Button.Basic
                     type="button"
                     class="btn-inline"
-                    onclick={showInbox}
+                    onclick={showHome}
                 >
                     Go to Inbox
                 </Button.Basic>
