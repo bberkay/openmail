@@ -17,10 +17,19 @@
         isNotificationsHidden = !isNotificationsHidden;
     };
 
-    const clear = (email_address: string | null = null) => {
+    const clear = (
+        emailAddress: string | null = null,
+        recentEmailUid: string | null = null,
+    ) => {
         SharedStore.recentEmails.forEach((task) => {
-            if (!email_address || task.email_address === email_address) {
-                task.result = [];
+            if (!emailAddress || task.email_address === emailAddress) {
+                if (recentEmailUid) {
+                    task.result = task.result.filter(
+                        (uid) => uid !== recentEmailUid,
+                    );
+                } else {
+                    task.result = [];
+                }
             }
         });
     };
@@ -145,7 +154,11 @@
                                 <Button.Basic
                                     type="button"
                                     class="btn-inline"
-                                    onclick={() => clear(you)}
+                                    onclick={() =>
+                                        clear(
+                                            receiverEmailAddress,
+                                            recentEmail.uid,
+                                        )}
                                 >
                                     <Icon name="clear" />
                                 </Button.Basic>
