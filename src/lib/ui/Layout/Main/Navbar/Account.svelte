@@ -3,6 +3,8 @@
     import { Folder, type Account } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import { createSenderAddress } from "$lib/utils";
+    import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
 
     const AccountOperation = {
         Home: "create",
@@ -24,7 +26,7 @@
 
     const showHome = () => {
         SharedStore.currentAccount = "home";
-        SharedStore.currentFolder = Folder.Inbox;
+        showContent(Inbox);
     };
 
     const minimize = () => {};
