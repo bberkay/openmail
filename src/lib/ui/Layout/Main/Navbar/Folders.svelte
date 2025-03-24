@@ -110,6 +110,7 @@
     value={SharedStore.currentFolder}
     placeholder="Folder"
     enableSearch={true}
+    disabled={SharedStore.currentAccount === "home"}
 >
     {#each standardFoldersOfAccount as standardFolder}
         {@const [folderTag, folderName] = standardFolder.split(":")}
