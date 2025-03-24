@@ -21,5 +21,4 @@
     {...attributes}
 >
     {@render children()}
-
 </Button.Basic>

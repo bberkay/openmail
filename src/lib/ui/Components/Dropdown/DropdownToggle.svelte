@@ -6,13 +6,15 @@
         [attribute: string]: unknown;
     }
 
-    let {
-        children,
-        ...attributes
-    }: Props = $props();
+    let { children, ...attributes }: Props = $props();
 </script>
 
-<div {...attributes}>
+<div
+    class="dropdown-toggle-container"
+    role="button"
+    tabindex="0"
+    {...attributes}
+>
     <span style="display:none;">#dt#</span>
     {@render children()}
 </div>

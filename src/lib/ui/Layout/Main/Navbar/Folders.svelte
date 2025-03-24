@@ -115,12 +115,12 @@
             <span>{customFolder}</span>
             <Dropdown.Root>
                 <Dropdown.Toggle>⋮</Dropdown.Toggle>
-                {#snippet content()}
+                <Dropdown.Content>
                     <Dropdown.Item onclick={() => showCreateSubfolder(customFolder)}>Create Subfolder</Dropdown.Item>
                     <Dropdown.Item onclick={() => showRenameFolder(customFolder)}>Rename Folder</Dropdown.Item>
                     <Dropdown.Item onclick={() => showMoveFolder(customFolder)}>Move Folder</Dropdown.Item>
                     <Dropdown.Item onclick={() => showDeleteFolder(customFolder)}>Delete Folder</Dropdown.Item>
-                {/snippet}
+                </Dropdown.Content>
             </Dropdown.Root>
         </Select.Option>
     {/each}

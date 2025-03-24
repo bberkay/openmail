@@ -1,48 +1,43 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { type Snippet } from "svelte";
 
     interface Props {
         children: Snippet;
-        content: Snippet;
     }
 
-    let {
-        children,
-        content
-    }: Props = $props();
+    let { children }: Props = $props();
 
-    let isContentShown = $state(false);
     let dropdownContainer: HTMLElement;
+    let toggleContainer: HTMLElement;
+    let contentContainer: HTMLElement;
 
     const closeWhenClickedOutside = (e: Event) => {
-        if(!dropdownContainer.contains(e.target as HTMLElement)) {
-            isContentShown = false;
+        if (!dropdownContainer.contains(e.target as HTMLElement)) {
+            contentContainer.classList.add("hidden");
         }
-    }
+    };
 
     const toggleDropdown = (e: Event) => {
         e.stopPropagation();
-        isContentShown = !isContentShown;
-    }
+        contentContainer.classList.toggle("hidden");
+    };
+
+    onMount(() => {
+        toggleContainer = dropdownContainer.querySelector(
+            ".dropdown-toggle-container",
+        )!;
+        toggleContainer.addEventListener("click", toggleDropdown);
+        toggleContainer.addEventListener("keydown", toggleDropdown);
+        contentContainer =
+            dropdownContainer.querySelector(".dropdown-content")!;
+    });
 </script>
 
 <svelte:body onclick={closeWhenClickedOutside} />
 
 <div class="dropdown-container" bind:this={dropdownContainer}>
-    <div
-        class="dropdown-toggle-container"
-        onclick={toggleDropdown}
-        onkeydown={toggleDropdown}
-        role="button"
-        tabindex="0"
-    >
-        {@render children()}
-    </div>
-    {#if isContentShown}
-        <div class="dropdown-content">
-            {@render content()}
-        </div>
-    {/if}
+    {@render children()}
 </div>
 
 <style>
@@ -50,20 +45,6 @@
         .dropdown-container {
             position: relative;
             z-index: var(--z-index-dropdown);
-
-            & .dropdown-content {
-                position: absolute;
-                display: flex;
-                background-color: var(--color-border-subtle);
-                color: var(--color-text-primary);
-                flex-direction: column;
-                padding: 1px;
-                border: 1px solid var(--color-border);
-                border-radius: var(--radius-sm);
-                right: -80px;
-                top: 30px;
-                width: 100px;
-            }
         }
     }
 </style>

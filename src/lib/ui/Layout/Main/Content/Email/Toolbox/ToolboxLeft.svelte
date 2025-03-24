@@ -272,7 +272,7 @@
     <div class="tool">
         <Dropdown.Root>
             <Dropdown.Toggle>⋮</Dropdown.Toggle>
-            {#snippet content()}
+            <Dropdown.Content>
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
@@ -321,7 +321,7 @@
                 >
                     Unsubcribe
                 </Dropdown.Item>
-            {/snippet}
+            </Dropdown.Content>
         </Dropdown.Root>
     </div>
 </div>
