@@ -1,30 +1,60 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { type Email as TEmail, Folder } from "$lib/types";
     import { NEW_MESSAGE_TEMPLATE } from "$lib/constants";
     import { extractEmailAddress, extractFullname } from "$lib/utils";
     import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
     import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import { show as showMessage } from "$lib/ui/Components/Message";
 
     let isNotificationsHidden = $state(true);
 
     const toggleNotifications = () => {
         isNotificationsHidden = !isNotificationsHidden;
-    }
+    };
 
     const clear = (email_address: string | null = null) => {
-        SharedStore.recentEmails.forEach(task => {
+        SharedStore.recentEmails.forEach((task) => {
             if (!email_address || task.email_address === email_address) {
                 task.result = [];
             }
-        })
-    }
+        });
+    };
 
     const showAll = () => {
         // TODO: Temporary until "HOME" is implemented.
         showContent(Inbox);
-    }
+    };
+
+    const showEmailContent = async (
+        receiverEmailAddress: string,
+        selectedEmail: TEmail,
+    ): Promise<void> => {
+        const receiverAccount = SharedStore.accounts.find(
+            (acc) => acc.email_address == receiverEmailAddress,
+        )!;
+        const response = await MailboxController.getEmailContent(
+            receiverAccount,
+            Folder.Inbox,
+            selectedEmail.uid,
+        );
+        if (!response.success || !response.data) {
+            showMessage({
+                content: "Error, email content not fetch properly.",
+            });
+            console.error(response.message);
+            return;
+        }
+
+        showContent(Email, {
+            account: receiverAccount,
+            email: response.data,
+        });
+    };
 </script>
 
 <div class="notifications-container">
@@ -38,9 +68,7 @@
     {#if isNotificationsHidden}
         <div class="notifications">
             <div class="notifications-header">
-                <div class="title">
-                    Notifications
-                </div>
+                <div class="title">Notifications</div>
                 <div class="action">
                     <Button.Basic
                         type="button"
@@ -53,24 +81,58 @@
             </div>
             <div class="notifications-body">
                 {#each SharedStore.recentEmails as recentEmailTask}
-                    {@const recentEmails = SharedStore.mailboxes.find(
-                        task => task.email_address === recentEmailTask.email_address
-                    )!.result.emails.filter(email => recentEmailTask.result.includes(email.uid))}
+                    {@const recentEmails = SharedStore.mailboxes
+                        .find(
+                            (task) =>
+                                task.email_address ===
+                                recentEmailTask.email_address,
+                        )!
+                        .result.emails.filter((email) =>
+                            recentEmailTask.result.includes(email.uid),
+                        )}
                     {#each recentEmails as recentEmail}
-                        {@const you = SharedStore.accounts.filter(
-                            acc => recentEmail.receivers.includes(acc.email_address)
-                        )[0].email_address}
-                        <div class="notification-item">
+                        {@const receiverEmailAddress =
+                            SharedStore.accounts.filter((acc) =>
+                                recentEmail.receivers.includes(
+                                    acc.email_address,
+                                ),
+                            )[0].email_address}
+                        <div
+                            class="notification-item"
+                            onclick={() => {
+                                showEmailContent(
+                                    receiverEmailAddress,
+                                    recentEmail,
+                                );
+                            }}
+                            onkeydown={() => {
+                                showEmailContent(
+                                    receiverEmailAddress,
+                                    recentEmail,
+                                );
+                            }}
+                            tabindex="0"
+                            role="button"
+                        >
+                            >
                             <div class="body">
                                 <span class="sender-to-receiver">
-                                    {
-                                        NEW_MESSAGE_TEMPLATE
-                                            .replace("{sender_fullname}", extractFullname(recentEmail.sender))
-                                            .replace("{sender_email}", extractEmailAddress(recentEmail.sender))
-                                            .replace("{receiver_email}", you)
-                                            .replace("{sent_at}", recentEmail.date)
-                                            .trim()
-                                    }
+                                    {NEW_MESSAGE_TEMPLATE.replace(
+                                        "{sender_fullname}",
+                                        extractFullname(recentEmail.sender),
+                                    )
+                                        .replace(
+                                            "{sender_email}",
+                                            extractEmailAddress(
+                                                recentEmail.sender,
+                                            ),
+                                        )
+                                        .replace(
+                                            "{receiver_email}",
+                                            receiverEmailAddress,
+                                        )
+                                        .replace("{sent_at}", recentEmail.date)
+                                        .trim()}
                                 </span>
                                 <span class="message">
                                     {#if recentEmail.attachments && recentEmail.attachments.length > 0}
@@ -153,7 +215,7 @@
                         }
 
                         & .body {
-                            display:flex;
+                            display: flex;
                             flex-direction: row;
                             flex-grow: 1;
 
