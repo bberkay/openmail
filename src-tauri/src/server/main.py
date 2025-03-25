@@ -494,7 +494,6 @@ async def notifications_socket(websocket: WebSocket, accounts: str):
 @app.get("/get-mailboxes/{accounts}")
 async def get_mailboxes(
     accounts: str,
-    background_tasks: BackgroundTasks,
     folder: Optional[str] = None,
     search: Optional[str] = None,
     offset_start: Optional[int] = None,
