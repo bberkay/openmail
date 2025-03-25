@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Email as TEmail, type Account, Folder, type Mailbox } from "$lib/types";
+    import { type Email as TEmail, type Account, } from "$lib/types";
     import {
         extractEmailAddress,
         extractFullname,
@@ -20,7 +20,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
 
     interface Props {
-        emailSelection: string[];
+        emailSelection: "1:*" | string[];
     }
 
     type DateGroup =
@@ -32,11 +32,6 @@
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
-    let isAllEmailsSelected = $state(false);
-    let currentMailboxUids: string[] = $derived(
-        SharedStore.currentMailbox.emails.map((email: TEmail) => email.uid).flat(),
-    );
-
     let selectShownCheckbox: HTMLInputElement;
     onMount(() => {
         selectShownCheckbox = document.getElementById(
@@ -46,10 +41,9 @@
 
     const selectAllEmails = (event: Event) => {
         const selectAllButton = event.target as HTMLButtonElement;
-        emailSelection = currentMailboxUids;
+        emailSelection = "1:*";
         selectAllButton.innerHTML = MAILBOX_CLEAR_SELECTION_TEMPLATE;
         selectShownCheckbox.checked = true;
-        isAllEmailsSelected = true;
     };
 
     const deselectAllEmails = (event: Event) => {
@@ -60,10 +54,9 @@
             SharedStore.currentMailbox.total.toString(),
         );
         selectShownCheckbox.checked = false;
-        isAllEmailsSelected = false;
     };
 
-    function groupEmailsByDate() {
+    function groupEmailsByDate(): Record<DateGroup, TEmail[]> {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -121,12 +114,9 @@
         );
     }
 
-    const showEmailContent = async (selectedEmail: TEmail): Promise<void> => {
-        let previouslyAtHome: boolean = false;
-        if (SharedStore.currentAccount === "home") {
-            previouslyAtHome = true;
-            SharedStore.currentAccount = getAccountByEmail(selectedEmail);
-        }
+    const showEmailContent = async (account: Account, selectedEmail: TEmail): Promise<void> => {
+        const previouslyAtHome = SharedStore.currentAccount === "home";
+        SharedStore.currentAccount = account;
         const response = await MailboxController.getEmailContent(
             SharedStore.currentAccount,
             SharedStore.currentFolder,
@@ -146,12 +136,12 @@
 </script>
 
 <div class="mailbox">
-    {#if emailSelection.length > 0}
+    {#if emailSelection}
         <div class="selection-info">
             <span>
                 {MAILBOX_SELECTION_INFO_TEMPLATE.replace(
                     "{selection_count}",
-                    (isAllEmailsSelected
+                    (emailSelection === "1:*"
                         ? SharedStore.currentMailbox.total
                         : emailSelection.length
                     ).toString(),
@@ -160,7 +150,7 @@
             <Button.Basic
                 type="button"
                 class="btn-inline"
-                onclick={isAllEmailsSelected
+                onclick={emailSelection === "1:*"
                     ? deselectAllEmails
                     : selectAllEmails}
             >
@@ -179,13 +169,14 @@
         </div>
         <div class="email-group">
             {#each group[1] as email}
+                {@const account = getAccountByEmail(email)}
                 <div
                     class="email"
                     onclick={() => {
-                        showEmailContent(email);
+                        showEmailContent(account, email);
                     }}
                     onkeydown={() => {
-                        showEmailContent(email);
+                        showEmailContent(account, email);
                     }}
                     tabindex="0"
                     role="button"
@@ -193,9 +184,9 @@
                     <div class="email-sender">
                         <input
                             type="checkbox"
-                            class="select-email-checkbox"
+                            class="email-selection-checkbox"
                             bind:group={emailSelection}
-                            value={email.uid}
+                            value={account.email_address.concat(",", email.uid)}
                         />
                         <span>
                             {extractFullname(email.sender) ||
@@ -300,7 +291,7 @@
                         gap: var(--spacing-xs);
                         width: 20%;
 
-                        & .select-email-checkbox {
+                        & .email-selection-checkbox {
                             margin-right: var(--spacing-2xs);
                         }
 

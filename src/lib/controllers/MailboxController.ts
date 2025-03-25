@@ -307,7 +307,7 @@ export class MailboxController {
 
     public static async deleteEmails(
         account: Account,
-        selection: string[],
+        selection: string,
         folder: string,
     ): Promise<BaseResponse> {
         const response = await ApiService.post(
@@ -315,9 +315,7 @@ export class MailboxController {
             PostRoutes.DELETE_EMAIL,
             {
                 account: MailboxController._get_accounts(account),
-                sequence_set: selection.includes("*")
-                    ? "1:*"
-                    : selection.join(","),
+                sequence_set: removeWhitespaces(selection),
                 folder: folder,
             },
         );
@@ -334,7 +332,7 @@ export class MailboxController {
 
     public static async moveEmails(
         account: Account,
-        selection: string[],
+        selection: string,
         sourceFolder: string,
         destinationFolder: string,
     ): Promise<BaseResponse> {
@@ -343,9 +341,7 @@ export class MailboxController {
             PostRoutes.MOVE_EMAIL,
             {
                 account: MailboxController._get_accounts(account),
-                sequence_set: selection.includes("*")
-                    ? "1:*"
-                    : selection.join(","),
+                sequence_set: removeWhitespaces(selection),
                 source_folder: sourceFolder,
                 destination_folder: destinationFolder,
             },
@@ -363,7 +359,7 @@ export class MailboxController {
 
     public static async copyEmails(
         account: Account,
-        selection: string[],
+        selection: string,
         sourceFolder: string,
         destinationFolder: string,
     ): Promise<BaseResponse> {
@@ -372,9 +368,7 @@ export class MailboxController {
             PostRoutes.COPY_EMAIL,
             {
                 account: MailboxController._get_accounts(account),
-                sequence_set: selection.includes("*")
-                    ? "1:*"
-                    : selection.join(","),
+                sequence_set: removeWhitespaces(selection),
                 source_folder: sourceFolder,
                 destination_folder: destinationFolder,
             },
@@ -388,20 +382,17 @@ export class MailboxController {
 
     public static async markEmails(
         account: Account,
-        selection: string[],
+        selection: string,
         mark: string | Mark,
         folder: string,
     ): Promise<BaseResponse> {
-        selection = selection.map((uid) => removeWhitespaces(uid));
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.MARK_EMAIL,
             {
                 account: MailboxController._get_accounts(account),
                 mark: mark,
-                sequence_set: selection.includes("*")
-                    ? "1:*"
-                    : selection.join(","),
+                sequence_set: removeWhitespaces(selection),
                 folder: folder,
             },
         );
@@ -432,20 +423,17 @@ export class MailboxController {
 
     public static async unmarkEmails(
         account: Account,
-        selection: string[],
+        selection: string,
         mark: string | Mark,
         folder: string,
     ): Promise<BaseResponse> {
-        selection = selection.map((uid) => removeWhitespaces(uid));
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.UNMARK_EMAIL,
             {
                 account: MailboxController._get_accounts(account),
                 mark: mark,
-                sequence_set: selection.includes("*")
-                    ? "1:*"
-                    : selection.join(","),
+                sequence_set: removeWhitespaces(selection),
                 folder: folder,
             },
         );

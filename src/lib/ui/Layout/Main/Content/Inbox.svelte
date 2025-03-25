@@ -2,7 +2,7 @@
     import Toolbox from "$lib/ui/Layout/Main/Content/Inbox/Toolbox.svelte";
     import Content from "$lib/ui/Layout/Main/Content/Inbox/Content.svelte";
 
-    let emailSelection: string[] = $state([]);
+    let emailSelection: "1:*" | string[] = $state([]);
 </script>
 
 <Toolbox bind:emailSelection />

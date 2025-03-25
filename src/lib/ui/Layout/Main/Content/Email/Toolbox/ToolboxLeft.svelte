@@ -41,7 +41,7 @@
     async function markAs(mark: string | Mark) {
         const response = await MailboxController.markEmails(
             account,
-            [email.uid],
+            email.uid,
             mark,
             SharedStore.currentFolder,
         );
@@ -56,7 +56,7 @@
     async function removeMark(mark: string | Mark) {
         const response = await MailboxController.unmarkEmails(
             account,
-            [email.uid],
+            email.uid,
             mark,
             SharedStore.currentFolder,
         );
@@ -87,7 +87,7 @@
     const copyTo = async (destinationFolder: string | Folder) => {
         const response = await MailboxController.copyEmails(
             account,
-            [email.uid],
+            email.uid,
             SharedStore.currentFolder,
             destinationFolder,
         );
@@ -100,7 +100,7 @@
     const moveTo = async (destinationFolder: string | Folder) => {
         const response = await MailboxController.moveEmails(
             account,
-            [email.uid],
+            email.uid,
             SharedStore.currentFolder,
             destinationFolder,
         );
@@ -126,7 +126,7 @@
             onConfirm: async (e: Event) => {
                 const response = await MailboxController.deleteEmails(
                     account,
-                    [email.uid],
+                    email.uid,
                     SharedStore.currentFolder,
                 );
                 if (!response.success) {
@@ -228,6 +228,12 @@
     <div class="tool-separator"></div>
     <div class="tool">
         <Select.Root onchange={copyTo} placeholder="Copy To">
+            {#if isEmailInCustomFolder}
+                <!-- Add inbox option if email is in custom folder -->
+                <Select.Option value={Folder.Inbox}>
+                    {Folder.Inbox}
+                </Select.Option>
+            {/if}
             {#each customFoldersOfAccount as customFolder}
                 {#if customFolder !== SharedStore.currentMailbox.folder}
                     <Select.Option value={customFolder}>
@@ -235,16 +241,16 @@
                     </Select.Option>
                 {/if}
             {/each}
-            {#if isEmailInCustomFolder}
-                <!-- Add inbox option if email is in custom folder -->
-                <Select.Option value={Folder.Inbox}>
-                    {Folder.Inbox}
-                </Select.Option>
-            {/if}
         </Select.Root>
     </div>
     <div class="tool">
         <Select.Root onchange={moveTo} placeholder="Move To">
+            {#if isEmailInCustomFolder}
+                <!-- Add inbox option if email is in custom folder -->
+                <Select.Option value={Folder.Inbox}>
+                    {Folder.Inbox}
+                </Select.Option>
+            {/if}
             {#each customFoldersOfAccount as customFolder}
                 {#if customFolder !== SharedStore.currentMailbox.folder}
                     <Select.Option value={customFolder}>
@@ -252,12 +258,6 @@
                     </Select.Option>
                 {/if}
             {/each}
-            {#if isEmailInCustomFolder}
-                <!-- Add inbox option if email is in custom folder -->
-                <Select.Option value={Folder.Inbox}>
-                    {Folder.Inbox}
-                </Select.Option>
-            {/if}
         </Select.Root>
     </div>
     <div class="tool-separator"></div>

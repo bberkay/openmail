@@ -3,7 +3,7 @@
     import ToolboxRight from "$lib/ui/Layout/Main/Content/Inbox/Toolbox/ToolboxRight.svelte";
 
     interface Props {
-        emailSelection: string[];
+        emailSelection: "1:*" | string[];
     }
 
     let {
