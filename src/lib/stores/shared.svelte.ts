@@ -3,7 +3,7 @@ import {
     type Account,
     type Mailbox,
     type OpenMailTaskResults,
-    Folder
+    Folder,
 } from "../types";
 
 export enum SharedStoreKeys {
@@ -16,7 +16,7 @@ export enum SharedStoreKeys {
     customFolders = "customFolders",
     currentAccount = "currentAccount",
     currentMailbox = "currentMailbox",
-    currentFolder = "currentFolder"
+    currentFolder = "currentFolder",
 }
 
 interface ISharedStore {
@@ -32,7 +32,7 @@ interface ISharedStore {
     [SharedStoreKeys.currentFolder]: string;
 }
 
-export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] }  = $state({
+export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = $state({
     [SharedStoreKeys.server]: "",
     [SharedStoreKeys.accounts]: [],
     [SharedStoreKeys.failedAccounts]: [],
@@ -48,35 +48,49 @@ export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] }  = $state({
 SharedStore.currentFolder = $derived(
     SharedStore.currentAccount === "home"
         ? Folder.Inbox
-        : SharedStore.currentFolder
+        : SharedStore.currentFolder,
 );
 
 SharedStore.currentMailbox = $derived.by(() => {
     if (SharedStore.currentAccount === "home") {
         return {
             folder: Folder.Inbox,
-            emails: SharedStore.mailboxes.map(task => task.result.emails).flat(),
-            total: SharedStore.mailboxes.reduce((acc, task) => acc + task.result.total, 0)
-        }
+            emails: SharedStore.mailboxes
+                .map((task) => task.result.emails)
+                .flat()
+                .sort(
+                    (a, b) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime(),
+                ),
+            total: SharedStore.mailboxes.reduce(
+                (acc, task) => acc + task.result.total,
+                0,
+            ),
+        };
     } else {
         return SharedStore.mailboxes.find(
             (task) =>
                 task.email_address ===
                     (SharedStore.currentAccount as Account).email_address &&
                 task.result.folder === SharedStore.currentFolder,
-        )!.result
+        )!.result;
     }
 });
 
 SharedStore.recentEmails = $derived.by(() => {
     return SharedStore.recentEmails.concat(
-        SharedStore.accounts.map(account => {
-            return {
-                email_address: account.email_address,
-                result: SharedStore.recentEmails.find(
-                    recentAcc => recentAcc.email_address === account.email_address
-                )?.result || []
-            }
-        }).flat()
-    )
+        SharedStore.accounts
+            .map((account) => {
+                return {
+                    email_address: account.email_address,
+                    result:
+                        SharedStore.recentEmails.find(
+                            (recentAcc) =>
+                                recentAcc.email_address ===
+                                account.email_address,
+                        )?.result || [],
+                };
+            })
+            .flat(),
+    );
 });
