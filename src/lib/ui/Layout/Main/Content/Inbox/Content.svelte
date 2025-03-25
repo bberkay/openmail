@@ -32,12 +32,10 @@
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
+    let isAllEmailsSelected = $state(false);
     let currentMailboxUids: string[] = $derived(
         SharedStore.currentMailbox.emails.map((email: TEmail) => email.uid).flat(),
     );
-
-    let totalEmailCount = $derived(SharedStore.currentMailbox.total);
-    let isAllEmailsSelected = $state(false);
 
     let selectShownCheckbox: HTMLInputElement;
     onMount(() => {
@@ -59,7 +57,7 @@
         emailSelection = [];
         selectAllButton.innerHTML = MAILBOX_SELECT_ALL_TEMPLATE.replace(
             "{total}",
-            totalEmailCount.toString(),
+            SharedStore.currentMailbox.total.toString(),
         );
         selectShownCheckbox.checked = false;
         isAllEmailsSelected = false;
@@ -154,7 +152,7 @@
                 {MAILBOX_SELECTION_INFO_TEMPLATE.replace(
                     "{selection_count}",
                     (isAllEmailsSelected
-                        ? totalEmailCount
+                        ? SharedStore.currentMailbox.total
                         : emailSelection.length
                     ).toString(),
                 )}
@@ -168,7 +166,7 @@
             >
                 {MAILBOX_SELECT_ALL_TEMPLATE.replace(
                     "{total}",
-                    totalEmailCount.toString(),
+                    SharedStore.currentMailbox.total.toString(),
                 )}
             </Button.Basic>
         </div>
