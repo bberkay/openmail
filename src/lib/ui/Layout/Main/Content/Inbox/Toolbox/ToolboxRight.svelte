@@ -1,7 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { MAILBOX_PAGINATION_TEMPLATE } from "$lib/constants";
+    import { MAILBOX_LENGTH, MAILBOX_PAGINATION_TEMPLATE } from "$lib/constants";
     import * as Button from "$lib/ui/Components/Button";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
@@ -9,9 +9,9 @@
     let totalEmailCount = $derived(SharedStore.currentMailbox.total);
 
     const getPreviousEmails = async (): Promise<void> => {
-        if (currentOffset <= 10) return;
+        if (currentOffset <= MAILBOX_LENGTH) return;
 
-        const offset_start = Math.max(1, currentOffset - 10);
+        const offset_start = Math.max(1, currentOffset - MAILBOX_LENGTH);
         const offset_end = Math.max(1, currentOffset);
         const response = await MailboxController.paginateEmails(
             SharedStore.currentAccount === "home"
@@ -31,8 +31,8 @@
     const getNextEmails = async (): Promise<void> => {
         if (currentOffset >= totalEmailCount) return;
 
-        const offset_start = Math.min(totalEmailCount, currentOffset + 10);
-        const offset_end = Math.min(totalEmailCount, currentOffset + 10 + 10);
+        const offset_start = Math.min(totalEmailCount, currentOffset + MAILBOX_LENGTH);
+        const offset_end = Math.min(totalEmailCount, currentOffset + MAILBOX_LENGTH * 2);
         const response = await MailboxController.paginateEmails(
             SharedStore.currentAccount === "home"
                 ? SharedStore.accounts
@@ -53,7 +53,7 @@
     <div class="pagination">
         <Button.Action
             type="button"
-            class="btn-inline {currentOffset < 10 ? 'disabled' : ''}"
+            class="btn-inline {currentOffset < MAILBOX_LENGTH ? 'disabled' : ''}"
             onclick={getPreviousEmails}
         >
             Prev
@@ -65,7 +65,7 @@
             )
                 .replace(
                     "{offset_end}",
-                    Math.min(totalEmailCount, currentOffset + 10).toString(),
+                    Math.min(totalEmailCount, currentOffset + MAILBOX_LENGTH).toString(),
                 )
                 .replace("{total}", totalEmailCount.toString())
                 .trim()}

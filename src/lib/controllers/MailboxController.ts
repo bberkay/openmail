@@ -15,6 +15,7 @@ import {
     type SearchCriteria,
 } from "$lib/types";
 import { removeWhitespaces } from "$lib/utils";
+import { MAILBOX_LENGTH } from "$lib/constants";
 
 
 export class MailboxController {
@@ -135,8 +136,10 @@ export class MailboxController {
 
     public static async getMailboxes(
         accounts: Account | Account[] | null = null,
-        folder: Folder | string | undefined = undefined,
-        searchCriteria: SearchCriteria | string | undefined = undefined,
+        folder?: Folder | string,
+        searchCriteria?: SearchCriteria | string,
+        offset_start?: number,
+        offset_end?: number
     ): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
@@ -151,6 +154,8 @@ export class MailboxController {
                         searchCriteria && typeof searchCriteria !== "string"
                             ? JSON.stringify(searchCriteria)
                             : searchCriteria,
+                    offset_start: Math.max(1, offset_start ?? 1),
+                    offset_end: Math.max(1, offset_end ?? MAILBOX_LENGTH)
                 },
             },
         );
@@ -229,7 +234,7 @@ export class MailboxController {
         folder: string,
         uid: string,
         name: string,
-        cid: string | undefined = undefined
+        cid?: string
     ): Promise<GetResponse<GetRoutes.DOWNLOAD_ATTACHMENT>> {
         return await ApiService.get(
             SharedStore.server,
@@ -248,7 +253,9 @@ export class MailboxController {
         );
     }
 
-    public static async sendEmail(formData: FormData): Promise<PostResponse> {
+    public static async sendEmail(
+        formData: FormData
+    ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.SEND_EMAIL,
@@ -256,7 +263,10 @@ export class MailboxController {
         );
     }
 
-    public static async replyEmail(formData: FormData, original_message_id: string): Promise<PostResponse> {
+    public static async replyEmail(
+        formData: FormData,
+        original_message_id: string
+    ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.REPLY_EMAIL,
@@ -269,7 +279,10 @@ export class MailboxController {
         );
     }
 
-    public static async forwardEmail(formData: FormData, original_message_id: string): Promise<PostResponse> {
+    public static async forwardEmail(
+        formData: FormData,
+        original_message_id: string
+    ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.FORWARD_EMAIL,
@@ -454,7 +467,7 @@ export class MailboxController {
     public static async createFolder(
         account: Account,
         folderName: string,
-        parentFolder: string | undefined,
+        parentFolder?: string,
     ): Promise<BaseResponse> {
         const response = await ApiService.post(
             SharedStore.server,

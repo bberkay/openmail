@@ -61,6 +61,8 @@ export const EMAIL_PAGINATION_TEMPLATE = `
  * Constants generally used in Main/Content/Inbox.svelte
  * ----------------------------------------------------------------------------
  */
+export const MAILBOX_LENGTH = 10;
+
 export const MAILBOX_PAGINATION_TEMPLATE = `
     {offset_start} - {offset_end} of {total}
 `;
