@@ -135,7 +135,7 @@
     };
 </script>
 
-<div class="mailbox">
+<div class="mailbox" id="mailbox">
     {#if emailSelection}
         <div class="selection-info">
             <span>
@@ -172,11 +172,14 @@
                 {@const account = getAccountByEmail(email)}
                 <div
                     class="email"
-                    onclick={() => {
+                    onclick={(e) => {
                         showEmailContent(account, email);
                     }}
                     onkeydown={() => {
                         showEmailContent(account, email);
+                    }}
+                    oncontextmenu={(e) => {
+                        (e.target as HTMLElement).classList.add("context-menu-toggled");
                     }}
                     tabindex="0"
                     role="button"
@@ -280,6 +283,11 @@
                     padding: var(--spacing-sm);
                     border-bottom: 1px solid var(--color-border-subtle);
                     cursor: pointer;
+
+                    &.context-menu-toggled {
+                        background-color: var(--color-hover);
+                        outline: 1px solid var(--color-border-subtle);
+                    }
 
                     &:hover {
                         background-color: var(--color-hover);

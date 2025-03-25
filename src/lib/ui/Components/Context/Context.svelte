@@ -7,6 +7,8 @@
     }
 
     let { target, children } = $props();
+    let targetElement: HTMLElement;
+
     let cursor = $state({ x: 0, y: 0 });
     let menu = $state({ w: 0, h: 0 });
     let browser = $state({ w: 0, h: 0 });
@@ -28,6 +30,10 @@
     }
 
     function onPageClick(e: MouseEvent) {
+        targetElement.classList.remove("context-menu-toggled");
+        targetElement.querySelectorAll<HTMLElement>(".context-menu-toggled")?.forEach(
+            element => element.classList.remove("context-menu-toggled")
+        );
         showMenu = false;
     }
 
@@ -41,9 +47,8 @@
     }
 
     onMount(() => {
-        document
-            .getElementById(target)!
-            .addEventListener("contextmenu", rightClickContextMenu);
+        targetElement = document.getElementById(target)!
+        targetElement.addEventListener("contextmenu", rightClickContextMenu);
     });
 </script>
 
