@@ -3,19 +3,23 @@
 
     interface Props {
         target: string;
+        beforeOpen?: ((e: Event) => void) | ((e: Event) => Promise<void>);
+        afterClose?: ((e: Event) => void) | ((e: Event) => Promise<void>);
         children: Snippet;
     }
 
-    let { target, children } = $props();
-    let targetElement: HTMLElement;
+    let { target, beforeOpen, afterClose, children }: Props = $props();
+    let targetElements: NodeListOf<HTMLElement>;
 
     let cursor = $state({ x: 0, y: 0 });
     let menu = $state({ w: 0, h: 0 });
     let browser = $state({ w: 0, h: 0 });
     let showMenu = $state(false);
 
-    function rightClickContextMenu(e: MouseEvent) {
+    async function rightClickContextMenu(e: MouseEvent) {
         e.preventDefault();
+        (e.target as HTMLElement).classList.add("context-menu-toggled");
+        if (beforeOpen) await beforeOpen(e);
         showMenu = true;
         browser = {
             w: window.innerWidth,
@@ -29,12 +33,12 @@
         if (browser.w - cursor.x < menu.w) cursor.x = cursor.x - menu.w;
     }
 
-    function onPageClick(e: MouseEvent) {
-        targetElement.classList.remove("context-menu-toggled");
-        targetElement.querySelectorAll<HTMLElement>(".context-menu-toggled")?.forEach(
-            element => element.classList.remove("context-menu-toggled")
+    async function onPageClick(e: MouseEvent) {
+        targetElements.forEach((targetElement) =>
+            targetElement.classList.remove("context-menu-toggled"),
         );
         showMenu = false;
+        if (afterClose) await afterClose(e);
     }
 
     function getContextMenuDimension(node: HTMLElement) {
@@ -47,8 +51,13 @@
     }
 
     onMount(() => {
-        targetElement = document.getElementById(target)!
-        targetElement.addEventListener("contextmenu", rightClickContextMenu);
+        targetElements = document.querySelectorAll<HTMLElement>(target)!;
+        targetElements.forEach((targetElement) =>
+            targetElement.addEventListener(
+                "contextmenu",
+                rightClickContextMenu,
+            ),
+        );
     });
 </script>
 
@@ -73,10 +82,6 @@
 {/if}
 
 <style>
-    * {
-        padding: 0;
-        margin: 0;
-    }
     .context-menu {
         display: inline-flex;
         width: max-content;

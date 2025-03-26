@@ -3,7 +3,7 @@
     import * as Button from "$lib/ui/Components/Button";
 
     interface Props {
-        onclick: () => void;
+        onclick: (((e: Event) => void) | ((e: Event) => Promise<void>));
         children: Snippet;
     }
 

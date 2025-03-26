@@ -2,11 +2,15 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Email, Mark, Folder, type Account } from "$lib/types";
+    import { NOT_IMPLEMENTED_TEMPLATE } from "$lib/constants";
+    import { type Email, Mark, Folder } from "$lib/types";
     import { startsWithAnyOf } from "$lib/utils";
     import * as Select from "$lib/ui/Components/Select";
     import * as Input from "$lib/ui/Components/Input";
     import * as Button from "$lib/ui/Components/Button";
+    import * as Context from "$lib/ui/Components/Context";
+    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
@@ -16,6 +20,17 @@
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
+    // When the `emailSelection` will be something like this:
+    // ["account1@mail.com,123", "account1@mail.com,124", "account2@mail.com,123"]
+    // the `groupedEmailSelection` will be something like this:
+    // [["account1@mail.com", "123,124"], ["account2@mail.com", "123"]]
+    // and with this way, we are minimizing api calls from this:
+    // C: A101 +STORE FLAG account1@mail.com 123
+    // C: A102 +STORE FLAG account1@mail.com 124
+    // C: A103 +STORE FLAG account1@mail.com 125
+    // to this:
+    // C: A101 +STORE FLAG account1@mail.com 123, 124
+    // C: A102 +STORE FLAG account1@mail.com 125
     let groupedEmailSelection: [string, string][] = $state([]);
 
     let isMailboxOfCustomFolder = $derived.by(() => {
@@ -93,6 +108,26 @@
             );
         }
     });
+
+    const selectEmail = (e: Event) => {
+        if (emailSelection === "1:*") return;
+        const selectedEmail = e.target as HTMLElement;
+        const selectedEmailUid = selectedEmail.querySelector<HTMLInputElement>(
+            ".email-selection-checkbox",
+        )!.value;
+        emailSelection.push(selectedEmailUid);
+    };
+
+    const deselectEmail = (e: Event) => {
+        if (emailSelection === "1:*") return;
+        const selectedEmail = e.target as HTMLElement;
+        const selectedEmailUid = selectedEmail.querySelector<HTMLInputElement>(
+            ".email-selection-checkbox",
+        )!.value;
+        emailSelection = emailSelection.filter(
+            (selection) => selection !== selectedEmailUid,
+        );
+    };
 
     const selectShownEmails = (event: Event) => {
         emailSelection = selectShownCheckbox.checked ? shownEmailUids : [];
@@ -266,6 +301,67 @@
         });
     };
 
+    function isSelectedEmailsHaveUnsubscribeOption() {
+        return groupedEmailSelection.every((group) => {
+            const emails = SharedStore.mailboxes.find(
+                (mailbox) => mailbox.email_address == group[0],
+            )!.result.emails;
+            return group[1]
+                .split(",")
+                .every((uid) =>
+                    emails.find(
+                        (email) => email.uid == uid && !!email.list_unsubscribe,
+                    ),
+                );
+        });
+    }
+
+    const reply = async () => {
+        const email = SharedStore.mailboxes
+            .find(
+                (mailbox) =>
+                    mailbox.email_address == groupedEmailSelection[0][0],
+            )!
+            .result.emails.find(
+                (email) => email.uid == groupedEmailSelection[0][1],
+            )!;
+
+        showContent(Compose, {
+            originalMessageContext: {
+                composeType: "reply",
+                originalMessageId: email.message_id,
+                originalSender: email.sender,
+                originalReceiver: email.receivers,
+                originalSubject: email.subject,
+                originalBody: email.body,
+                originalDate: email.date,
+            },
+        });
+    };
+
+    const forward = async () => {
+        const email = SharedStore.mailboxes
+            .find(
+                (mailbox) =>
+                    mailbox.email_address == groupedEmailSelection[0][0],
+            )!
+            .result.emails.find(
+                (email) => email.uid == groupedEmailSelection[0][1],
+            )!;
+
+        showContent(Compose, {
+            originalMessageContext: {
+                composeType: "forward",
+                originalMessageId: email.message_id,
+                originalSender: email.sender,
+                originalReceiver: email.receivers,
+                originalSubject: email.subject,
+                originalBody: email.body,
+                originalDate: email.date,
+            },
+        });
+    };
+
     const refresh = async (): Promise<void> => {
         const response = await MailboxController.getMailboxes(
             SharedStore.currentAccount === "home"
@@ -278,6 +374,59 @@
         }
     };
 </script>
+
+<Context.Root
+    target=".mailbox .email"
+    beforeOpen={selectEmail}
+    afterClose={deselectEmail}
+>
+    {#if !isSelectedEmailsIncludesGivenMark(Mark.Flagged)}
+        <Context.Item onclick={markAsImportant}>Star</Context.Item>
+    {/if}
+    {#if !isSelectedEmailsExcludesGivenMark(Mark.Flagged)}
+        <Context.Item onclick={markAsNotImportant}>Remove Star</Context.Item>
+    {/if}
+    {#if !isSelectedEmailsExcludesGivenMark(Mark.Seen)}
+        <Context.Item onclick={markAsRead}>Mark as Read</Context.Item>
+    {/if}
+    {#if !isSelectedEmailsExcludesGivenMark(Mark.Seen)}
+        <Context.Item onclick={markAsUnread}>Mark as Unread</Context.Item>
+    {/if}
+    {#if emailSelection.length == 1}
+        <Context.Separator />
+        <Context.Item onclick={reply}>Reply</Context.Item>
+        <Context.Item onclick={forward}>Forward</Context.Item>
+        <Context.Separator />
+        <Context.Item
+            onclick={() => {
+                showMessage({
+                    content: NOT_IMPLEMENTED_TEMPLATE.replace(
+                        "{feature}",
+                        "Unsubscribe",
+                    ),
+                });
+            }}
+        >
+            Unsubscribe
+        </Context.Item>
+    {:else if isSelectedEmailsHaveUnsubscribeOption()}
+        <Context.Item
+            onclick={() => {
+                showMessage({
+                    content: NOT_IMPLEMENTED_TEMPLATE.replace(
+                        "{feature}",
+                        "Unsubscribe All",
+                    ),
+                });
+            }}
+        >
+            Unsubscribe All
+        </Context.Item>
+    {/if}
+    <Context.Separator />
+    <Context.Item onclick={moveToArchive}>Archive</Context.Item>
+    <Context.Item onclick={deleteFrom}>Delete</Context.Item>
+</Context.Root>
 
 <div class="toolbox-left">
     <div class="tool">

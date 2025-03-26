@@ -135,7 +135,7 @@
     };
 </script>
 
-<div class="mailbox" id="mailbox">
+<div class="mailbox">
     {#if emailSelection}
         <div class="selection-info">
             <span>
@@ -177,9 +177,6 @@
                     }}
                     onkeydown={() => {
                         showEmailContent(account, email);
-                    }}
-                    oncontextmenu={(e) => {
-                        (e.target as HTMLElement).classList.add("context-menu-toggled");
                     }}
                     tabindex="0"
                     role="button"
