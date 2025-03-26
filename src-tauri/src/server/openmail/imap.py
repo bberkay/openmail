@@ -1648,13 +1648,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
         )
         mailbox = self.get_emails()
         if mailbox.total > 0:
-            # email.date must conform to the syntax defined in RFC 5322, Section 3.3
-            # https://datatracker.ietf.org/doc/html/rfc5322#autoid-23
-            mailbox.emails = [
-                email
-                for email in mailbox.emails
-                if parsedate_to_datetime(email.date).astimezone(ZoneInfo("UTC")) >= search_start_time
-            ]
+            try:
+                # email.date must conform to the syntax defined in RFC 5322, Section 3.3
+                # https://datatracker.ietf.org/doc/html/rfc5322#autoid-23
+                mailbox.emails = [
+                    email
+                    for email in mailbox.emails
+                    if parsedate_to_datetime(email.date).astimezone(ZoneInfo("UTC")) >= search_start_time
+                ]
+            except Exception as e:
+                del mailbox
+                raise IMAPManagerException("Error, recent emails fetched but dates could not parsed!") from e
 
         self._new_message_timestamps = []
         return mailbox.emails
