@@ -1525,6 +1525,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         # Fetching emails
         sequence_set = ""
+        messages = []
         emails = []
         try:
             offset_start = (uids_len - 1 if offset_start >= uids_len else offset_start) - 1
@@ -1545,38 +1546,28 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if not messages or not messages[0]:
                 return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
 
-            messages = MessageParser.group_messages(messages)
-            messages = messages[::-1]
-            for message in messages:
+            messages = MessageParser.group_messages(messages)[::-1]
+            fetchs = {}
+            """
+            `fetchs` will be something like this:
+            {"1.1": ["1234", "1235", "1236"], "1.1.1": ["1250", "1251"], "2": ["1300"]}
+            which can be use to create fetch requests like this instead of one by one:
+            C: "A101 FETCH 1234, 1235, 1236 (BODY.PEEK[1.1] BODY.PEEK[1.1.MIME])"
+            S: ...
+            C: "A102 FETCH 1250, 1251 (BODY.PEEK[1.1.1] BODY.PEEK[1.1.1.MIME])"
+            S: ...
+            C: "A103 FETCH 1300 (BODY.PEEK[2] BODY.PEEK[2.MIME])
+            S: ...
+            """
+            email_uid_map = {}
+            for index, message in enumerate(messages):
                 uid = MessageParser.get_uid(message[0])
+                email_uid_map[uid] = index
                 headers = MessageParser.get_headers(message[1])
-
-                body_part = (
-                    MessageParser.get_part(message[0], ["TEXT", "PLAIN"])
-                    or
-                    MessageParser.get_part(message[0], ["TEXT", "HTML"])
-                )
-                if not body_part:
-                    body_part = "1"
-
-                _, body = self.uid("FETCH", uid, f"(BODY.PEEK[{body_part}] BODY.PEEK[{body_part}.MIME])")
-                if not body:
-                    body = ""
-                else:
-                    body = MessageParser.group_messages(body)[0]
-                    content_type, encoding = MessageParser.get_content_type_and_encoding(body[3])
-                    body = MessageDecoder.body(
-                        body[1],
-                        encoding=encoding,
-                        sanitize="html" not in content_type
-                    )
-                    if "html" in content_type:
-                        body = HTMLParser.parse(body)
-
                 emails.append(Email(
                     **headers,
                     uid=uid,
-                    body=truncate_text(body, SHORT_BODY_MAX_LENGTH),
+                    body="", # Temporary until body is fetched.
                     flags=MessageParser.get_flags(message[0]),
                     attachments=[
                         Attachment(
@@ -1588,8 +1579,37 @@ class IMAPManager(imaplib.IMAP4_SSL):
                         for attachment in MessageParser.get_attachment_list(message[0])
                     ],
                 ))
+
+                body_part = MessageParser.get_part(message[0], ["TEXT", "PLAIN"])
+                if not body_part: body_part = MessageParser.get_part(message[0], ["TEXT", "HTML"])
+                if not body_part: body_part = "1"
+
+                if body_part in fetchs: fetchs[body_part].append(uid)
+                else: fetchs[body_part] = []
+
+            messages.clear()
+
+            for body_part, uids in fetchs.items():
+                uids = ",".join(uids)
+                _, bodies = self.uid("FETCH", uids, f"(BODY.PEEK[{body_part}] BODY.PEEK[{body_part}.MIME])")
+                bodies = MessageParser.group_messages(bodies)
+                for index, body in enumerate(bodies):
+                    content_type, encoding = MessageParser.get_content_type_and_encoding(body[3])
+                    body = MessageDecoder.body(
+                        body[1],
+                        encoding=encoding,
+                        sanitize="html" not in content_type
+                    )
+                    if "html" in content_type:
+                        body = HTMLParser.parse(body)
+
+                    emails[email_uid_map[uids[index]]].body = body
         except Exception as e:
-            raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{len(emails)}`") from e
+            fetched_email_count = len(emails)
+            del emails
+            raise IMAPManagerException(f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{fetched_email_count}`") from e
+        finally:
+            del messages
 
         return Mailbox(folder=self._searched_emails.folder, emails=emails, total=uids_len)
 
