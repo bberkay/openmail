@@ -153,11 +153,7 @@ export class MailboxController {
                             ? JSON.stringify(searchCriteria)
                             : searchCriteria,
                     offset_start: Math.max(1, offsetStart ?? 1),
-                    offset_end: Math.max(
-                        1,
-                        (offsetEnd ?? MAILBOX_LENGTH) /
-                            (Array.isArray(accounts) ? accounts.length : 1),
-                    ),
+                    offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH)
                 },
             },
         );
@@ -196,11 +192,7 @@ export class MailboxController {
                 pathParams: {
                     accounts: MailboxController._get_accounts(accounts),
                     offset_start: Math.max(1, offsetStart ?? 1),
-                    offset_end: Math.max(
-                        1,
-                        (offsetEnd ?? MAILBOX_LENGTH) /
-                            (Array.isArray(accounts) ? accounts.length : 1),
-                    ),
+                    offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH)
                 },
             },
         );
