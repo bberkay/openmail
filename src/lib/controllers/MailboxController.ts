@@ -136,8 +136,8 @@ export class MailboxController {
         accounts: Account | Account[] | null = null,
         folder?: Folder | string,
         searchCriteria?: SearchCriteria | string,
-        offset_start?: number,
-        offset_end?: number,
+        offsetStart?: number,
+        offsetEnd?: number,
     ): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
@@ -152,10 +152,10 @@ export class MailboxController {
                         searchCriteria && typeof searchCriteria !== "string"
                             ? JSON.stringify(searchCriteria)
                             : searchCriteria,
-                    offset_start: Math.max(1, offset_start ?? 1),
+                    offset_start: Math.max(1, offsetStart ?? 1),
                     offset_end: Math.max(
                         1,
-                        (offset_end ?? MAILBOX_LENGTH) /
+                        (offsetEnd ?? MAILBOX_LENGTH) /
                             (Array.isArray(accounts) ? accounts.length : 1),
                     ),
                 },
@@ -186,8 +186,8 @@ export class MailboxController {
 
     public static async paginateEmails(
         accounts: Account | Account[] | null = null,
-        offset_start?: number,
-        offset_end?: number,
+        offsetStart?: number,
+        offsetEnd?: number,
     ): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
@@ -195,10 +195,10 @@ export class MailboxController {
             {
                 pathParams: {
                     accounts: MailboxController._get_accounts(accounts),
-                    offset_start: Math.max(1, offset_start ?? 1),
+                    offset_start: Math.max(1, offsetStart ?? 1),
                     offset_end: Math.max(
                         1,
-                        (offset_end ?? MAILBOX_LENGTH) /
+                        (offsetEnd ?? MAILBOX_LENGTH) /
                             (Array.isArray(accounts) ? accounts.length : 1),
                     ),
                 },
@@ -275,7 +275,7 @@ export class MailboxController {
 
     public static async replyEmail(
         formData: FormData,
-        original_message_id: string,
+        originalMessageId: string,
     ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
@@ -283,7 +283,7 @@ export class MailboxController {
             formData,
             {
                 pathParams: {
-                    original_message_id,
+                    original_message_id: originalMessageId,
                 },
             },
         );
@@ -291,7 +291,7 @@ export class MailboxController {
 
     public static async forwardEmail(
         formData: FormData,
-        original_message_id: string,
+        originalMessageId: string,
     ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
@@ -299,7 +299,7 @@ export class MailboxController {
             formData,
             {
                 pathParams: {
-                    original_message_id,
+                    original_message_id: originalMessageId,
                 },
             },
         );
