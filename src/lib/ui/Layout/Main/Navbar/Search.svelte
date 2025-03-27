@@ -56,19 +56,13 @@
 
     let standardFoldersOfAccount = $derived.by(() => {
         if (SharedStore.currentAccount !== "home") {
-            return SharedStore.standardFolders.find(
-                (acc) =>
-                acc.email_address === (SharedStore.currentAccount as Account).email_address,
-            )!.result
+            return SharedStore.standardFolders[(SharedStore.currentAccount as Account).email_address];
         }
     });
 
     let customFoldersOfAccount = $derived.by(() => {
         if (SharedStore.currentAccount !== "home") {
-            return SharedStore.customFolders.find(
-                (acc) =>
-                acc.email_address === (SharedStore.currentAccount as Account).email_address,
-            )!.result
+            return SharedStore.customFolders[(SharedStore.currentAccount as Account).email_address];
         }
     });
 
