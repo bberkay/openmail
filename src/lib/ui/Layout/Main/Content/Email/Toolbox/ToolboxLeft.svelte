@@ -82,6 +82,7 @@
 
     const markAsUnread = async (): Promise<void> => {
         await removeMark(Mark.Seen);
+        showContent(Inbox);
     };
 
     const copyTo = async (destinationFolder: string | Folder) => {
@@ -129,12 +130,15 @@
                     email.uid,
                     SharedStore.currentFolder,
                 );
+
                 if (!response.success) {
                     showMessage({
                         content: "Unexpected error while deleting email.",
                     });
                     console.error(response.message);
                 }
+
+                showContent(Inbox);
             },
         });
     };
