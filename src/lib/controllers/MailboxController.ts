@@ -420,8 +420,8 @@ export class MailboxController {
             if (targetMailbox) {
                 targetMailbox.result.emails.forEach((email: Email) => {
                     if (
-                        (selection.includes("*") ||
-                            selection.includes(email.uid.trim())) &&
+                        (selection === "1:*" ||
+                            selection.includes(removeWhitespaces(email.uid))) &&
                         Object.hasOwn(email, "flags") &&
                         email.flags
                     ) {
@@ -461,8 +461,8 @@ export class MailboxController {
             if (targetMailbox) {
                 targetMailbox.result.emails.forEach((email: Email) => {
                     if (
-                        (selection.includes("*") ||
-                            selection.includes(email.uid.trim())) &&
+                        (selection === "1:*" ||
+                            selection.includes(removeWhitespaces(email.uid))) &&
                         Object.hasOwn(email, "flags") &&
                         email.flags
                     ) {
