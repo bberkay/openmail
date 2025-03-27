@@ -45,37 +45,34 @@ export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = $state({
     [SharedStoreKeys.currentFolder]: Folder.Inbox,
 });
 
-SharedStore.currentFolder = $derived(
-    SharedStore.currentAccount === "home"
-        ? Folder.Inbox
-        : SharedStore.currentFolder,
-);
-
-SharedStore.currentMailbox = $derived.by(() => {
-    if (SharedStore.currentAccount === "home") {
-        return {
-            folder: Folder.Inbox,
-            emails: SharedStore.mailboxes
-                .map((task) => task.result.emails)
-                .flat()
-                .sort(
-                    (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime(),
+$effect(() => {
+    if (SharedStore.currentAccount) {
+        SharedStore.currentFolder = Folder.Inbox;
+        if (SharedStore.currentAccount === "home") {
+            SharedStore.currentMailbox = {
+                folder: Folder.Inbox,
+                emails: SharedStore.mailboxes
+                    .map((task) => task.result.emails)
+                    .flat()
+                    .sort(
+                        (a, b) =>
+                            new Date(b.date).getTime() - new Date(a.date).getTime(),
+                    ),
+                total: SharedStore.mailboxes.reduce(
+                    (acc, task) => acc + task.result.total,
+                    0,
                 ),
-            total: SharedStore.mailboxes.reduce(
-                (acc, task) => acc + task.result.total,
-                0,
-            ),
-        };
-    } else {
-        return SharedStore.mailboxes.find(
-            (task) =>
-                task.email_address ===
-                    (SharedStore.currentAccount as Account).email_address &&
-                task.result.folder === SharedStore.currentFolder,
-        )!.result;
+            }
+        } else {
+            SharedStore.currentMailbox = SharedStore.mailboxes.find(
+                (task) =>
+                    task.email_address ===
+                        (SharedStore.currentAccount as Account).email_address &&
+                    task.result.folder === SharedStore.currentFolder,
+            )!.result;
+        }
     }
-});
+})
 
 SharedStore.recentEmails = $derived.by(() => {
     return SharedStore.recentEmails.concat(
