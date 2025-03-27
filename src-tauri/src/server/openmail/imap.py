@@ -1907,10 +1907,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
     @handle_idle
     def _mark_email(
         self,
-        mark:  str | Mark,
+        folder: str,
         sequence_set: str,
         command: str,
-        folder: str,
+        mark:  str | Mark,
         success_msg: str,
         err_msg: str
     ) -> IMAPCommandResult:
@@ -1918,10 +1918,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Mark an email with a specific flag with given `command`.
 
         Args:
-            mark (str): Flag to apply to the email.
+            folder (str): Folder containing the email.
             sequence_set (str): Sequence set of emails to mark.
             command (str): IMAP command to apply the flag like `+FLAGS` or `-FLAGS`.
-            folder (str): Folder containing the email.
+            mark (str): Flag to apply to the email.
             success_msg (str): Success message to display.
             err_msg (str): Error message to display.
 
@@ -1957,16 +1957,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     def mark_email(
         self,
-        mark: str | Mark,
         sequence_set: str,
+        mark: str | Mark,
         folder: str = Folder.Inbox
     ) -> IMAPCommandResult:
         """
         Mark an email with a specific flag.
 
         Args:
-            mark (str): Flag to apply to the email.
             sequence_set (str): Sequence set of emails to mark.
+            mark (str): Flag to apply to the email.
             folder (str, optional): Folder containing the email.
             Defaults to "inbox".
 
@@ -1987,26 +1987,26 @@ class IMAPManager(imaplib.IMAP4_SSL):
             https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         return self._mark_email(
-            mark,
+            folder,
             sequence_set,
             "+FLAGS",
-            folder,
+            mark,
             f"Email(s) `{sequence_set}` in `{folder}` marked with `{mark}` successfully.",
             f"There was an error while marking the email(s) `{sequence_set}` in `{folder}` with `{mark}`."
         )
 
     def unmark_email(
         self,
-        mark: str | Mark,
         sequence_set: str,
+        mark: str | Mark,
         folder: str = Folder.Inbox,
     ) -> IMAPCommandResult:
         """
         Unmark an email with a specific flag.
 
         Args:
-            mark (str): Flag to remove from the email.
             sequence_set (str): Sequence set of emails to unmark.
+            mark (str): Flag to remove from the email.
             folder (str, optional): Folder containing the email. Defaults to "inbox".
 
         Returns:
@@ -2026,10 +2026,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
         return self._mark_email(
-            mark,
+            folder,
             sequence_set,
             "-FLAGS",
-            folder,
+            mark,
             f"{mark} removed from email(s) `{sequence_set}` in `{folder}` successfully.",
             f"There was an error while unmarking the email(s) `{sequence_set}` in `{folder}` with `{mark}`."
         )
