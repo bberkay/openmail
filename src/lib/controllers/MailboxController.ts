@@ -80,50 +80,28 @@ export class MailboxController {
             );
 
             // Extract standard and custom folders from data
-            response.data.forEach((account) => {
-                // Standard folders
-                let standardFolders = SharedStore.standardFolders.find(
-                    (item) => item.email_address === account.email_address,
-                );
-
+            // and add them to SharedStore
+            for (const email_address in response.data) {
+                let standardFolders =
+                    SharedStore.standardFolders[email_address];
                 if (!standardFolders) {
-                    SharedStore.standardFolders = [
-                        {
-                            email_address: account.email_address,
-                            result: [],
-                        },
-                    ];
-                    standardFolders = SharedStore.standardFolders[0];
+                    SharedStore.standardFolders[email_address] = [];
                 }
 
-                standardFolderList.forEach((standardFolder) => {
-                    const matchedFolder = account.result.find((folder) =>
-                        folder.trim().startsWith(standardFolder),
+                SharedStore.standardFolders[email_address] = response.data[
+                    email_address
+                ].filter((folder) => {
+                    const isStandardFolder = standardFolderList.some(
+                        (standardFolder) =>
+                            folder.trim().startsWith(standardFolder),
                     );
-                    if (matchedFolder) {
-                        standardFolders.result.push(matchedFolder);
+                    if (isStandardFolder) {
+                        SharedStore.standardFolders[email_address].push(folder);
+                    } else {
+                        SharedStore.customFolders[email_address].push(folder);
                     }
                 });
-
-                // Custom folders
-                let customFolders = SharedStore.customFolders.find(
-                    (item) => item.email_address === account.email_address,
-                );
-
-                if (!customFolders) {
-                    SharedStore.customFolders = [
-                        {
-                            email_address: account.email_address,
-                            result: [],
-                        },
-                    ];
-                    customFolders = SharedStore.customFolders[0];
-                }
-
-                customFolders.result = account.result.filter((folder) => {
-                    return standardFolders.result.includes(folder) !== true;
-                });
-            });
+            }
         }
 
         return {
@@ -153,7 +131,7 @@ export class MailboxController {
                             ? JSON.stringify(searchCriteria)
                             : searchCriteria,
                     offset_start: Math.max(1, offsetStart ?? 1),
-                    offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH)
+                    offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH),
                 },
             },
         );
@@ -192,7 +170,7 @@ export class MailboxController {
                 pathParams: {
                     accounts: MailboxController._get_accounts(accounts),
                     offset_start: Math.max(1, offsetStart ?? 1),
-                    offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH)
+                    offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH),
                 },
             },
         );
@@ -315,12 +293,19 @@ export class MailboxController {
         if (response.success) {
             // selection will be either 1:* or uids separated with comma
             // something like 1,2,3,4 but not 2:* or 1,3:*:5
-            const targetMailbox = SharedStore.mailboxes
-                .find((task) => task.email_address === account.email_address)!.result;
+            const targetMailbox = SharedStore.mailboxes.find(
+                (task) => task.email_address === account.email_address,
+            )!.result;
             if (targetMailbox.folder === folder) {
-                targetMailbox.emails = selection !== "1:*"
-                    ? targetMailbox.emails.filter((email) => !selection.includes(removeWhitespaces(email.uid)))
-                    : []
+                targetMailbox.emails =
+                    selection !== "1:*"
+                        ? targetMailbox.emails.filter(
+                              (email) =>
+                                  !selection.includes(
+                                      removeWhitespaces(email.uid),
+                                  ),
+                          )
+                        : [];
             }
         }
 
@@ -350,12 +335,19 @@ export class MailboxController {
         if (response.success) {
             // selection will be either 1:* or uids separated with comma
             // something like 1,2,3,4 but not 2:* or 1,3:*:5
-            const targetMailbox = SharedStore.mailboxes
-                .find((task) => task.email_address === account.email_address)!.result;
+            const targetMailbox = SharedStore.mailboxes.find(
+                (task) => task.email_address === account.email_address,
+            )!.result;
             if (targetMailbox.folder === sourceFolder) {
-                targetMailbox.emails = selection !== "1:*"
-                    ? targetMailbox.emails.filter((email) => !selection.includes(removeWhitespaces(email.uid)))
-                    : []
+                targetMailbox.emails =
+                    selection !== "1:*"
+                        ? targetMailbox.emails.filter(
+                              (email) =>
+                                  !selection.includes(
+                                      removeWhitespaces(email.uid),
+                                  ),
+                          )
+                        : [];
             }
         }
 
@@ -488,15 +480,11 @@ export class MailboxController {
         );
 
         if (response.success) {
-            SharedStore.customFolders.forEach((item) => {
-                if (item.email_address == account.email_address) {
-                    item.result.push(
-                        parentFolder
-                            ? `${parentFolder}/${folderName}`
-                            : folderName,
-                    );
-                }
-            });
+            SharedStore.customFolders[account.email_address].push(
+                parentFolder
+                    ? `${parentFolder}/${folderName}`
+                    : folderName,
+            )
         }
 
         return {
@@ -521,23 +509,19 @@ export class MailboxController {
         );
 
         if (response.success) {
-            const customFolders = SharedStore.customFolders.find(
-                (item) => item.email_address == account.email_address,
-            );
-            if (customFolders) {
-                customFolders.result = customFolders.result.filter(
-                    (e) => e !== folderName,
+            SharedStore.customFolders[account.email_address] =
+                SharedStore.customFolders[account.email_address].filter(
+                    customFolder => customFolder !== folderName
                 );
 
-                let newFolderPath = `${destinationFolder}/${folderName}`;
-                if (folderName.includes("/")) {
-                    const tempLastIndex = folderName.lastIndexOf("/");
-                    const parentFolder = folderName.slice(0, tempLastIndex);
-                    if (customFolders.result.includes(parentFolder)) {
-                        newFolderPath = `${destinationFolder}/${folderName.slice(tempLastIndex + 1)}`;
-                    }
+            let newFolderPath = `${destinationFolder}/${folderName}`;
+            if (folderName.includes("/")) {
+                const tempLastIndex = folderName.lastIndexOf("/");
+                const parentFolder = folderName.slice(0, tempLastIndex);
+                if (SharedStore.customFolders[account.email_address].includes(parentFolder)) {
+                    newFolderPath = `${destinationFolder}/${folderName.slice(tempLastIndex + 1)}`;
                 }
-                customFolders.result.push(newFolderPath);
+                SharedStore.customFolders[account.email_address].push(newFolderPath);
             }
         }
 
@@ -563,20 +547,14 @@ export class MailboxController {
         );
 
         if (response.success) {
-            SharedStore.customFolders.forEach((item) => {
-                if (item.email_address == account.email_address) {
-                    item.result = item.result.map((folderName) => {
-                        return folderName.replace(
-                            folderPath.includes("/")
-                                ? folderPath.slice(
-                                      folderPath.lastIndexOf("/") + 1,
-                                  )
-                                : folderPath,
-                            newFolderName,
-                        );
-                    });
-                }
-            });
+            SharedStore.customFolders[account.email_address].map(customFolder => {
+                return customFolder.replace(
+                    folderPath.includes("/")
+                        ? folderPath.slice(folderPath.lastIndexOf("/") + 1)
+                        : folderPath,
+                    newFolderName
+                );
+            })
         }
 
         return {
@@ -601,15 +579,12 @@ export class MailboxController {
         );
 
         if (response.success) {
-            SharedStore.customFolders.forEach((item) => {
-                if (item.email_address == account.email_address) {
-                    item.result = item.result.filter(
-                        (e) =>
-                            (e !== folderName && !subfolders) ||
-                            !e.includes(folderName),
-                    );
-                }
-            });
+            SharedStore.customFolders[account.email_address] =
+                SharedStore.customFolders[account.email_address].filter(
+                    (customFolder) =>
+                        (customFolder !== folderName && !subfolders) ||
+                        !customFolder.includes(folderName),
+                );
         }
 
         return {
