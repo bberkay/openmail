@@ -2,6 +2,10 @@ export enum TauriCommand {
     GET_SERVER_URL = "get_server_url",
 }
 
+export type OpenMailTaskResults<T> = {
+    [email_address: string]: T;
+};
+
 export interface Account {
     email_address: string;
     fullname?: string;
@@ -64,16 +68,9 @@ export interface Draft {
     rcpt_options?: string[];
 }
 
-export interface OpenMailTaskResult<T> {
-    email_address: string;
-    result: T;
-}
-
-export type OpenMailTaskResults<T> = OpenMailTaskResult<T>[];
-
 export interface Mailbox {
     folder: string;
-    emails: Email[];
+    emails: { prev: Email[], current: Email[], next: Email[]};
     total: number;
 }
 

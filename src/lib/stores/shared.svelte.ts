@@ -24,25 +24,25 @@ interface ISharedStore {
     [SharedStoreKeys.accounts]: Account[];
     [SharedStoreKeys.failedAccounts]: Account[];
     [SharedStoreKeys.recentEmails]: OpenMailTaskResults<Email[]>;
-    [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
     [SharedStoreKeys.standardFolders]: OpenMailTaskResults<string[]>;
+    [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>
     [SharedStoreKeys.customFolders]: OpenMailTaskResults<string[]>;
     [SharedStoreKeys.currentAccount]: "home" | Account;
-    [SharedStoreKeys.currentMailbox]: Mailbox;
     [SharedStoreKeys.currentFolder]: string;
+    [SharedStoreKeys.currentMailbox]: Mailbox
 }
 
 export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = $state({
     [SharedStoreKeys.server]: "",
     [SharedStoreKeys.accounts]: [],
     [SharedStoreKeys.failedAccounts]: [],
-    [SharedStoreKeys.recentEmails]: [],
-    [SharedStoreKeys.mailboxes]: [],
-    [SharedStoreKeys.standardFolders]: [],
-    [SharedStoreKeys.customFolders]: [],
+    [SharedStoreKeys.recentEmails]: {},
+    [SharedStoreKeys.standardFolders]: {},
+    [SharedStoreKeys.mailboxes]: {},
+    [SharedStoreKeys.customFolders]: {},
     [SharedStoreKeys.currentAccount]: "home",
-    [SharedStoreKeys.currentMailbox]: { emails: [], folder: "", total: 0 },
     [SharedStoreKeys.currentFolder]: Folder.Inbox,
+    [SharedStoreKeys.currentMailbox]: { folder: "", emails: { prev: [], current: [], next: [] } , total: 0},
 });
 
 $effect(() => {
@@ -74,6 +74,7 @@ $effect(() => {
     }
 })
 
+/* TODO: Check out this later */
 SharedStore.recentEmails = $derived.by(() => {
     return SharedStore.recentEmails.concat(
         SharedStore.accounts
