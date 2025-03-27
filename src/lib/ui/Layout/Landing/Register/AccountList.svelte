@@ -79,6 +79,7 @@
     };
 
     async function initMailboxes(): Promise<void> {
+        SharedStore.currentAccount = "home";
         const response = await MailboxController.init();
         if (!response.success) {
             console.error(response.message);
@@ -91,8 +92,6 @@
             });
             return;
         }
-
-        SharedStore.currentAccount = "home";
         //await listenForNotifications();
     }
 
