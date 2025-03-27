@@ -21,7 +21,6 @@
         )!;
 
         SharedStore.currentAccount = selectedAccount;
-        SharedStore.currentFolder = Folder.Inbox;
     };
 
     const showHome = () => {
