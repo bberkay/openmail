@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { exit, relaunch } from '@tauri-apps/plugin-process';
     import {
         isPermissionGranted,
         requestPermission,
@@ -80,14 +81,19 @@
     async function initMailboxes(): Promise<void> {
         const response = await MailboxController.init();
         if (!response.success) {
-            showMessage({
-                content: "Unexpected error while initializing mailboxes.",
-            });
             console.error(response.message);
-        } else {
-            SharedStore.currentAccount = "home";
-            //await listenForNotifications();
+            showConfirm({
+                content: "Unexpected error while initializing mailboxes.",
+                onConfirmText: "Restart",
+                onConfirm: async () => { await relaunch() },
+                onCancelText: "Exit",
+                onCancel: async () => { await exit(1) },
+            });
+            return;
         }
+
+        SharedStore.currentAccount = "home";
+        //await listenForNotifications();
     }
 
     /**
