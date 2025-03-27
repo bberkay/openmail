@@ -68,6 +68,12 @@ export interface Draft {
     rcpt_options?: string[];
 }
 
+export interface PMailbox {
+    folder: string;
+    emails: Email[];
+    total: number;
+}
+
 export interface Mailbox {
     folder: string;
     emails: { prev: Email[], current: Email[], next: Email[]};
