@@ -321,7 +321,15 @@ export class MailboxController {
         );
 
         if (response.success) {
-            MailboxController.getMailboxes(account);
+            // selection will be either 1:* or uids separated with comma
+            // something like 1,2,3,4 but not 2:* or 1,3:*:5
+            const targetMailbox = SharedStore.mailboxes
+                .find((task) => task.email_address === account.email_address)!.result;
+            if (targetMailbox.folder === folder) {
+                targetMailbox.emails = selection !== "1:*"
+                    ? targetMailbox.emails.filter((email) => !selection.includes(removeWhitespaces(email.uid)))
+                    : []
+            }
         }
 
         return {
