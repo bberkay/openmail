@@ -152,16 +152,13 @@
 
         body.clear();
 
-        // Set current folder to first sender's sent folder then
-        // show inbox.
-        const firstSenderIndex = SharedStore.standardFolders.findIndex(
-            (account) => account.email_address === senders[0],
-        );
+        // Show first sender's Folder.Sent mailbox.
         SharedStore.currentFolder = SharedStore.standardFolders[
-            firstSenderIndex
-        ].result.filter((folder: string) =>
+            senders[0]
+        ].find((folder: string) =>
             isStandardFolder(folder, Folder.Sent)
-        )[0];
+        )!;
+        // TODO: Fetch sent folder
         showContent(Inbox);
     };
 </script>
