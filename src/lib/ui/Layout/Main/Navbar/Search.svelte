@@ -18,7 +18,7 @@
         convertSizeToBytes,
         isObjEmpty,
     } from "$lib/utils";
-    import { Size } from "$lib/utils/types";
+    import { Size } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";

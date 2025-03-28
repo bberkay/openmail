@@ -1,6 +1,6 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { extractEmailAddress } from "$lib/utils";
+    import { extractEmailAddress, isStandardFolder } from "$lib/utils";
     import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from "$lib/constants";
     import { Folder } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
@@ -160,7 +160,7 @@
         SharedStore.currentFolder = SharedStore.standardFolders[
             firstSenderIndex
         ].result.filter((folder: string) =>
-            folder.toLowerCase().includes(Folder.Sent.toLowerCase()),
+            isStandardFolder(folder, Folder.Sent)
         )[0];
         showContent(Inbox);
     };
