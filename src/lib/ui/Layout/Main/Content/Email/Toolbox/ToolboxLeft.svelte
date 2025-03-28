@@ -24,14 +24,14 @@
 
     let { account, email, previouslyAtHome }: Props = $props();
 
-    let customFoldersOfAccount = $derived(
-        SharedStore.customFolders.find(
-            (acc) => acc.email_address === account!.email_address,
-        )!.result,
+    let customFolders: string[] = $derived(
+        SharedStore.currentAccount !== "home"
+            ? SharedStore.customFolders[
+                (SharedStore.currentAccount as Account).email_address
+            ]
+            : []
     );
-    let isEmailInCustomFolder = $derived(
-        !startsWithAnyOf(SharedStore.currentMailbox.folder, Object.values(Folder)),
-    );
+    let isEmailInCustomFolder = $derived(customFolders.includes(SharedStore.currentMailbox.folder));
 
     const goBack = () => {
         if (previouslyAtHome) SharedStore.currentAccount = "home";
@@ -238,7 +238,7 @@
                     {Folder.Inbox}
                 </Select.Option>
             {/if}
-            {#each customFoldersOfAccount as customFolder}
+            {#each customFolders as customFolder}
                 {#if customFolder !== SharedStore.currentMailbox.folder}
                     <Select.Option value={customFolder}>
                         {customFolder}
@@ -255,7 +255,7 @@
                     {Folder.Inbox}
                 </Select.Option>
             {/if}
-            {#each customFoldersOfAccount as customFolder}
+            {#each customFolders as customFolder}
                 {#if customFolder !== SharedStore.currentMailbox.folder}
                     <Select.Option value={customFolder}>
                         {customFolder}

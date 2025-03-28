@@ -1,9 +1,14 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { fade } from 'svelte/transition';
+    import { fade } from "svelte/transition";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { Folder, Mark, type SearchCriteria, type Account } from "$lib/types";
+    import {
+        Folder,
+        Mark,
+        type SearchCriteria,
+        type Account,
+    } from "$lib/types";
     import {
         debounce,
         addEmailToAddressList,
@@ -54,17 +59,20 @@
         )!;
     });
 
-    let standardFoldersOfAccount = $derived.by(() => {
-        if (SharedStore.currentAccount !== "home") {
-            return SharedStore.standardFolders[(SharedStore.currentAccount as Account).email_address];
-        }
-    });
-
-    let customFoldersOfAccount = $derived.by(() => {
-        if (SharedStore.currentAccount !== "home") {
-            return SharedStore.customFolders[(SharedStore.currentAccount as Account).email_address];
-        }
-    });
+    let standardFolders: string[] = $derived(
+        SharedStore.currentAccount !== "home"
+            ? SharedStore.standardFolders[
+                (SharedStore.currentAccount as Account).email_address
+            ]
+            : []
+    );
+    let customFolders: string[] = $derived(
+        SharedStore.currentAccount !== "home"
+            ? SharedStore.customFolders[
+                (SharedStore.currentAccount as Account).email_address
+            ]
+            : []
+    );
 
     const search = async (): Promise<void> => {
         const response = await MailboxController.getMailboxes(
@@ -260,19 +268,19 @@
                             value={Folder.All}
                             onchange={selectFolder}
                         >
-                            {#each standardFoldersOfAccount! as standardFolder}
+                            {#each standardFolders as standardFolder}
                                 {@const [folderTag, folderName] =
                                     standardFolder.split(":")}
                                 <Select.Option value={folderTag}>
                                     {folderName}
                                 </Select.Option>
-                                {/each}
+                            {/each}
                             <Select.Separator />
-                            {#each customFoldersOfAccount! as customFolder}
+                            {#each customFolders as customFolder}
                                 <Select.Option value={customFolder}>
                                     {customFolder}
                                 </Select.Option>
-                                {/each}
+                            {/each}
                         </Select.Root>
                     </FormGroup>
                 {/if}

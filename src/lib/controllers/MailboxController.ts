@@ -293,19 +293,24 @@ export class MailboxController {
         if (response.success) {
             // selection will be either 1:* or uids separated with comma
             // something like 1,2,3,4 but not 2:* or 1,3:*:5
-            const targetMailbox = SharedStore.mailboxes.find(
-                (task) => task.email_address === account.email_address,
-            )!.result;
-            if (targetMailbox.folder === folder) {
-                targetMailbox.emails =
-                    selection !== "1:*"
-                        ? targetMailbox.emails.filter(
-                              (email) =>
-                                  !selection.includes(
-                                      removeWhitespaces(email.uid),
-                                  ),
-                          )
-                        : [];
+            if (
+                SharedStore.mailboxes[account.email_address].folder ===
+                folder
+            ) {
+                if (selection !== "1:*") {
+                    SharedStore.mailboxes[
+                        account.email_address
+                    ].emails.current = SharedStore.mailboxes[
+                        account.email_address
+                    ].emails.current.filter(
+                        (email) =>
+                            !selection.includes(removeWhitespaces(email.uid)),
+                    );
+                } else {
+                    SharedStore.mailboxes[
+                        account.email_address
+                    ].emails.current = [];
+                }
             }
         }
 
@@ -335,19 +340,24 @@ export class MailboxController {
         if (response.success) {
             // selection will be either 1:* or uids separated with comma
             // something like 1,2,3,4 but not 2:* or 1,3:*:5
-            const targetMailbox = SharedStore.mailboxes.find(
-                (task) => task.email_address === account.email_address,
-            )!.result;
-            if (targetMailbox.folder === sourceFolder) {
-                targetMailbox.emails =
-                    selection !== "1:*"
-                        ? targetMailbox.emails.filter(
-                              (email) =>
-                                  !selection.includes(
-                                      removeWhitespaces(email.uid),
-                                  ),
-                          )
-                        : [];
+            if (
+                SharedStore.mailboxes[account.email_address].folder ===
+                sourceFolder
+            ) {
+                if (selection !== "1:*") {
+                    SharedStore.mailboxes[
+                        account.email_address
+                    ].emails.current = SharedStore.mailboxes[
+                        account.email_address
+                    ].emails.current.filter(
+                        (email) =>
+                            !selection.includes(removeWhitespaces(email.uid)),
+                    );
+                } else {
+                    SharedStore.mailboxes[
+                        account.email_address
+                    ].emails.current = [];
+                }
             }
         }
 
@@ -398,11 +408,8 @@ export class MailboxController {
         );
 
         if (response.success) {
-            const targetMailbox = SharedStore.mailboxes.find(
-                (item) => item.email_address === account.email_address,
-            );
-            if (targetMailbox) {
-                targetMailbox.result.emails.forEach((email: Email) => {
+            SharedStore.mailboxes[account.email_address].emails.current.forEach(
+                (email: Email) => {
                     if (
                         (selection === "1:*" ||
                             selection.includes(removeWhitespaces(email.uid))) &&
@@ -411,8 +418,8 @@ export class MailboxController {
                     ) {
                         email.flags.push(mark);
                     }
-                });
-            }
+                },
+            );
         }
 
         return {
@@ -439,23 +446,20 @@ export class MailboxController {
         );
 
         if (response.success) {
-            const targetMailbox = SharedStore.mailboxes.find(
-                (item) => item.email_address === account.email_address,
-            );
-            if (targetMailbox) {
-                targetMailbox.result.emails.forEach((email: Email) => {
+            SharedStore.mailboxes[account.email_address].emails.current.forEach(
+                (email: Email) => {
                     if (
-                        (selection === "1:*" ||
-                            selection.includes(removeWhitespaces(email.uid))) &&
                         Object.hasOwn(email, "flags") &&
-                        email.flags
+                        email.flags &&
+                        (selection === "1:*" ||
+                            selection.includes(removeWhitespaces(email.uid)))
                     ) {
                         email.flags = email.flags.filter(
                             (flag: string) => flag !== mark,
                         );
                     }
-                });
-            }
+                },
+            );
         }
 
         return {
@@ -481,10 +485,8 @@ export class MailboxController {
 
         if (response.success) {
             SharedStore.customFolders[account.email_address].push(
-                parentFolder
-                    ? `${parentFolder}/${folderName}`
-                    : folderName,
-            )
+                parentFolder ? `${parentFolder}/${folderName}` : folderName,
+            );
         }
 
         return {
@@ -511,17 +513,23 @@ export class MailboxController {
         if (response.success) {
             SharedStore.customFolders[account.email_address] =
                 SharedStore.customFolders[account.email_address].filter(
-                    customFolder => customFolder !== folderName
+                    (customFolder) => customFolder !== folderName,
                 );
 
             let newFolderPath = `${destinationFolder}/${folderName}`;
             if (folderName.includes("/")) {
                 const tempLastIndex = folderName.lastIndexOf("/");
                 const parentFolder = folderName.slice(0, tempLastIndex);
-                if (SharedStore.customFolders[account.email_address].includes(parentFolder)) {
+                if (
+                    SharedStore.customFolders[account.email_address].includes(
+                        parentFolder,
+                    )
+                ) {
                     newFolderPath = `${destinationFolder}/${folderName.slice(tempLastIndex + 1)}`;
                 }
-                SharedStore.customFolders[account.email_address].push(newFolderPath);
+                SharedStore.customFolders[account.email_address].push(
+                    newFolderPath,
+                );
             }
         }
 
@@ -547,14 +555,16 @@ export class MailboxController {
         );
 
         if (response.success) {
-            SharedStore.customFolders[account.email_address].map(customFolder => {
-                return customFolder.replace(
-                    folderPath.includes("/")
-                        ? folderPath.slice(folderPath.lastIndexOf("/") + 1)
-                        : folderPath,
-                    newFolderName
-                );
-            })
+            SharedStore.customFolders[account.email_address].map(
+                (customFolder) => {
+                    return customFolder.replace(
+                        folderPath.includes("/")
+                            ? folderPath.slice(folderPath.lastIndexOf("/") + 1)
+                            : folderPath,
+                        newFolderName,
+                    );
+                },
+            );
         }
 
         return {

@@ -16,12 +16,12 @@
 
     let { parentFolderName }: Props = $props();
 
-    let customFoldersOfAccount = $derived(
-        SharedStore.customFolders.find(
-            (acc) =>
-                acc.email_address ===
-                (SharedStore.currentAccount as Account).email_address,
-        )!.result,
+    let customFolders: string[] = $derived(
+        SharedStore.currentAccount !== "home"
+            ? SharedStore.customFolders[
+                (SharedStore.currentAccount as Account).email_address
+            ]
+            : []
     );
 
     const handleCreateFolderForm = async (e: Event): Promise<void> => {
@@ -70,7 +70,7 @@
                     value={parentFolderName || undefined}
                     disabled={!!parentFolderName}
                 >
-                    {#each customFoldersOfAccount as customFolder}
+                    {#each customFolders as customFolder}
                         <Select.Option value={customFolder}>
                             {customFolder}
                         </Select.Option>

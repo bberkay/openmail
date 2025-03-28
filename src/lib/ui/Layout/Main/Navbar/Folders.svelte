@@ -16,40 +16,28 @@
         Refresh: "refresh",
     } as const;
 
-    let standardFoldersOfAccount = $derived(
-        SharedStore.standardFolders.find(
-            (acc) =>
-                acc.email_address ===
-                (SharedStore.currentAccount as Account).email_address,
-        )!.result,
+    let standardFolders: string[] = $derived(
+        SharedStore.currentAccount !== "home"
+            ? SharedStore.standardFolders[
+                (SharedStore.currentAccount as Account).email_address
+            ]
+            : []
     );
-
-    let customFoldersOfAccount = $derived(
-        SharedStore.customFolders.find(
-            (acc) =>
-                acc.email_address ===
-                (SharedStore.currentAccount as Account).email_address,
-        )!.result,
+    let customFolders: string[] = $derived(
+        SharedStore.currentAccount !== "home"
+            ? SharedStore.customFolders[
+                (SharedStore.currentAccount as Account).email_address
+            ]
+            : []
     );
 
     const setCurrentFolder = async (
         selectedFolder: string | Folder,
     ): Promise<void> => {
-        let isSelectedFolderFound = SharedStore.standardFolders.find(
-            (task) =>
-                task.email_address ===
-                    (SharedStore.currentAccount as Account).email_address &&
-                task.result.includes(selectedFolder),
-        );
-        if (!isSelectedFolderFound) {
-            isSelectedFolderFound = SharedStore.customFolders.find(
-                (task) =>
-                    task.email_address ===
-                        (SharedStore.currentAccount as Account).email_address &&
-                    task.result.includes(selectedFolder),
-            );
-        }
-        if (!isSelectedFolderFound) {
+        if (
+            !standardFolders.includes(selectedFolder) &&
+            !customFolders.includes(selectedFolder)
+        ) {
             showMessage({ content: "Error selected folder could not found!" });
             console.error("Error selected folder could not found!");
             return;
@@ -112,12 +100,12 @@
     enableSearch={true}
     disabled={SharedStore.currentAccount === "home"}
 >
-    {#each standardFoldersOfAccount as standardFolder}
+    {#each standardFolders as standardFolder}
         {@const [folderTag, folderName] = standardFolder.split(":")}
         <Select.Option value={folderTag}>{folderName}</Select.Option>
     {/each}
     <Select.Separator />
-    {#each customFoldersOfAccount as customFolder}
+    {#each customFolders as customFolder}
         <Select.Option value={customFolder}>
             <span>{customFolder}</span>
             <Dropdown.Root>

@@ -17,12 +17,12 @@
     let { folderName }: Props = $props();
 
     let destinationFolder = $state("");
-    let customFoldersOfAccount = $derived(
-        SharedStore.customFolders.find(
-            (acc) =>
-                acc.email_address ===
-                (SharedStore.currentAccount as Account).email_address,
-        )!.result,
+    let customFolders: string[] = $derived(
+        SharedStore.currentAccount !== "home"
+            ? SharedStore.customFolders[
+                (SharedStore.currentAccount as Account).email_address
+            ]
+            : []
     );
 
     const handleMoveFolderForm = async (e: Event): Promise<void> => {
@@ -70,7 +70,7 @@
                     onchange={handleDestinationFolder}
                     placeholder="Select Destination Folder"
                 >
-                    {#each customFoldersOfAccount as customFolder}
+                    {#each customFolders as customFolder}
                         {#if customFolder !== folderName}
                             <Select.Option value={customFolder}>
                                 {customFolder}
