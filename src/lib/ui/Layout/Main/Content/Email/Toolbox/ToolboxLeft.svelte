@@ -3,7 +3,6 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email, Folder, Mark } from "$lib/types";
     import { NOT_IMPLEMENTED_TEMPLATE } from "$lib/constants";
-    import { startsWithAnyOf } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
