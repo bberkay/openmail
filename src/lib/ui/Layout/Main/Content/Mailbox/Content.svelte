@@ -77,7 +77,7 @@
             Older: [],
         };
 
-        SharedStore.currentMailbox.emails.forEach((email: TEmail) => {
+        SharedStore.currentMailbox.emails.current.forEach((email: TEmail) => {
             const emailDate = new Date(email.date);
             emailDate.setHours(0, 0, 0, 0);
 
@@ -100,18 +100,16 @@
         return groupedEmails;
     }
 
-    function getAccountByEmail(emailOfSearchingAccount: TEmail): Account {
-        return SharedStore.accounts.find((account) => {
-            return account.email_address === SharedStore.mailboxes.find(
-                task => task.result.emails.find(email => email === emailOfSearchingAccount)
-            )!.email_address;
-        })!;
+    function getAccountByEmail(email: TEmail): Account | undefined {
+        for(const emailAddr in SharedStore.accounts) {
+            if (SharedStore.mailboxes[emailAddr].emails.current.includes(email))
+                return SharedStore.accounts[emailAddr];
+        }
+        return;
     }
 
-    function isRecentEmail(email: TEmail): boolean {
-        return !!SharedStore.recentEmails.find(
-            task => task.result.includes(email)
-        );
+    function isRecentEmail(account: Account, email: TEmail): boolean {
+        return SharedStore.recentEmails[account.email_address].includes(email);
     }
 
     const showEmailContent = async (account: Account, selectedEmail: TEmail): Promise<void> => {
@@ -169,7 +167,7 @@
         </div>
         <div class="email-group">
             {#each group[1] as email}
-                {@const account = getAccountByEmail(email)}
+                {@const account = getAccountByEmail(email)!}
                 <div
                     class="email"
                     onclick={(e) => {
@@ -192,7 +190,7 @@
                             {extractFullname(email.sender) ||
                                 extractEmailAddress(email.sender)}
                         </span>
-                        {#if isRecentEmail(email)}
+                        {#if isRecentEmail(account, email)}
                             <div class="new-message-icon">
                                 <span>New</span>
                             </div>
