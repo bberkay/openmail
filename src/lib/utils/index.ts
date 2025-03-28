@@ -1,4 +1,4 @@
-import { Size } from "./types";
+import { Folder, Size } from "$lib/types";
 
 export function createDomElement(html: string): HTMLElement {
     const template = document.createElement("template");
@@ -76,6 +76,10 @@ export function isObjEmpty(obj: Record<string, any>): boolean {
         (value) =>
             !!value === false || (Array.isArray(value) && value.length === 0),
     );
+}
+
+export function isStandardFolder(folderName: string, comparedFolder: Folder) {
+    return folderName.startsWith(comparedFolder + ":");
 }
 
 export function removeFalsyParamsAndEmptyLists(
