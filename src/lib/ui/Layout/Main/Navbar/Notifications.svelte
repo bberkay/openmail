@@ -90,17 +90,17 @@
         recentEmailReceiverAddress?: string,
         recentEmailUid?: string,
     ) => {
-        SharedStore.recentEmails.forEach((task) => {
+        for (const emailAddress in SharedStore.recentEmails) {
             if (
                 !recentEmailReceiverAddress ||
-                task.email_address === recentEmailReceiverAddress
+                emailAddress === recentEmailReceiverAddress
             ) {
-                task.result = task.result.filter(
-                    (recentEmail) =>
-                        recentEmailUid && recentEmail.uid !== recentEmailUid,
-                );
+                SharedStore.recentEmails[emailAddress] =
+                    SharedStore.recentEmails[emailAddress].filter(
+                        (email) => email.uid !== recentEmailUid,
+                    );
             }
-        });
+        }
     };
 
     let notificationsContainer: HTMLElement;
@@ -130,13 +130,9 @@
                 const receiverAccount = SharedStore.accounts.find(
                     (acc) => acc.email_address === receiverEmailAddress,
                 )!;
-                const receivedEmail = SharedStore.recentEmails
-                    .find((task) => {
-                        return (
-                            task.email_address == receiverAccount!.email_address
-                        );
-                    })!
-                    .result.find((email) => email.uid === recentEmailUid)!;
+                const receivedEmail = SharedStore.recentEmails[
+                    receiverAccount.email_address
+                ].find((email) => email.uid === recentEmailUid)!;
                 senderEmail.addEventListener("click", async () => {
                     await showCompose(receiverAccount, receivedEmail);
                 });
@@ -167,26 +163,21 @@
                 </div>
             </div>
             <div class="notifications-body">
-                {#each SharedStore.recentEmails as recentEmailTask}
-                    {#each recentEmailTask.result as recentEmail}
+                {#each Object.entries(SharedStore.recentEmails) as entry}
+                    {@const emailAddress = entry[0]}
+                    {@const recentEmails = entry[1]}
+                    {#each recentEmails as recentEmail}
                         <div
                             class="notification-item"
                             onclick={() => {
-                                showEmailContent(
-                                    recentEmailTask.email_address,
-                                    recentEmail.uid,
-                                );
+                                showEmailContent(emailAddress, recentEmail.uid);
                             }}
                             onkeydown={() => {
-                                showEmailContent(
-                                    recentEmailTask.email_address,
-                                    recentEmail.uid,
-                                );
+                                showEmailContent(emailAddress, recentEmail.uid);
                             }}
                             tabindex="0"
                             role="button"
                         >
-                            >
                             <div class="body">
                                 <span class="sender-to-receiver">
                                     <span class="uid hidden">
@@ -207,7 +198,7 @@
                                         )
                                         .replace(
                                             "{receiver_email}",
-                                            recentEmailTask.email_address,
+                                            emailAddress,
                                         )
                                         .replace("{sent_at}", recentEmail.date)
                                         .trim()}
@@ -220,14 +211,16 @@
                                 </span>
                             </div>
                             <div class="action">
+                                <!-- TODO: Make a reply and/or forward inline button -->
                                 <Button.Basic
                                     type="button"
                                     class="btn-inline"
-                                    onclick={() =>
+                                    onclick={() => {
                                         clearRecentEmails(
-                                            recentEmailTask.email_address,
+                                            emailAddress,
                                             recentEmail.uid,
-                                        )}
+                                        );
+                                    }}
                                 >
                                     <Icon name="clear" />
                                 </Button.Basic>
