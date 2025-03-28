@@ -3,7 +3,7 @@
     import Main from "$lib/ui/Layout/Main.svelte";
     import Navbar from "$lib/ui/Layout/Main/Navbar.svelte";
     import Content from "$lib/ui/Layout/Main/Content.svelte";
-    import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import Landing from "$lib/ui/Layout/Landing.svelte";
     import Register from "$lib/ui/Layout/Landing/Register.svelte";
 </script>
@@ -12,7 +12,7 @@
     <Main>
         <Navbar />
         <Content>
-            <Inbox />
+            <Mailbox />
         </Content>
     </Main>
 {:else}

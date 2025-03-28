@@ -1,6 +1,6 @@
 <script lang="ts">
-    import ToolboxLeft from "$lib/ui/Layout/Main/Content/Inbox/Toolbox/ToolboxLeft.svelte";
-    import ToolboxRight from "$lib/ui/Layout/Main/Content/Inbox/Toolbox/ToolboxRight.svelte";
+    import ToolboxLeft from "$lib/ui/Layout/Main/Content/Mailbox/Toolbox/ToolboxLeft.svelte";
+    import ToolboxRight from "$lib/ui/Layout/Main/Content/Mailbox/Toolbox/ToolboxRight.svelte";
 
     interface Props {
         emailSelection: "1:*" | string[];

@@ -11,8 +11,6 @@
     import {
         Folder,
         type Account,
-        type Email,
-        type OpenMailTaskResults,
     } from "$lib/types";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";

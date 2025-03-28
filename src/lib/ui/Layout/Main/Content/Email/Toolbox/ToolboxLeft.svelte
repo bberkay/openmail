@@ -8,7 +8,7 @@
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
-    import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import {
         backToDefault,
         showThis as showContent,
@@ -82,7 +82,7 @@
 
     const markAsUnread = async (): Promise<void> => {
         await removeMark(Mark.Seen);
-        showContent(Inbox);
+        showContent(Mailbox);
     };
 
     const copyTo = async (destinationFolder: string | Folder) => {
@@ -113,7 +113,7 @@
         }
 
         SharedStore.currentFolder = destinationFolder;
-        showContent(Inbox);
+        showContent(Mailbox);
     };
 
     const moveToArchive = async () => {
@@ -138,7 +138,7 @@
                     console.error(response.message);
                 }
 
-                showContent(Inbox);
+                showContent(Mailbox);
             },
         });
     };

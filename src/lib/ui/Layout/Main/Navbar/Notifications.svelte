@@ -8,7 +8,7 @@
     import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
-    import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
@@ -21,7 +21,7 @@
 
     const showHome = () => {
         SharedStore.currentAccount = "home";
-        showContent(Inbox);
+        showContent(Mailbox);
     };
 
     const showInbox = (receiverEmailAddress: string) => {
@@ -30,7 +30,7 @@
         );
         if (!newAccount) return;
         SharedStore.currentAccount = newAccount;
-        showContent(Inbox);
+        showContent(Mailbox);
     };
 
     async function getEmailContent(account: Account, uid: string) {

@@ -19,7 +19,7 @@
     import Collapse from "$lib/ui/Components/Collapse";
     import Form, { FormGroup } from "$lib/ui/Components/Form";
     import Badge from "$lib/ui/Components/Badge";
-    import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
@@ -159,7 +159,7 @@
             isStandardFolder(folder, Folder.Sent)
         )!;
         // TODO: Fetch sent folder
-        showContent(Inbox);
+        showContent(Mailbox);
     };
 </script>
 
