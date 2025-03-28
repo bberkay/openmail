@@ -22,12 +22,12 @@
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
     interface Props {
-        editingAccount: Account;
+        editAccount: (account: Account) => void
         onCancel: () => void
     }
 
     let {
-        editingAccount = $bindable(),
+        editAccount,
         onCancel,
     }: Props = $props();
 
@@ -221,9 +221,7 @@
                                 type="button"
                                 class="btn-inline"
                                 style="margin-right: 5px;"
-                                onclick={() => {
-                                    editingAccount = account;
-                                }}
+                                onclick={() => { editAccount(account) }}
                             >
                                 Edit
                             </Button.Basic>

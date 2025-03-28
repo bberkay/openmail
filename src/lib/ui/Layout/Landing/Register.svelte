@@ -10,6 +10,7 @@
     let editingAccount: Account | null = $state(null);
     let isListingAccount = $state(SharedStore.failedAccounts.length > 0);
 
+    const editAccount = (account: Account) => { editingAccount = account };
     const cancelListing = () => { isListingAccount = false };
     const cancelEditing = () => { editingAccount = null };
 </script>
@@ -18,9 +19,9 @@
     <Loading />
 {:else}
     {#if editingAccount}
-        <EditAccountForm editingAccount={editingAccount} onCancel={cancelEditing}/>
+        <EditAccountForm {editingAccount} onCancel={cancelEditing}/>
     {:else if isListingAccount}
-        <AccountList bind:editingAccount onCancel={cancelListing} />
+        <AccountList {editAccount} onCancel={cancelListing} />
     {:else}
         <AddAccountForm onCancel={cancelListing} />
     {/if}
