@@ -4,12 +4,14 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
-    import { show as showMessage } from "$lib/ui/Components/Message";
     import CreateFolder from "$lib/ui/Layout/Main/Navbar/Folders/CreateFolder.svelte";
     import RenameFolder from "$lib/ui/Layout/Main/Navbar/Folders/RenameFolder.svelte";
     import MoveFolder from "$lib/ui/Layout/Main/Navbar/Folders/MoveFolder.svelte";
     import DeleteFolder from "$lib/ui/Layout/Main/Navbar/Folders/DeleteFolder.svelte";
+    import Inbox from "$lib/ui/Layout/Main/Content/Inbox.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
+    import { show as showMessage } from "$lib/ui/Components/Message";
 
     const FolderOperation = {
         Create: "create",
@@ -19,16 +21,16 @@
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
             ? SharedStore.standardFolders[
-                (SharedStore.currentAccount as Account).email_address
-            ]
-            : []
+                  (SharedStore.currentAccount as Account).email_address
+              ]
+            : [],
     );
     let customFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
             ? SharedStore.customFolders[
-                (SharedStore.currentAccount as Account).email_address
-            ]
-            : []
+                  (SharedStore.currentAccount as Account).email_address
+              ]
+            : [],
     );
 
     const setCurrentFolder = async (
@@ -44,6 +46,19 @@
         }
 
         SharedStore.currentFolder = selectedFolder;
+        const response = await MailboxController.getMailboxes(
+            SharedStore.currentAccount as Account,
+            selectedFolder,
+        );
+        if (!response.success) {
+            showMessage({
+                content: "Error, folder could not fetch.",
+            });
+            console.error(response.message);
+            return;
+        }
+
+        showContent(Inbox);
     };
 
     const showCreateFolder = () => {
