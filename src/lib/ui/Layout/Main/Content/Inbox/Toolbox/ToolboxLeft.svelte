@@ -20,37 +20,28 @@
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
-    // When the `emailSelection` will be something like this:
-    // ["account1@mail.com,123", "account1@mail.com,124", "account2@mail.com,123"]
-    // the `groupedEmailSelection` will be something like this:
-    // [["account1@mail.com", "123,124"], ["account2@mail.com", "123"]]
-    // and with this way, we are minimizing api calls from this:
-    // C: A101 +STORE FLAG account1@mail.com 123
-    // C: A102 +STORE FLAG account1@mail.com 124
-    // C: A103 +STORE FLAG account1@mail.com 125
-    // to this:
-    // C: A101 +STORE FLAG account1@mail.com 123, 124
-    // C: A102 +STORE FLAG account1@mail.com 125
-    let groupedEmailSelection: [string, string][] = $state([]);
-
     let isMailboxOfCustomFolder = $derived.by(() => {
-        if (SharedStore.currentAccount == "home")
-            return false;
+        if (SharedStore.currentAccount == "home") return false;
         return !startsWithAnyOf(
             SharedStore.currentMailbox.folder,
             Object.values(Folder),
         );
     });
 
-    let selectShownCheckbox: HTMLInputElement;
-    let shownEmailUids: string[] = $state([]);
-    onMount(() => {
-        selectShownCheckbox = document.getElementById(
-            "select-shown",
-        ) as HTMLInputElement;
-    });
+    let groupedEmailSelection: [string, string][] = $derived.by(() => {
+        if (!emailSelection) return [];
 
-    function groupEmailSelectionByAccount() {
+        // When the `emailSelection` will be something like this:
+        // ["account1@mail.com,123", "account1@mail.com,124", "account2@mail.com,123"]
+        // the `groupedEmailSelection` will be something like this:
+        // [["account1@mail.com", "123,124"], ["account2@mail.com", "123"]]
+        // and with this way, we are minimizing api calls from this:
+        // C: A101 +STORE FLAG account1@mail.com 123
+        // C: A102 +STORE FLAG account1@mail.com 124
+        // C: A103 +STORE FLAG account1@mail.com 125
+        // to this:
+        // C: A101 +STORE FLAG account1@mail.com 123, 124
+        // C: A102 +STORE FLAG account1@mail.com 125
         const accountUidMap: Record<string, string> = {};
         if (emailSelection === "1:*") {
             SharedStore.accounts.forEach((account) => {
@@ -71,11 +62,20 @@
                 }
             });
         }
-        return accountUidMap;
-    }
+        return Object.entries(accountUidMap);
+    });
+
+    let selectShownCheckbox: HTMLInputElement;
+    let shownEmailUids: string[] = [];
+    onMount(() => {
+        selectShownCheckbox = document.getElementById(
+            "select-shown",
+        ) as HTMLInputElement;
+    });
 
     $effect(() => {
         if (SharedStore.currentMailbox) {
+            shownEmailUids = [];
             document
                 .querySelectorAll<HTMLInputElement>(
                     ".mailbox .email-selection-checkbox",
@@ -83,12 +83,6 @@
                 .forEach((element) => {
                     shownEmailUids.push(element.value);
                 });
-        }
-
-        if (emailSelection) {
-            groupedEmailSelection = Object.entries(
-                groupEmailSelectionByAccount(),
-            );
         }
     });
 
@@ -214,8 +208,7 @@
             SharedStore.currentAccount !== "home"
                 ? SharedStore.currentAccount
                 : SharedStore.accounts.find(
-                      (acc) =>
-                          acc.email_address === emailAddressOfSelection,
+                      (acc) => acc.email_address === emailAddressOfSelection,
                   )!,
             movingEmailUids,
             SharedStore.currentFolder,
@@ -242,8 +235,7 @@
             SharedStore.currentAccount !== "home"
                 ? SharedStore.currentAccount
                 : SharedStore.accounts.find(
-                      (acc) =>
-                          acc.email_address === emailAddressOfSelection,
+                      (acc) => acc.email_address === emailAddressOfSelection,
                   )!,
             movingEmailUids,
             SharedStore.currentFolder,
@@ -311,19 +303,20 @@
             const emailAddress = group[0];
             const uids = group[1].split(",");
             const emails = SharedStore.mailboxes[emailAddress].emails.current;
-            return uids
-                .every((uid) =>
-                    emails.find(
-                        (email) => email.uid == uid && !!email.list_unsubscribe,
-                    ),
-                );
+            return uids.every((uid) =>
+                emails.find(
+                    (email) => email.uid == uid && !!email.list_unsubscribe,
+                ),
+            );
         });
     }
 
     const reply = async () => {
         const emailAddressOfSelection = groupedEmailSelection[0][0];
         const replyingEmailUid = groupedEmailSelection[0][1];
-        const email = SharedStore.mailboxes[emailAddressOfSelection].emails.current.find(email => email.uid == replyingEmailUid)!;
+        const email = SharedStore.mailboxes[
+            emailAddressOfSelection
+        ].emails.current.find((email) => email.uid == replyingEmailUid)!;
         showContent(Compose, {
             originalMessageContext: {
                 composeType: "reply",
@@ -339,8 +332,10 @@
 
     const forward = async () => {
         const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const replyingEmailUid = groupedEmailSelection[0][1]
-        const email = SharedStore.mailboxes[emailAddressOfSelection].emails.current.find(email => email.uid == replyingEmailUid)!;
+        const replyingEmailUid = groupedEmailSelection[0][1];
+        const email = SharedStore.mailboxes[
+            emailAddressOfSelection
+        ].emails.current.find((email) => email.uid == replyingEmailUid)!;
         showContent(Compose, {
             originalMessageContext: {
                 composeType: "forward",
