@@ -8,10 +8,10 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
 
     interface Props {
-        isListingAccount: boolean;
+        onCancel: () => void;
     }
 
-    let { isListingAccount = $bindable() }: Props = $props();
+    let { onCancel }: Props = $props();
 
     const addAccount = async (e: Event): Promise<void> => {
         const form = e.target as HTMLFormElement;
@@ -65,7 +65,7 @@
             <Button.Basic
                 type="button"
                 class="btn-inline"
-                onclick={() => { isListingAccount = true; }}
+                onclick={onCancel}
             >
                 Which accounts have I added?
             </Button.Basic>

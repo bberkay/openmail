@@ -22,13 +22,13 @@
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
     interface Props {
-        isEditingAccount: Account | null;
-        isListingAccount: boolean;
+        editingAccount: Account;
+        onCancel: () => void
     }
 
     let {
-        isEditingAccount = $bindable(),
-        isListingAccount = $bindable(),
+        editingAccount = $bindable(),
+        onCancel,
     }: Props = $props();
 
     let accountSelection: string[] = $state([]);
@@ -222,7 +222,7 @@
                                 class="btn-inline"
                                 style="margin-right: 5px;"
                                 onclick={() => {
-                                    isEditingAccount = account;
+                                    editingAccount = account;
                                 }}
                             >
                                 Edit
@@ -254,9 +254,7 @@
             <Button.Basic
                 type="button"
                 class="btn-inline"
-                onclick={() => {
-                    isListingAccount = false;
-                }}
+                onclick={onCancel}
             >
                 I want to add another account.
             </Button.Basic>
