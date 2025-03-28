@@ -68,7 +68,7 @@ export interface Draft {
     rcpt_options?: string[];
 }
 
-export interface PMailbox {
+export interface PMailbox { // TODO: Find a new name for this.
     folder: string;
     emails: Email[];
     total: number;
