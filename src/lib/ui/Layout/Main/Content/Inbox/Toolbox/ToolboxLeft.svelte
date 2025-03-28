@@ -34,29 +34,12 @@
     let groupedEmailSelection: [string, string][] = $state([]);
 
     let isMailboxOfCustomFolder = $derived.by(() => {
-        if (SharedStore.currentAccount == "home") return false;
+        if (SharedStore.currentAccount == "home")
+            return false;
         return !startsWithAnyOf(
             SharedStore.currentMailbox.folder,
             Object.values(Folder),
         );
-    });
-
-    let customFoldersOfSelection = $derived.by(() => {
-        if (
-            !(
-                SharedStore.currentAccount !== "home" ||
-                groupedEmailSelection.length < 2
-            )
-        )
-            return [];
-
-        const currentEmailAddr =
-            SharedStore.currentAccount !== "home"
-                ? SharedStore.currentAccount.email_address
-                : groupedEmailSelection[0][0];
-        return SharedStore.customFolders.find(
-            (acc) => acc.email_address === currentEmailAddr,
-        )!.result;
     });
 
     let selectShownCheckbox: HTMLInputElement;
@@ -137,7 +120,7 @@
         if (emailSelection === "1:*") return false;
 
         return emailSelection.every((uid) => {
-            return SharedStore.currentMailbox.emails.find(
+            return SharedStore.currentMailbox.emails.current.find(
                 (email: Email) =>
                     email.uid == uid &&
                     Object.hasOwn(email, "flags") &&
@@ -150,7 +133,7 @@
         if (emailSelection === "1:*") return false;
 
         return emailSelection.every((uid) => {
-            return SharedStore.currentMailbox.emails.find(
+            return SharedStore.currentMailbox.emails.current.find(
                 (email: Email) =>
                     email.uid == uid &&
                     Object.hasOwn(email, "flags") &&
@@ -161,11 +144,13 @@
 
     async function markEmails(mark: string | Mark) {
         groupedEmailSelection.forEach(async (group) => {
+            const emailAddress = group[0];
+            const uids = group[1];
             const response = await MailboxController.markEmails(
                 SharedStore.accounts.find(
-                    (acc) => acc.email_address === group[0],
+                    (acc) => acc.email_address === emailAddress,
                 )!,
-                group[1],
+                uids,
                 mark,
                 SharedStore.currentFolder,
             );
@@ -180,11 +165,13 @@
 
     async function unmarkEmails(mark: string | Mark) {
         groupedEmailSelection.forEach(async (group) => {
+            const emailAddress = group[0];
+            const uids = group[1];
             const response = await MailboxController.unmarkEmails(
                 SharedStore.accounts.find(
-                    (acc) => acc.email_address === group[0],
+                    (acc) => acc.email_address === emailAddress,
                 )!,
-                group[1],
+                uids,
                 mark,
                 SharedStore.currentFolder,
             );
@@ -216,14 +203,21 @@
     const copyTo = async (
         destinationFolder: string | Folder,
     ): Promise<void> => {
+        // Since "move to" option is disabled when there is more than one
+        // current account(mostly "home"), groupedEmailSelection's length
+        // isn't going to be more than 1 so first index is enough to
+        // cover up selection.
+        const emailAddressOfSelection = groupedEmailSelection[0][0];
+        const movingEmailUids = groupedEmailSelection[0][1];
+
         const response = await MailboxController.copyEmails(
             SharedStore.currentAccount !== "home"
                 ? SharedStore.currentAccount
                 : SharedStore.accounts.find(
                       (acc) =>
-                          acc.email_address === groupedEmailSelection[0][0],
+                          acc.email_address === emailAddressOfSelection,
                   )!,
-            groupedEmailSelection[0][1],
+            movingEmailUids,
             SharedStore.currentFolder,
             destinationFolder,
         );
@@ -237,14 +231,21 @@
     const moveTo = async (
         destinationFolder: string | Folder,
     ): Promise<void> => {
+        // Since "move to" option is disabled when there is more than one
+        // current account(mostly "home"), groupedEmailSelection's length
+        // isn't going to be more than 1 so first index is enough to
+        // cover up selection.
+        const emailAddressOfSelection = groupedEmailSelection[0][0];
+        const movingEmailUids = groupedEmailSelection[0][1];
+
         const response = await MailboxController.moveEmails(
             SharedStore.currentAccount !== "home"
                 ? SharedStore.currentAccount
                 : SharedStore.accounts.find(
                       (acc) =>
-                          acc.email_address === groupedEmailSelection[0][0],
+                          acc.email_address === emailAddressOfSelection,
                   )!,
-            groupedEmailSelection[0][1],
+            movingEmailUids,
             SharedStore.currentFolder,
             destinationFolder,
         );
@@ -258,11 +259,13 @@
 
     const moveToArchive = async (): Promise<void> => {
         groupedEmailSelection.forEach(async (group) => {
+            const emailAddress = group[0];
+            const emailUids = group[1];
             const response = await MailboxController.moveEmails(
                 SharedStore.accounts.find(
-                    (acc) => acc.email_address === group[0],
+                    (acc) => acc.email_address === emailAddress,
                 )!,
-                group[1],
+                emailUids,
                 SharedStore.currentFolder,
                 Folder.Archive,
             );
@@ -283,11 +286,13 @@
             onConfirmText: "Yes, delete.",
             onConfirm: async (e: Event) => {
                 groupedEmailSelection.forEach(async (group) => {
+                    const emailAddress = group[0];
+                    const uids = group[1];
                     const response = await MailboxController.deleteEmails(
                         SharedStore.accounts.find(
-                            (acc) => acc.email_address === group[0],
+                            (acc) => acc.email_address === emailAddress,
                         )!,
-                        group[1],
+                        uids,
                         SharedStore.currentFolder,
                     );
                     if (!response.success) {
@@ -303,11 +308,10 @@
 
     function isSelectedEmailsHaveUnsubscribeOption() {
         return groupedEmailSelection.every((group) => {
-            const emails = SharedStore.mailboxes.find(
-                (mailbox) => mailbox.email_address == group[0],
-            )!.result.emails;
-            return group[1]
-                .split(",")
+            const emailAddress = group[0];
+            const uids = group[1].split(",");
+            const emails = SharedStore.mailboxes[emailAddress].emails.current;
+            return uids
                 .every((uid) =>
                     emails.find(
                         (email) => email.uid == uid && !!email.list_unsubscribe,
@@ -317,15 +321,9 @@
     }
 
     const reply = async () => {
-        const email = SharedStore.mailboxes
-            .find(
-                (mailbox) =>
-                    mailbox.email_address == groupedEmailSelection[0][0],
-            )!
-            .result.emails.find(
-                (email) => email.uid == groupedEmailSelection[0][1],
-            )!;
-
+        const emailAddressOfSelection = groupedEmailSelection[0][0];
+        const replyingEmailUid = groupedEmailSelection[0][1];
+        const email = SharedStore.mailboxes[emailAddressOfSelection].emails.current.find(email => email.uid == replyingEmailUid)!;
         showContent(Compose, {
             originalMessageContext: {
                 composeType: "reply",
@@ -340,15 +338,9 @@
     };
 
     const forward = async () => {
-        const email = SharedStore.mailboxes
-            .find(
-                (mailbox) =>
-                    mailbox.email_address == groupedEmailSelection[0][0],
-            )!
-            .result.emails.find(
-                (email) => email.uid == groupedEmailSelection[0][1],
-            )!;
-
+        const emailAddressOfSelection = groupedEmailSelection[0][0];
+        const replyingEmailUid = groupedEmailSelection[0][1]
+        const email = SharedStore.mailboxes[emailAddressOfSelection].emails.current.find(email => email.uid == replyingEmailUid)!;
         showContent(Compose, {
             originalMessageContext: {
                 composeType: "forward",
@@ -500,44 +492,41 @@
             </Button.Action>
         </div>
         {#if groupedEmailSelection.length < 2}
+            {@const emailAddress = groupedEmailSelection[0][0]}
             <div class="tool-separator"></div>
             <div class="tool">
-                {#if customFoldersOfSelection}
-                    <Select.Root onchange={copyTo} placeholder="Copy To">
-                        {#if isMailboxOfCustomFolder}
-                            <!-- Add inbox option if email is in custom folder -->
-                            <Select.Option value={Folder.Inbox}>
-                                {Folder.Inbox}
+                <Select.Root onchange={copyTo} placeholder="Copy To">
+                    {#if isMailboxOfCustomFolder}
+                        <!-- Add inbox option if email is in custom folder -->
+                        <Select.Option value={Folder.Inbox}>
+                            {Folder.Inbox}
+                        </Select.Option>
+                    {/if}
+                    {#each SharedStore.customFolders[emailAddress] as customFolder}
+                        {#if SharedStore.currentAccount === "home" || customFolder !== SharedStore.currentMailbox.folder}
+                            <Select.Option value={customFolder}>
+                                {customFolder}
                             </Select.Option>
                         {/if}
-                        {#each customFoldersOfSelection as customFolder}
-                            {#if SharedStore.currentAccount === "home" || customFolder !== SharedStore.currentMailbox.folder}
-                                <Select.Option value={customFolder}>
-                                    {customFolder}
-                                </Select.Option>
-                            {/if}
-                        {/each}
-                    </Select.Root>
-                {/if}
+                    {/each}
+                </Select.Root>
             </div>
             <div class="tool">
-                {#if customFoldersOfSelection}
-                    <Select.Root onchange={moveTo} placeholder="Move To">
-                        {#if isMailboxOfCustomFolder}
-                            <!-- Add inbox option if email is in custom folder -->
-                            <Select.Option value={Folder.Inbox}>
-                                {Folder.Inbox}
+                <Select.Root onchange={moveTo} placeholder="Move To">
+                    {#if isMailboxOfCustomFolder}
+                        <!-- Add inbox option if email is in custom folder -->
+                        <Select.Option value={Folder.Inbox}>
+                            {Folder.Inbox}
+                        </Select.Option>
+                    {/if}
+                    {#each SharedStore.customFolders[emailAddress] as customFolder}
+                        {#if SharedStore.currentAccount === "home" || customFolder !== SharedStore.currentMailbox.folder}
+                            <Select.Option value={customFolder}>
+                                {customFolder}
                             </Select.Option>
                         {/if}
-                        {#each customFoldersOfSelection as customFolder}
-                            {#if SharedStore.currentAccount === "home" || customFolder !== SharedStore.currentMailbox.folder}
-                                <Select.Option value={customFolder}>
-                                    {customFolder}
-                                </Select.Option>
-                            {/if}
-                        {/each}
-                    </Select.Root>
-                {/if}
+                    {/each}
+                </Select.Root>
             </div>
         {/if}
     {:else}
