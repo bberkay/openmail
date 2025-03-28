@@ -109,3 +109,9 @@ export enum Folder {
     Junk = "Junk",
     Trash = "Trash",
 }
+
+export enum Size {
+    "Bytes" = "Bytes",
+    "KB" = "KB",
+    "MB" = "MB"
+}

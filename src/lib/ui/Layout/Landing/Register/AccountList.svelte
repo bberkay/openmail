@@ -20,6 +20,7 @@
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
+    import { isStandardFolder } from '$lib/utils';
 
     interface Props {
         editAccount: (account: Account) => void
@@ -113,6 +114,10 @@
                 const permission = await requestPermission();
                 permissionGranted = permission === "granted";
             }
+
+            SharedStore.accounts.forEach((account) => {
+                SharedStore.recentEmails[account.email_address] = [];
+            });
         };
 
         ws.onmessage = (e: MessageEvent) => {
@@ -124,24 +129,23 @@
                 });
             }
 
-            (e.data as typeof SharedStore.recentEmails).forEach((account) => {
+            Object.entries(e.data as typeof SharedStore.recentEmails).forEach((entry) => {
+                const emailAddr = entry[0];
+                const recentEmails = entry[1];
+
                 // Add email to mailbox
-                const mailbox = SharedStore.mailboxes.find(
-                    (current) =>
-                        current.email_address === account.email_address,
-                );
-                if (mailbox) {
-                    mailbox.result.emails =
-                        mailbox.result.emails.concat(account.result);
+                if (Object.hasOwn(SharedStore.mailboxes, emailAddr)
+                    && isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)) {
+                    const recentEmailsLength = recentEmails.length;
+                    SharedStore.mailboxes[emailAddr].emails.current.unshift(...recentEmails);
+                    const overflowEmails = SharedStore.mailboxes[emailAddr].emails.current.splice(-1 * recentEmailsLength);
+                    SharedStore.mailboxes[emailAddr].emails.next.unshift(...overflowEmails);
+                    SharedStore.mailboxes[emailAddr].emails.next.splice(-1 * recentEmailsLength, recentEmailsLength);
                 }
+
                 // and recent emails.
-                const recentEmails = SharedStore.recentEmails.find(
-                    (current) =>
-                        current.email_address === account.email_address,
-                );
-                if (recentEmails) {
-                    recentEmails.result =
-                        recentEmails.result.concat(account.result);
+                if (Object.hasOwn(SharedStore.recentEmails, emailAddr)) {
+                    SharedStore.recentEmails[emailAddr].push(...recentEmails);
                 }
             });
         };
