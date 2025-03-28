@@ -8,7 +8,7 @@
     import Register from "$lib/ui/Layout/Landing/Register.svelte";
 </script>
 
-{#if SharedStore.mailboxes.length > 0}
+{#if Object.keys(SharedStore.mailboxes).length > 0}
     <Main>
         <Navbar />
         <Content>
