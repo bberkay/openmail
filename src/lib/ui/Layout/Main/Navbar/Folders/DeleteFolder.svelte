@@ -21,13 +21,13 @@
             'input[name="folder_name"]',
         )!.value;
         const subfolders = target.querySelector<HTMLInputElement>(
-            'input[name="subfolders"]',
+            'input[name="delete_subfolders"]',
         )!.checked;
 
         const response = await MailboxController.deleteFolder(
             SharedStore.currentAccount as Account,
             folderName,
-            subfolders,
+            delete_subfolders,
         );
         if (!response.success) {
             showMessage({ content: "Error while deleting folder." });
@@ -56,7 +56,7 @@
                 <label for="subfolders">Delete Subfolders</label>
                 <Input.Basic
                     type="checkbox"
-                    name="subfolders"
+                    name="delete_subfolders"
                     id="subfolders"
                     required
                 />

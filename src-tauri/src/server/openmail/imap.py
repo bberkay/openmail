@@ -2258,7 +2258,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         )
 
     @handle_idle
-    def delete_folder(self, folder_name: str, subfolders: bool = False) -> IMAPCommandResult:
+    def delete_folder(self, folder_name: str, delete_subfolders: bool = False) -> IMAPCommandResult:
         """
         Delete an existing email folder.
 
@@ -2280,7 +2280,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         self._check_folder_names(folder_name)
 
-        if subfolders:
+        if delete_subfolders:
             for subfolder in self.get_folders(folder_name):
                 self.delete_folder(subfolder, True)
 

@@ -14,32 +14,29 @@ import {
     type Email,
     type SearchCriteria,
 } from "$lib/types";
-import { removeWhitespaces } from "$lib/utils";
+import { isChildFolder, isExactFolderMatch, isFolderInPath, isStandardFolder, isSubfolderOrMatch, isTargetFolder, removeWhitespaces } from "$lib/utils";
 
 export const MAILBOX_LENGTH = 10;
 
 export class MailboxController {
-    private static _get_accounts(
-        accounts: Account | Account[] | string[] | null = null,
+    private static _extractAndJoinEmails(
+        accountsOrEmailAddresses: Account | Account[] | string[],
     ): string {
-        if (accounts && !Array.isArray(accounts)) {
-            accounts = [accounts];
+        let accounts: (Account | string)[] = [];
+        if (!Array.isArray(accountsOrEmailAddresses)) {
+            accounts = [accountsOrEmailAddresses];
         }
 
-        return (
-            accounts && accounts.length > 0 ? accounts : SharedStore.accounts
-        )
-            .map((account) => {
-                return typeof account !== "string"
-                    ? account.email_address
-                    : account;
-            })
+        return accounts
+            .map((account) =>
+                typeof account !== "string" ? account.email_address : account,
+            )
             .join(",");
     }
 
     public static async init(): Promise<BaseResponse> {
         let response;
-        response = await MailboxController.getFolders();
+        response = await MailboxController.getFolders(SharedStore.accounts);
         if (!response.success) {
             return {
                 success: response.success,
@@ -50,9 +47,7 @@ export class MailboxController {
         response = await MailboxController.getMailboxes(
             SharedStore.accounts,
             Folder.Inbox,
-            {
-                excluded_flags: [Mark.Seen],
-            },
+            //{excluded_flags: [Mark.Seen]},
         );
         return {
             success: response.success,
@@ -63,43 +58,36 @@ export class MailboxController {
     }
 
     public static async getFolders(
-        accounts: Account | Account[] | null = null,
+        accounts: Account | Account[],
     ): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.GET_FOLDERS,
             {
                 pathParams: {
-                    accounts: MailboxController._get_accounts(accounts),
+                    accounts: MailboxController._extractAndJoinEmails(accounts),
                 },
             },
         );
 
         if (response.success && response.data) {
-            const standardFolderList = Object.values(Folder).map(
-                (folder) => folder.trim() + ":",
-            );
-
             // Extract standard and custom folders from data
             // and add them to SharedStore
             for (const email_address in response.data) {
-                let standardFolders =
-                    SharedStore.standardFolders[email_address];
-                if (!standardFolders) {
-                    SharedStore.standardFolders[email_address] = [];
+                let folders = SharedStore.folders[email_address];
+                if (!folders) {
+                    SharedStore.folders[email_address] = {
+                        standard: [],
+                        custom: [],
+                    };
                 }
-
-                SharedStore.standardFolders[email_address] = response.data[
-                    email_address
-                ].filter((folder) => {
-                    const isStandardFolder = standardFolderList.some(
-                        (standardFolder) =>
-                            folder.trim().startsWith(standardFolder),
-                    );
-                    if (isStandardFolder) {
-                        SharedStore.standardFolders[email_address].push(folder);
+                response.data[email_address].forEach((folder) => {
+                    if (isStandardFolder(folder)) {
+                        SharedStore.folders[email_address].standard.push(
+                            folder,
+                        );
                     } else {
-                        SharedStore.customFolders[email_address].push(folder);
+                        SharedStore.folders[email_address].custom.push(folder);
                     }
                 });
             }
@@ -112,7 +100,7 @@ export class MailboxController {
     }
 
     public static async getMailboxes(
-        accounts: Account | Account[] | null = null,
+        accounts: Account | Account[],
         folder?: Folder | string,
         searchCriteria?: SearchCriteria | string,
         offsetStart?: number,
@@ -123,7 +111,7 @@ export class MailboxController {
             GetRoutes.GET_MAILBOXES,
             {
                 pathParams: {
-                    accounts: MailboxController._get_accounts(accounts),
+                    accounts: MailboxController._extractAndJoinEmails(accounts),
                 },
                 queryParams: {
                     folder: folder,
@@ -138,7 +126,7 @@ export class MailboxController {
         );
 
         if (response.success && response.data) {
-            if (accounts && SharedStore.mailboxes.length > 0) {
+            if (SharedStore.mailboxes.length > 0) {
                 response.data.forEach((account) => {
                     const targetMailbox = SharedStore.mailboxes.find(
                         (current) =>
@@ -169,7 +157,7 @@ export class MailboxController {
             GetRoutes.PAGINATE_MAILBOXES,
             {
                 pathParams: {
-                    accounts: MailboxController._get_accounts(accounts),
+                    accounts: MailboxController._extractAndJoinEmails(accounts),
                     offset_start: Math.max(1, offsetStart ?? 1),
                     offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH),
                 },
@@ -204,7 +192,7 @@ export class MailboxController {
             GetRoutes.GET_EMAIL_CONTENT,
             {
                 pathParams: {
-                    account: MailboxController._get_accounts(account),
+                    account: MailboxController._extractAndJoinEmails(account),
                     folder: folder,
                     uid: uid,
                 },
@@ -224,7 +212,7 @@ export class MailboxController {
             GetRoutes.DOWNLOAD_ATTACHMENT,
             {
                 pathParams: {
-                    account: MailboxController._get_accounts(account),
+                    account: MailboxController._extractAndJoinEmails(account),
                     folder: folder,
                     uid: uid,
                     name: name,
@@ -285,7 +273,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.DELETE_EMAIL,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 sequence_set: removeWhitespaces(selection),
                 folder: folder,
             },
@@ -295,8 +283,7 @@ export class MailboxController {
             // selection will be either 1:* or uids separated with comma
             // something like 1,2,3,4 but not 2:* or 1,3:*:5
             if (
-                SharedStore.mailboxes[account.email_address].folder ===
-                folder
+                SharedStore.mailboxes[account.email_address].folder === folder
             ) {
                 if (selection !== "1:*") {
                     SharedStore.mailboxes[
@@ -331,7 +318,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.MOVE_EMAIL,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 sequence_set: removeWhitespaces(selection),
                 source_folder: sourceFolder,
                 destination_folder: destinationFolder,
@@ -378,7 +365,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.COPY_EMAIL,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 sequence_set: removeWhitespaces(selection),
                 source_folder: sourceFolder,
                 destination_folder: destinationFolder,
@@ -401,7 +388,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.MARK_EMAIL,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 mark: mark,
                 sequence_set: removeWhitespaces(selection),
                 folder: folder,
@@ -439,7 +426,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.UNMARK_EMAIL,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 mark: mark,
                 sequence_set: removeWhitespaces(selection),
                 folder: folder,
@@ -478,14 +465,14 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.CREATE_FOLDER,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 folder_name: folderName,
                 parent_folder: parentFolder,
             },
         );
 
         if (response.success) {
-            SharedStore.customFolders[account.email_address].push(
+            SharedStore.folders[account.email_address].custom.push(
                 parentFolder ? `${parentFolder}/${folderName}` : folderName,
             );
         }
@@ -505,15 +492,15 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.MOVE_FOLDER,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 folder_name: folderName,
                 destination_folder: destinationFolder,
             },
         );
 
         if (response.success) {
-            SharedStore.customFolders[account.email_address] =
-                SharedStore.customFolders[account.email_address].filter(
+            SharedStore.folders[account.email_address].custom =
+                SharedStore.folders[account.email_address].custom.filter(
                     (customFolder) => customFolder !== folderName,
                 );
 
@@ -522,13 +509,13 @@ export class MailboxController {
                 const tempLastIndex = folderName.lastIndexOf("/");
                 const parentFolder = folderName.slice(0, tempLastIndex);
                 if (
-                    SharedStore.customFolders[account.email_address].includes(
+                    SharedStore.folders[account.email_address].custom.includes(
                         parentFolder,
                     )
                 ) {
                     newFolderPath = `${destinationFolder}/${folderName.slice(tempLastIndex + 1)}`;
                 }
-                SharedStore.customFolders[account.email_address].push(
+                SharedStore.folders[account.email_address].custom.push(
                     newFolderPath,
                 );
             }
@@ -549,23 +536,27 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.RENAME_FOLDER,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 folder_name: folderPath,
                 new_folder_name: newFolderName,
             },
         );
 
         if (response.success) {
-            SharedStore.customFolders[account.email_address].map(
-                (customFolder) => {
-                    return customFolder.replace(
-                        folderPath.includes("/")
-                            ? folderPath.slice(folderPath.lastIndexOf("/") + 1)
-                            : folderPath,
-                        newFolderName,
-                    );
-                },
+            const oldFolderName = folderPath.includes("/")
+                ? folderPath.slice(folderPath.lastIndexOf("/") + 1)
+                : folderPath;
+
+            SharedStore.folders[account.email_address].custom.map(
+                (customFolder) => customFolder.replace(oldFolderName, newFolderName)
             );
+
+            if (
+                SharedStore.mailboxes[account.email_address].folder ===
+                oldFolderName
+            ) {
+                SharedStore.mailboxes[account.email_address].folder = SharedStore.mailboxes[account.email_address].folder.replace(oldFolderName, newFolderName);
+            }
         }
 
         return {
@@ -577,25 +568,35 @@ export class MailboxController {
     public static async deleteFolder(
         account: Account,
         folderName: string,
-        subfolders: boolean,
+        delete_subfolders: boolean,
     ): Promise<BaseResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.DELETE_FOLDER,
             {
-                account: MailboxController._get_accounts(account),
+                account: MailboxController._extractAndJoinEmails(account),
                 folder_name: folderName,
-                subfolders: subfolders,
+                delete_subfolders: delete_subfolders,
             },
         );
 
         if (response.success) {
-            SharedStore.customFolders[account.email_address] =
-                SharedStore.customFolders[account.email_address].filter(
-                    (customFolder) =>
-                        (customFolder !== folderName && !subfolders) ||
-                        !customFolder.includes(folderName),
-                );
+            SharedStore.folders[account.email_address].custom =
+                SharedStore.folders[account.email_address].custom.filter((customFolderPath) => {
+                    if (isExactFolderMatch(customFolderPath, folderName)) {
+                        return false;
+                    } else if (isSubfolderOrMatch(customFolderPath, folderName)) {
+                        return !delete_subfolders;
+                    }
+                });
+
+            if (isSubfolderOrMatch(SharedStore.mailboxes[account.email_address].folder, folderName)) {
+                SharedStore.mailboxes[account.email_address] = {
+                    folder: "",
+                    emails: { prev: [], current: [], next: [] },
+                    total: 0,
+                };
+            }
         }
 
         return {

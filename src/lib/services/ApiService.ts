@@ -169,7 +169,7 @@ interface PostBody {
     [PostRoutes.DELETE_FOLDER]: {
         account: string;
         folder_name: string;
-        subfolders: boolean;
+        delete_subfolders: boolean;
     };
 }
 

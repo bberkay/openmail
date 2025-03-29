@@ -1,4 +1,5 @@
 import { Folder, Size } from "$lib/types";
+import * as path from "path";
 
 export function createDomElement(html: string): HTMLElement {
     const template = document.createElement("template");
@@ -55,8 +56,8 @@ export function findMatchingIndex<T extends Record<string, any>>(
     );
 }
 
-export function combine(strA: string, strB: any): string {
-    return strA + (strB ? " " + strB : "");
+export function combine(...strings: any[]): string {
+    return strings.filter((str) => str !== undefined && str !== null).join(" ");
 }
 
 export function generateRandomId(): string {
@@ -74,12 +75,92 @@ export function isObjEmpty(obj: Record<string, any>): boolean {
     );
 }
 
-export function isStandardFolder(folderName: string, comparedFolder: Folder) {
-    return folderName.startsWith(comparedFolder + ":");
+export function isStandardFolder(
+    folderName: string,
+    targetStandardFolder?: Folder,
+) {
+    return (
+        targetStandardFolder ? [targetStandardFolder] : Object.values(Folder)
+    ).some((standardFolder) => folderName.startsWith(standardFolder + ":"));
 }
 
 export function isCustomFolder(folder: string): boolean {
-    return !Object.values(Folder).some((standardFolder) => isStandardFolder(folder, standardFolder));
+    return !isStandardFolder(folder);
+}
+
+/**
+ * Checks if the given folder name is the path itself or a subfolder of the path
+ * @param {string} folderPath - The main folder path to check
+ * @param {string} folderName - The folder name to search for (full path or just folder name)
+ * @returns {boolean} - Returns true if folderName is part of folderPath, false otherwise
+ */
+export function isSubfolderOrMatch(folderPath: string, folderName: string): boolean {
+    const normalizedPath = path.normalize(folderPath);
+
+    if (folderName.includes(path.sep)) {
+        const normalizedName = path.normalize(folderName);
+        return (
+            normalizedPath === normalizedName ||
+            normalizedPath.startsWith(normalizedName + path.sep)
+        );
+    }
+
+    const parts = normalizedPath.split(path.sep);
+    return parts.includes(folderName);
+}
+
+/**
+ * Checks if the given folder name exactly matches the last part of the path
+ * @param {string} folderPath - The folder path to check
+ * @param {string} folderName - The folder name to check (full path or just folder name)
+ * @returns {boolean} - Returns true if there's an exact match, false otherwise
+ */
+export function isExactFolderMatch(folderPath: string, folderName: string): boolean {
+    const normalizedPath = path.normalize(folderPath);
+
+    if (folderName.includes(path.sep)) {
+        const normalizedName = path.normalize(folderName);
+        return normalizedPath === normalizedName;
+    }
+
+    const basename = path.basename(normalizedPath);
+    return basename === folderName;
+}
+
+/**
+ * Removes the specified folder from the given path
+ * @param {string} folderPath - The folder path to process
+ * @param {string} folderName - The folder name to remove (full path or just folder name)
+ * @returns {string} - The path after removing folderName
+ */
+export function removeFromPath(folderPath: string, folderName: string): string {
+    const normalizedPath = path.normalize(folderPath);
+
+    if (folderName.includes(path.sep)) {
+        const normalizedName = path.normalize(folderName);
+
+        if (normalizedPath === normalizedName) {
+            return "";
+        }
+
+        if (normalizedPath.startsWith(normalizedName + path.sep)) {
+            return normalizedPath.substring(
+                normalizedName.length + path.sep.length,
+            );
+        }
+
+        return normalizedPath;
+    }
+
+    const parts = normalizedPath.split(path.sep);
+    const index = parts.indexOf(folderName);
+
+    if (index === -1) {
+        return normalizedPath;
+    }
+
+    parts.splice(index, 1);
+    return parts.join(path.sep);
 }
 
 export function removeFalsyParamsAndEmptyLists(
