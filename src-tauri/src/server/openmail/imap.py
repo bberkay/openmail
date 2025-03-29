@@ -1062,6 +1062,46 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
 
+    def _check_folder_names(self, folders: str | List[str], raise_error: bool = True) -> bool:
+        """
+        Check if a folder name(s) is valid.
+
+        Args:
+            folders (str | List[str]): Folder name or list of folder names
+            raise_error (bool, optional): If True, raise an error if the folder name is invalid.
+                                          Default is True
+
+        Returns:
+            bool: True if folder name is valid, False otherwise
+
+        Example:
+            >>> self._check_folder_names("INBOX")
+            True
+            >>> self._check_folder_names(["INBOX", "Trash"])
+            True
+            >>> self._check_folder_names("")
+            raises IMAPManagerException
+            >>> self._check_folder_names("INBOX", raise_error=False)
+            False
+
+        Raises:
+            IMAPManagerException: If the folder name is invalid and raise_error is True
+        """
+        if isinstance(folders, str):
+            folders = [folders]
+
+        for folder_name in folders:
+            if not folder_name:
+                continue
+
+            folder_name_length = len(folder_name)
+            if folder_name is None or folder_name == "" or folder_name_length > MAX_FOLDER_NAME_LENGTH or folder_name_length < 1:
+                if raise_error:
+                    raise IMAPManagerException(f"Invalid folder name: `{folder_name}`")
+                return False
+
+        return True
+
     def _extract_folder_name(self, folder: str | bytes, /, tagged: bool = False) -> str:
         """
         Extract a folder name from a byte string returned by an IMAP server.
@@ -1102,9 +1142,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             if tagged and folder_tag:
                 folder_tag = folder_tag.lower()
-                if folder_name.lower() == Folder.Inbox.lower():
-                    folder_tag = Folder.Inbox.lower()
-                    folder_name = folder_name.capitalize()
 
                 # Add folder tag to beginning of the folder name like if
                 # folder includes any. For example if folder is something like
@@ -1113,52 +1150,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 # can recognize the folder in a way that is not affected by any
                 # language or different spelling.
                 for standard_folder in FOLDER_LIST:
-                    if standard_folder.lower() in folder_tag:
+                    standard_folder = standard_folder.lower()
+                    if standard_folder in folder_tag or standard_folder == folder_name.lower():
                         folder_name = f"{standard_folder.capitalize()}:{folder_name}"
 
             return folder_name
         except Exception as e:
             raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
-
-    def _check_folder_names(self, folders: str | List[str], raise_error: bool = True) -> bool:
-        """
-        Check if a folder name(s) is valid.
-
-        Args:
-            folders (str | List[str]): Folder name or list of folder names
-            raise_error (bool, optional): If True, raise an error if the folder name is invalid.
-                                          Default is True
-
-        Returns:
-            bool: True if folder name is valid, False otherwise
-
-        Example:
-            >>> self._check_folder_names("INBOX")
-            True
-            >>> self._check_folder_names(["INBOX", "Trash"])
-            True
-            >>> self._check_folder_names("")
-            raises IMAPManagerException
-            >>> self._check_folder_names("INBOX", raise_error=False)
-            False
-
-        Raises:
-            IMAPManagerException: If the folder name is invalid and raise_error is True
-        """
-        if isinstance(folders, str):
-            folders = [folders]
-
-        for folder_name in folders:
-            if not folder_name:
-                continue
-
-            folder_name_length = len(folder_name)
-            if folder_name is None or folder_name == "" or folder_name_length > MAX_FOLDER_NAME_LENGTH or folder_name_length < 1:
-                if raise_error:
-                    raise IMAPManagerException(f"Invalid folder name: `{folder_name}`")
-                return False
-
-        return True
 
     @handle_idle
     def get_folders(self, folder_name: str | None = None, /, tagged: bool = False) -> List[str]:
