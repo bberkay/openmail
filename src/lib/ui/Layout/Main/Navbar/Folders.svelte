@@ -36,26 +36,22 @@
     const setCurrentFolder = async (
         selectedFolder: string | Folder,
     ): Promise<void> => {
-        if (
-            !standardFolders.includes(selectedFolder) &&
-            !customFolders.includes(selectedFolder)
-        ) {
-            showMessage({ content: "Error selected folder could not found!" });
-            console.error("Error selected folder could not found!");
-            return;
-        }
+        if (SharedStore.currentMailbox.folder !== selectedFolder) {
+            if (SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address].folder !== selectedFolder) {
+                const response = await MailboxController.getMailboxes(
+                    SharedStore.currentAccount as Account,
+                    selectedFolder,
+                );
+                if (!response.success) {
+                    showMessage({
+                        content: "Error, folder could not fetch.",
+                    });
+                    console.error(response.message);
+                    return;
+                }
+            }
 
-        SharedStore.currentFolder = selectedFolder;
-        const response = await MailboxController.getMailboxes(
-            SharedStore.currentAccount as Account,
-            selectedFolder,
-        );
-        if (!response.success) {
-            showMessage({
-                content: "Error, folder could not fetch.",
-            });
-            console.error(response.message);
-            return;
+            SharedStore.currentMailbox = SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address];
         }
 
         showContent(Mailbox);
@@ -63,22 +59,6 @@
 
     const showCreateFolder = () => {
         showModal(CreateFolder);
-    };
-
-    const showCreateSubfolder = (parentFolderName: string) => {
-        showModal(CreateFolder, { parentFolderName });
-    };
-
-    const showRenameFolder = (folderName: string) => {
-        showModal(RenameFolder, { folderName });
-    };
-
-    const showMoveFolder = (folderName: string) => {
-        showModal(MoveFolder, { folderName });
-    };
-
-    const showDeleteFolder = (folderName: string) => {
-        showModal(DeleteFolder, { folderName });
     };
 
     const refreshFolders = async () => {
@@ -110,7 +90,7 @@
 
 <Select.Root
     onchange={handleOperation}
-    value={SharedStore.currentFolder}
+    value={SharedStore.currentMailbox.folder}
     placeholder="Folder"
     enableSearch={true}
     disabled={SharedStore.currentAccount === "home"}
@@ -120,6 +100,9 @@
         <Select.Option value={folderTag}>{folderName}</Select.Option>
     {/each}
     <Select.Separator />
+    <Select.Option value={FolderOperation.Refresh}>Refresh folders</Select.Option>
+    <Select.Option value={FolderOperation.Create}>Create Folder</Select.Option>
+    <Select.Separator />
     {#each customFolders as customFolder}
         <Select.Option value={customFolder}>
             <span>{customFolder}</span>
@@ -127,20 +110,22 @@
                 <Dropdown.Toggle>⋮</Dropdown.Toggle>
                 <Dropdown.Content>
                     <Dropdown.Item
-                        onclick={() => showCreateSubfolder(customFolder)}
+                        onclick={() => showModal(CreateFolder, { parentFolderName: customFolder })}
                     >
                         Create Subfolder
                     </Dropdown.Item>
                     <Dropdown.Item
-                        onclick={() => showRenameFolder(customFolder)}
+                        onclick={() => showModal(RenameFolder, { folderName: customFolder })}
                     >
                         Rename Folder
                     </Dropdown.Item>
-                    <Dropdown.Item onclick={() => showMoveFolder(customFolder)}>
+                    <Dropdown.Item
+                        onclick={() => showModal(MoveFolder, { folderName: customFolder })}
+                    >
                         Move Folder
                     </Dropdown.Item>
                     <Dropdown.Item
-                        onclick={() => showDeleteFolder(customFolder)}
+                        onclick={() => showModal(DeleteFolder, { folderName: customFolder })}
                     >
                         Delete Folder
                     </Dropdown.Item>
@@ -148,9 +133,4 @@
             </Dropdown.Root>
         </Select.Option>
     {/each}
-    <Select.Separator />
-    <Select.Option value={FolderOperation.Create}>Create Folder</Select.Option>
-    <Select.Option value={FolderOperation.Refresh}>
-        Refresh folders
-    </Select.Option>
 </Select.Root>

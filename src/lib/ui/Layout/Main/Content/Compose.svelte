@@ -2,7 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { extractEmailAddress, isStandardFolder } from "$lib/utils";
     import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from "$lib/constants";
-    import { Folder } from "$lib/types";
+    import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onMount } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
@@ -127,38 +127,52 @@
         formData.set("bcc", bcc.join(","));
         formData.set("body", body.getHTMLContent());
 
-        let response;
+        let sentResponse;
         if (originalMessageContext) {
             if (originalMessageContext.composeType === "reply") {
-                response = await MailboxController.replyEmail(
+                sentResponse = await MailboxController.replyEmail(
                     formData,
                     originalMessageContext.originalMessageId,
                 );
             } else {
-                response = await MailboxController.forwardEmail(
+                sentResponse = await MailboxController.forwardEmail(
                     formData,
                     originalMessageContext.originalMessageId,
                 );
             }
         } else {
-            response = await MailboxController.sendEmail(formData);
+            sentResponse = await MailboxController.sendEmail(formData);
         }
 
-        if (!response.success) {
+        if (!sentResponse.success) {
             showMessage({ content: "Error, email could not sent." });
-            console.error(response!.message);
+            console.error(sentResponse!.message);
             return;
         }
 
         body.clear();
 
         // Show first sender's Folder.Sent mailbox.
-        SharedStore.currentFolder = SharedStore.standardFolders[
+        const sentFolderOfAccount = SharedStore.standardFolders[
             senders[0]
         ].find((folder: string) =>
             isStandardFolder(folder, Folder.Sent)
         )!;
-        // TODO: Fetch sent folder
+
+        if (SharedStore.currentMailbox.folder !== sentFolderOfAccount) {
+            const response = await MailboxController.getMailboxes(
+                (SharedStore.currentAccount as Account),
+                sentFolderOfAccount
+            );
+
+            if (!response.success) {
+                showMessage({content: "Failed to retrieve the folder. Please try again"});
+                console.error(response.message);
+                return;
+            }
+        }
+
+        SharedStore.currentMailbox = SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address];
         showContent(Mailbox);
     };
 </script>
