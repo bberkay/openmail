@@ -19,8 +19,7 @@
     const setCurrentAccount = async (
         emailAddressOrHome: "home" | string,
     ): Promise<void> => {
-        SharedStore.currentFolder = Folder.Inbox;
-        SharedStore.currentAccount =
+        const newAccount =
             emailAddressOrHome === "home"
                 ? emailAddressOrHome
                 : SharedStore.accounts.find(
@@ -28,13 +27,18 @@
                           account.email_address === emailAddressOrHome,
                   )!;
 
+        if (SharedStore.currentAccount === newAccount)
+            return;
+
+        SharedStore.currentAccount = newAccount;
+
         const nonInboxAccounts: Account[] = [];
-        const mailboxesToCheck = emailAddressOrHome === "home"
+        const mailboxesToCheck = SharedStore.currentAccount === "home"
             ? SharedStore.mailboxes
-            : [emailAddressOrHome]
+            : [SharedStore.currentAccount.email_address]
         for (const emailAddr in mailboxesToCheck) {
             if (
-                isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)
+                !isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)
             ) {
                 nonInboxAccounts.push(
                     SharedStore.accounts.find(
@@ -58,7 +62,7 @@
             }
         }
 
-        if (emailAddressOrHome === "home") {
+        if (SharedStore.currentAccount === "home") {
             SharedStore.currentMailbox.folder = Folder.Inbox;
             Object.values(SharedStore.mailboxes).forEach((mailbox) => {
                 SharedStore.currentMailbox.total += mailbox.total;
