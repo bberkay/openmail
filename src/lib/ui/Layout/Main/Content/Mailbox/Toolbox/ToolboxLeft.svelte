@@ -4,7 +4,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { NOT_IMPLEMENTED_TEMPLATE } from "$lib/constants";
     import { type Email, Mark, Folder } from "$lib/types";
-    import { startsWithAnyOf } from "$lib/utils";
+    import { isCustomFolder } from "$lib/utils";
     import * as Select from "$lib/ui/Components/Select";
     import * as Input from "$lib/ui/Components/Input";
     import * as Button from "$lib/ui/Components/Button";
@@ -22,10 +22,7 @@
 
     let isMailboxOfCustomFolder = $derived.by(() => {
         if (SharedStore.currentAccount == "home") return false;
-        return !startsWithAnyOf(
-            SharedStore.currentMailbox.folder,
-            Object.values(Folder),
-        );
+        return isCustomFolder(SharedStore.currentMailbox.folder);
     });
 
     let groupedEmailSelection: [string, string][] = $derived.by(() => {

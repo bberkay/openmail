@@ -2,6 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import { isStandardFolder } from "$lib/utils";
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import CreateFolder from "$lib/ui/Layout/Main/Navbar/Folders/CreateFolder.svelte";

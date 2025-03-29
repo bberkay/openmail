@@ -55,10 +55,6 @@ export function findMatchingIndex<T extends Record<string, any>>(
     );
 }
 
-export function startsWithAnyOf(key: string, keys: string[]): boolean {
-    return keys.some((k) => key.toLowerCase().startsWith(k.toLowerCase()));
-}
-
 export function combine(strA: string, strB: any): string {
     return strA + (strB ? " " + strB : "");
 }
@@ -80,6 +76,10 @@ export function isObjEmpty(obj: Record<string, any>): boolean {
 
 export function isStandardFolder(folderName: string, comparedFolder: Folder) {
     return folderName.startsWith(comparedFolder + ":");
+}
+
+export function isCustomFolder(folder: string): boolean {
+    return !Object.values(Folder).some((standardFolder) => isStandardFolder(folder, standardFolder));
 }
 
 export function removeFalsyParamsAndEmptyLists(

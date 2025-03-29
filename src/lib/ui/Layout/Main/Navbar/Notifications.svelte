@@ -4,7 +4,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Email as TEmail, type Account, Folder } from "$lib/types";
     import { NEW_MESSAGE_TEMPLATE } from "$lib/constants";
-    import { extractEmailAddress, extractFullname } from "$lib/utils";
+    import { extractEmailAddress, extractFullname, isStandardFolder } from "$lib/utils";
     import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
@@ -19,17 +19,50 @@
         isNotificationsHidden = !isNotificationsHidden;
     };
 
-    const showHome = () => {
-        SharedStore.currentAccount = "home";
-        showContent(Mailbox);
-    };
+    const showHome = async (): Promise<void> => {
+        if (SharedStore.currentAccount === "home")
+            return;
 
-    const showInbox = (receiverEmailAddress: string) => {
-        const newAccount = SharedStore.accounts.find(
-            (acc) => acc.email_address == receiverEmailAddress,
-        );
-        if (!newAccount) return;
-        SharedStore.currentAccount = newAccount;
+        SharedStore.currentAccount = "home";
+
+        const nonInboxAccounts: Account[] = [];
+        for (const emailAddr in SharedStore.mailboxes) {
+            if (
+                !isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)
+            ) {
+                nonInboxAccounts.push(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === emailAddr,
+                    )!,
+                );
+            }
+        }
+
+        if (nonInboxAccounts.length >= 1) {
+            const response = await MailboxController.getMailboxes(
+                nonInboxAccounts,
+                Folder.Inbox,
+            );
+            if (!response.success) {
+                showMessage({
+                    content: "Error, account could not set.",
+                });
+                console.error(response.message);
+                return;
+            }
+        }
+
+        SharedStore.currentMailbox.folder = Folder.Inbox;
+        Object.values(SharedStore.mailboxes).forEach((mailbox) => {
+            SharedStore.currentMailbox.total += mailbox.total;
+            SharedStore.currentMailbox.emails.prev.push(...mailbox.emails.prev);
+            SharedStore.currentMailbox.emails.current.push(...mailbox.emails.current);
+            SharedStore.currentMailbox.emails.next.push(...mailbox.emails.next);
+        });
+        Object.values(SharedStore.currentMailbox.emails).forEach((emails) => {
+            emails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        })
+
         showContent(Mailbox);
     };
 
@@ -63,10 +96,43 @@
         showContent(Email, {
             account: receiverAccount,
             email: response.data,
+            previouslyAtHome: SharedStore.currentAccount === "home"
         });
     };
 
-    const showCompose = async (
+    const showMailboxOfReceiver = async (receiverEmailAddress: string): Promise<void> => {
+        if (SharedStore.currentAccount !== "home" && SharedStore.currentAccount.email_address === receiverEmailAddress && isStandardFolder(SharedStore.currentMailbox.folder, Folder.Inbox)) {
+            return;
+        }
+
+        const newAccount = SharedStore.accounts.find(
+            (acc) => acc.email_address == receiverEmailAddress,
+        );
+        if (!newAccount)
+            return;
+
+        if (
+            !isStandardFolder(SharedStore.mailboxes[newAccount.email_address].folder, Folder.Inbox)
+        ) {
+            const response = await MailboxController.getMailboxes(
+                newAccount,
+                Folder.Inbox
+            );
+            if (!response.success) {
+                showMessage({
+                    content: "Error, folder could not fetch.",
+                });
+                console.error(response.message);
+                return;
+            }
+        }
+
+        SharedStore.currentAccount = newAccount;
+        SharedStore.currentMailbox = SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address];
+        showContent(Mailbox);
+    };
+
+    const replyReceivedEmail= async (
         receiverAccount: Account,
         receivedEmail: TEmail,
     ) => {
@@ -86,23 +152,6 @@
         });
     };
 
-    const clearRecentEmails = (
-        recentEmailReceiverAddress?: string,
-        recentEmailUid?: string,
-    ) => {
-        for (const emailAddress in SharedStore.recentEmails) {
-            if (
-                !recentEmailReceiverAddress ||
-                emailAddress === recentEmailReceiverAddress
-            ) {
-                SharedStore.recentEmails[emailAddress] =
-                    SharedStore.recentEmails[emailAddress].filter(
-                        (email) => email.uid !== recentEmailUid,
-                    );
-            }
-        }
-    };
-
     let notificationsContainer: HTMLElement;
     onMount(() => {
         notificationsContainer
@@ -117,7 +166,7 @@
                     receiverEmail.innerText,
                 );
                 receiverEmail.addEventListener("click", () => {
-                    showInbox(receiverEmailAddress);
+                    showMailboxOfReceiver(receiverEmailAddress);
                 });
 
                 // Show compose as replying to the message sent by the clicked sender.
@@ -134,10 +183,27 @@
                     receiverAccount.email_address
                 ].find((email) => email.uid === recentEmailUid)!;
                 senderEmail.addEventListener("click", async () => {
-                    await showCompose(receiverAccount, receivedEmail);
+                    await replyReceivedEmail(receiverAccount, receivedEmail);
                 });
             });
     });
+
+    const clearRecentEmails = (
+        recentEmailReceiverAddress?: string,
+        recentEmailUid?: string,
+    ) => {
+        for (const emailAddress in SharedStore.recentEmails) {
+            if (
+                !recentEmailReceiverAddress ||
+                emailAddress === recentEmailReceiverAddress
+            ) {
+                SharedStore.recentEmails[emailAddress] =
+                    SharedStore.recentEmails[emailAddress].filter(
+                        (email) => email.uid !== recentEmailUid,
+                    );
+            }
+        }
+    };
 </script>
 
 <div class="notifications-container" bind:this={notificationsContainer}>
