@@ -15,7 +15,8 @@ import {
     type SearchCriteria,
 } from "$lib/types";
 import { removeWhitespaces } from "$lib/utils";
-import { MAILBOX_LENGTH } from "$lib/constants";
+
+export const MAILBOX_LENGTH = 10;
 
 export class MailboxController {
     private static _get_accounts(

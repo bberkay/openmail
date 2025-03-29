@@ -1,8 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController, MAILBOX_LENGTH } from "$lib/controllers/MailboxController";
     import {
-        MAILBOX_LENGTH,
         MAILBOX_PAGINATION_TEMPLATE,
     } from "$lib/constants";
     import * as Button from "$lib/ui/Components/Button";
