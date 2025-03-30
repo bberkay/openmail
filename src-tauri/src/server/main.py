@@ -999,7 +999,7 @@ async def move_folder(request_body: MoveFolderRequest) -> Response:
 class DeleteFolderRequest(BaseModel):
     account: str
     folder_name: str
-    subfolders: bool
+    delete_subfolders: bool
 
 @app.post("/delete-folder")
 async def delete_folder(request_body: DeleteFolderRequest) -> Response:
@@ -1014,7 +1014,7 @@ async def delete_folder(request_body: DeleteFolderRequest) -> Response:
             request_body.account
         ].imap.delete_folder(
             request_body.folder_name,
-            request_body.subfolders
+            request_body.delete_subfolders
         )
         return Response(success=status, message=msg)
     except Exception as e:
