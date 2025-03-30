@@ -70,6 +70,11 @@
                     onchange={handleDestinationFolder}
                     placeholder="Select Destination Folder"
                 >
+                    {#if folderName.includes("/")}
+                        <Select.Option value="/">
+                            {folderName}
+                        </Select.Option>
+                    {/if}
                     {#each customFolders as customFolder}
                         {#if customFolder !== folderName}
                             <Select.Option value={customFolder}>
