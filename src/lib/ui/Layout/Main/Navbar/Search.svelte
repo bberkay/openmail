@@ -61,16 +61,16 @@
 
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
-            ? SharedStore.standardFolders[
+            ? SharedStore.folders[
                 (SharedStore.currentAccount as Account).email_address
-            ]
+            ].standard
             : []
     );
     let customFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
-            ? SharedStore.customFolders[
+            ? SharedStore.folders[
                 (SharedStore.currentAccount as Account).email_address
-            ]
+            ].custom
             : []
     );
 

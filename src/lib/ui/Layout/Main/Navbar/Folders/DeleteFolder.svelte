@@ -20,7 +20,7 @@
         const folderName = target.querySelector<HTMLInputElement>(
             'input[name="folder_name"]',
         )!.value;
-        const subfolders = target.querySelector<HTMLInputElement>(
+        const delete_subfolders = target.querySelector<HTMLInputElement>(
             'input[name="delete_subfolders"]',
         )!.checked;
 

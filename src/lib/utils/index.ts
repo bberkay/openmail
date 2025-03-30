@@ -75,6 +75,31 @@ export function isObjEmpty(obj: Record<string, any>): boolean {
     );
 }
 
+export function isUidInSelection(
+    selection: string,
+    searching: string,
+): boolean {
+    if (
+        selection.startsWith(searching + ",") ||
+        selection.endsWith("," + searching)
+    )
+        return true;
+    return selection.includes("," + searching + ",");
+}
+
+/**
+ * Sorts a string of comma-separated numbers and removes spaces
+ * @param numbersString - A string containing numbers separated by commas and possibly spaces
+ * @returns A sorted string of numbers without spaces, separated by commas
+ */
+export function sortSelection(numbersString: string): string {
+    return numbersString
+        .split(",")
+        .map((part) => parseInt(part.trim(), 10))
+        .sort((a, b) => a - b)
+        .join(",");
+}
+
 export function isStandardFolder(
     folderName: string,
     targetStandardFolder?: Folder,
@@ -90,11 +115,14 @@ export function isCustomFolder(folder: string): boolean {
 
 /**
  * Checks if the given folder name is the path itself or a subfolder of the path
- * @param {string} folderPath - The main folder path to check
- * @param {string} folderName - The folder name to search for (full path or just folder name)
- * @returns {boolean} - Returns true if folderName is part of folderPath, false otherwise
+ * @param folderPath - The main folder path to check
+ * @param folderName - The folder name to search for (full path or just folder name)
+ * @returns Returns true if folderName is part of folderPath, false otherwise
  */
-export function isSubfolderOrMatch(folderPath: string, folderName: string): boolean {
+export function isSubfolderOrMatch(
+    folderPath: string,
+    folderName: string,
+): boolean {
     const normalizedPath = path.normalize(folderPath);
 
     if (folderName.includes(path.sep)) {
@@ -111,11 +139,14 @@ export function isSubfolderOrMatch(folderPath: string, folderName: string): bool
 
 /**
  * Checks if the given folder name exactly matches the last part of the path
- * @param {string} folderPath - The folder path to check
- * @param {string} folderName - The folder name to check (full path or just folder name)
- * @returns {boolean} - Returns true if there's an exact match, false otherwise
+ * @param folderPath - The folder path to check
+ * @param folderName - The folder name to check (full path or just folder name)
+ * @returns  Returns true if there's an exact match, false otherwise
  */
-export function isExactFolderMatch(folderPath: string, folderName: string): boolean {
+export function isExactFolderMatch(
+    folderPath: string,
+    folderName: string,
+): boolean {
     const normalizedPath = path.normalize(folderPath);
 
     if (folderName.includes(path.sep)) {
@@ -129,9 +160,9 @@ export function isExactFolderMatch(folderPath: string, folderName: string): bool
 
 /**
  * Removes the specified folder from the given path
- * @param {string} folderPath - The folder path to process
- * @param {string} folderName - The folder name to remove (full path or just folder name)
- * @returns {string} - The path after removing folderName
+ * @param folderPath - The folder path to process
+ * @param folderName - The folder name to remove (full path or just folder name)
+ * @returns The path after removing folderName
  */
 export function removeFromPath(folderPath: string, folderName: string): string {
     const normalizedPath = path.normalize(folderPath);
@@ -160,6 +191,39 @@ export function removeFromPath(folderPath: string, folderName: string): string {
     }
 
     parts.splice(index, 1);
+    return parts.join(path.sep);
+}
+
+/**
+ * Extracts the folder name from a given path
+ * @param {string} folderPath - The folder path to extract the name from
+ * @returns {string} - The extracted folder name
+ */
+export function extractFolderName(folderPath: string): string {
+    return path.basename(path.normalize(folderPath));
+}
+
+/**
+ * Replaces a folder name in a path with a new folder name
+ * @param folderPath - The original folder path
+ * @param oldFolderName - The folder name to replace
+ * @param newFolderName - The new folder name
+ * @returns The path with the replaced folder name
+ */
+export function replaceFolderName(
+    folderPath: string,
+    oldFolderName: string,
+    newFolderName: string,
+): string {
+    const normalizedPath = path.normalize(folderPath);
+    const parts = normalizedPath.split(path.sep);
+
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i] === oldFolderName) {
+            parts[i] = newFolderName;
+        }
+    }
+
     return parts.join(path.sep);
 }
 

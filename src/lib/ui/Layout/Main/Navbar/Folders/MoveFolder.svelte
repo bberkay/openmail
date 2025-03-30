@@ -19,9 +19,9 @@
     let destinationFolder = $state("");
     let customFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
-            ? SharedStore.customFolders[
+            ? SharedStore.folders[
                 (SharedStore.currentAccount as Account).email_address
-            ]
+            ].custom
             : []
     );
 
@@ -71,9 +71,7 @@
                     placeholder="Select Destination Folder"
                 >
                     {#if folderName.includes("/")}
-                        <Select.Option value="/">
-                            {folderName}
-                        </Select.Option>
+                        <Select.Option value="">/</Select.Option>
                     {/if}
                     {#each customFolders as customFolder}
                         {#if customFolder !== folderName}

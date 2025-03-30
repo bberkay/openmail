@@ -14,7 +14,16 @@ import {
     type Email,
     type SearchCriteria,
 } from "$lib/types";
-import { isChildFolder, isExactFolderMatch, isFolderInPath, isStandardFolder, isSubfolderOrMatch, isTargetFolder, removeWhitespaces } from "$lib/utils";
+import {
+    extractFolderName,
+    isExactFolderMatch,
+    isStandardFolder,
+    isSubfolderOrMatch,
+    isUidInSelection,
+    removeFromPath,
+    removeWhitespaces,
+    replaceFolderName,
+} from "$lib/utils";
 
 export const MAILBOX_LENGTH = 10;
 
@@ -283,21 +292,21 @@ export class MailboxController {
             // selection will be either 1:* or uids separated with comma
             // something like 1,2,3,4 but not 2:* or 1,3:*:5
             if (
-                SharedStore.mailboxes[account.email_address].folder === folder
+                isExactFolderMatch(SharedStore.mailboxes[account.email_address].folder, folder)
             ) {
-                if (selection !== "1:*") {
+                if (selection === "1:*") {
+                    SharedStore.mailboxes[
+                        account.email_address
+                    ].emails.current = [];
+                } else {
                     SharedStore.mailboxes[
                         account.email_address
                     ].emails.current = SharedStore.mailboxes[
                         account.email_address
                     ].emails.current.filter(
                         (email) =>
-                            !selection.includes(removeWhitespaces(email.uid)),
+                            !isUidInSelection(selection, removeWhitespaces(email.uid)),
                     );
-                } else {
-                    SharedStore.mailboxes[
-                        account.email_address
-                    ].emails.current = [];
                 }
             }
         }
@@ -329,22 +338,21 @@ export class MailboxController {
             // selection will be either 1:* or uids separated with comma
             // something like 1,2,3,4 but not 2:* or 1,3:*:5
             if (
-                SharedStore.mailboxes[account.email_address].folder ===
-                sourceFolder
+                isExactFolderMatch(SharedStore.mailboxes[account.email_address].folder, sourceFolder)
             ) {
-                if (selection !== "1:*") {
+                if (selection === "1:*") {
+                    SharedStore.mailboxes[
+                        account.email_address
+                    ].emails.current = [];
+                } else {
                     SharedStore.mailboxes[
                         account.email_address
                     ].emails.current = SharedStore.mailboxes[
                         account.email_address
                     ].emails.current.filter(
                         (email) =>
-                            !selection.includes(removeWhitespaces(email.uid)),
+                            !isUidInSelection(selection, removeWhitespaces(email.uid)),
                     );
-                } else {
-                    SharedStore.mailboxes[
-                        account.email_address
-                    ].emails.current = [];
                 }
             }
         }
@@ -399,10 +407,10 @@ export class MailboxController {
             SharedStore.mailboxes[account.email_address].emails.current.forEach(
                 (email: Email) => {
                     if (
-                        (selection === "1:*" ||
-                            selection.includes(removeWhitespaces(email.uid))) &&
                         Object.hasOwn(email, "flags") &&
-                        email.flags
+                        email.flags &&
+                        (selection === "1:*" ||
+                            isUidInSelection(selection, removeWhitespaces(email.uid)))
                     ) {
                         email.flags.push(mark);
                     }
@@ -440,7 +448,7 @@ export class MailboxController {
                         Object.hasOwn(email, "flags") &&
                         email.flags &&
                         (selection === "1:*" ||
-                            selection.includes(removeWhitespaces(email.uid)))
+                            isUidInSelection(selection, removeWhitespaces(email.uid)))
                     ) {
                         email.flags = email.flags.filter(
                             (flag: string) => flag !== mark,
@@ -499,25 +507,28 @@ export class MailboxController {
         );
 
         if (response.success) {
-            SharedStore.folders[account.email_address].custom =
-                SharedStore.folders[account.email_address].custom.filter(
-                    (customFolder) => customFolder !== folderName,
-                );
+            const oldFolderName = extractFolderName(folderName);
+            if (destinationFolder !== "") destinationFolder += "/";
+            const newFolderPath = `${destinationFolder}${folderName}`;
 
-            let newFolderPath = `${destinationFolder}/${folderName}`;
-            if (folderName.includes("/")) {
-                const tempLastIndex = folderName.lastIndexOf("/");
-                const parentFolder = folderName.slice(0, tempLastIndex);
-                if (
-                    SharedStore.folders[account.email_address].custom.includes(
-                        parentFolder,
-                    )
-                ) {
-                    newFolderPath = `${destinationFolder}/${folderName.slice(tempLastIndex + 1)}`;
+            SharedStore.folders[account.email_address].custom.map(customFolderPath => {
+                if (isSubfolderOrMatch(customFolderPath, oldFolderName)) {
+                    return replaceFolderName(customFolderPath, oldFolderName, newFolderPath);
                 }
-                SharedStore.folders[account.email_address].custom.push(
-                    newFolderPath,
-                );
+            });
+
+            if (
+                isSubfolderOrMatch(
+                    SharedStore.mailboxes[account.email_address].folder,
+                    oldFolderName,
+                )
+            ) {
+                SharedStore.mailboxes[account.email_address].folder =
+                    replaceFolderName(
+                        SharedStore.mailboxes[account.email_address].folder,
+                        oldFolderName,
+                        newFolderPath,
+                    );
             }
         }
 
@@ -529,7 +540,7 @@ export class MailboxController {
 
     public static async renameFolder(
         account: Account,
-        folderPath: string,
+        folderName: string,
         newFolderName: string,
     ): Promise<BaseResponse> {
         const response = await ApiService.post(
@@ -537,25 +548,36 @@ export class MailboxController {
             PostRoutes.RENAME_FOLDER,
             {
                 account: MailboxController._extractAndJoinEmails(account),
-                folder_name: folderPath,
+                folder_name: folderName,
                 new_folder_name: newFolderName,
             },
         );
 
         if (response.success) {
-            const oldFolderName = folderPath.includes("/")
-                ? folderPath.slice(folderPath.lastIndexOf("/") + 1)
-                : folderPath;
+            const oldFolderName = extractFolderName(folderName);
 
             SharedStore.folders[account.email_address].custom.map(
-                (customFolder) => customFolder.replace(oldFolderName, newFolderName)
+                (customFolder) => {
+                    return replaceFolderName(
+                        customFolder,
+                        oldFolderName,
+                        newFolderName,
+                    );
+                },
             );
 
             if (
-                SharedStore.mailboxes[account.email_address].folder ===
-                oldFolderName
+                isSubfolderOrMatch(
+                    SharedStore.mailboxes[account.email_address].folder,
+                    oldFolderName,
+                )
             ) {
-                SharedStore.mailboxes[account.email_address].folder = SharedStore.mailboxes[account.email_address].folder.replace(oldFolderName, newFolderName);
+                SharedStore.mailboxes[account.email_address].folder =
+                    replaceFolderName(
+                        SharedStore.mailboxes[account.email_address].folder,
+                        oldFolderName,
+                        newFolderName,
+                    );
             }
         }
 
@@ -582,20 +604,40 @@ export class MailboxController {
 
         if (response.success) {
             SharedStore.folders[account.email_address].custom =
-                SharedStore.folders[account.email_address].custom.filter((customFolderPath) => {
-                    if (isExactFolderMatch(customFolderPath, folderName)) {
-                        return false;
-                    } else if (isSubfolderOrMatch(customFolderPath, folderName)) {
-                        return !delete_subfolders;
-                    }
-                });
+                SharedStore.folders[account.email_address].custom.filter(
+                    (customFolderPath) => {
+                        if (isExactFolderMatch(customFolderPath, folderName)) {
+                            return false;
+                        } else if (
+                            isSubfolderOrMatch(customFolderPath, folderName)
+                        ) {
+                            return !delete_subfolders;
+                        }
+                    },
+                );
 
-            if (isSubfolderOrMatch(SharedStore.mailboxes[account.email_address].folder, folderName)) {
+            if (
+                isExactFolderMatch(
+                    SharedStore.mailboxes[account.email_address].folder,
+                    folderName,
+                )
+            ) {
                 SharedStore.mailboxes[account.email_address] = {
                     folder: "",
                     emails: { prev: [], current: [], next: [] },
                     total: 0,
                 };
+            } else if (
+                isSubfolderOrMatch(
+                    SharedStore.mailboxes[account.email_address].folder,
+                    folderName,
+                )
+            ) {
+                SharedStore.mailboxes[account.email_address].folder =
+                    removeFromPath(
+                        SharedStore.mailboxes[account.email_address].folder,
+                        folderName,
+                    );
             }
         }
 
