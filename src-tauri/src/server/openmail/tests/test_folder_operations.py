@@ -200,6 +200,21 @@ class TestFolderOperations(unittest.TestCase):
             self.__class__._openmail.imap.get_folders()
         )
 
+    def test_move_child_folder_to_top_operation(self):
+        print("test_move_child_folder_to_top_operation...")
+        folder_name, parent_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-", create_parent=True)
+        self.__class__._created_test_folders.append(parent_folder)
+
+        status, msg = self.__class__._openmail.imap.move_folder(f"{parent_folder}/{folder_name}", "")
+
+        self.assertTrue(status, msg)
+        self.__class__._created_test_folders.append(folder_name)
+
+        self.assertIn(
+            folder_name,
+            self.__class__._openmail.imap.get_folders()
+        )
+
     def test_move_nonascii_folder_operation(self):
         print("test_move_nonascii_folder_operation...")
         folder_name1, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-ü-")

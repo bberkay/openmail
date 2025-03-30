@@ -1062,12 +1062,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
         except Exception as e:
             raise IMAPManagerException(f"Error while decoding folder name `{str(folder)}`: `{str(e)}`.") from None
 
-    def _check_folder_names(self, folders: str | List[str], raise_error: bool = True) -> bool:
+    def _check_folder_names(self, *folders: str, raise_error: bool = True) -> bool:
         """
         Check if a folder name(s) is valid.
 
         Args:
-            folders (str | List[str]): Folder name or list of folder names
+            folders (str): Folder names
             raise_error (bool, optional): If True, raise an error if the folder name is invalid.
                                           Default is True
 
@@ -1077,19 +1077,16 @@ class IMAPManager(imaplib.IMAP4_SSL):
         Example:
             >>> self._check_folder_names("INBOX")
             True
-            >>> self._check_folder_names(["INBOX", "Trash"])
+            >>> self._check_folder_names("INBOX", "Trash")
             True
             >>> self._check_folder_names("")
-            raises IMAPManagerException
+            raises ValueError
             >>> self._check_folder_names("INBOX", raise_error=False)
             False
 
         Raises:
-            IMAPManagerException: If the folder name is invalid and raise_error is True
+            ValueError: If the folder name is invalid and raise_error is True
         """
-        if isinstance(folders, str):
-            folders = [folders]
-
         for folder_name in folders:
             if not folder_name:
                 continue
@@ -1097,7 +1094,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             folder_name_length = len(folder_name)
             if folder_name is None or folder_name == "" or folder_name_length > MAX_FOLDER_NAME_LENGTH or folder_name_length < 1:
                 if raise_error:
-                    raise IMAPManagerException(f"Invalid folder name: `{folder_name}`")
+                    raise ValueError(f"Invalid folder name: `{folder_name}`")
                 return False
 
         return True
@@ -2315,14 +2312,21 @@ class IMAPManager(imaplib.IMAP4_SSL):
             (True, "Folder `RED/DARKRED` moved to `COLORS` successfully. New location is `COLORS/DARKRED`")
             >>> move_folder("RED/DARKRED", "COLORS/DARK")
             (True, "Folder `RED/DARKRED` moved to `COLORS/DARK` successfully. New location is `COLORS/DARK/DARKRED`")
+            >>> move_folder("RED/DARKRED", "")
+            (True, "Folder `RED/DARKRED` moved to `` successfully. New location is `DARKRED`")
         """
-        self._check_folder_names([folder_name, destination_folder])
+        self._check_folder_names(folder_name)
+        if destination_folder != "":
+            self._check_folder_names(destination_folder)
+            destination_folder += "/"
 
         *folder_name_parent, folder_name_target = folder_name.split("/")
         if "/".join(folder_name_parent) in self.get_folders():
-            destination_folder = f"{destination_folder}/{folder_name_target}"
+            destination_folder = f"{destination_folder}{folder_name_target}"
         else:
-            destination_folder = f"{destination_folder}/{folder_name}"
+            destination_folder = f"{destination_folder}{folder_name}"
+
+        destination_folder = destination_folder.strip()
 
         return self._parse_command_result(
             self.rename(
