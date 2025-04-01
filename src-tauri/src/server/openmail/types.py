@@ -75,11 +75,8 @@ class Email():
 
 @dataclass
 class Draft():
-    """
-    Represents an email to be sent/replied/forwarded.
-    If the email is being replied or forwarded, the
-    `uid` field must be provided.
-    """
+    """Represents an email to be sent/replied/forwarded"""
+    sender: str # Name Surname <namesurname@domain.com> or namesurname@domain.com
     receivers: str | list[str]
     #date: str
     subject: str

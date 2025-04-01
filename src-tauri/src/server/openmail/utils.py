@@ -12,7 +12,7 @@ def extract_username(email: str) -> str:
     """Extract the user name from an email address."""
     return (email.split("@")[0].split("<")[1] if "<" in email else email.split('@')[0]).strip()
 
-def extract_domain(email: str, full: bool = False) -> str:
+def extract_domain(email: str, /, *, full: bool = False) -> str:
     """Extract the domain name from an email address."""
     return (email.split('@')[1].split(".")[0] if not full else email.split('@')[1]).strip()
 

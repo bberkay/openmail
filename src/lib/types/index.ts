@@ -54,6 +54,7 @@ export interface Attachment {
 }
 
 export interface Draft {
+    sender: string; // Name Surname <namesurname@domain.com> or namesurname@domain.com
     receivers: string | string[];
     //date: string;
     subject: string;

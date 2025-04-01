@@ -630,8 +630,8 @@ async def send_email(
             return response
 
         status, msg = openmail_clients[account].smtp.send_email(
-            account,
             Draft(
+                sender=form_data.sender,
                 receivers=form_data.receivers,
                 subject=form_data.subject,
                 body=form_data.body,
@@ -658,16 +658,16 @@ async def reply_email(
             return response
 
         status, msg = openmail_clients[account].smtp.reply_email(
-            account,
+            original_message_id,
             Draft(
+                sender=form_data.sender,
                 receivers=form_data.receivers,
                 subject=form_data.subject,
                 body=form_data.body,
                 cc=form_data.cc,
                 bcc=form_data.bcc,
                 attachments=await convert_uploadfile_to_attachment(form_data.attachments),
-            ),
-            original_message_id
+            )
         )
 
         return Response(success=status, message=msg)
@@ -687,16 +687,16 @@ async def forward_email(
             return response
 
         status, msg = openmail_clients[account].smtp.forward_email(
-            account,
+            original_message_id,
             Draft(
+                sender=form_data.sender,
                 receivers=form_data.receivers,
                 subject=form_data.subject,
                 body=form_data.body,
                 cc=form_data.cc,
                 bcc=form_data.bcc,
                 attachments=await convert_uploadfile_to_attachment(form_data.attachments),
-            ),
-            original_message_id
+            )
         )
 
         return Response(success=status, message=msg)

@@ -62,17 +62,15 @@ class DummyOperator:
     @staticmethod
     def send_test_email_to_self_and_get_uid(
         openmail: OpenMail,
-        sender: str,
-        draft: Draft | None = None
+        senderOrDraft: str | Draft,
     ) -> str:
         """
         Sends a test email to self and returns the UID of the sent email.
 
         Args:
             openmail (OpenMail): An instance of the OpenMail class.
-            sender (str): Sender email address like "Name Surname <name@domain.com>" or "name@domain.com".
-            draft (Draft | None): Draft object to send the test email if it is none random draft will
-            be generated.
+            senderOrDraft (str | Draft): Sender email address like "Name Surname <name@domain.com>" or
+            "name@domain.com" or Draft object to send the test email.
 
         Returns:
             str: The UID of the sent email.
@@ -92,17 +90,18 @@ class DummyOperator:
 
         uid = None
         subject = ""
-        if draft:
-            subject = draft.subject
+        if isinstance(senderOrDraft, Draft):
+            subject = senderOrDraft.subject
         else:
             subject = cast(str, NameGenerator.subject()[0])
-            draft = Draft(
-                receivers=sender,
+            senderOrDraft = Draft(
+                sender=senderOrDraft,
+                receivers=senderOrDraft,
                 subject=subject,
                 body=NameGenerator.body()[0]
             )
 
-        status, message = openmail.smtp.send_email(sender, draft)
+        status, message = openmail.smtp.send_email(senderOrDraft)
 
         if not status:
             raise SMTPManagerException(f"Failed to send test email with status: {status} and message: {message}")
@@ -114,8 +113,8 @@ class DummyOperator:
             folder=Folder.Inbox,
             search=SearchCriteria(
                 subject=subject,
-                senders=[sender],
-                receivers=[sender]
+                senders=[senderOrDraft.sender],
+                receivers=[senderOrDraft.receivers] if isinstance(senderOrDraft.receivers, str) else senderOrDraft.receivers
             )
         )
         if not status:

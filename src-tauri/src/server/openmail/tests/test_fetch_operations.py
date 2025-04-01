@@ -44,19 +44,20 @@ class TestFetchOperations(unittest.TestCase):
 
         # Send Basic Test Email
         cls._test_sent_basic_email = Draft(
+            sender=cls._sender_email,
             receivers=cls._receiver_emails[0],
             subject=NameGenerator.subject()[0],
             body=NameGenerator.body()[0],
         )
         cls._test_sent_basic_email_uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
-            cls._sender_email,
             copy.copy(cls._test_sent_basic_email)
         )
         cls._sent_test_email_uids.append(cls._test_sent_basic_email_uid)
 
         # Send Complex Text Email
         cls._test_sent_complex_email = Draft(
+            sender=cls._sender_email,
             receivers=cls._receiver_emails,
             subject=NameGenerator.subject()[0],
             cc=cls._receiver_emails[1:],
@@ -80,7 +81,6 @@ class TestFetchOperations(unittest.TestCase):
         )
         cls._test_sent_complex_email_uid = DummyOperator.send_test_email_to_self_and_get_uid(
             cls._openmail,
-            cls._sender_email,
             copy.copy(cls._test_sent_complex_email)
         )
         cls._sent_test_email_uids.append(cls._test_sent_complex_email_uid)
@@ -543,8 +543,8 @@ class TestFetchOperations(unittest.TestCase):
             random_subject = NameGenerator.subject()[0]
             uid = DummyOperator.send_test_email_to_self_and_get_uid(
                 self.__class__._openmail,
-                self.__class__._sender_email,
                 Draft(
+                    sender=self.__class__._sender_email,
                     receivers=self.__class__._sender_email,
                     subject=random_subject,
                     body=NameGenerator.body()[0]

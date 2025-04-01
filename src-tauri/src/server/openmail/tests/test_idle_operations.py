@@ -193,7 +193,8 @@ class TestIdleOperations(unittest.TestCase):
         sender.connect(sender_email, self.__class__._credentials[2]["password"])
         print(f"Connecting to {sender_email}")
         subject = cast(str, NameGenerator.subject()[0])
-        sender.smtp.send_email(sender_email, Draft(
+        sender.smtp.send_email(Draft(
+            sender=sender_email,
             receivers=self.__class__._email,
             subject=subject,
             body=NameGenerator.body()[0]
@@ -378,7 +379,8 @@ class TestIdleOperations(unittest.TestCase):
         sender.connect(sender_email, self.__class__._credentials[2]["password"])
         print(f"Connecting to {sender_email}")
         subject = cast(str, NameGenerator.subject()[0])
-        sender.smtp.send_email(sender_email, Draft(
+        sender.smtp.send_email(Draft(
+            sender=sender_email,
             receivers=self.__class__._email,
             subject=subject,
             body=NameGenerator.body()[0]

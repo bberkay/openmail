@@ -192,12 +192,11 @@ class SMTPManager(smtplib.SMTP):
         except Exception as e:
             raise SMTPManagerException(f"Error, email prepared but could not be sent: {str(e)}") from e
 
-    def send_email(self, sender: str, email: Draft) -> SMTPCommandResult:
+    def send_email(self, email: Draft) -> SMTPCommandResult:
         """
         Send an email with optional attachments and metadata.
 
         Args:
-            sender (str): Sender email address like "Name Surname <name@domain.com>" or "name@domain.com".
             email (Draft): The email to be sent.
 
         Returns:
@@ -234,9 +233,9 @@ class SMTPManager(smtplib.SMTP):
             # `sender` can be a string(just email) or a tuple (name, email).
             msg = EmailMessage()
             msg['From'] = Address(
-                display_name=extract_fullname(sender),
-                username=extract_username(sender),
-                domain=extract_domain(sender, True)
+                display_name=extract_fullname(email.sender),
+                username=extract_username(email.sender),
+                domain=extract_domain(email.sender, True)
             )
             msg['To'] = receivers
             msg['Subject'] = email.subject
@@ -350,7 +349,6 @@ class SMTPManager(smtplib.SMTP):
         return self.send_message(msg)
 
     def reply_email(self,
-        sender: str,
         email: Draft,
         original_message_id: str,
         original_sender: tuple[str, str] | str = "",
@@ -362,7 +360,6 @@ class SMTPManager(smtplib.SMTP):
         Reply to an existing email. Uses the `send_email` method internally.
 
         Args:
-            sender (str): Sender email address like "Name Surname <name@domain.com>" or "name@domain.com".
             email (Draft): The draft email object to send as a reply.
             original_message_id (str): The Message-ID of the email being replied to.
             original_sender (tuple[str, str] | str, optional): The sender of the original email.
@@ -403,7 +400,7 @@ class SMTPManager(smtplib.SMTP):
         except Exception as e:
             raise SMTPManagerException(f"Error while creating email reply: {str(e)}") from None
 
-        status, message = self.send_email(sender, email_to_reply)
+        status, message = self.send_email(email_to_reply)
 
         # Overriding success message.
         if status:
@@ -412,7 +409,6 @@ class SMTPManager(smtplib.SMTP):
         return status, message
 
     def forward_email(self,
-        sender: str,
         email: Draft,
         original_message_id: str,
         original_sender: tuple[str, str] | str = "",
@@ -426,7 +422,6 @@ class SMTPManager(smtplib.SMTP):
         method internally.
 
         Args:
-            sender (str): Sender email address like "Name Surname <name@domain.com>" or "name@domain.com".
             email (Draft): The email to be forwarded.
             original_message_id (str): The Message-ID of the email being forwarded.
             original_sender (tuple[str, str] | str, optional): The sender of the original email.
@@ -473,7 +468,7 @@ class SMTPManager(smtplib.SMTP):
         except Exception as e:
             raise SMTPManagerException(f"Error while creating email to forward: `{str(e)}`") from None
 
-        status, message = self.send_email(sender, email_to_forward)
+        status, message = self.send_email(email_to_forward)
 
         # Overriding success message.
         if status:
