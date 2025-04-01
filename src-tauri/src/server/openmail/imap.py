@@ -1364,7 +1364,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
     @handle_idle
     def search_emails(self,
-        folder: str = "",
+        folder: str | None = None,
         search: str | SearchCriteria = ""
     ) -> IMAPCommandResult:
         """
@@ -1479,8 +1479,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
     @handle_idle
     def get_emails(
         self,
-        offset_start: int = GET_EMAILS_OFFSET_START,
-        offset_end: int = GET_EMAILS_OFFSET_END
+        offset_start: int | None = None,
+        offset_end: int | None = None
     ) -> Mailbox:
         """
         Fetch emails from a list of uids.
