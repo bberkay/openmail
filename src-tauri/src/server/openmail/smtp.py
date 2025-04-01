@@ -235,7 +235,7 @@ class SMTPManager(smtplib.SMTP):
             msg['From'] = Address(
                 display_name=extract_fullname(email.sender),
                 username=extract_username(email.sender),
-                domain=extract_domain(email.sender, True)
+                domain=extract_domain(email.sender, full=True)
             )
             msg['To'] = receivers
             msg['Subject'] = email.subject
@@ -349,8 +349,8 @@ class SMTPManager(smtplib.SMTP):
         return self.send_message(msg)
 
     def reply_email(self,
-        email: Draft,
         original_message_id: str,
+        email: Draft,
         original_sender: tuple[str, str] | str = "",
         original_subject: str = "",
         original_body: str = "",
@@ -409,8 +409,8 @@ class SMTPManager(smtplib.SMTP):
         return status, message
 
     def forward_email(self,
-        email: Draft,
         original_message_id: str,
+        email: Draft,
         original_sender: tuple[str, str] | str = "",
         original_receivers: str = "", # mail addresses separated by comma
         original_subject: str = "",
