@@ -4,7 +4,11 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Email as TEmail, type Account, Folder } from "$lib/types";
     import { NEW_MESSAGE_TEMPLATE } from "$lib/constants";
-    import { extractEmailAddress, extractFullname, isStandardFolder } from "$lib/utils";
+    import {
+        extractEmailAddress,
+        extractFullname,
+        isStandardFolder,
+    } from "$lib/utils";
     import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
@@ -20,15 +24,17 @@
     };
 
     const showHome = async (): Promise<void> => {
-        if (SharedStore.currentAccount === "home")
-            return;
+        if (SharedStore.currentAccount === "home") return;
 
         SharedStore.currentAccount = "home";
 
         const nonInboxAccounts: Account[] = [];
         for (const emailAddr in SharedStore.mailboxes) {
             if (
-                !isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)
+                !isStandardFolder(
+                    SharedStore.mailboxes[emailAddr].folder,
+                    Folder.Inbox,
+                )
             ) {
                 nonInboxAccounts.push(
                     SharedStore.accounts.find(
@@ -51,17 +57,6 @@
                 return;
             }
         }
-
-        SharedStore.currentMailbox.folder = Folder.Inbox;
-        Object.values(SharedStore.mailboxes).forEach((mailbox) => {
-            SharedStore.currentMailbox.total += mailbox.total;
-            SharedStore.currentMailbox.emails.prev.push(...mailbox.emails.prev);
-            SharedStore.currentMailbox.emails.current.push(...mailbox.emails.current);
-            SharedStore.currentMailbox.emails.next.push(...mailbox.emails.next);
-        });
-        Object.values(SharedStore.currentMailbox.emails).forEach((emails) => {
-            emails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        })
 
         showContent(Mailbox);
     };
@@ -96,27 +91,38 @@
         showContent(Email, {
             account: receiverAccount,
             email: response.data,
-            previouslyAtHome: SharedStore.currentAccount === "home"
+            previouslyAtHome: SharedStore.currentAccount === "home",
         });
     };
 
-    const showMailboxOfReceiver = async (receiverEmailAddress: string): Promise<void> => {
-        if (SharedStore.currentAccount !== "home" && SharedStore.currentAccount.email_address === receiverEmailAddress && isStandardFolder(SharedStore.currentMailbox.folder, Folder.Inbox)) {
+    const showMailboxOfReceiver = async (
+        receiverEmailAddress: string,
+    ): Promise<void> => {
+        if (
+            SharedStore.currentAccount !== "home" &&
+            SharedStore.currentAccount.email_address === receiverEmailAddress &&
+            isStandardFolder(SharedStore.mailboxes[SharedStore.currentAccount.email_address].folder, Folder.Inbox)
+        ) {
             return;
         }
 
-        const newAccount = SharedStore.accounts.find(
-            (acc) => acc.email_address == receiverEmailAddress,
-        );
-        if (!newAccount)
-            return;
+        const newAccount = receiverEmailAddress == "home"
+            ? "home"
+            : SharedStore.accounts.find(
+                (acc) => acc.email_address == receiverEmailAddress,
+            )!;
+
+        SharedStore.currentAccount = newAccount;
 
         if (
-            !isStandardFolder(SharedStore.mailboxes[newAccount.email_address].folder, Folder.Inbox)
+            !isStandardFolder(
+                SharedStore.mailboxes[newAccount.email_address].folder,
+                Folder.Inbox,
+            )
         ) {
             const response = await MailboxController.getMailboxes(
                 newAccount,
-                Folder.Inbox
+                Folder.Inbox,
             );
             if (!response.success) {
                 showMessage({
@@ -127,12 +133,10 @@
             }
         }
 
-        SharedStore.currentAccount = newAccount;
-        SharedStore.currentMailbox = SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address];
         showContent(Mailbox);
     };
 
-    const replyReceivedEmail= async (
+    const replyReceivedEmail = async (
         receiverAccount: Account,
         receivedEmail: TEmail,
     ) => {
