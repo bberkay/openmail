@@ -471,7 +471,7 @@ async def notifications_socket(websocket: WebSocket, account: str):
                     if openmail_clients[account].imap.any_new_email():
                         print(f"Account {account} has new emails")
                         recent_emails = openmail_clients[account].imap.get_recent_emails()
-                        await websocket.send_json(recent_emails)
+                        await websocket.send_json({account: recent_emails})
                         uvicorn_logger.websocket(websocket, recent_emails)
                 except Exception as e:
                     await websocket.close(reason="There was an error while receving new emails.")

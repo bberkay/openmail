@@ -100,59 +100,58 @@
      * new email notifications.
      */
     async function listenForNotifications() {
-        const ws = new WebSocket(
-            SharedStore.server.replace("http", "ws") +
-                `/notifications/${SharedStore.accounts.map((acc) => acc.email_address).join(",")}`,
-        );
+        SharedStore.accounts.forEach(async (account) => {
+            const ws = new WebSocket(
+                SharedStore.server.replace("http", "ws") + `/notifications/${account}`,
+            );
 
-        let permissionGranted = false;
-        ws.onopen = async () => {
-            permissionGranted = await isPermissionGranted();
-            if (!permissionGranted) {
-                const permission = await requestPermission();
-                permissionGranted = permission === "granted";
-            }
+            let permissionGranted = false;
+            ws.onopen = async () => {
+                permissionGranted = await isPermissionGranted();
+                if (!permissionGranted) {
+                    const permission = await requestPermission();
+                    permissionGranted = permission === "granted";
+                }
 
-            SharedStore.accounts.forEach((account) => {
                 SharedStore.recentEmails[account.email_address] = [];
-            });
-        };
+            };
 
-        ws.onmessage = (e: MessageEvent) => {
-            // Send app notification.
-            if (permissionGranted) {
-                sendNotification({
-                    title: "New Email Received!",
-                    body: "Here, look at your new email.",
+            ws.onmessage = (e: MessageEvent) => {
+                // Send app notification.
+                if (permissionGranted) {
+                    sendNotification({
+                        title: "New Email Received!",
+                        body: "Here, look at your new email.",
+                    });
+                }
+
+                Object.entries(e.data as typeof SharedStore.recentEmails).forEach((entry) => {
+                    const emailAddr = entry[0];
+                    const recentEmails = entry[1];
+
+                    // Add email to mailbox
+                    if (Object.hasOwn(SharedStore.mailboxes, emailAddr)
+                        && isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)) {
+                        const recentEmailsLength = recentEmails.length;
+                        SharedStore.mailboxes[emailAddr].emails.current.unshift(...recentEmails);
+                        const overflowEmails = SharedStore.mailboxes[emailAddr].emails.current.splice(-1 * recentEmailsLength);
+                        SharedStore.mailboxes[emailAddr].emails.next.unshift(...overflowEmails);
+                        SharedStore.mailboxes[emailAddr].emails.next.splice(-1 * recentEmailsLength, recentEmailsLength);
+                    }
+
+                    // and recent emails.
+                    if (Object.hasOwn(SharedStore.recentEmails, emailAddr)) {
+                        SharedStore.recentEmails[emailAddr].push(...recentEmails);
+                    }
                 });
-            }
+            };
 
-            Object.entries(e.data as typeof SharedStore.recentEmails).forEach((entry) => {
-                const emailAddr = entry[0];
-                const recentEmails = entry[1];
-
-                // Add email to mailbox
-                if (Object.hasOwn(SharedStore.mailboxes, emailAddr)
-                    && isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)) {
-                    const recentEmailsLength = recentEmails.length;
-                    SharedStore.mailboxes[emailAddr].emails.current.unshift(...recentEmails);
-                    const overflowEmails = SharedStore.mailboxes[emailAddr].emails.current.splice(-1 * recentEmailsLength);
-                    SharedStore.mailboxes[emailAddr].emails.next.unshift(...overflowEmails);
-                    SharedStore.mailboxes[emailAddr].emails.next.splice(-1 * recentEmailsLength, recentEmailsLength);
+            ws.onclose = (e: CloseEvent) => {
+                if (e.reason && e.reason.toLowerCase().includes("error")) {
+                    console.error(e.reason);
                 }
-
-                // and recent emails.
-                if (Object.hasOwn(SharedStore.recentEmails, emailAddr)) {
-                    SharedStore.recentEmails[emailAddr].push(...recentEmails);
-                }
-            });
-        };
-
-        ws.onclose = (e: CloseEvent) => {
-            if (e.reason && e.reason.toLowerCase().includes("error")) {
-                console.error(e.reason);
-            }
-        };
+            };
+        });
     }
 
     $effect(() => {
