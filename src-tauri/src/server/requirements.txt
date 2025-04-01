@@ -4,5 +4,4 @@ uvicorn>=0.30.3
 cryptography>=43.0.0
 keyring>=25.3.0
 python-multipart>=0.0.12
-pytz>=2023.4
 websockets>=13.1
