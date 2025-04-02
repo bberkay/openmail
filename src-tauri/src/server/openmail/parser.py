@@ -24,6 +24,7 @@ SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
 EXISTS_SIZE_PATTERN = re.compile(rb'\* (\d+) EXISTS')
 FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
 BODYSTRUCTURE_PATTERN = re.compile(r"BODYSTRUCTURE\s+(.*)", re.DOTALL | re.IGNORECASE)
+HIERARCHY_DELIMITER_PATTERN = re.compile(rb'\(""\s*"(.?)"\)')
 ATTACHMENT_LIST_PATTERN = re.compile(
     r'\("([^"]+)"\s+"([^"]+)"\s+(?:[^\s"]+|\([^\)]+\))\s+"([^"]+)"\s+' \
     r'[^\s"]+\s+"[^"]+"\s+(\d+).*?\("ATTACHMENT"\s+\("FILENAME"\s+' \
@@ -187,6 +188,24 @@ class MessageParser:
         return result
 
     @staticmethod
+    def get_uid(message: bytes) -> str:
+        """
+        Get UID from raw message bytes.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            str: UID string.
+
+        Example:
+            >>> get_uid("b'2394 (UID 2651 FLAGS ... ), b'")
+            '2651'
+        """
+        uid_match = UID_PATTERN.search(message)
+        return uid_match.group(1).decode() if uid_match else ""
+
+    @staticmethod
     def get_part(message: bytes, keywords: list[str]) -> str | None:
         """
         Extracts the part number from the BODYSTRUCTURE of an email message that matches the provided keywords.
@@ -328,22 +347,24 @@ class MessageParser:
         return int(match.group(1)) if match else -1
 
     @staticmethod
-    def get_uid(message: bytes) -> str:
+    def get_hierarchy_delimiter(message: bytes) -> str:
         """
-        Get UID from raw message bytes.
+        Get hierarchy delimiter from `NAMESPACE` server response.
 
         Args:
             message (bytes): Raw message bytes.
 
         Returns:
-            str: UID string.
+            str: Delimiter.
 
         Example:
-            >>> get_uid("b'2394 (UID 2651 FLAGS ... ), b'")
-            '2651'
+            >>> get_hierarchy_delimiter("b'(("" "/")) NIL NIL'")
+            '/'
+            >>> get_hierarchy_delimiter("b'(("" ".")) NIL NIL'")
+            '.'
         """
-        uid_match = UID_PATTERN.search(message)
-        return uid_match.group(1).decode() if uid_match else ""
+        delimiter_match = HIERARCHY_DELIMITER_PATTERN.search(message)
+        return delimiter_match.group(1).decode() if delimiter_match else ""
 
     @staticmethod
     def get_attachment_list(message: bytes) -> list[tuple[str, int, str, str]]:
