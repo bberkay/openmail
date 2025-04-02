@@ -179,6 +179,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         self._is_idle_supported = self.is_supported("IDLE")
         self._searched_emails: IMAPManager.SearchedEmails | None = None
+        self._hierarchy_delimiter = ""
 
         self.login(email_address, password)
 
@@ -455,6 +456,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
             result = self._simple_command('ENABLE', 'UTF8=ACCEPT')
             if result[0] != 'OK':
                 print(f"Could not enable UTF-8: {result[1]}")
+
+            # Namespace command will send hierarchy delimiter:
+            # https://datatracker.ietf.org/doc/html/rfc9051#name-namespace-command
+            result = self.namespace()[1][0]
+            if result[0] != 'OK':
+                raise IMAPManagerException(f"Could not receive namespace response to find hierarchy delimiter: {result[1]}")
+
+            self._hierarchy_delimiter = MessageParser.get_hierarchy_delimiter(result[1])
+            if not self._hierarchy_delimiter:
+                raise IMAPManagerException(f"Could not parse hierarchy delimiter: {result[1]}")
+
         except Exception as e:
             print(f"Unexpected error: Could not enable UTF-8: {str(e)}")
             pass
@@ -1128,12 +1140,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if isinstance(folder, bytes):
                 folder = self._decode_folder(folder)
 
-            # Most of the servers return folder name as b'(\\HasNoChildren) "/" "INBOX"'
-            # But some servers like yandex return folder name as b'(\\HasNoChildren) "|" "INBOX"'
-            # So we're replacing "|" with "/" to make it consistent
-            folder = folder.replace(' "|" ', ' "/" ', 1)
-
-            folder_parts = folder.split(' "/" ', 1)
+            folder_parts = folder.split(f' "{self._hierarchy_delimiter}" ', 1)
             folder_name = folder_parts[-1].replace('"', '')
             folder_tag = folder_parts[0] if len(folder_parts) > 1 else None
 
@@ -1198,8 +1205,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
         # [..., 'customA', 'customA/customAB', 'customA/customAB/customABC', 'customB/customBA']
         folder_list.sort(key=lambda path: (
             not any(path.startswith(f"{folder.capitalize()}:") for folder in FOLDER_LIST),
-            path.split("/"),
-            len(path.split("/"))
+            path.split(f"{self._hierarchy_delimiter}"),
+            len(path.split(f"{self._hierarchy_delimiter}"))
         ))
         return folder_list
 
@@ -2059,13 +2066,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         References:
             https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
-        self._check_folder_names([source_folder, destination_folder])
+        self._check_folder_names(source_folder, destination_folder)
 
         if source_folder == destination_folder:
-            return IMAPCommandResult(
-                success=True,
-                message=f"Destination folder `{destination_folder}` is the same as the source folder `{source_folder}`."
-            )
+            return True, f"Destination folder `{destination_folder}` is the same as the source folder `{source_folder}`."
 
         self.select(source_folder)
 
@@ -2121,7 +2125,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
         References:
             https://datatracker.ietf.org/doc/html/rfc9051#name-formal-syntax (check sequence-set for more information.)
         """
-        self._check_folder_names([source_folder, destination_folder])
+        self._check_folder_names(source_folder, destination_folder)
 
         self.select(source_folder)
 
@@ -2238,13 +2242,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
             >>> create_folder("DARKBLUE", "COLORS/DARK") # DARKBLUE will be created under DARK like `COLORS/DARK/DARKBLUE`
             (True, "Folder `DARKBLUE` created successfully.")
         """
-        self._check_folder_names([folder_name, parent_folder])
+        self._check_folder_names(folder_name, parent_folder)
 
         if parent_folder:
             if parent_folder not in self.get_folders():
                 self.create_folder(parent_folder)
 
-            folder_name = f"{parent_folder}/{folder_name}"
+            folder_name = f"{parent_folder}{self._hierarchy_delimiter}{folder_name}"
 
         return self._parse_command_result(
             self.create(
@@ -2318,10 +2322,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._check_folder_names(folder_name)
         if destination_folder != "":
             self._check_folder_names(destination_folder)
-            destination_folder += "/"
+            destination_folder += self._hierarchy_delimiter
 
-        *folder_name_parent, folder_name_target = folder_name.split("/")
-        if "/".join(folder_name_parent) in self.get_folders():
+        *folder_name_parent, folder_name_target = folder_name.split(self._hierarchy_delimiter)
+        if self._hierarchy_delimiter.join(folder_name_parent) in self.get_folders():
             destination_folder = f"{destination_folder}{folder_name_target}"
         else:
             destination_folder = f"{destination_folder}{folder_name}"
@@ -2357,12 +2361,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
             >>> rename_folder("BLUE/DARKBLUE", "LIGHTBLUE")
             (True, "Folder `BLUE/DARKBLUE` renamed to `BLUE/LIGHTBLUE` successfully.")
         """
-        self._check_folder_names([folder_name, new_folder_name])
+        self._check_folder_names(folder_name, new_folder_name)
 
-        *folder_name_parent, _ = folder_name.split("/")
-        folder_name_parent = "/".join(folder_name_parent)
+        *folder_name_parent, _ = folder_name.split(self._hierarchy_delimiter)
+        folder_name_parent = self._hierarchy_delimiter.join(folder_name_parent)
         if folder_name_parent in self.get_folders():
-            new_folder_name = f"{folder_name_parent}/{new_folder_name}"
+            new_folder_name = f"{folder_name_parent}{self._hierarchy_delimiter}{new_folder_name}"
 
         return self._parse_command_result(
             self.rename(
