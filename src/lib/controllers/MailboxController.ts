@@ -366,7 +366,8 @@ export class MailboxController {
                         // with the `paginateEmails()` to bring next back to `MAILBOX_LENGTH`.
                         const waitNext = setInterval(() => {
                             if (currentMailbox.emails.next.length > 0) {
-                                currentMailbox.emails.current = currentMailbox.emails.next;
+                                currentMailbox.emails.current =
+                                    currentMailbox.emails.next;
                                 clearInterval(waitNext);
                                 MailboxController.paginateEmails(
                                     account,
@@ -376,7 +377,8 @@ export class MailboxController {
                         }, 100);
                     }
                 } else {
-                    const countBeforeDelete = currentMailbox.emails.current.length;
+                    const countBeforeDelete =
+                        currentMailbox.emails.current.length;
                     currentMailbox.emails.current =
                         currentMailbox.emails.current.filter(
                             (email) =>
@@ -398,7 +400,9 @@ export class MailboxController {
                         // with `paginateEmails()` function.
                         const waitNext = setInterval(() => {
                             if (currentMailbox.emails.next.length > 0) {
-                                const deletedCount = countBeforeDelete - currentMailbox.emails.current.length;
+                                const deletedCount =
+                                    countBeforeDelete -
+                                    currentMailbox.emails.current.length;
                                 currentMailbox.emails.current.push(
                                     ...currentMailbox.emails.next.splice(
                                         0,
@@ -429,7 +433,7 @@ export class MailboxController {
         selection: string,
         sourceFolder: string,
         destinationFolder: string,
-        offsetEndBeforeMove?: number
+        offsetEndBeforeMove?: number,
     ): Promise<BaseResponse> {
         const response = await ApiService.post(
             SharedStore.server,
@@ -452,7 +456,8 @@ export class MailboxController {
                     if (offsetEndBeforeMove) {
                         const waitNext = setInterval(() => {
                             if (currentMailbox.emails.next.length > 0) {
-                                currentMailbox.emails.current = currentMailbox.emails.next;
+                                currentMailbox.emails.current =
+                                    currentMailbox.emails.next;
                                 clearInterval(waitNext);
                                 MailboxController.paginateEmails(
                                     account,
@@ -462,7 +467,8 @@ export class MailboxController {
                         }, 100);
                     }
                 } else {
-                    const countBeforeMove = currentMailbox.emails.current.length;
+                    const countBeforeMove =
+                        currentMailbox.emails.current.length;
                     currentMailbox.emails.current =
                         currentMailbox.emails.current.filter(
                             (email) =>
@@ -475,7 +481,9 @@ export class MailboxController {
                     if (offsetEndBeforeMove) {
                         const waitNext = setInterval(() => {
                             if (currentMailbox.emails.next.length > 0) {
-                                const deletedCount = countBeforeMove - currentMailbox.emails.current.length;
+                                const deletedCount =
+                                    countBeforeMove -
+                                    currentMailbox.emails.current.length;
                                 currentMailbox.emails.current.push(
                                     ...currentMailbox.emails.next.splice(
                                         0,
