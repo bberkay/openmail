@@ -21,6 +21,7 @@ class TestFolderOperations(unittest.TestCase):
 
         cls._email = credentials[0]["email"]
         cls._openmail.connect(cls._email, credentials[0]["password"])
+        cls._ha_delimiter = cls._openmail.imap._hierarchy_delimiter
         print(f"Connected to {cls._email}...")
 
         cls._created_test_folders = []
@@ -34,22 +35,22 @@ class TestFolderOperations(unittest.TestCase):
 
         folder_structure = [
             f"{random_folder_names[0]}",
-            f"{random_folder_names[0]}/{random_folder_names[1]}",
-            f"{random_folder_names[0]}/{random_folder_names[1]}/{random_folder_names[2]}",
-            f"{random_folder_names[0]}/{random_folder_names[1]}/{random_folder_names[2]}/{random_folder_names[3]}",
+            f"{random_folder_names[0]}{self.__class__._ha_delimiter}{random_folder_names[1]}",
+            f"{random_folder_names[0]}{self.__class__._ha_delimiter}{random_folder_names[1]}{self.__class__._ha_delimiter}{random_folder_names[2]}",
+            f"{random_folder_names[0]}{self.__class__._ha_delimiter}{random_folder_names[1]}{self.__class__._ha_delimiter}{random_folder_names[2]}{self.__class__._ha_delimiter}{random_folder_names[3]}",
             f"{random_folder_names[4]}",
-            f"{random_folder_names[4]}/{random_folder_names[5]}",
+            f"{random_folder_names[4]}{self.__class__._ha_delimiter}{random_folder_names[5]}",
             f"{random_folder_names[6]}",
             f"{random_folder_names[7]}",
-            f"{random_folder_names[7]}/{random_folder_names[8]}",
-            f"{random_folder_names[7]}/{random_folder_names[8]}/{random_folder_names[9]}"
+            f"{random_folder_names[7]}{self.__class__._ha_delimiter}{random_folder_names[8]}",
+            f"{random_folder_names[7]}{self.__class__._ha_delimiter}{random_folder_names[8]}{self.__class__._ha_delimiter}{random_folder_names[9]}"
         ]
 
         for folder in folder_structure:
-            parent_folder_name, folder_name = folder.rsplit("/", 1) if "/" in folder else (None, folder)
+            parent_folder_name, folder_name = folder.rsplit(self.__class__._ha_delimiter, 1) if self.__class__._ha_delimiter in folder else (None, folder)
             self.__class__._openmail.imap.create_folder(folder_name, parent_folder_name)
 
-        self.__class__._created_test_folders.extend([folder for folder in folder_structure if "/" not in folder])
+        self.__class__._created_test_folders.extend([folder for folder in folder_structure if self.__class__._ha_delimiter not in folder])
 
         folders = self.__class__._openmail.imap.get_folders()
 
@@ -58,7 +59,7 @@ class TestFolderOperations(unittest.TestCase):
 
         # Custom Folders
         self.assertListEqual(
-            [folder for folder in folders if folder.split("/")[0] in random_folder_names],
+            [folder for folder in folders if folder.split(self.__class__._ha_delimiter)[0] in random_folder_names],
             folder_structure
         )
 
@@ -68,7 +69,7 @@ class TestFolderOperations(unittest.TestCase):
         self.__class__._created_test_folders.append(parent_folder_name)
 
         subfolders = self.__class__._openmail.imap.get_folders(parent_folder_name)
-        self.assertListEqual(subfolders, [f"{parent_folder_name}/{new_folder_name}"])
+        self.assertListEqual(subfolders, [f"{parent_folder_name}{self.__class__._ha_delimiter}{new_folder_name}"])
 
     def test_get_folders_as_tagged_operation(self):
         print("test_get_folders_as_tagged_operation...")
@@ -104,7 +105,7 @@ class TestFolderOperations(unittest.TestCase):
         status, msg = self.__class__._openmail.imap.create_folder(folder_name, parent_folder_name)
         self.assertTrue(status, msg)
 
-        created_folder_name = f"{parent_folder_name}/{folder_name}"
+        created_folder_name = f"{parent_folder_name}{self.__class__._ha_delimiter}{folder_name}"
         self.__class__._created_test_folders.append(created_folder_name)
 
         self.assertIn(
@@ -123,7 +124,7 @@ class TestFolderOperations(unittest.TestCase):
         status, msg = self.__class__._openmail.imap.create_folder(folder_name, parent_folder_name)
         self.assertTrue(status, msg)
 
-        created_folder_name = f"{parent_folder_name}/{folder_name}"
+        created_folder_name = f"{parent_folder_name}{self.__class__._ha_delimiter}{folder_name}"
         self.__class__._created_test_folders.append(created_folder_name)
 
         self.assertIn(
@@ -142,7 +143,7 @@ class TestFolderOperations(unittest.TestCase):
         self.assertTrue(status, msg)
         self.__class__._created_test_folders.append(folder_name2)
 
-        moved_folder_name = f"{folder_name2}/{folder_name1}"
+        moved_folder_name = f"{folder_name2}{self.__class__._ha_delimiter}{folder_name1}"
         self.assertIn(
             moved_folder_name,
             self.__class__._openmail.imap.get_folders()
@@ -159,7 +160,7 @@ class TestFolderOperations(unittest.TestCase):
         self.assertTrue(status, msg)
         self.__class__._created_test_folders.append(target_folder_name)
 
-        moved_folder_name = f"{target_folder_name}/{parent_folder}"
+        moved_folder_name = f"{target_folder_name}{self.__class__._ha_delimiter}{parent_folder}"
         self.assertIn(
             moved_folder_name,
             self.__class__._openmail.imap.get_folders()
@@ -172,12 +173,12 @@ class TestFolderOperations(unittest.TestCase):
         target_folder_name, _ = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-")
         self.__class__._created_test_folders.append(parent_folder)
 
-        status, msg = self.__class__._openmail.imap.move_folder(f"{parent_folder}/{folder_name}", target_folder_name)
+        status, msg = self.__class__._openmail.imap.move_folder(f"{parent_folder}{self.__class__._ha_delimiter}{folder_name}", target_folder_name)
 
         self.assertTrue(status, msg)
         self.__class__._created_test_folders.append(target_folder_name)
 
-        moved_folder_name = f"{target_folder_name}/{folder_name}"
+        moved_folder_name = f"{target_folder_name}{self.__class__._ha_delimiter}{folder_name}"
         self.assertIn(
             moved_folder_name,
             self.__class__._openmail.imap.get_folders()
@@ -189,12 +190,12 @@ class TestFolderOperations(unittest.TestCase):
         target_folder_name, parent_target_folder_name = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-", create_parent=True)
         self.__class__._created_test_folders.append(parent_folder)
 
-        status, msg = self.__class__._openmail.imap.move_folder(f"{parent_folder}/{folder_name}", f"{parent_target_folder_name}/{target_folder_name}")
+        status, msg = self.__class__._openmail.imap.move_folder(f"{parent_folder}{self.__class__._ha_delimiter}{folder_name}", f"{parent_target_folder_name}{self.__class__._ha_delimiter}{target_folder_name}")
 
         self.assertTrue(status, msg)
         self.__class__._created_test_folders.append(parent_target_folder_name)
 
-        moved_folder_name = f"{parent_target_folder_name}/{target_folder_name}/{folder_name}"
+        moved_folder_name = f"{parent_target_folder_name}{self.__class__._ha_delimiter}{target_folder_name}{self.__class__._ha_delimiter}{folder_name}"
         self.assertIn(
             moved_folder_name,
             self.__class__._openmail.imap.get_folders()
@@ -205,7 +206,7 @@ class TestFolderOperations(unittest.TestCase):
         folder_name, parent_folder = DummyOperator.create_test_folder_and_get_name(self.__class__._openmail, "openmail-folder-test-inner-", create_parent=True)
         self.__class__._created_test_folders.append(parent_folder)
 
-        status, msg = self.__class__._openmail.imap.move_folder(f"{parent_folder}/{folder_name}", "")
+        status, msg = self.__class__._openmail.imap.move_folder(f"{parent_folder}{self.__class__._ha_delimiter}{folder_name}", "")
 
         self.assertTrue(status, msg)
         self.__class__._created_test_folders.append(folder_name)
@@ -226,7 +227,7 @@ class TestFolderOperations(unittest.TestCase):
         self.assertTrue(status, msg)
         self.__class__._created_test_folders.append(folder_name2)
 
-        moved_folder_name = f"{folder_name2}/{folder_name1}"
+        moved_folder_name = f"{folder_name2}{self.__class__._ha_delimiter}{folder_name1}"
         self.assertIn(
             moved_folder_name,
             self.__class__._openmail.imap.get_folders()
@@ -277,14 +278,14 @@ class TestFolderOperations(unittest.TestCase):
         self.__class__._created_test_folders.append(parent_folder_name)
 
         new_folder_name = NameGenerator.folder_name()[0]
-        status, msg = self.__class__._openmail.imap.rename_folder(f"{parent_folder_name}/{folder_name}", new_folder_name)
+        status, msg = self.__class__._openmail.imap.rename_folder(f"{parent_folder_name}{self.__class__._ha_delimiter}{folder_name}", new_folder_name)
 
         self.assertTrue(status, msg)
         self.__class__._created_test_folders.append(new_folder_name)
 
         folders = self.__class__._openmail.imap.get_folders()
-        old_folder_name = f"{parent_folder_name}/{folder_name}"
-        new_folder_name = f"{parent_folder_name}/{new_folder_name}"
+        old_folder_name = f"{parent_folder_name}{self.__class__._ha_delimiter}{folder_name}"
+        new_folder_name = f"{parent_folder_name}{self.__class__._ha_delimiter}{new_folder_name}"
         self.assertNotIn(old_folder_name, folders)
         self.assertIn(new_folder_name, folders)
 
