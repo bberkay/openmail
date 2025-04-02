@@ -10,8 +10,8 @@ import { removeFalsyParamsAndEmptyLists } from "$lib/utils";
 export enum GetRoutes {
     HELLO = "/hello",
     GET_ACCOUNTS = "/get-accounts",
-    GET_MAILBOXES = "/get-mailboxes",
-    PAGINATE_MAILBOXES = "/paginate-mailboxes",
+    GET_MAILBOX = "/get-mailbox",
+    PAGINATE_MAILBOX = "/paginate-mailbox",
     GET_FOLDERS = "/get-folders",
     GET_EMAIL_CONTENT = "/get-email-content",
     DOWNLOAD_ATTACHMENT = "/download-attachment",
@@ -40,9 +40,9 @@ export enum PostRoutes {
 interface QueryParams {
     [GetRoutes.HELLO]: {};
     [GetRoutes.GET_ACCOUNTS]: {};
-    [GetRoutes.GET_MAILBOXES]: {
+    [GetRoutes.GET_MAILBOX]: {
         pathParams: {
-            accounts: string;
+            account: string;
         };
         queryParams?: {
             folder?: string;
@@ -51,9 +51,9 @@ interface QueryParams {
             offset_end?: number;
         };
     };
-    [GetRoutes.PAGINATE_MAILBOXES]: {
+    [GetRoutes.PAGINATE_MAILBOX]: {
         pathParams: {
-            accounts: string;
+            account: string;
             offset_start?: number;
             offset_end?: number;
         };
@@ -184,8 +184,8 @@ export interface GetQueryResponse {
         connected: Account[];
         failed: Account[];
     };
-    [GetRoutes.GET_MAILBOXES]: OpenMailTaskResults<PMailbox>;
-    [GetRoutes.PAGINATE_MAILBOXES]: OpenMailTaskResults<PMailbox>;
+    [GetRoutes.GET_MAILBOX]: OpenMailTaskResults<PMailbox>;
+    [GetRoutes.PAGINATE_MAILBOX]: OpenMailTaskResults<PMailbox>;
     [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>;
     [GetRoutes.GET_EMAIL_CONTENT]: Email;
     [GetRoutes.DOWNLOAD_ATTACHMENT]: Attachment;
@@ -224,7 +224,8 @@ export class ApiService {
     ): Promise<GetResponse<T>> {
         const queryString = params ? ApiService.createQueryString(params) : "";
         const response = await fetch(url + endpoint + queryString);
-        return response.json();
+        const data = await response.json();
+        return data
     }
 
     static async post<T extends PostRoutes>(
@@ -246,6 +247,7 @@ export class ApiService {
                     : JSON.stringify(removeFalsyParamsAndEmptyLists(body)),
         });
 
-        return response.json();
+        const data = await response.json();
+        return data
     }
 }

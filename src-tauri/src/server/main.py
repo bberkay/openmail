@@ -501,7 +501,7 @@ async def get_mailbox(
         return Response(
             success=True,
             message="Emails fetched successfully.",
-            data=openmail_clients[account].imap.get_emails(offset_start, offset_end)
+            data={account: openmail_clients[account].imap.get_emails(offset_start, offset_end)}
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching emails.", str(e)))
@@ -511,7 +511,7 @@ async def paginate_mailbox(
     account: str,
     offset_start: int | None = None,
     offset_end: int | None = None
-) -> Response[Mailbox]:
+) -> Response[OpenMailTaskResults]:
     try:
         account = extract_email_address(account)
         response = check_openmail_connection_availability(account)
@@ -521,7 +521,7 @@ async def paginate_mailbox(
         return Response(
             success=True,
             message="Emails paginated successfully.",
-            data=openmail_clients[account].imap.get_emails(offset_start, offset_end)
+            data={account: openmail_clients[account].imap.get_emails(offset_start, offset_end)}
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while paginating emails.", str(e)))
@@ -529,7 +529,7 @@ async def paginate_mailbox(
 @app.get("/get-folders/{account}")
 async def get_folders(
     account: str,
-) -> Response[list[str]]:
+) -> Response[OpenMailTaskResults]:
     try:
         account = extract_email_address(account)
         response = check_openmail_connection_availability(account)
@@ -539,7 +539,7 @@ async def get_folders(
         return Response(
             success=True,
             message="Folders fetched successfully.",
-            data=openmail_clients[account].imap.get_folders(tagged=True)
+            data={account: openmail_clients[account].imap.get_folders(tagged=True)}
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching folders.", str(e)))
@@ -556,10 +556,10 @@ def get_email_content(
         if isinstance(response, Response):
             return response
 
-        return Response[Email](
+        return Response(
             success=True,
             message="Email content fetched successfully.",
-            data=openmail_clients[account].imap.get_email_content(unquote(folder), uid),
+            data=openmail_clients[account].imap.get_email_content(unquote(folder), uid)
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching email content.", str(e)))

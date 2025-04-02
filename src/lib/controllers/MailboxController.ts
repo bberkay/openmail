@@ -28,36 +28,54 @@ import {
 export const MAILBOX_LENGTH = 10;
 
 export class MailboxController {
-    private static _extractAndJoinEmails(
-        accountsOrEmailAddresses: Account | Account[] | string[],
-    ): string {
-        let accounts: (Account | string)[] = [];
-        if (!Array.isArray(accountsOrEmailAddresses)) {
-            accounts = [accountsOrEmailAddresses];
-        }
-
-        return accounts
-            .map((account) =>
-                typeof account !== "string" ? account.email_address : account,
-            )
-            .join(",");
-    }
-
     public static async init(): Promise<BaseResponse> {
-        let response;
-        response = await MailboxController.getFolders(SharedStore.accounts);
-        if (!response.success) {
-            return {
-                success: response.success,
-                message: response.message,
-            };
-        }
+        let response = {
+            success: false,
+            message: "Initialize does not finished.",
+        };
 
-        response = await MailboxController.getMailboxes(
-            SharedStore.accounts,
-            Folder.Inbox,
-            //{excluded_flags: [Mark.Seen]},
+        const folderResults = await Promise.allSettled(
+            SharedStore.accounts.map((account) =>
+                MailboxController.getFolders(account),
+            ),
         );
+
+        folderResults.forEach((result) => {
+            if (result.status === "fulfilled") {
+                response.success = result.value.success;
+                response.message = result.value.message;
+                if (!result.value.success) {
+                    // TODO: push result.value.something into failedFolders
+                }
+            } else {
+                response.success = false;
+                response.message = "Error while initializing folders.";
+                // TODO: push result.reason.something into failedFolders
+            }
+        });
+
+        const mailboxResults = await Promise.allSettled(
+            SharedStore.accounts.map((account) =>
+                MailboxController.getMailbox(account, Folder.Inbox, {
+                    excluded_flags: [Mark.Seen],
+                }),
+            ),
+        );
+
+        mailboxResults.forEach((result) => {
+            if (result.status === "fulfilled") {
+                response.success = result.value.success;
+                response.message = result.value.message;
+                if (!result.value.success) {
+                    // TODO: push result.value.something into failedFolders
+                }
+            } else {
+                response.success = false;
+                response.message = "Error while initializing mailboxes.";
+                // TODO: push result.reason.something into failedFolders
+            }
+        });
+
         return {
             success: response.success,
             message: response.success
@@ -66,15 +84,13 @@ export class MailboxController {
         };
     }
 
-    public static async getFolders(
-        accounts: Account | Account[],
-    ): Promise<BaseResponse> {
+    public static async getFolders(account: Account): Promise<BaseResponse> {
         const response = await ApiService.get(
             SharedStore.server,
             GetRoutes.GET_FOLDERS,
             {
                 pathParams: {
-                    accounts: MailboxController._extractAndJoinEmails(accounts),
+                    accounts: account.email_address,
                 },
             },
         );
@@ -108,19 +124,26 @@ export class MailboxController {
         };
     }
 
-    public static async getMailboxes(
-        accounts: Account | Account[],
+    public static async getMailbox(
+        account: Account,
         folder?: Folder | string,
         searchCriteria?: SearchCriteria | string,
         offsetStart?: number,
         offsetEnd?: number,
     ): Promise<BaseResponse> {
+        offsetStart = Math.max(1, offsetStart ?? 1);
+        offsetEnd = Math.max(1, offsetEnd ?? offsetStart - 1 + MAILBOX_LENGTH);
+
+        if (offsetStart > offsetEnd) {
+            throw Error("`offsetStart` can not be larger than `offsetEnd`");
+        }
+
         const response = await ApiService.get(
             SharedStore.server,
-            GetRoutes.GET_MAILBOXES,
+            GetRoutes.GET_MAILBOX,
             {
                 pathParams: {
-                    accounts: MailboxController._extractAndJoinEmails(accounts),
+                    account: account.email_address,
                 },
                 queryParams: {
                     folder: folder,
@@ -128,25 +151,43 @@ export class MailboxController {
                         searchCriteria && typeof searchCriteria !== "string"
                             ? JSON.stringify(searchCriteria)
                             : searchCriteria,
-                    offset_start: Math.max(1, offsetStart ?? 1),
-                    offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH),
+                    offset_start: offsetStart,
+                    offset_end: offsetEnd,
                 },
             },
         );
 
         if (response.success && response.data) {
-            if (SharedStore.mailboxes.length > 0) {
-                response.data.forEach((account) => {
-                    const targetMailbox = SharedStore.mailboxes.find(
-                        (current) =>
-                            current.email_address === account.email_address,
-                    );
-                    if (targetMailbox) {
-                        targetMailbox.result = account.result;
-                    }
-                });
-            } else {
-                SharedStore.mailboxes = response.data;
+            const currentMailbox = SharedStore.mailboxes[account.email_address];
+            const mailboxes =
+                Object.keys(SharedStore.mailboxes).length > 0
+                    ? Object.values(response.data)
+                    : [response.data[account.email_address]];
+
+            mailboxes.forEach((mailbox) => {
+                currentMailbox.total = mailbox.total;
+                currentMailbox.folder = mailbox.folder;
+                currentMailbox.emails = {
+                    prev: [],
+                    current: mailbox.emails,
+                    next: [],
+                };
+            });
+
+            if (offsetStart > 1) {
+                MailboxController.paginateEmails(
+                    account,
+                    offsetStart - 1 - MAILBOX_LENGTH,
+                    offsetStart - 1,
+                );
+            }
+
+            if (currentMailbox.total > offsetEnd) {
+                MailboxController.paginateEmails(
+                    account,
+                    offsetEnd + 1,
+                    offsetEnd + 1 + MAILBOX_LENGTH,
+                );
             }
         }
 
@@ -157,32 +198,48 @@ export class MailboxController {
     }
 
     public static async paginateEmails(
-        accounts: Account | Account[] | null = null,
+        account: Account,
         offsetStart?: number,
         offsetEnd?: number,
     ): Promise<BaseResponse> {
+        const currentMailbox = SharedStore.mailboxes[account.email_address];
+
+        offsetStart = Math.min(
+            currentMailbox.total,
+            Math.max(1, offsetStart ?? 1),
+        );
+        offsetEnd = Math.min(
+            currentMailbox.total,
+            Math.max(1, offsetEnd ?? offsetStart - 1 + MAILBOX_LENGTH),
+        );
+
+        if (offsetStart > offsetEnd) {
+            throw Error("`offsetStart` can not be larger than `offsetEnd`");
+        }
+
         const response = await ApiService.get(
             SharedStore.server,
-            GetRoutes.PAGINATE_MAILBOXES,
+            GetRoutes.PAGINATE_MAILBOX,
             {
                 pathParams: {
-                    accounts: MailboxController._extractAndJoinEmails(accounts),
-                    offset_start: Math.max(1, offsetStart ?? 1),
-                    offset_end: Math.max(1, offsetEnd ?? MAILBOX_LENGTH),
+                    account: account.email_address,
+                    offset_start: offsetStart,
+                    offset_end: offsetEnd,
                 },
             },
         );
 
         if (response.success && response.data) {
-            response.data.forEach((account) => {
-                const targetMailbox = SharedStore.mailboxes.find(
-                    (current) =>
-                        current.email_address === account.email_address,
-                );
-                if (targetMailbox) {
-                    targetMailbox.result = account.result;
-                }
-            });
+            const currentEmails = currentMailbox.emails.current;
+            const [, mailbox] = Object.values(response.data);
+            if (
+                Number(mailbox.emails[0].uid) <=
+                Number(currentEmails[currentEmails.length - 1].uid)
+            ) {
+                currentMailbox.emails.next = mailbox.emails;
+            } else {
+                currentMailbox.emails.prev = mailbox.emails;
+            }
         }
 
         return {
@@ -201,7 +258,7 @@ export class MailboxController {
             GetRoutes.GET_EMAIL_CONTENT,
             {
                 pathParams: {
-                    account: MailboxController._extractAndJoinEmails(account),
+                    account: account.email_address,
                     folder: folder,
                     uid: uid,
                 },
@@ -221,7 +278,7 @@ export class MailboxController {
             GetRoutes.DOWNLOAD_ATTACHMENT,
             {
                 pathParams: {
-                    account: MailboxController._extractAndJoinEmails(account),
+                    account: account.email_address,
                     folder: folder,
                     uid: uid,
                     name: name,
@@ -242,8 +299,8 @@ export class MailboxController {
     }
 
     public static async replyEmail(
-        formData: FormData,
         originalMessageId: string,
+        formData: FormData,
     ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
@@ -258,8 +315,8 @@ export class MailboxController {
     }
 
     public static async forwardEmail(
-        formData: FormData,
         originalMessageId: string,
+        formData: FormData,
     ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
@@ -277,36 +334,86 @@ export class MailboxController {
         account: Account,
         selection: string,
         folder: string,
+        offsetEndBeforeDelete?: number,
     ): Promise<BaseResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.DELETE_EMAIL,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 sequence_set: removeWhitespaces(selection),
                 folder: folder,
             },
         );
 
         if (response.success) {
+            const currentMailbox = SharedStore.mailboxes[account.email_address];
+
             // selection will be either 1:* or uids separated with comma
             // something like 1,2,3,4 but not 2:* or 1,3:*:5
-            if (
-                isExactFolderMatch(SharedStore.mailboxes[account.email_address].folder, folder)
-            ) {
+            if (isExactFolderMatch(currentMailbox.folder, folder)) {
                 if (selection === "1:*") {
-                    SharedStore.mailboxes[
-                        account.email_address
-                    ].emails.current = [];
+                    currentMailbox.emails.current = [];
+
+                    if (offsetEndBeforeDelete) {
+                        // After the selected emails are removed from current,
+                        // add back to current from next as many emails as were removed
+                        // (if not available, they should be loading, so wait for them;
+                        // if they are not loading, there is a problem because
+                        // when the number of emails in next decreases, new emails
+                        // should be loaded to bring next back to MAILBOX_LENGTH
+                        // using `paginateEmails()`) and then fetch enough emails from the server
+                        // with the `paginateEmails()` to bring next back to `MAILBOX_LENGTH`.
+                        const waitNext = setInterval(() => {
+                            if (currentMailbox.emails.next.length > 0) {
+                                currentMailbox.emails.current = currentMailbox.emails.next;
+                                clearInterval(waitNext);
+                                MailboxController.paginateEmails(
+                                    account,
+                                    offsetEndBeforeDelete * 2 + 1,
+                                );
+                            }
+                        }, 100);
+                    }
                 } else {
-                    SharedStore.mailboxes[
-                        account.email_address
-                    ].emails.current = SharedStore.mailboxes[
-                        account.email_address
-                    ].emails.current.filter(
-                        (email) =>
-                            !isUidInSelection(selection, removeWhitespaces(email.uid)),
-                    );
+                    const countBeforeDelete = currentMailbox.emails.current.length;
+                    currentMailbox.emails.current =
+                        currentMailbox.emails.current.filter(
+                            (email) =>
+                                !isUidInSelection(
+                                    selection,
+                                    removeWhitespaces(email.uid),
+                                ),
+                        );
+
+                    if (offsetEndBeforeDelete) {
+                        // Same as above, but part of the current not whole.
+                        // For example: current mailbox displays emails from
+                        // 1 to 10 and user delete 5 of them. Since next contains
+                        // emails from 11 to 20 (as explained above), get
+                        // first 5 emails from next i.e. 11,12,13,14,15 and
+                        // add them to the current. This way, the current should
+                        // reach `MAILBOX_LENGTH`. Hovewer, since 11,12,13,14,15 were
+                        // deleted, fill the gap of 5 emails by fetching 21,22,23,24,25
+                        // with `paginateEmails()` function.
+                        const waitNext = setInterval(() => {
+                            if (currentMailbox.emails.next.length > 0) {
+                                const deletedCount = countBeforeDelete - currentMailbox.emails.current.length;
+                                currentMailbox.emails.current.push(
+                                    ...currentMailbox.emails.next.splice(
+                                        0,
+                                        deletedCount,
+                                    ),
+                                );
+                                clearInterval(waitNext);
+                                MailboxController.paginateEmails(
+                                    account,
+                                    offsetEndBeforeDelete * 2 + 1,
+                                    offsetEndBeforeDelete * 2 + deletedCount,
+                                );
+                            }
+                        }, 100);
+                    }
                 }
             }
         }
@@ -322,12 +429,13 @@ export class MailboxController {
         selection: string,
         sourceFolder: string,
         destinationFolder: string,
+        offsetEndBeforeMove?: number
     ): Promise<BaseResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.MOVE_EMAIL,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 sequence_set: removeWhitespaces(selection),
                 source_folder: sourceFolder,
                 destination_folder: destinationFolder,
@@ -335,24 +443,54 @@ export class MailboxController {
         );
 
         if (response.success) {
-            // selection will be either 1:* or uids separated with comma
-            // something like 1,2,3,4 but not 2:* or 1,3:*:5
-            if (
-                isExactFolderMatch(SharedStore.mailboxes[account.email_address].folder, sourceFolder)
-            ) {
+            // same as `deleteEmails()`
+            const currentMailbox = SharedStore.mailboxes[account.email_address];
+            if (isExactFolderMatch(currentMailbox.folder, sourceFolder)) {
                 if (selection === "1:*") {
-                    SharedStore.mailboxes[
-                        account.email_address
-                    ].emails.current = [];
+                    currentMailbox.emails.current = [];
+
+                    if (offsetEndBeforeMove) {
+                        const waitNext = setInterval(() => {
+                            if (currentMailbox.emails.next.length > 0) {
+                                currentMailbox.emails.current = currentMailbox.emails.next;
+                                clearInterval(waitNext);
+                                MailboxController.paginateEmails(
+                                    account,
+                                    offsetEndBeforeMove * 2 + 1,
+                                );
+                            }
+                        }, 100);
+                    }
                 } else {
-                    SharedStore.mailboxes[
-                        account.email_address
-                    ].emails.current = SharedStore.mailboxes[
-                        account.email_address
-                    ].emails.current.filter(
-                        (email) =>
-                            !isUidInSelection(selection, removeWhitespaces(email.uid)),
-                    );
+                    const countBeforeMove = currentMailbox.emails.current.length;
+                    currentMailbox.emails.current =
+                        currentMailbox.emails.current.filter(
+                            (email) =>
+                                !isUidInSelection(
+                                    selection,
+                                    removeWhitespaces(email.uid),
+                                ),
+                        );
+
+                    if (offsetEndBeforeMove) {
+                        const waitNext = setInterval(() => {
+                            if (currentMailbox.emails.next.length > 0) {
+                                const deletedCount = countBeforeMove - currentMailbox.emails.current.length;
+                                currentMailbox.emails.current.push(
+                                    ...currentMailbox.emails.next.splice(
+                                        0,
+                                        deletedCount,
+                                    ),
+                                );
+                                clearInterval(waitNext);
+                                MailboxController.paginateEmails(
+                                    account,
+                                    offsetEndBeforeMove * 2 + 1,
+                                    offsetEndBeforeMove * 2 + deletedCount,
+                                );
+                            }
+                        }, 100);
+                    }
                 }
             }
         }
@@ -373,7 +511,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.COPY_EMAIL,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 sequence_set: removeWhitespaces(selection),
                 source_folder: sourceFolder,
                 destination_folder: destinationFolder,
@@ -396,7 +534,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.MARK_EMAIL,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 mark: mark,
                 sequence_set: removeWhitespaces(selection),
                 folder: folder,
@@ -404,18 +542,20 @@ export class MailboxController {
         );
 
         if (response.success) {
-            SharedStore.mailboxes[account.email_address].emails.current.forEach(
-                (email: Email) => {
-                    if (
-                        Object.hasOwn(email, "flags") &&
-                        email.flags &&
-                        (selection === "1:*" ||
-                            isUidInSelection(selection, removeWhitespaces(email.uid)))
-                    ) {
-                        email.flags.push(mark);
-                    }
-                },
-            );
+            const currentMailbox = SharedStore.mailboxes[account.email_address];
+            currentMailbox.emails.current.forEach((email: Email) => {
+                if (
+                    Object.hasOwn(email, "flags") &&
+                    email.flags &&
+                    (selection === "1:*" ||
+                        isUidInSelection(
+                            selection,
+                            removeWhitespaces(email.uid),
+                        ))
+                ) {
+                    email.flags.push(mark);
+                }
+            });
         }
 
         return {
@@ -434,7 +574,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.UNMARK_EMAIL,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 mark: mark,
                 sequence_set: removeWhitespaces(selection),
                 folder: folder,
@@ -442,20 +582,22 @@ export class MailboxController {
         );
 
         if (response.success) {
-            SharedStore.mailboxes[account.email_address].emails.current.forEach(
-                (email: Email) => {
-                    if (
-                        Object.hasOwn(email, "flags") &&
-                        email.flags &&
-                        (selection === "1:*" ||
-                            isUidInSelection(selection, removeWhitespaces(email.uid)))
-                    ) {
-                        email.flags = email.flags.filter(
-                            (flag: string) => flag !== mark,
-                        );
-                    }
-                },
-            );
+            const currentMailbox = SharedStore.mailboxes[account.email_address];
+            currentMailbox.emails.current.forEach((email: Email) => {
+                if (
+                    Object.hasOwn(email, "flags") &&
+                    email.flags &&
+                    (selection === "1:*" ||
+                        isUidInSelection(
+                            selection,
+                            removeWhitespaces(email.uid),
+                        ))
+                ) {
+                    email.flags = email.flags.filter(
+                        (flag: string) => flag !== mark,
+                    );
+                }
+            });
         }
 
         return {
@@ -473,7 +615,7 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.CREATE_FOLDER,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 folder_name: folderName,
                 parent_folder: parentFolder,
             },
@@ -500,35 +642,37 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.MOVE_FOLDER,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 folder_name: folderName,
                 destination_folder: destinationFolder,
             },
         );
 
         if (response.success) {
+            const currentMailbox = SharedStore.mailboxes[account.email_address];
+
             const oldFolderName = extractFolderName(folderName);
             if (destinationFolder !== "") destinationFolder += "/";
             const newFolderPath = `${destinationFolder}${folderName}`;
 
-            SharedStore.folders[account.email_address].custom.map(customFolderPath => {
-                if (isSubfolderOrMatch(customFolderPath, oldFolderName)) {
-                    return replaceFolderName(customFolderPath, oldFolderName, newFolderPath);
-                }
-            });
+            SharedStore.folders[account.email_address].custom.map(
+                (customFolderPath) => {
+                    if (isSubfolderOrMatch(customFolderPath, oldFolderName)) {
+                        return replaceFolderName(
+                            customFolderPath,
+                            oldFolderName,
+                            newFolderPath,
+                        );
+                    }
+                },
+            );
 
-            if (
-                isSubfolderOrMatch(
-                    SharedStore.mailboxes[account.email_address].folder,
+            if (isSubfolderOrMatch(currentMailbox.folder, oldFolderName)) {
+                currentMailbox.folder = replaceFolderName(
+                    currentMailbox.folder,
                     oldFolderName,
-                )
-            ) {
-                SharedStore.mailboxes[account.email_address].folder =
-                    replaceFolderName(
-                        SharedStore.mailboxes[account.email_address].folder,
-                        oldFolderName,
-                        newFolderPath,
-                    );
+                    newFolderPath,
+                );
             }
         }
 
@@ -547,13 +691,15 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.RENAME_FOLDER,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 folder_name: folderName,
                 new_folder_name: newFolderName,
             },
         );
 
         if (response.success) {
+            const currentMailbox = SharedStore.mailboxes[account.email_address];
+
             const oldFolderName = extractFolderName(folderName);
 
             SharedStore.folders[account.email_address].custom.map(
@@ -566,18 +712,12 @@ export class MailboxController {
                 },
             );
 
-            if (
-                isSubfolderOrMatch(
-                    SharedStore.mailboxes[account.email_address].folder,
+            if (isSubfolderOrMatch(currentMailbox.folder, oldFolderName)) {
+                currentMailbox.folder = replaceFolderName(
+                    currentMailbox.folder,
                     oldFolderName,
-                )
-            ) {
-                SharedStore.mailboxes[account.email_address].folder =
-                    replaceFolderName(
-                        SharedStore.mailboxes[account.email_address].folder,
-                        oldFolderName,
-                        newFolderName,
-                    );
+                    newFolderName,
+                );
             }
         }
 
@@ -596,48 +736,38 @@ export class MailboxController {
             SharedStore.server,
             PostRoutes.DELETE_FOLDER,
             {
-                account: MailboxController._extractAndJoinEmails(account),
+                account: account.email_address,
                 folder_name: folderName,
                 delete_subfolders: delete_subfolders,
             },
         );
 
         if (response.success) {
-            SharedStore.folders[account.email_address].custom =
-                SharedStore.folders[account.email_address].custom.filter(
-                    (customFolderPath) => {
-                        if (isExactFolderMatch(customFolderPath, folderName)) {
-                            return false;
-                        } else if (
-                            isSubfolderOrMatch(customFolderPath, folderName)
-                        ) {
-                            return !delete_subfolders;
-                        }
-                    },
-                );
+            const currentMailbox = SharedStore.mailboxes[account.email_address];
+            const currentFolders = SharedStore.folders[account.email_address];
+            currentFolders.custom = currentFolders.custom.filter(
+                (customFolderPath) => {
+                    if (isExactFolderMatch(customFolderPath, folderName)) {
+                        return false;
+                    } else if (
+                        isSubfolderOrMatch(customFolderPath, folderName)
+                    ) {
+                        return !delete_subfolders;
+                    }
+                },
+            );
 
-            if (
-                isExactFolderMatch(
-                    SharedStore.mailboxes[account.email_address].folder,
-                    folderName,
-                )
-            ) {
+            if (isExactFolderMatch(currentMailbox.folder, folderName)) {
                 SharedStore.mailboxes[account.email_address] = {
                     folder: "",
                     emails: { prev: [], current: [], next: [] },
                     total: 0,
                 };
-            } else if (
-                isSubfolderOrMatch(
-                    SharedStore.mailboxes[account.email_address].folder,
+            } else if (isSubfolderOrMatch(currentMailbox.folder, folderName)) {
+                currentMailbox.folder = removeFromPath(
+                    currentMailbox.folder,
                     folderName,
-                )
-            ) {
-                SharedStore.mailboxes[account.email_address].folder =
-                    removeFromPath(
-                        SharedStore.mailboxes[account.email_address].folder,
-                        folderName,
-                    );
+                );
             }
         }
 

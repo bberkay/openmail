@@ -129,7 +129,9 @@
                     const emailAddr = entry[0];
                     const recentEmails = entry[1];
 
-                    // Add email to mailbox
+                    // Add email summary of recent email to the top of the
+                    // current and shift emails that are overflowed from current
+                    // to next.
                     if (Object.hasOwn(SharedStore.mailboxes, emailAddr)
                         && isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)) {
                         const recentEmailsLength = recentEmails.length;
@@ -139,9 +141,19 @@
                         SharedStore.mailboxes[emailAddr].emails.next.splice(-1 * recentEmailsLength, recentEmailsLength);
                     }
 
-                    // and recent emails.
+                    // Fetch email content of recent email and add it into recentEmails.
                     if (Object.hasOwn(SharedStore.recentEmails, emailAddr)) {
-                        SharedStore.recentEmails[emailAddr].push(...recentEmails);
+                        for(const recentEmail of recentEmails) {
+                            MailboxController.getEmailContent(
+                                SharedStore.accounts.find(account => account.email_address === emailAddr)!,
+                                Folder.Inbox,
+                                recentEmail.uid
+                            ).then((response) => {
+                                if (response.success && response.data) {
+                                    SharedStore.recentEmails[emailAddr].push(response.data);
+                                }
+                            });
+                        }
                     }
                 });
             };
