@@ -253,6 +253,12 @@ export class MailboxController {
         folder: string,
         uid: string,
     ): Promise<GetResponse<GetRoutes.GET_EMAIL_CONTENT>> {
+        if (Object.hasOwn(SharedStore.recentEmails, account.email_address)) {
+            SharedStore.recentEmails[account.email_address] =
+                SharedStore.recentEmails[account.email_address].filter(
+                    (email) => email.uid !== uid,
+                );
+        }
         return await ApiService.get(
             SharedStore.server,
             GetRoutes.GET_EMAIL_CONTENT,
