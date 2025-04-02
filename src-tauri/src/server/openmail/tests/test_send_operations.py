@@ -504,8 +504,8 @@ class TestSendOperations(unittest.TestCase):
             body="test_reply_email",
         )
         status, _ = self.__class__._openmail.smtp.reply_email(
-            reply_email,
             sent_email_content.message_id,
+            reply_email,
             sent_email_content.sender,
             sent_email_content.body,
             sent_email_content.date
@@ -568,8 +568,8 @@ class TestSendOperations(unittest.TestCase):
             body="forward_email_subject",
         )
         status, _ = self.__class__._openmail.smtp.forward_email(
-            forward_email,
             sent_email_content.message_id,
+            forward_email,
             sent_email_content.sender,
             sent_email_content.receivers,
             sent_email_content.subject,
