@@ -109,7 +109,7 @@
     }
 
     function isRecentEmail(account: Account, email: TEmail): boolean {
-        return SharedStore.recentEmails[account.email_address].includes(email);
+        return !!SharedStore.recentEmails[account.email_address].find(em => em.uid === email.uid);
     }
 
     const showEmailContent = async (account: Account, selectedEmail: TEmail): Promise<void> => {
