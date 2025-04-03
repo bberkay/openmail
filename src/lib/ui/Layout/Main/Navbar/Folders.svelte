@@ -2,7 +2,6 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { isStandardFolder } from "$lib/utils";
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import CreateFolder from "$lib/ui/Layout/Main/Navbar/Folders/CreateFolder.svelte";
@@ -21,45 +20,38 @@
 
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
-            ? SharedStore.standardFolders[
+            ? SharedStore.folders[
                   (SharedStore.currentAccount as Account).email_address
-              ]
+              ].standard
             : [],
     );
     let customFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
-            ? SharedStore.customFolders[
+            ? SharedStore.folders[
                   (SharedStore.currentAccount as Account).email_address
-              ]
+              ].custom
             : [],
     );
 
     const setCurrentFolder = async (
         selectedFolder: string | Folder,
     ): Promise<void> => {
-        if (SharedStore.currentMailbox.folder !== selectedFolder) {
-            if (
-                SharedStore.mailboxes[
-                    (SharedStore.currentAccount as Account).email_address
-                ].folder !== selectedFolder
-            ) {
-                const response = await MailboxController.getMailboxes(
-                    SharedStore.currentAccount as Account,
-                    selectedFolder,
-                );
-                if (!response.success) {
-                    showMessage({
-                        content: "Error, folder could not fetch.",
-                    });
-                    console.error(response.message);
-                    return;
-                }
-            }
+        const currentFolder = SharedStore.mailboxes[
+            (SharedStore.currentAccount as Account).email_address
+        ].folder;
 
-            SharedStore.currentMailbox =
-                SharedStore.mailboxes[
-                    (SharedStore.currentAccount as Account).email_address
-                ];
+        if (currentFolder !== selectedFolder) {
+            const response = await MailboxController.getMailbox(
+                SharedStore.currentAccount as Account,
+                selectedFolder,
+            );
+            if (!response.success) {
+                showMessage({
+                    content: "Error, folder could not fetch.",
+                });
+                console.error(response.message);
+                return;
+            }
         }
 
         showContent(Mailbox);
@@ -98,8 +90,10 @@
 
 <Select.Root
     onchange={handleOperation}
-    value={SharedStore.currentMailbox.folder}
-    placeholder="Folder"
+    value={SharedStore.currentAccount === "home"
+        ? Folder.Inbox
+        : SharedStore.mailboxes[SharedStore.currentAccount.email_address]
+              .folder}
     enableSearch={true}
     disabled={SharedStore.currentAccount === "home"}
 >
