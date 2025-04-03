@@ -23,43 +23,36 @@
         isNotificationsHidden = !isNotificationsHidden;
     };
 
-    const showHome = async (): Promise<void> => {
-        if (SharedStore.currentAccount === "home") return;
+    async function showMailboxOfReceiver(receiverEmailAddress: string) {
+        if (receiverEmailAddress === "home") return;
 
-        SharedStore.currentAccount = "home";
+        SharedStore.currentAccount = SharedStore.accounts.find(
+            (acc) => acc.email_address == receiverEmailAddress,
+        )!;
 
-        const nonInboxAccounts: Account[] = [];
-        for (const emailAddr in SharedStore.mailboxes) {
-            if (
-                !isStandardFolder(
-                    SharedStore.mailboxes[emailAddr].folder,
-                    Folder.Inbox,
-                )
-            ) {
-                nonInboxAccounts.push(
-                    SharedStore.accounts.find(
-                        (acc) => acc.email_address === emailAddr,
-                    )!,
-                );
-            }
-        }
-
-        if (nonInboxAccounts.length >= 1) {
-            const response = await MailboxController.getMailboxes(
-                nonInboxAccounts,
+        if (
+            isStandardFolder(
+                SharedStore.mailboxes[SharedStore.currentAccount.email_address]
+                    .folder,
                 Folder.Inbox,
-            );
-            if (!response.success) {
-                showMessage({
-                    content: "Error, account could not set.",
-                });
-                console.error(response.message);
-                return;
-            }
+            )
+        )
+            return;
+
+        const response = await MailboxController.getMailbox(
+            SharedStore.currentAccount,
+            Folder.Inbox,
+        );
+        if (!response.success) {
+            showMessage({
+                content: "Error, folder could not fetch.",
+            });
+            console.error(response.message);
+            return;
         }
 
         showContent(Mailbox);
-    };
+    }
 
     async function getEmailContent(account: Account, uid: string) {
         const response = await MailboxController.getEmailContent(
@@ -74,72 +67,13 @@
             console.error(response.message);
             return;
         }
-        return response;
+        return response.data;
     }
 
-    const showEmailContent = async (
-        receiverEmailAddress: string,
-        uid: string,
-    ): Promise<void> => {
-        const receiverAccount = SharedStore.accounts.find(
-            (acc) => acc.email_address == receiverEmailAddress,
-        )!;
-
-        const response = await getEmailContent(receiverAccount, uid);
-        if (!response) return;
-
-        showContent(Email, {
-            account: receiverAccount,
-            email: response.data,
-            previouslyAtHome: SharedStore.currentAccount === "home",
-        });
-    };
-
-    const showMailboxOfReceiver = async (
-        receiverEmailAddress: string,
-    ): Promise<void> => {
-        if (
-            SharedStore.currentAccount !== "home" &&
-            SharedStore.currentAccount.email_address === receiverEmailAddress &&
-            isStandardFolder(SharedStore.mailboxes[SharedStore.currentAccount.email_address].folder, Folder.Inbox)
-        ) {
-            return;
-        }
-
-        const newAccount = receiverEmailAddress == "home"
-            ? "home"
-            : SharedStore.accounts.find(
-                (acc) => acc.email_address == receiverEmailAddress,
-            )!;
-
-        SharedStore.currentAccount = newAccount;
-
-        if (
-            !isStandardFolder(
-                SharedStore.mailboxes[newAccount.email_address].folder,
-                Folder.Inbox,
-            )
-        ) {
-            const response = await MailboxController.getMailboxes(
-                newAccount,
-                Folder.Inbox,
-            );
-            if (!response.success) {
-                showMessage({
-                    content: "Error, folder could not fetch.",
-                });
-                console.error(response.message);
-                return;
-            }
-        }
-
-        showContent(Mailbox);
-    };
-
-    const replyReceivedEmail = async (
+    async function replyReceivedEmail(
         receiverAccount: Account,
         receivedEmail: TEmail,
-    ) => {
+    ) {
         showContent(Compose, {
             message: {
                 composeType: "reply",
@@ -150,11 +84,11 @@
                 originalBody: (await getEmailContent(
                     receiverAccount,
                     receivedEmail.uid,
-                ))!.data!.body,
+                ))!.body,
                 originalDate: receivedEmail.date,
             },
         });
-    };
+    }
 
     let notificationsContainer: HTMLElement;
     onMount(() => {
@@ -191,6 +125,64 @@
                 });
             });
     });
+
+    const showHome = async (): Promise<void> => {
+        if (SharedStore.currentAccount === "home") return;
+
+        SharedStore.currentAccount = "home";
+
+        const nonInboxAccounts: Account[] = [];
+        for (const emailAddr in SharedStore.mailboxes) {
+            if (
+                !isStandardFolder(
+                    SharedStore.mailboxes[emailAddr].folder,
+                    Folder.Inbox,
+                )
+            ) {
+                nonInboxAccounts.push(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === emailAddr,
+                    )!,
+                );
+            }
+        }
+
+        if (nonInboxAccounts.length >= 1) {
+            nonInboxAccounts.forEach(async (account) => {
+                const response = await MailboxController.getMailbox(
+                    account,
+                    Folder.Inbox,
+                );
+                if (!response.success) {
+                    showMessage({
+                        content: `Error, inbox of ${account.email_address} could not retrived.`,
+                    });
+                    console.error(response.message);
+                    return;
+                }
+            });
+        }
+
+        showContent(Mailbox);
+    };
+
+    const showEmailContent = async (
+        receiverEmailAddress: string,
+        uid: string,
+    ): Promise<void> => {
+        const account = SharedStore.accounts.find(
+            (acc) => acc.email_address == receiverEmailAddress,
+        )!;
+
+        const email = await getEmailContent(account, uid);
+        if (!email) return;
+
+        showContent(Email, {
+            account,
+            email,
+            previouslyAtHome: SharedStore.currentAccount === "home",
+        });
+    };
 
     const clearRecentEmails = (
         recentEmailReceiverAddress?: string,
