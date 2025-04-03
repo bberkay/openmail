@@ -1927,8 +1927,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 draft_mailbox_name,
                 '',
                 imaplib.Time2Internaldate(time.time()),
-                draft.as_string.encode("utf-8")
-            ),
+                email.as_string().encode("utf-8")
+            ), # type: ignore
             "Email saved as draft successfully.",
             "There was an error while saving email as draft."
         )
