@@ -34,7 +34,7 @@
 
         const nonInboxAccounts: Account[] = [];
         const mailboxesToCheck = SharedStore.currentAccount === "home"
-            ? SharedStore.mailboxes
+            ? Object.keys(SharedStore.mailboxes)
             : [SharedStore.currentAccount.email_address]
         for (const emailAddr in mailboxesToCheck) {
             if (
@@ -49,33 +49,21 @@
         }
 
         if (nonInboxAccounts.length >= 1) {
-            const response = await MailboxController.getMailboxes(
-                nonInboxAccounts,
-                Folder.Inbox,
-            );
-            if (!response.success) {
-                showMessage({
-                    content: "Error, account could not set.",
-                });
-                console.error(response.message);
-                return;
-            }
+            nonInboxAccounts.forEach(async (account) => {
+                const response = await MailboxController.getMailbox(
+                    account,
+                    Folder.Inbox,
+                );
+                if (!response.success) {
+                    showMessage({
+                        content: `Error, inbox of ${account.email_address} could not retrived.`,
+                    });
+                    console.error(response.message);
+                    return;
+                }
+            })
         }
 
-        if (SharedStore.currentAccount === "home") {
-            SharedStore.currentMailbox.folder = Folder.Inbox;
-            Object.values(SharedStore.mailboxes).forEach((mailbox) => {
-                SharedStore.currentMailbox.total += mailbox.total;
-                SharedStore.currentMailbox.emails.prev.push(...mailbox.emails.prev);
-                SharedStore.currentMailbox.emails.current.push(...mailbox.emails.current);
-                SharedStore.currentMailbox.emails.next.push(...mailbox.emails.next);
-            });
-            Object.values(SharedStore.currentMailbox.emails).forEach((emails) => {
-                emails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            })
-        } else {
-            SharedStore.currentMailbox = SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address];
-        }
         showContent(Mailbox);
     };
 
