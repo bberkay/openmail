@@ -17,6 +17,7 @@
         concatValueAndUnit,
         convertSizeToBytes,
         isObjEmpty,
+        createSenderAddress,
     } from "$lib/utils";
     import { Size } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
@@ -74,22 +75,27 @@
             : []
     );
 
+    let searchingAccount: typeof SharedStore.currentAccount = $state(SharedStore.currentAccount);
+
     const search = async (): Promise<void> => {
-        const response = await MailboxController.getMailboxes(
-            SharedStore.currentAccount === "home"
-                ? SharedStore.accounts
-                : SharedStore.currentAccount,
-            searchingFolder,
-            isExtraOptionsHidden
-                ? simpleSearchInput.value
-                : isObjEmpty(searchCriteria)
-                  ? searchCriteria
-                  : undefined,
-        );
-        if (!response.success) {
-            showMessage({ content: "Error while searching for emails." });
-            console.error(response.message);
-        }
+        const accounts = searchingAccount === "home"
+            ? SharedStore.accounts
+            : [SharedStore.currentAccount as Account];
+        accounts.forEach(async (account) => {
+            const response = await MailboxController.getMailbox(
+                account,
+                searchingFolder,
+                isExtraOptionsHidden
+                    ? simpleSearchInput.value
+                    : isObjEmpty(searchCriteria)
+                      ? searchCriteria
+                      : undefined,
+            );
+            if (!response.success) {
+                showMessage({ content: "Error while searching for emails." });
+                console.error(response.message);
+            }
+        })
     };
 
     const debouncedSearch = debounce((e: Event) => {
@@ -103,6 +109,13 @@
     const toggleExtraOptions = () => {
         isExtraOptionsHidden = !isExtraOptionsHidden;
     };
+
+    const selectSearchingAccount = (selectedAccount: string) => {
+        searchingAccount = selectedAccount === "home"
+            ? selectedAccount
+            : SharedStore.accounts.find(acc => acc.email_address === selectedAccount)!;
+        ;
+    }
 
     const selectFolder = (selectedFolder: string | Folder) => {
         searchingFolder = selectedFolder;
@@ -247,7 +260,7 @@
             <Input.Basic
                 type="text"
                 id="simple-search"
-                placeholder="Search 'someone@mail.xyz' or 'meeting notes'..."
+                placeholder="Search for {searchingAccount}..."
                 onkeyup={debouncedSearch}
                 onblur={debouncedSearch}
             />
@@ -260,6 +273,22 @@
         </Input.Group>
         {#if !isExtraOptionsHidden}
             <div class="search-extra-options" bind:this={extraOptionsWrapper}>
+                <FormGroup>
+                    <Label for="searching-account">Searching Account</Label>
+                    <Select.Root
+                        id="searching-account"
+                        value={SharedStore.currentAccount === "home" ? "home" : SharedStore.currentAccount.email_address}
+                        onchange={selectSearchingAccount}
+                    >
+                        <Select.Option value="home">Home</Select.Option>
+                        <Select.Separator />
+                        {#each SharedStore.accounts as account}
+                            <Select.Option value={account.email_address}>
+                                {createSenderAddress(account.email_address, account.fullname)}
+                            </Select.Option>
+                        {/each}
+                    </Select.Root>
+                </FormGroup>
                 {#if SharedStore.currentAccount !== "home"}
                     <FormGroup>
                         <Label for="searching-folder">Folder</Label>
