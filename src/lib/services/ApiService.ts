@@ -2,6 +2,7 @@ import type {
     Account,
     Attachment,
     Email,
+    Draft,
     PMailbox,
     OpenMailTaskResults,
 } from "$lib/types";
@@ -110,16 +111,7 @@ interface PostBody {
         account: string;
     };
     [PostRoutes.REMOVE_ACCOUNTS]: {};
-    [PostRoutes.SEND_EMAIL]: {
-        senders: string;
-        receivers: string;
-        subject: string;
-        body: string;
-        uid?: string;
-        cc?: string;
-        bcc?: string;
-        attachments?: File[];
-    };
+    [PostRoutes.SEND_EMAIL]: FormData | Draft;
     [PostRoutes.REPLY_EMAIL]: PostBody[PostRoutes.SEND_EMAIL];
     [PostRoutes.FORWARD_EMAIL]: PostBody[PostRoutes.SEND_EMAIL];
     [PostRoutes.MARK_EMAIL]: {
@@ -231,7 +223,7 @@ export class ApiService {
     static async post<T extends PostRoutes>(
         url: string,
         endpoint: T,
-        body: PostBody[T] | FormData,
+        body: PostBody[T],
         params?: QueryParams[T]
     ): Promise<PostResponse> {
         const queryString = params ? ApiService.createQueryString(params) : "";

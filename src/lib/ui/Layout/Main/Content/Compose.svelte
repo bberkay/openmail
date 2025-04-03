@@ -2,9 +2,9 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { extractEmailAddress, isStandardFolder } from "$lib/utils";
     import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from "$lib/constants";
-    import { Folder, type Account } from "$lib/types";
+    import { Folder, type Account, type Draft } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
     import {
         createSenderAddress,
@@ -22,6 +22,7 @@
     import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
     interface Props {
         originalMessageContext?: {
@@ -42,8 +43,9 @@
     let ccInput: HTMLInputElement;
     let bccInput: HTMLInputElement;
 
+    let senderAccounts: Account[] = $state([]);
+
     let body: WYSIWYGEditor;
-    let senders: string[] = $state([]);
     let receivers: string[] = $state(
         originalMessageContext
             ? originalMessageContext.originalReceivers
@@ -93,6 +95,15 @@
         }
     });
 
+    onDestroy(() => { body.clear() });
+
+    const addSenderAccount = (senderEmailAddr: string) => {
+        const senderAccount = SharedStore.accounts.find(
+            acc => acc.email_address === senderEmailAddr
+        )!;
+        senderAccounts.push(senderAccount);
+    }
+
     const addReceiver = (e: Event) => {
         addEmailToAddressList(e, receiverInput, receivers);
     };
@@ -105,87 +116,100 @@
         addEmailToAddressList(e, bccInput, bcc);
     };
 
-    const sendEmail = async (e: Event): Promise<void> => {
+    const sendEmail = async (e: Event, sender: string): Promise<void> => {
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
 
-        formData.set("sender", senders.join(","));
-        formData.set("receivers", receivers.join(","));
-
-        if (!formData.get("sender")) {
-            showMessage({ content: "At least one sender must be added" });
-            console.error("At least one sender must be added");
-            return;
-        }
+        formData.append("receivers", receivers.join(","));
         if (!formData.get("receivers")) {
             showMessage({ content: "At least one receiver must be added" });
             console.error("At least one receiver must be added");
             return;
         }
 
-        formData.set("cc", cc.join(","));
-        formData.set("bcc", bcc.join(","));
-        formData.set("body", body.getHTMLContent());
+        formData.append("sender", sender);
+        formData.append("cc", cc.join(","));
+        formData.append("bcc", bcc.join(","));
 
-        let sentResponse;
-        if (originalMessageContext) {
-            if (originalMessageContext.composeType === "reply") {
-                sentResponse = await MailboxController.replyEmail(
-                    formData,
-                    originalMessageContext.originalMessageId,
-                );
+        const confirmWrapper = async () => {
+            let sentResponse;
+            if (originalMessageContext) {
+                if (originalMessageContext.composeType === "reply") {
+                    sentResponse = await MailboxController.replyEmail(
+                        originalMessageContext.originalMessageId,
+                        formData
+                    );
+                } else {
+                    sentResponse = await MailboxController.forwardEmail(
+                        originalMessageContext.originalMessageId,
+                        formData
+                    );
+                }
             } else {
-                sentResponse = await MailboxController.forwardEmail(
-                    formData,
-                    originalMessageContext.originalMessageId,
-                );
+                sentResponse = await MailboxController.sendEmail(formData);
             }
-        } else {
-            sentResponse = await MailboxController.sendEmail(formData);
+
+            if (!sentResponse.success) {
+                showMessage({ content: "Error, email could not sent." });
+                console.error(sentResponse!.message);
+                return;
+            }
         }
 
-        if (!sentResponse.success) {
-            showMessage({ content: "Error, email could not sent." });
-            console.error(sentResponse!.message);
-            return;
+        if (!formData.get("subject")) {
+            showConfirm({
+                content: "The subject field is empty. Are you sure you want to send the email without a subject?",
+                onConfirmText: "Yes, send.",
+                onConfirm: confirmWrapper
+            });
         }
 
-        body.clear();
+        formData.append("body", body.getHTMLContent());
+        if (!formData.get("body")) {
+            showConfirm({
+                content: "The message body is empty. Are you sure you want to send the email without any content?",
+                onConfirmText: "Yes, send.",
+                onConfirm: confirmWrapper
+            });
+        }
+    };
+
+    const sendEmails = async (e: Event) => {
+        for(const account of senderAccounts) {
+            sendEmail(e, createSenderAddress(account.email_address, account.fullname));
+        }
+
+        if (SharedStore.currentAccount === "home" || senderAccounts.includes(SharedStore.currentAccount)) {
+            SharedStore.currentAccount = senderAccounts[0];
+        }
 
         // Show first sender's Folder.Sent mailbox.
-        const sentFolderOfAccount = SharedStore.standardFolders[
-            senders[0]
-        ].find((folder: string) =>
-            isStandardFolder(folder, Folder.Sent)
-        )!;
-
-        if (SharedStore.currentMailbox.folder !== sentFolderOfAccount) {
-            const response = await MailboxController.getMailboxes(
-                (SharedStore.currentAccount as Account),
-                sentFolderOfAccount
+        if (!isStandardFolder(SharedStore.mailboxes[SharedStore.currentAccount.email_address].folder, Folder.Sent)) {
+            const response = await MailboxController.getMailbox(
+                SharedStore.currentAccount,
+                Folder.Sent
             );
 
             if (!response.success) {
-                showMessage({content: "Failed to retrieve the folder. Please try again"});
+                showMessage({content: "Failed to retrieve sent folder. Please try again"});
                 console.error(response.message);
                 return;
             }
         }
 
-        SharedStore.currentMailbox = SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address];
         showContent(Mailbox);
-    };
+    }
 </script>
 
 <div class="compose" bind:this={composeWrapper}>
-    <Form onsubmit={sendEmail}>
+    <Form onsubmit={sendEmails}>
         <div>
             <FormGroup>
                 <Label for="senders">Sender(s)</Label>
                 <Select.Root
                     id="senders"
                     placeholder="Add sender"
-                    onchange={(addr) => senders.push(addr)}
+                    onchange={addSenderAccount}
                 >
                     {#each SharedStore.accounts as account}
                         {@const sender = createSenderAddress(
@@ -198,12 +222,12 @@
                     {/each}
                 </Select.Root>
                 <div class="tags">
-                    {#each senders as sender}
+                    {#each senderAccounts as account}
                         <Badge
-                            content={sender}
+                            content={account.email_address}
                             onclick={() => {
-                                senders = receivers.filter(
-                                    (addr) => addr !== sender,
+                                senderAccounts = senderAccounts.filter(
+                                    (addr) => addr.email_address !== account.email_address,
                                 );
                             }}
                         />

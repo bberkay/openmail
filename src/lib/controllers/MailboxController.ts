@@ -11,6 +11,7 @@ import {
     Folder,
     Mark,
     type Account,
+    type Draft,
     type Email,
     type SearchCriteria,
 } from "$lib/types";
@@ -296,22 +297,22 @@ export class MailboxController {
         );
     }
 
-    public static async sendEmail(formData: FormData): Promise<PostResponse> {
+    public static async sendEmail(email: FormData | Draft): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.SEND_EMAIL,
-            formData,
+            email,
         );
     }
 
     public static async replyEmail(
         originalMessageId: string,
-        formData: FormData,
+        email: FormData | Draft,
     ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.REPLY_EMAIL,
-            formData,
+            email,
             {
                 pathParams: {
                     original_message_id: originalMessageId,
@@ -322,12 +323,12 @@ export class MailboxController {
 
     public static async forwardEmail(
         originalMessageId: string,
-        formData: FormData,
+        email: FormData | Draft,
     ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.FORWARD_EMAIL,
-            formData,
+            email,
             {
                 pathParams: {
                     original_message_id: originalMessageId,
