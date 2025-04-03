@@ -172,56 +172,34 @@ class SMTPManager(smtplib.SMTP):
         except Exception as e:
             raise SMTPManagerException(f"Could not disconnect from the target smtp server: {str(e)}") from None
 
-    def send_message(
-        self,
-        msg: Message,
-        from_addr: str | None = None,
-        to_addrs: str | Sequence[str] | None = None,
-        mail_options: Sequence[str] = (),
-        rcpt_options: Sequence[str] = ()
-    ) -> SMTPCommandResult:
-        try:
-            # `send_message` func returns empty dict on success.
-            return super().send_message(
-                msg,
-                from_addr,
-                to_addrs,
-                mail_options,
-                rcpt_options
-            ) or (True, "Email sent successfully")
-        except Exception as e:
-            raise SMTPManagerException(f"Error, email prepared but could not be sent: {str(e)}") from e
-
-    def send_email(self, email: Draft) -> SMTPCommandResult:
+    def create_email(self, draft: Draft) -> EmailMessage:
         """
-        Send an email with optional attachments and metadata.
+        Create an EmailMessage from a Draft object.
 
         Args:
-            email (Draft): The email to be sent.
+            draft (Draft): The draft object from which to create the email message.
 
         Returns:
-            SMTPCommandResult: A tuple containing:
-                - A bool indicating whether the email was sent successfully.
-                - A string containing a success message or an error message.
+            EmailMessage: The constructed email message object.
         """
         try:
             all_emails = []
-            receivers = set(email.receivers if isinstance(email.receivers, str) else email.receivers)
+            receivers = set(draft.receivers if isinstance(draft.receivers, str) else draft.receivers)
             receivers = extract_email_addresses(receivers or [])
             all_emails.extend(receivers)
             receivers = ", ".join(receivers)
 
             cc = None
-            if email.cc:
-                cc = set(email.cc if isinstance(email.cc, str) else email.cc)
+            if draft.cc:
+                cc = set(draft.cc if isinstance(draft.cc, str) else draft.cc)
                 cc = extract_email_addresses(cc or [])
                 cc = [address for address in cc if address not in all_emails]
                 all_emails.extend(cc)
                 cc = ", ".join(cc)
 
             bcc = None
-            if email.bcc:
-                bcc = set(email.bcc if isinstance(email.bcc, str) else email.bcc)
+            if draft.bcc:
+                bcc = set(draft.bcc if isinstance(draft.bcc, str) else draft.bcc)
                 bcc = extract_email_addresses(bcc or [])
                 bcc = [address for address in bcc if address not in all_emails]
                 del all_emails
@@ -233,35 +211,35 @@ class SMTPManager(smtplib.SMTP):
             # `sender` can be a string(just email) or a tuple (name, email).
             msg = EmailMessage()
             msg['From'] = Address(
-                display_name=extract_fullname(email.sender),
-                username=extract_username(email.sender),
-                domain=extract_domain(email.sender, full=True)
+                display_name=extract_fullname(draft.sender),
+                username=extract_username(draft.sender),
+                domain=extract_domain(draft.sender, full=True)
             )
             msg['To'] = receivers
-            msg['Subject'] = email.subject
+            msg['Subject'] = draft.subject
             if cc: msg['Cc'] = cc
             if bcc: msg['Bcc'] = bcc
-            if email.in_reply_to: msg["In-Reply-To"] = email.in_reply_to
-            if email.references: msg["References"] = email.references
+            if draft.in_reply_to: msg["In-Reply-To"] = draft.in_reply_to
+            if draft.references: msg["References"] = draft.references
         except Exception as e:
             raise SMTPManagerException(f"Error while creating email headers: {str(e)}") from None
 
         try:
-            if email.metadata:
-                for key, value in email.metadata.items():
+            if draft.metadata:
+                for key, value in draft.metadata.items():
                     msg[key] = value
         except Exception as e:
             print(f"Error while adding metadata to headers: {str(e)} - Skipping metadata.")
 
         # First payload, text/plain.
-        msg.set_content(HTMLParser.parse(email.body))
+        msg.set_content(HTMLParser.parse(draft.body))
 
         # Extract inline attachments, create cid for inline attachments,
         # and change the body with generated cids.
         position_shift = 0
         inline_attachments: list[Attachment] = []
         inline_attachments_cids = set()
-        for match in MessageParser.get_inline_attachment_sources(email.body):
+        for match in MessageParser.get_inline_attachment_sources(draft.body):
             try:
                 inline_attachment = None
                 src_start, src_value, src_end = match
@@ -272,7 +250,7 @@ class SMTPManager(smtplib.SMTP):
                     raise SMTPManagerException("Inline image size exceeds the maximum allowed size.")
 
                 src_cid = f"cid:{inline_attachment.cid}"
-                email.body = email.body[:src_start] + src_cid + email.body[src_end:]
+                draft.body = draft.body[:src_start] + src_cid + draft.body[src_end:]
 
                 position_shift += len(src_cid) - (src_end - src_start)
 
@@ -286,14 +264,14 @@ class SMTPManager(smtplib.SMTP):
                 print(f"Error while converting inline attachment to base64 data: `{str(e)}` - Skipping inline image...")
 
         # Second payload, text/html.
-        if HTMLParser.is_html(email.body):
-            msg.add_alternative(email.body, subtype="html")
+        if HTMLParser.is_html(draft.body):
+            msg.add_alternative(draft.body, subtype="html")
 
         # Attach inline attachments to `msg` according to their cid number.
         if inline_attachments:
             for inline_attachment in inline_attachments:
                 try:
-                    related_payload = msg.get_payload()[1]
+                    related_payload = draft.get_payload()[1]
                     related_payload.add_related(
                         base64.b64decode(
                             inline_attachment.data
@@ -313,9 +291,9 @@ class SMTPManager(smtplib.SMTP):
             inline_attachments.clear()
 
         # Attach attachments to `msg`.
-        if email.attachments:
+        if draft.attachments:
             generated_attachment_cids = set()
-            for attachment in email.attachments:
+            for attachment in draft.attachments:
                 try:
                     if attachment.cid in generated_attachment_cids:
                         print("Duplicate attachments found. Skipping MIME attachment.")
@@ -346,11 +324,45 @@ class SMTPManager(smtplib.SMTP):
                 except Exception as e:
                     print(f"Error while creating MIME attachment: `{str(e)}` - Skipping MIME attachment.")
 
-        return self.send_message(msg)
+        return msg
+
+    def send_message(
+        self,
+        msg: Message,
+        from_addr: str | None = None,
+        to_addrs: str | Sequence[str] | None = None,
+        mail_options: Sequence[str] = (),
+        rcpt_options: Sequence[str] = ()
+    ) -> SMTPCommandResult:
+        try:
+            # `send_message` func returns empty dict on success.
+            return super().send_message(
+                msg,
+                from_addr,
+                to_addrs,
+                mail_options,
+                rcpt_options
+            ) or (True, "Email sent successfully")
+        except Exception as e:
+            raise SMTPManagerException(f"Error, email prepared but could not be sent: {str(e)}") from e
+
+    def send_email(self, draft: Draft) -> SMTPCommandResult:
+        """
+        Create and email from draft and send it.
+
+        Args:
+            draft (Draft): The draft object from which to create and send the email.
+
+        Returns:
+            SMTPCommandResult: A tuple containing:
+                - A bool indicating whether the email was sent successfully.
+                - A string containing a success message or an error message.
+        """
+        return self.send_message(self.create_email(draft))
 
     def reply_email(self,
         original_message_id: str,
-        email: Draft,
+        draft: Draft,
         original_sender: tuple[str, str] | str = "",
         original_subject: str = "",
         original_body: str = "",
@@ -360,8 +372,8 @@ class SMTPManager(smtplib.SMTP):
         Reply to an existing email. Uses the `send_email` method internally.
 
         Args:
-            email (Draft): The draft email object to send as a reply.
             original_message_id (str): The Message-ID of the email being replied to.
+            draft (Draft): The draft email object to send as a reply.
             original_sender (tuple[str, str] | str, optional): The sender of the original email.
             original_subject (str, optional): The subject content of the original email.
             original_body (str, optional): The body content of the original email.
@@ -376,7 +388,7 @@ class SMTPManager(smtplib.SMTP):
             raise SMTPManagerException(f"Cannot reply to an email without `original_message_id`.")
 
         try:
-            email_to_reply = copy.copy(email)
+            email_to_reply = copy.copy(draft)
             email_to_reply.in_reply_to = original_message_id
             email_to_reply.references = (
                 (email_to_reply.references or "") + " " + original_message_id
@@ -410,7 +422,7 @@ class SMTPManager(smtplib.SMTP):
 
     def forward_email(self,
         original_message_id: str,
-        email: Draft,
+        draft: Draft,
         original_sender: tuple[str, str] | str = "",
         original_receivers: str = "", # mail addresses separated by comma
         original_subject: str = "",
@@ -422,8 +434,8 @@ class SMTPManager(smtplib.SMTP):
         method internally.
 
         Args:
-            email (Draft): The email to be forwarded.
             original_message_id (str): The Message-ID of the email being forwarded.
+            draft (Draft): The email to be forwarded.
             original_sender (tuple[str, str] | str, optional): The sender of the original email.
             original_receivers (str, optional): The receivers email addresses of the original
             email (separated by comma).
@@ -440,7 +452,7 @@ class SMTPManager(smtplib.SMTP):
             raise SMTPManagerException(f"Cannot forward to an email without `original_message_id`.")
 
         try:
-            email_to_forward = copy.copy(email)
+            email_to_forward = copy.copy(draft)
             email_to_forward.in_reply_to = original_message_id
             email_to_forward.references = (
                 (email_to_forward.references or "") + " " + original_message_id

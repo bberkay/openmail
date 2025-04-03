@@ -17,6 +17,7 @@ Author: <berkaykayaforbusiness@outlook.com>
 License: MIT
 """
 from concurrent.futures import thread
+from email.message import EmailMessage
 import imaplib
 import re
 import threading
@@ -1905,6 +1906,32 @@ class IMAPManager(imaplib.IMAP4_SSL):
             raise IMAPManagerException(f"Error while fetching attachment part of the `{uid}` email in folder `{folder}`: `{status}`")
 
         return target_attachment
+
+    @handle_idle
+    def save_email_as_draft(self, email: EmailMessage) -> IMAPCommandResult:
+        """
+        Save an email as draft.
+
+        Args:
+            email (EmailMessage): The email as EmailMessage object to be saved as a draft.
+
+        Returns:
+            IMAPCommandResult: A tuple containing:
+                - A bool indicating whether the email was saved as draft successfully.
+                - A string containing a success message or an error message.
+        """
+        draft_mailbox_name = self.find_matching_folder(Folder.Drafts)
+        self.select(draft_mailbox_name)
+        return self._parse_command_result(
+            self.append(
+                draft_mailbox_name,
+                '',
+                imaplib.Time2Internaldate(time.time()),
+                draft.as_string.encode("utf-8")
+            ),
+            "Email saved as draft successfully.",
+            "There was an error while saving email as draft."
+        )
 
     @handle_idle
     def _mark_email(

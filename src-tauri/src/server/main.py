@@ -703,6 +703,31 @@ async def forward_email(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while forwarding email.", str(e)))
 
+@app.post("/save-email-as-draft")
+async def save_email_as_draft(
+    form_data: Annotated[SendEmailFormData, Form()],
+) -> Response:
+    try:
+        account = extract_email_address(form_data.sender)
+        response = check_openmail_connection_availability(account)
+        if isinstance(response, Response):
+            return response
+
+        status, msg = openmail_clients[account].imap.save_email_as_draft(
+            openmail_clients[account].smtp.create_email(Draft(
+                sender=form_data.sender,
+                receivers=form_data.receivers,
+                subject=form_data.subject,
+                body=form_data.body,
+                cc=form_data.cc,
+                bcc=form_data.bcc,
+                attachments=await convert_uploadfile_to_attachment(form_data.attachments),
+            ))
+        )
+
+        return Response(success=status, message=msg)
+    except Exception as e:
+        return Response(success=False, message=err_msg("There was an error while saving email as draft.", str(e)))
 
 class MarkEmailRequest(BaseModel):
     account: str
