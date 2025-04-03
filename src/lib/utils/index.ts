@@ -227,6 +227,16 @@ export function replaceFolderName(
     return parts.join(path.sep);
 }
 
+/**
+ * Checks whether the path is at the top level
+ * @param folderPath - The path to be checked
+ * @returns Returns true if the path is not at the top level, false if it is
+ */
+export function isTopLevel(folderPath: string): boolean {
+  const normalizedPath = path.normalize(folderPath);
+  return normalizedPath.split(path.sep).filter(Boolean).length <= 1;
+}
+
 export function removeFalsyParamsAndEmptyLists(
     params: Record<string, any>,
 ): Record<string, string> {

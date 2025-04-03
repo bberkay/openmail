@@ -2,6 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account } from "$lib/types";
+    import { isTopLevel } from "$lib/utils";
     import Form, { FormGroup } from "$lib/ui/Components/Form";
     import Modal from "$lib/ui/Components/Modal";
     import * as Select from "$lib/ui/Components/Select";
@@ -70,7 +71,7 @@
                     onchange={handleDestinationFolder}
                     placeholder="Select Destination Folder"
                 >
-                    {#if folderName.includes("/")}
+                    {#if !isTopLevel(folderName)}
                         <Select.Option value="">/</Select.Option>
                     {/if}
                     {#each customFolders as customFolder}
