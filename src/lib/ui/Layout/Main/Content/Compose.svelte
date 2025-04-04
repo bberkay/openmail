@@ -157,6 +157,10 @@
                     draftAppenduids[sender],
                     Folder.Drafts
                 )
+                if (!deleteResponse.success) {
+                    showMessage({ content: "Warning, copy of email could not removed from drafts." });
+                    console.warn(deleteResponse!.message);
+                }
             }
 
             let sentResponse;
