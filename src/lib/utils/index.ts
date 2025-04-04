@@ -109,10 +109,6 @@ export function isStandardFolder(
     ).some((standardFolder) => folderName.startsWith(standardFolder + ":"));
 }
 
-export function isCustomFolder(folder: string): boolean {
-    return !isStandardFolder(folder);
-}
-
 /**
  * Checks if the given folder name is the path itself or a subfolder of the path
  * @param folderPath - The main folder path to check
