@@ -1,10 +1,12 @@
 import json
 import time
 import unittest
+from email.message import EmailMessage
 
 from openmail import OpenMail
 from openmail.imap import Mark, Folder
 from .utils.dummy_operator import DummyOperator
+from .utils.name_generator import NameGenerator
 
 class TestEmailOperations(unittest.TestCase):
 
@@ -22,6 +24,37 @@ class TestEmailOperations(unittest.TestCase):
 
         cls._created_test_folders = []
         cls._sent_test_email_uids = []
+
+    def test_save_email_as_draft(self):
+        print("test_save_email_as_draft...")
+        email = EmailMessage()
+        email["From"] = self.__class__._email
+        email["To"] = self.__class__._email
+        email["Subject"] = NameGenerator.subject()[0]
+        email.set_content(NameGenerator.body()[0])
+
+        appenduid = self.__class__._openmail.imap.save_email_as_draft(email)
+        self.assertIsNotNone(appenduid)
+        self.assertIsNotNone(self.__class__._openmail.imap.is_email_exists(Folder.Drafts, appenduid))
+
+    def test_update_saved_draft(self):
+        print("test_update_saved_draft...")
+        email = EmailMessage()
+        email["From"] = self.__class__._email
+        email["To"] = self.__class__._email
+        email["Subject"] = NameGenerator.subject()[0]
+        email.set_content(NameGenerator.body()[0])
+
+        appenduid = self.__class__._openmail.imap.save_email_as_draft(email)
+        self.assertIsNotNone(appenduid)
+        self.assertIsNotNone(self.__class__._openmail.imap.is_email_exists(Folder.Drafts, appenduid))
+
+        # Change subject to something that is definitely
+        # different than the old one.
+        email["Subject"] = NameGenerator.body()[0]
+        new_appenduid = self.__class__._openmail.imap.save_email_as_draft(email, appenduid)
+        self.assertIsNotNone(self.__class__._openmail.imap.is_email_exists(Folder.Drafts, new_appenduid))
+        self.assertIsNone(self.__class__._openmail.imap.is_email_exists(Folder.Drafts, appenduid))
 
     def test_mark_as_seen_operation(self):
         print("test_mark_as_seen_operation...")
