@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { exit, relaunch } from '@tauri-apps/plugin-process';
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, type Account } from "$lib/types";
@@ -6,7 +7,9 @@
     import { createSenderAddress, isStandardFolder } from "$lib/utils";
     import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { AccountController } from '$lib/controllers/AccountController';
 
     const AccountOperation = {
         Home: "create",
@@ -71,9 +74,34 @@
 
     const showSettings = () => {};
 
-    const logout = () => {};
+    const logout = () => {
+        showConfirm({
+            content: "Are you sure you want to log out? You will need to sign in again to access your account",
+            onConfirmText: "Yes, logout.",
+            onConfirm: async () => {
+                const response = await AccountController.remove(
+                    (SharedStore.currentAccount as Account).email_address
+                );
+                if (!response.success) {
+                    showMessage({
+                        content: `Error, could not logged out from ${
+                            (SharedStore.currentAccount as Account).email_address
+                        } Please try again.`
+                    });
+                    console.error(response.message);
+                    return;
+                }
+            },
+        });
+    };
 
-    const quit = () => {};
+    const quit = () => {
+        showConfirm({
+            content: "Are you sure you want to close the application? Any unsaved changes will be lost.",
+            onConfirmText: "Yes, close the app.",
+            onConfirm: async () => { await exit(0) },
+        });
+    };
 
     const handleOperation = (selectedOperation: string) => {
         switch (selectedOperation) {

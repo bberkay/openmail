@@ -102,18 +102,18 @@ export class AccountController {
         return response;
     }
 
-    public static async remove(account: string): Promise<PostResponse> {
+    public static async remove(email_address: string): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.REMOVE_ACCOUNT,
             {
-                account: account,
+                account: email_address,
             },
         );
 
         if (response.success) {
             SharedStore.accounts = SharedStore.accounts.filter(
-                (item: Account) => item.email_address !== account,
+                (item: Account) => item.email_address !== email_address,
             );
         }
 
