@@ -21,28 +21,29 @@
         previouslyAtHome: boolean;
     }
 
-    let { account, email, previouslyAtHome }: Props = $props();
+    const { account, email, previouslyAtHome }: Props = $props();
 
-    let customFolders: string[] = $derived(
-        SharedStore.currentAccount !== "home"
-            ? SharedStore.customFolders[
-                (SharedStore.currentAccount as Account).email_address
-            ]
-            : []
-    );
-    let isEmailInCustomFolder = $derived(customFolders.includes(SharedStore.currentMailbox.folder));
+    const currentFolder = SharedStore.mailboxes[
+        (SharedStore.currentAccount as Account).email_address
+    ].folder;
+
+    const customFolders: string[] = SharedStore.folders[
+        (SharedStore.currentAccount as Account).email_address
+    ].custom;
+
+    const isEmailInCustomFolder = customFolders.includes(currentFolder);
 
     const goBack = () => {
         if (previouslyAtHome) SharedStore.currentAccount = "home";
         backToDefault();
-    }
+    };
 
     async function markAs(mark: string | Mark) {
         const response = await MailboxController.markEmails(
             account,
             email.uid,
             mark,
-            SharedStore.currentFolder,
+            currentFolder
         );
         if (!response.success) {
             showMessage({
@@ -57,7 +58,7 @@
             account,
             email.uid,
             mark,
-            SharedStore.currentFolder,
+            currentFolder
         );
         if (!response.success) {
             showMessage({
@@ -88,7 +89,7 @@
         const response = await MailboxController.copyEmails(
             account,
             email.uid,
-            SharedStore.currentFolder,
+            currentFolder,
             destinationFolder,
         );
         if (!response.success) {
@@ -101,7 +102,7 @@
         const response = await MailboxController.moveEmails(
             account,
             email.uid,
-            SharedStore.currentFolder,
+            currentFolder,
             destinationFolder,
         );
 
@@ -111,7 +112,9 @@
             return;
         }
 
-        SharedStore.currentFolder = destinationFolder;
+        SharedStore.mailboxes[
+            (SharedStore.currentAccount as Account).email_address
+        ].folder = destinationFolder;
         showContent(Mailbox);
     };
 
@@ -127,7 +130,7 @@
                 const response = await MailboxController.deleteEmails(
                     account,
                     email.uid,
-                    SharedStore.currentFolder,
+                    currentFolder,
                 );
 
                 if (!response.success) {
@@ -152,7 +155,7 @@
                 originalSubject: email.subject,
                 originalBody: email.body,
                 originalDate: email.date,
-            }
+            },
         });
     };
 
@@ -166,7 +169,7 @@
                 originalSubject: email.subject,
                 originalBody: email.body,
                 originalDate: email.date,
-            }
+            },
         });
     };
 </script>
@@ -238,7 +241,7 @@
                 </Select.Option>
             {/if}
             {#each customFolders as customFolder}
-                {#if customFolder !== SharedStore.currentMailbox.folder}
+                {#if customFolder !== currentFolder}
                     <Select.Option value={customFolder}>
                         {customFolder}
                     </Select.Option>
@@ -255,7 +258,7 @@
                 </Select.Option>
             {/if}
             {#each customFolders as customFolder}
-                {#if customFolder !== SharedStore.currentMailbox.folder}
+                {#if customFolder !== currentFolder}
                     <Select.Option value={customFolder}>
                         {customFolder}
                     </Select.Option>
