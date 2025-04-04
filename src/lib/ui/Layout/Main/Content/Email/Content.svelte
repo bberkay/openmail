@@ -75,7 +75,7 @@
         const attachment = email.attachments![index];
         const response = await MailboxController.downloadAttachment(
             account,
-            SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address].folder,
+            SharedStore.mailboxes[account.email_address].folder,
             email.uid,
             attachment.name,
             attachment.cid || undefined,
@@ -121,7 +121,7 @@
             .replace("{sender_email}", extractEmailAddress(email.sender))
             .replace(
                 "{receiver_email}",
-                (SharedStore.currentAccount as Account).email_address,
+                account.email_address,
             )
             .replace("{sent_at}", email.date)
             .trim()}

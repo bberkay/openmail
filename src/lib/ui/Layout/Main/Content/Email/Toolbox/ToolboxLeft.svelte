@@ -23,14 +23,8 @@
 
     let { account, email, previouslyAtHome }: Props = $props();
 
-    const currentFolder = SharedStore.mailboxes[
-        (SharedStore.currentAccount as Account).email_address
-    ].folder;
-
-    const customFolders: string[] = SharedStore.folders[
-        (SharedStore.currentAccount as Account).email_address
-    ].custom;
-
+    const currentFolder = SharedStore.mailboxes[account.email_address].folder;
+    const customFolders: string[] = SharedStore.folders[account.email_address].custom;
     const isEmailInCustomFolder = customFolders.includes(currentFolder);
 
     const goBack = () => {
@@ -112,9 +106,7 @@
             return;
         }
 
-        SharedStore.mailboxes[
-            (SharedStore.currentAccount as Account).email_address
-        ].folder = destinationFolder;
+        SharedStore.mailboxes[account.email_address].folder = destinationFolder;
         showContent(Mailbox);
     };
 
