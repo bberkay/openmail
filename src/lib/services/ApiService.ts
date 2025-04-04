@@ -27,6 +27,7 @@ export enum PostRoutes {
     SEND_EMAIL = "/send-email",
     REPLY_EMAIL = "/reply-email",
     FORWARD_EMAIL = "/forward-email",
+    SAVE_EMAIL_AS_DRAFT = "/save-email-as-draft",
     MARK_EMAIL = "/mark-email",
     UNMARK_EMAIL = "/unmark-email",
     MOVE_EMAIL = "/move-email",
@@ -114,6 +115,10 @@ interface PostBody {
     [PostRoutes.SEND_EMAIL]: FormData | Draft;
     [PostRoutes.REPLY_EMAIL]: PostBody[PostRoutes.SEND_EMAIL];
     [PostRoutes.FORWARD_EMAIL]: PostBody[PostRoutes.SEND_EMAIL];
+    [PostRoutes.SAVE_EMAIL_AS_DRAFT]: {
+        email: PostBody[PostRoutes.SEND_EMAIL],
+        appenduid?: string
+    };
     [PostRoutes.MARK_EMAIL]: {
         account: string;
         mark: string;
@@ -181,16 +186,20 @@ export interface GetQueryResponse {
     [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>;
     [GetRoutes.GET_EMAIL_CONTENT]: Email;
     [GetRoutes.DOWNLOAD_ATTACHMENT]: Attachment;
-    [GetRoutes.GET_PUBLIC_KEY]: {
-        public_key: string;
-    };
+    [GetRoutes.GET_PUBLIC_KEY]: { public_key: string };
+}
+
+export interface PostQueryResponse {
+    [PostRoutes.SAVE_EMAIL_AS_DRAFT]: string; // appenduid
 }
 
 export interface GetResponse<T extends GetRoutes> extends BaseResponse {
     data?: GetQueryResponse[T];
 }
 
-export interface PostResponse extends BaseResponse {}
+export interface PostResponse<T extends PostRoutes = PostRoutes> extends BaseResponse {
+    data?: T extends keyof PostQueryResponse ? PostQueryResponse[T] : undefined;
+}
 
 export class ApiService {
     static createQueryString<T extends GetRoutes | PostRoutes>(params: QueryParams[T]): string {
@@ -225,7 +234,7 @@ export class ApiService {
         endpoint: T,
         body: PostBody[T],
         params?: QueryParams[T]
-    ): Promise<PostResponse> {
+    ): Promise<PostResponse<T>> {
         const queryString = params ? ApiService.createQueryString(params) : "";
         const response = await fetch(url + endpoint + queryString, {
             method: "POST",

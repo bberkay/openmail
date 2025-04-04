@@ -24,6 +24,8 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
 
+    const AUTO_SAVE_DRAFT_INTERVAL = 1000 * 5;
+
     interface Props {
         originalMessageContext?: {
             composeType: "reply" | "forward";
@@ -39,11 +41,15 @@
     let { originalMessageContext }: Props = $props();
 
     let composeWrapper: HTMLElement;
+    let composeForm: HTMLFormElement;
     let receiverInput: HTMLInputElement;
     let ccInput: HTMLInputElement;
     let bccInput: HTMLInputElement;
 
     let senderAccounts: Account[] = $state([]);
+    let draftAppenduids: { [account: string]: string } = {};
+    let draftSaveInterval: ReturnType<typeof setInterval>;
+    let draftChangedAfterLastSave: boolean = true;
 
     let body: WYSIWYGEditor;
     let receivers: string[] = $state(
@@ -57,9 +63,10 @@
     let bcc: string[] = $state([]);
 
     onMount(() => {
-        receiverInput = composeWrapper.querySelector('input[id="receivers"]')!;
-        ccInput = composeWrapper.querySelector('input[id="cc"]')!;
-        bccInput = composeWrapper.querySelector('input[id="bcc"]')!;
+        composeForm = composeWrapper.querySelector('form[id="compose-form"]')!;
+        receiverInput = composeForm.querySelector('input[id="receivers"]')!;
+        ccInput = composeForm.querySelector('input[id="cc"]')!;
+        bccInput = composeForm.querySelector('input[id="bcc"]')!;
 
         body = new WYSIWYGEditor("body");
         body.init();
@@ -93,56 +100,75 @@
                     ),
             );
         }
+
+        // Start email monitor
+        draftSaveInterval = setInterval(() => {
+            saveEmailsAsDrafts();
+        }, AUTO_SAVE_DRAFT_INTERVAL);
     });
 
-    onDestroy(() => { body.clear() });
+    onDestroy(() => {
+        body.clear();
+        if (draftSaveInterval) clearInterval(draftSaveInterval);
+    });
 
-    const addSenderAccount = (senderEmailAddr: string) => {
-        const senderAccount = SharedStore.accounts.find(
-            acc => acc.email_address === senderEmailAddr
-        )!;
-        senderAccounts.push(senderAccount);
+    function createFormDataOfEmail(sender: string): FormData {
+        const formData = new FormData(composeForm);
+        formData.append("sender", sender);
+        formData.append("receivers", receivers.join(","));
+        formData.append("cc", cc.join(","));
+        formData.append("bcc", bcc.join(","));
+        formData.append("body", body.getHTMLContent());
+        return formData;
     }
 
-    const addReceiver = (e: Event) => {
-        addEmailToAddressList(e, receiverInput, receivers);
-    };
+    async function saveEmailAsDraft(sender: string): Promise<void> {
+        const formData = createFormDataOfEmail(sender);
+        const response = await MailboxController.saveEmailAsDraft(
+            formData,
+            draftAppenduids[sender],
+        );
 
-    const addCc = (e: Event) => {
-        addEmailToAddressList(e, ccInput, cc);
-    };
+        if (!response.success || !response.data) {
+            showMessage({ content: "Error, email could not saved as draft." });
+            console.error(response!.message);
+            return;
+        }
 
-    const addBcc = (e: Event) => {
-        addEmailToAddressList(e, bccInput, bcc);
-    };
+        draftAppenduids[sender] = response.data;
+    }
 
-    const sendEmail = async (e: Event, sender: string): Promise<void> => {
-        const form = e.target as HTMLFormElement;
-        const formData = new FormData(form);
+    async function sendEmail(sender: string): Promise<void> {
+        const formData = createFormDataOfEmail(sender);
 
-        formData.append("receivers", receivers.join(","));
         if (!formData.get("receivers")) {
             showMessage({ content: "At least one receiver must be added" });
             console.error("At least one receiver must be added");
             return;
         }
 
-        formData.append("sender", sender);
-        formData.append("cc", cc.join(","));
-        formData.append("bcc", bcc.join(","));
-
         const confirmWrapper = async () => {
+            if (Object.hasOwn(draftAppenduids, sender)) {
+                const deleteResponse = await MailboxController.deleteEmails(
+                    SharedStore.accounts.find(
+                        acc => acc.email_address === sender
+                    )!,
+                    draftAppenduids[sender],
+                    Folder.Drafts
+                )
+            }
+
             let sentResponse;
             if (originalMessageContext) {
                 if (originalMessageContext.composeType === "reply") {
                     sentResponse = await MailboxController.replyEmail(
                         originalMessageContext.originalMessageId,
-                        formData
+                        formData,
                     );
                 } else {
                     sentResponse = await MailboxController.forwardEmail(
                         originalMessageContext.originalMessageId,
-                        formData
+                        formData,
                     );
                 }
             } else {
@@ -154,55 +180,102 @@
                 console.error(sentResponse!.message);
                 return;
             }
-        }
+        };
 
         if (!formData.get("subject")) {
             showConfirm({
-                content: "The subject field is empty. Are you sure you want to send the email without a subject?",
+                content:
+                    "The subject field is empty. Are you sure you want to send the email without a subject?",
                 onConfirmText: "Yes, send.",
-                onConfirm: confirmWrapper
+                onConfirm: confirmWrapper,
             });
         }
 
-        formData.append("body", body.getHTMLContent());
         if (!formData.get("body")) {
             showConfirm({
-                content: "The message body is empty. Are you sure you want to send the email without any content?",
+                content:
+                    "The message body is empty. Are you sure you want to send the email without any content?",
                 onConfirmText: "Yes, send.",
-                onConfirm: confirmWrapper
+                onConfirm: confirmWrapper,
             });
         }
+    }
+
+    const addSenderAccount = (senderEmailAddr: string) => {
+        const senderAccount = SharedStore.accounts.find(
+            (acc) => acc.email_address === senderEmailAddr,
+        )!;
+        senderAccounts.push(senderAccount);
     };
 
-    const sendEmails = async (e: Event) => {
-        for(const account of senderAccounts) {
-            sendEmail(e, createSenderAddress(account.email_address, account.fullname));
+    const addReceiver = (e: Event) => {
+        addEmailToAddressList(e, receiverInput, receivers);
+        draftChangedAfterLastSave = true;
+    };
+
+    const addCc = (e: Event) => {
+        addEmailToAddressList(e, ccInput, cc);
+        draftChangedAfterLastSave = true;
+    };
+
+    const addBcc = (e: Event) => {
+        addEmailToAddressList(e, bccInput, bcc);
+        draftChangedAfterLastSave = true;
+    };
+
+    const saveEmailsAsDrafts = async () => {
+        if (draftChangedAfterLastSave) {
+            for (const account of senderAccounts) {
+                saveEmailAsDraft(
+                    createSenderAddress(account.email_address, account.fullname),
+                );
+            }
+        }
+        draftChangedAfterLastSave = false;
+    };
+
+    const sendEmails = async () => {
+        for (const account of senderAccounts) {
+            sendEmail(
+                createSenderAddress(account.email_address, account.fullname),
+            );
         }
 
-        if (SharedStore.currentAccount === "home" || senderAccounts.includes(SharedStore.currentAccount)) {
+        if (
+            SharedStore.currentAccount === "home" ||
+            !senderAccounts.includes(SharedStore.currentAccount)
+        ) {
             SharedStore.currentAccount = senderAccounts[0];
         }
 
         // Show first sender's Folder.Sent mailbox.
-        if (!isStandardFolder(SharedStore.mailboxes[SharedStore.currentAccount.email_address].folder, Folder.Sent)) {
+        if (
+            !isStandardFolder(
+                SharedStore.mailboxes[SharedStore.currentAccount.email_address]
+                    .folder,
+                Folder.Sent,
+            )
+        ) {
             const response = await MailboxController.getMailbox(
                 SharedStore.currentAccount,
-                Folder.Sent
+                Folder.Sent,
             );
 
             if (!response.success) {
-                showMessage({content: "Failed to retrieve sent folder. Please try again"});
+                showMessage({
+                    content: "Failed to retrieve sent folder. Please try again",
+                });
                 console.error(response.message);
                 return;
             }
         }
 
         showContent(Mailbox);
-    }
+    };
 </script>
 
 <div class="compose" bind:this={composeWrapper}>
-    <Form onsubmit={sendEmails}>
+    <Form onsubmit={sendEmails} id="compose-form">
         <div>
             <FormGroup>
                 <Label for="senders">Sender(s)</Label>
@@ -227,7 +300,9 @@
                             content={account.email_address}
                             onclick={() => {
                                 senderAccounts = senderAccounts.filter(
-                                    (addr) => addr.email_address !== account.email_address,
+                                    (addr) =>
+                                        addr.email_address !==
+                                        account.email_address,
                                 );
                             }}
                         />
@@ -274,6 +349,7 @@
                               : "Fwd: ") +
                           originalMessageContext.originalSubject
                         : ""}
+                    onkeyup={() => { draftChangedAfterLastSave = true }}
                     required
                 />
             </FormGroup>
@@ -339,9 +415,19 @@
                 <Label for="attachments">Attachment(s)</Label>
                 <Input.File name="attachments" id="attachments" multiple />
             </FormGroup>
-            <Button.Basic type="submit" id="send-email" style="margin-top:10px">
-                Send Email
-            </Button.Basic>
+            <div style="margin-top:10px">
+                <Button.Basic type="submit" id="send-email" class="btn-cta">
+                    Send Email
+                </Button.Basic>
+                <Button.Basic
+                    type="button"
+                    id="save-emails-as-drafts"
+                    class="btn-outline"
+                    onclick={saveEmailsAsDrafts}
+                >
+                    Save as Draft
+                </Button.Basic>
+            </div>
         </div>
     </Form>
 </div>

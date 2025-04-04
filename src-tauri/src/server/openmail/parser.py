@@ -20,6 +20,7 @@ from html.parser import HTMLParser as BuiltInHTMLParser
 General Fetch Constants
 """
 UID_PATTERN = re.compile(rb"UID\s+(\d+)")
+APPENDUID_PATTERN = re.compile(br'\[APPENDUID \d+ (\d+)\]')
 SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
 EXISTS_SIZE_PATTERN = re.compile(rb'\* (\d+) EXISTS')
 FLAGS_PATTERN = re.compile(rb'FLAGS \((.*?)\)', re.DOTALL | re.IGNORECASE)
@@ -188,24 +189,6 @@ class MessageParser:
         return result
 
     @staticmethod
-    def get_uid(message: bytes) -> str:
-        """
-        Get UID from raw message bytes.
-
-        Args:
-            message (bytes): Raw message bytes.
-
-        Returns:
-            str: UID string.
-
-        Example:
-            >>> get_uid("b'2394 (UID 2651 FLAGS ... ), b'")
-            '2651'
-        """
-        uid_match = UID_PATTERN.search(message)
-        return uid_match.group(1).decode() if uid_match else ""
-
-    @staticmethod
     def get_part(message: bytes, keywords: list[str]) -> str | None:
         """
         Extracts the part number from the BODYSTRUCTURE of an email message that matches the provided keywords.
@@ -309,6 +292,30 @@ class MessageParser:
             i += 1
 
         return part
+
+    @staticmethod
+    def get_uid(message: bytes) -> str:
+        """
+        Get UID from FETCH or APPEND command result.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            str: UID string.
+
+        Example:
+            >>> get_uid("b'2394 (UID 2651 FLAGS ... )'")
+            '2651'
+            >>> get_uid("b'[APPENDUID 6 272] (Success)'")
+            '272'
+        """
+        uid_match = ""
+        if b"APPENDUID" in message:
+            uid_match = APPENDUID_PATTERN.search(message)
+        else:
+            uid_match = UID_PATTERN.search(message)
+        return uid_match.group(1).decode() if uid_match else ""
 
     @staticmethod
     def get_size(message: bytes) -> int:

@@ -297,7 +297,9 @@ export class MailboxController {
         );
     }
 
-    public static async sendEmail(email: FormData | Draft): Promise<PostResponse> {
+    public static async sendEmail(
+        email: FormData | Draft,
+    ): Promise<PostResponse> {
         return await ApiService.post(
             SharedStore.server,
             PostRoutes.SEND_EMAIL,
@@ -337,12 +339,26 @@ export class MailboxController {
         );
     }
 
+    public static async saveEmailAsDraft(
+        email: FormData | Draft,
+        appenduid?: string,
+    ): Promise<PostResponse<PostRoutes.SAVE_EMAIL_AS_DRAFT>> {
+        return await ApiService.post(
+            SharedStore.server,
+            PostRoutes.SAVE_EMAIL_AS_DRAFT,
+            {
+                email,
+                appenduid,
+            },
+        );
+    }
+
     public static async deleteEmails(
         account: Account,
         selection: string,
         folder: string,
         offsetEndBeforeDelete?: number,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.DELETE_EMAIL,
@@ -441,7 +457,7 @@ export class MailboxController {
         sourceFolder: string,
         destinationFolder: string,
         offsetEndBeforeMove?: number,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.MOVE_EMAIL,
@@ -521,7 +537,7 @@ export class MailboxController {
         selection: string,
         sourceFolder: string,
         destinationFolder: string,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.COPY_EMAIL,
@@ -544,7 +560,7 @@ export class MailboxController {
         selection: string,
         mark: string | Mark,
         folder: string,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.MARK_EMAIL,
@@ -584,7 +600,7 @@ export class MailboxController {
         selection: string,
         mark: string | Mark,
         folder: string,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.UNMARK_EMAIL,
@@ -625,7 +641,7 @@ export class MailboxController {
         account: Account,
         folderName: string,
         parentFolder?: string,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.CREATE_FOLDER,
@@ -652,7 +668,7 @@ export class MailboxController {
         account: Account,
         folderName: string,
         destinationFolder: string,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.MOVE_FOLDER,
@@ -701,7 +717,7 @@ export class MailboxController {
         account: Account,
         folderName: string,
         newFolderName: string,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.RENAME_FOLDER,
@@ -746,7 +762,7 @@ export class MailboxController {
         account: Account,
         folderName: string,
         delete_subfolders: boolean,
-    ): Promise<BaseResponse> {
+    ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
             PostRoutes.DELETE_FOLDER,

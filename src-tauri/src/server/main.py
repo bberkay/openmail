@@ -706,6 +706,7 @@ async def forward_email(
 @app.post("/save-email-as-draft")
 async def save_email_as_draft(
     form_data: Annotated[SendEmailFormData, Form()],
+    appenduid: str | None = None
 ) -> Response:
     try:
         account = extract_email_address(form_data.sender)
@@ -713,7 +714,7 @@ async def save_email_as_draft(
         if isinstance(response, Response):
             return response
 
-        status, msg = openmail_clients[account].imap.save_email_as_draft(
+        appenduid = openmail_clients[account].imap.save_email_as_draft(
             openmail_clients[account].smtp.create_email(Draft(
                 sender=form_data.sender,
                 receivers=form_data.receivers,
@@ -722,10 +723,11 @@ async def save_email_as_draft(
                 cc=form_data.cc,
                 bcc=form_data.bcc,
                 attachments=await convert_uploadfile_to_attachment(form_data.attachments),
-            ))
+            )),
+            appenduid
         )
 
-        return Response(success=status, message=msg)
+        return Response(success=True, message="Email saved as draft successfully.", data={appenduid: appenduid})
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while saving email as draft.", str(e)))
 

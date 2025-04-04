@@ -1908,30 +1908,34 @@ class IMAPManager(imaplib.IMAP4_SSL):
         return target_attachment
 
     @handle_idle
-    def save_email_as_draft(self, email: EmailMessage) -> IMAPCommandResult:
+    def save_email_as_draft(self, email: EmailMessage, appenduid: str | None = None) -> str:
         """
         Save an email as draft.
 
         Args:
             email (EmailMessage): The email as EmailMessage object to be saved as a draft.
+            appenduid (str | None): The unique identifier (UID) of a previously saved draft.
+                    If provided, the existing draft with this UID will be deleted before saving the new one.
 
         Returns:
-            IMAPCommandResult: A tuple containing:
-                - A bool indicating whether the email was saved as draft successfully.
-                - A string containing a success message or an error message.
+            int: APPENDUID of saved draft.
         """
+        if appenduid:
+            self.delete_email(Folder.Drafts, appenduid)
+
         draft_mailbox_name = self.find_matching_folder(Folder.Drafts)
         self.select(draft_mailbox_name)
-        return self._parse_command_result(
-            self.append(
-                draft_mailbox_name,
-                '',
-                imaplib.Time2Internaldate(time.time()),
-                email.as_string().encode("utf-8")
-            ), # type: ignore
-            "Email saved as draft successfully.",
-            "There was an error while saving email as draft."
-        )
+
+        status, data = self.append(
+            draft_mailbox_name,
+            '',
+            imaplib.Time2Internaldate(time.time()),
+            email.as_string().encode("utf-8")
+        ) # type: ignore
+        if not status:
+            raise IMAPManagerException(f"Error while saving email as draft: `{status}`")
+
+        return MessageParser.get_uid(data[0])
 
     @handle_idle
     def _mark_email(
