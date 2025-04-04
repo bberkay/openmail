@@ -70,6 +70,7 @@
 
         body = new WYSIWYGEditor("body");
         body.init();
+        body.onChange = () => { draftChangedAfterLastSave = true };
         if (originalMessageContext) {
             body.addFullHTMLPage(
                 (originalMessageContext.composeType == "reply"
