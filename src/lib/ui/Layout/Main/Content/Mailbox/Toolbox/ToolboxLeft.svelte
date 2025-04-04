@@ -3,8 +3,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { NOT_IMPLEMENTED_TEMPLATE } from "$lib/constants";
-    import { type Email, Mark, Folder } from "$lib/types";
-    import { isCustomFolder } from "$lib/utils";
+    import { type Email, Mark, Folder, type Mailbox } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import * as Input from "$lib/ui/Components/Input";
     import * as Button from "$lib/ui/Components/Button";
@@ -13,16 +12,22 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
+    import { sortSelection } from "$lib/utils";
 
     interface Props {
         emailSelection: "1:*" | string[];
+        currentMailbox: Mailbox;
     }
 
-    let { emailSelection = $bindable([]) }: Props = $props();
+    let { emailSelection = $bindable([]), currentMailbox }: Props = $props();
 
     let isMailboxOfCustomFolder = $derived.by(() => {
-        if (SharedStore.currentAccount == "home") return false;
-        return isCustomFolder(SharedStore.currentMailbox.folder);
+        if (SharedStore.currentAccount == "home")
+            return false;
+
+        return SharedStore.folders[
+            SharedStore.currentAccount.email_address
+        ].custom.includes(currentMailbox.folder);
     });
 
     let groupedEmailSelection: [string, string][] = $derived.by(() => {
@@ -30,7 +35,7 @@
 
         // When the `emailSelection` will be something like this:
         // ["account1@mail.com,123", "account1@mail.com,124", "account2@mail.com,123"]
-        // the `groupedEmailSelection` will be something like this:
+        // so `groupedEmailSelection` will be something like this:
         // [["account1@mail.com", "123,124"], ["account2@mail.com", "123"]]
         // and with this way, we are minimizing api calls from this:
         // C: A101 +STORE FLAG account1@mail.com 123
@@ -41,11 +46,13 @@
         // C: A102 +STORE FLAG account1@mail.com 125
         const accountUidMap: Record<string, string> = {};
         if (emailSelection === "1:*") {
-            SharedStore.accounts.forEach((account) => {
-                if (["home", account].includes(SharedStore.currentAccount)) {
+            if (SharedStore.currentAccount === "home") {
+                SharedStore.accounts.forEach((account) => {
                     accountUidMap[account.email_address] = "1:*";
-                }
-            });
+                });
+            } else {
+                accountUidMap[SharedStore.currentAccount.email_address] = "1:*";
+            }
         } else {
             emailSelection.forEach((selection) => {
                 const [emailAddr, uid] = selection.split(",");
@@ -71,7 +78,7 @@
     });
 
     $effect(() => {
-        if (SharedStore.currentMailbox) {
+        if (currentMailbox) {
             shownEmailUids = [];
             document
                 .querySelectorAll<HTMLInputElement>(
@@ -82,6 +89,89 @@
                 });
         }
     });
+
+    function isSelectedEmailsHaveUnsubscribeOption() {
+        return groupedEmailSelection.every((group) => {
+            const emailAddress = group[0];
+            const uids = group[1].split(",");
+            const targetMailbox = SharedStore.mailboxes[emailAddress].emails.current;
+            return uids.every((uid) =>
+                targetMailbox.find(
+                    (email) => email.uid == uid && !!email.list_unsubscribe,
+                ),
+            );
+        });
+    }
+
+    function isSelectedEmailsIncludesGivenMark(mark: Mark): boolean {
+        if (emailSelection === "1:*") return false;
+
+        return emailSelection.every((selection) => {
+            const [emailAddress, uid] = selection.split(",")
+            return SharedStore.mailboxes[emailAddress].emails.current.find(
+                (email: Email) =>
+                    email.uid == uid &&
+                    Object.hasOwn(email, "flags") &&
+                    email.flags!.includes(mark),
+            );
+        });
+    }
+
+    function isSelectedEmailsExcludesGivenMark(mark: Mark): boolean {
+        if (emailSelection === "1:*") return false;
+
+        return emailSelection.every((selection) => {
+            const [emailAddress, uid] = selection.split(",");
+            return SharedStore.mailboxes[emailAddress].emails.current.find(
+                (email: Email) =>
+                    email.uid == uid &&
+                    Object.hasOwn(email, "flags") &&
+                    !email.flags!.includes(mark),
+            );
+        });
+    }
+
+    async function markEmails(mark: string | Mark) {
+        groupedEmailSelection.forEach(async (group) => {
+            const emailAddress = group[0];
+            const uids = sortSelection(group[1]);
+            const response = await MailboxController.markEmails(
+                SharedStore.accounts.find(
+                    (acc) => acc.email_address === emailAddress,
+                )!,
+                uids,
+                mark,
+                currentMailbox.folder
+            );
+            if (!response.success) {
+                showMessage({
+                    content: `Unexpected error while marking email as ${mark}`,
+                });
+                console.error(response.message);
+            }
+        });
+    }
+
+    async function unmarkEmails(mark: string | Mark) {
+        groupedEmailSelection.forEach(async (group) => {
+            const emailAddress = group[0];
+            const uids = sortSelection(group[1]);
+            const response = await MailboxController.unmarkEmails(
+                SharedStore.accounts.find(
+                    (acc) => acc.email_address === emailAddress,
+                )!,
+                uids,
+                mark,
+                currentMailbox.folder
+            );
+            if (!response.success) {
+                showMessage({
+                    content: `Unexpected error while unmarking email as ${mark}`,
+                });
+                console.error(response.message);
+            }
+        });
+    }
 
     const selectEmail = (e: Event) => {
         if (emailSelection === "1:*") return;
@@ -107,74 +197,6 @@
         emailSelection = selectShownCheckbox.checked ? shownEmailUids : [];
     };
 
-    function isSelectedEmailsIncludesGivenMark(mark: Mark): boolean {
-        if (emailSelection === "1:*") return false;
-
-        return emailSelection.every((uid) => {
-            return SharedStore.currentMailbox.emails.current.find(
-                (email: Email) =>
-                    email.uid == uid &&
-                    Object.hasOwn(email, "flags") &&
-                    email.flags!.includes(mark),
-            );
-        });
-    }
-
-    function isSelectedEmailsExcludesGivenMark(mark: Mark): boolean {
-        if (emailSelection === "1:*") return false;
-
-        return emailSelection.every((uid) => {
-            return SharedStore.currentMailbox.emails.current.find(
-                (email: Email) =>
-                    email.uid == uid &&
-                    Object.hasOwn(email, "flags") &&
-                    !email.flags!.includes(mark),
-            );
-        });
-    }
-
-    async function markEmails(mark: string | Mark) {
-        groupedEmailSelection.forEach(async (group) => {
-            const emailAddress = group[0];
-            const uids = group[1];
-            const response = await MailboxController.markEmails(
-                SharedStore.accounts.find(
-                    (acc) => acc.email_address === emailAddress,
-                )!,
-                uids,
-                mark,
-                SharedStore.currentFolder,
-            );
-            if (!response.success) {
-                showMessage({
-                    content: `Unexpected error while marking email as ${mark}`,
-                });
-                console.error(response.message);
-            }
-        });
-    }
-
-    async function unmarkEmails(mark: string | Mark) {
-        groupedEmailSelection.forEach(async (group) => {
-            const emailAddress = group[0];
-            const uids = group[1];
-            const response = await MailboxController.unmarkEmails(
-                SharedStore.accounts.find(
-                    (acc) => acc.email_address === emailAddress,
-                )!,
-                uids,
-                mark,
-                SharedStore.currentFolder,
-            );
-            if (!response.success) {
-                showMessage({
-                    content: `Unexpected error while marking email as ${mark}`,
-                });
-                console.error(response.message);
-            }
-        });
-    }
-
     const markAsRead = async (): Promise<void> => {
         await markEmails(Mark.Seen);
     };
@@ -194,21 +216,19 @@
     const copyTo = async (
         destinationFolder: string | Folder,
     ): Promise<void> => {
-        // Since "move to" option is disabled when there is more than one
-        // current account(mostly "home"), groupedEmailSelection's length
-        // isn't going to be more than 1 so first index is enough to
-        // cover up selection.
+        // Since "moveTo/copyTo/reply/forward" options are disabled when there
+        // is more than one current account(mostly "home"), groupedEmailSelection's
+        // length isn't going to be more than 1, so first index is enough to cover
+        // selection.
         const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const movingEmailUids = groupedEmailSelection[0][1];
+        const movingEmailUids = sortSelection(groupedEmailSelection[0][1]);
 
         const response = await MailboxController.copyEmails(
-            SharedStore.currentAccount !== "home"
-                ? SharedStore.currentAccount
-                : SharedStore.accounts.find(
-                      (acc) => acc.email_address === emailAddressOfSelection,
-                  )!,
+            SharedStore.accounts.find(
+                (acc) => acc.email_address === emailAddressOfSelection,
+            )!,
             movingEmailUids,
-            SharedStore.currentFolder,
+            currentMailbox.folder,
             destinationFolder,
         );
 
@@ -221,21 +241,16 @@
     const moveTo = async (
         destinationFolder: string | Folder,
     ): Promise<void> => {
-        // Since "move to" option is disabled when there is more than one
-        // current account(mostly "home"), groupedEmailSelection's length
-        // isn't going to be more than 1 so first index is enough to
-        // cover up selection.
+        // Same as `copyTo()` function.
         const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const movingEmailUids = groupedEmailSelection[0][1];
+        const movingEmailUids = sortSelection(groupedEmailSelection[0][1]);
 
         const response = await MailboxController.moveEmails(
-            SharedStore.currentAccount !== "home"
-                ? SharedStore.currentAccount
-                : SharedStore.accounts.find(
-                      (acc) => acc.email_address === emailAddressOfSelection,
-                  )!,
+            SharedStore.accounts.find(
+                (acc) => acc.email_address === emailAddressOfSelection,
+            )!,
             movingEmailUids,
-            SharedStore.currentFolder,
+            currentMailbox.folder,
             destinationFolder,
         );
 
@@ -249,13 +264,13 @@
     const moveToArchive = async (): Promise<void> => {
         groupedEmailSelection.forEach(async (group) => {
             const emailAddress = group[0];
-            const emailUids = group[1];
+            const emailUids = sortSelection(group[1]);
             const response = await MailboxController.moveEmails(
                 SharedStore.accounts.find(
                     (acc) => acc.email_address === emailAddress,
                 )!,
                 emailUids,
-                SharedStore.currentFolder,
+                currentMailbox.folder,
                 Folder.Archive,
             );
 
@@ -276,13 +291,13 @@
             onConfirm: async (e: Event) => {
                 groupedEmailSelection.forEach(async (group) => {
                     const emailAddress = group[0];
-                    const uids = group[1];
+                    const uids = sortSelection(group[1]);
                     const response = await MailboxController.deleteEmails(
                         SharedStore.accounts.find(
                             (acc) => acc.email_address === emailAddress,
                         )!,
                         uids,
-                        SharedStore.currentFolder,
+                        currentMailbox.folder,
                     );
                     if (!response.success) {
                         showMessage({
@@ -295,25 +310,15 @@
         });
     };
 
-    function isSelectedEmailsHaveUnsubscribeOption() {
-        return groupedEmailSelection.every((group) => {
-            const emailAddress = group[0];
-            const uids = group[1].split(",");
-            const emails = SharedStore.mailboxes[emailAddress].emails.current;
-            return uids.every((uid) =>
-                emails.find(
-                    (email) => email.uid == uid && !!email.list_unsubscribe,
-                ),
-            );
-        });
-    }
-
     const reply = async () => {
+        // Same as `copyTo()` function.
         const emailAddressOfSelection = groupedEmailSelection[0][0];
         const replyingEmailUid = groupedEmailSelection[0][1];
+
         const email = SharedStore.mailboxes[
             emailAddressOfSelection
         ].emails.current.find((email) => email.uid == replyingEmailUid)!;
+
         showContent(Compose, {
             originalMessageContext: {
                 composeType: "reply",
@@ -328,11 +333,14 @@
     };
 
     const forward = async () => {
+        // Same as `copyTo()` function.
         const emailAddressOfSelection = groupedEmailSelection[0][0];
         const replyingEmailUid = groupedEmailSelection[0][1];
+
         const email = SharedStore.mailboxes[
             emailAddressOfSelection
         ].emails.current.find((email) => email.uid == replyingEmailUid)!;
+
         showContent(Compose, {
             originalMessageContext: {
                 composeType: "forward",
@@ -347,14 +355,18 @@
     };
 
     const refresh = async (): Promise<void> => {
-        const response = await MailboxController.getMailboxes(
-            SharedStore.currentAccount === "home"
-                ? SharedStore.accounts
-                : SharedStore.currentAccount,
-        );
-        if (!response.success) {
+        const accounts = SharedStore.currentAccount !== "home"
+            ? [SharedStore.currentAccount]
+            : SharedStore.accounts;
+
+        let response;
+        for(const account of accounts) {
+            response = await MailboxController.getMailbox(account);
+        }
+
+        if (!response!.success) {
             showMessage({ content: "Error while refreshing mailboxes." });
-            console.error(response.message);
+            console.error(response!.message);
         }
     };
 </script>
@@ -483,7 +495,7 @@
                 Delete
             </Button.Action>
         </div>
-        {#if groupedEmailSelection.length < 2}
+        {#if groupedEmailSelection.length == 1}
             {@const emailAddress = groupedEmailSelection[0][0]}
             <div class="tool-separator"></div>
             <div class="tool">
@@ -494,8 +506,8 @@
                             {Folder.Inbox}
                         </Select.Option>
                     {/if}
-                    {#each SharedStore.customFolders[emailAddress] as customFolder}
-                        {#if SharedStore.currentAccount === "home" || customFolder !== SharedStore.currentMailbox.folder}
+                    {#each SharedStore.folders[emailAddress].custom as customFolder}
+                        {#if SharedStore.currentAccount === "home" || customFolder !== currentMailbox.folder}
                             <Select.Option value={customFolder}>
                                 {customFolder}
                             </Select.Option>
@@ -511,8 +523,8 @@
                             {Folder.Inbox}
                         </Select.Option>
                     {/if}
-                    {#each SharedStore.customFolders[emailAddress] as customFolder}
-                        {#if SharedStore.currentAccount === "home" || customFolder !== SharedStore.currentMailbox.folder}
+                    {#each SharedStore.folders[emailAddress].custom as customFolder}
+                        {#if SharedStore.currentAccount === "home" || customFolder !== currentMailbox.folder}
                             <Select.Option value={customFolder}>
                                 {customFolder}
                             </Select.Option>
