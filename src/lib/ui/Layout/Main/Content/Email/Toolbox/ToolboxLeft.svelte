@@ -21,7 +21,7 @@
         previouslyAtHome: boolean;
     }
 
-    const { account, email, previouslyAtHome }: Props = $props();
+    let { account, email, previouslyAtHome }: Props = $props();
 
     const currentFolder = SharedStore.mailboxes[
         (SharedStore.currentAccount as Account).email_address
