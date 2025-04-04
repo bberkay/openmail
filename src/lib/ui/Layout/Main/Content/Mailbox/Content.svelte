@@ -2,11 +2,8 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Email as TEmail, type Account, } from "$lib/types";
-    import {
-        extractEmailAddress,
-        extractFullname,
-    } from "$lib/utils";
+    import { type Email as TEmail, type Account, type Mailbox, Folder } from "$lib/types";
+    import { extractEmailAddress, extractFullname } from "$lib/utils";
     import {
         MAILBOX_CLEAR_SELECTION_TEMPLATE,
         MAILBOX_SELECT_ALL_TEMPLATE,
@@ -32,31 +29,31 @@
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
-    let selectShownCheckbox: HTMLInputElement;
-    onMount(() => {
-        selectShownCheckbox = document.getElementById(
-            "select-shown",
-        ) as HTMLInputElement;
+    let currentMailbox = $derived.by(() => {
+        if (SharedStore.currentAccount === "home") {
+            let currentMailbox: Mailbox = {
+                total: 0,
+                emails: { prev: [], current: [], next: [] },
+                folder: Folder.Inbox // mailboxes are going to be INBOX while selecting account to "home"
+            };
+            Object.values(SharedStore.mailboxes).forEach((mailbox) => {
+                currentMailbox.total += mailbox.total;
+                currentMailbox.emails.prev.push(...mailbox.emails.prev);
+                currentMailbox.emails.current.push(...mailbox.emails.current);
+                currentMailbox.emails.next.push(...mailbox.emails.next);
+            });
+            Object.values(currentMailbox.emails).forEach((emails) => {
+                emails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            })
+            return currentMailbox;
+        } else {
+            return SharedStore.mailboxes[
+                SharedStore.currentAccount.email_address
+            ]
+        }
     });
 
-    const selectAllEmails = (event: Event) => {
-        const selectAllButton = event.target as HTMLButtonElement;
-        emailSelection = "1:*";
-        selectAllButton.innerHTML = MAILBOX_CLEAR_SELECTION_TEMPLATE;
-        selectShownCheckbox.checked = true;
-    };
-
-    const deselectAllEmails = (event: Event) => {
-        const selectAllButton = event.target as HTMLButtonElement;
-        emailSelection = [];
-        selectAllButton.innerHTML = MAILBOX_SELECT_ALL_TEMPLATE.replace(
-            "{total}",
-            SharedStore.currentMailbox.total.toString(),
-        );
-        selectShownCheckbox.checked = false;
-    };
-
-    function groupEmailsByDate(): Record<DateGroup, TEmail[]> {
+    let groupedEmailsByDate: Record<DateGroup, TEmail[]> = $derived.by(() => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -77,7 +74,7 @@
             Older: [],
         };
 
-        SharedStore.currentMailbox.emails.current.forEach((email: TEmail) => {
+        currentMailbox.emails.current.forEach((email: TEmail) => {
             const emailDate = new Date(email.date);
             emailDate.setHours(0, 0, 0, 0);
 
@@ -98,37 +95,77 @@
         });
 
         return groupedEmails;
-    }
+    });
 
-    function getAccountByEmail(email: TEmail): Account | undefined {
-        for(const emailAddr in SharedStore.accounts) {
-            if (SharedStore.mailboxes[emailAddr].emails.current.includes(email))
-                return SharedStore.accounts[emailAddr];
+    let selectShownCheckbox: HTMLInputElement;
+    onMount(() => {
+        selectShownCheckbox = document.getElementById(
+            "select-shown",
+        ) as HTMLInputElement;
+    });
+
+    function getAccountByEmail(email: TEmail): Account {
+        if (SharedStore.currentAccount === "home") {
+            return SharedStore.accounts.find((acc) => {
+                return SharedStore.mailboxes[acc.email_address].emails.current.find(
+                    em => em.uid === email.uid
+                );
+            })!;
+        } else {
+            return SharedStore.currentAccount;
         }
-        return;
     }
 
     function isRecentEmail(account: Account, email: TEmail): boolean {
-        return !!SharedStore.recentEmails[account.email_address].find(em => em.uid === email.uid);
+        return !!SharedStore.recentEmails[account.email_address].find(
+            (em) => em.uid === email.uid,
+        );
     }
 
-    const showEmailContent = async (account: Account, selectedEmail: TEmail): Promise<void> => {
-        const previouslyAtHome = SharedStore.currentAccount === "home";
-        SharedStore.currentAccount = account;
-        const response = await MailboxController.getEmailContent(
-            SharedStore.currentAccount,
-            SharedStore.currentFolder,
-            selectedEmail.uid
+    const selectAllEmails = (event: Event) => {
+        const selectAllButton = event.target as HTMLButtonElement;
+        emailSelection = "1:*";
+        selectAllButton.innerHTML = MAILBOX_CLEAR_SELECTION_TEMPLATE;
+        selectShownCheckbox.checked = true;
+    };
+
+    const deselectAllEmails = (event: Event) => {
+        const selectAllButton = event.target as HTMLButtonElement;
+        emailSelection = [];
+        selectAllButton.innerHTML = MAILBOX_SELECT_ALL_TEMPLATE.replace(
+            "{total}",
+            currentMailbox.total.toString(),
         );
+        selectShownCheckbox.checked = false;
+    };
+
+    const showEmailContent = async (
+        account: Account,
+        selectedEmail: TEmail,
+    ): Promise<void> => {
+        const previouslyAtHome = SharedStore.currentAccount === "home";
+
+        if (account !== SharedStore.currentAccount)
+            SharedStore.currentAccount = account;
+
+        const response = await MailboxController.getEmailContent(
+            account,
+            currentMailbox.folder,
+            selectedEmail.uid,
+        );
+
         if (!response.success || !response.data) {
-            showMessage({content: "Error, email content not fetch properly."});
+            showMessage({
+                content: "Error, email content not fetch properly.",
+            });
             console.error(response.message);
             return;
         }
+
         showContent(Email, {
-            account: SharedStore.currentAccount,
+            account: account,
             email: response.data,
-            previouslyAtHome: previouslyAtHome
+            previouslyAtHome: previouslyAtHome,
         });
     };
 </script>
@@ -140,7 +177,7 @@
                 {MAILBOX_SELECTION_INFO_TEMPLATE.replace(
                     "{selection_count}",
                     (emailSelection === "1:*"
-                        ? SharedStore.currentMailbox.total
+                        ? currentMailbox.total
                         : emailSelection.length
                     ).toString(),
                 )}
@@ -154,12 +191,12 @@
             >
                 {MAILBOX_SELECT_ALL_TEMPLATE.replace(
                     "{total}",
-                    SharedStore.currentMailbox.total.toString(),
+                    currentMailbox.total.toString(),
                 )}
             </Button.Basic>
         </div>
     {/if}
-    {#each Object.entries(groupEmailsByDate()) as group}
+    {#each Object.entries(groupedEmailsByDate) as group}
         <div class="group-separator">
             <div class="timeline-label">
                 <span>{group[0]}</span>
