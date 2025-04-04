@@ -18,6 +18,7 @@
 
     interface Props {
         emailSelection: "1:*" | string[];
+        currentMailbox: Mailbox;
     }
 
     type DateGroup =
@@ -27,31 +28,10 @@
         | "This Month"
         | "Older";
 
-    let { emailSelection = $bindable([]) }: Props = $props();
-
-    let currentMailbox = $derived.by(() => {
-        if (SharedStore.currentAccount === "home") {
-            let currentMailbox: Mailbox = {
-                total: 0,
-                emails: { prev: [], current: [], next: [] },
-                folder: Folder.Inbox // mailboxes are going to be INBOX while selecting account to "home"
-            };
-            Object.values(SharedStore.mailboxes).forEach((mailbox) => {
-                currentMailbox.total += mailbox.total;
-                currentMailbox.emails.prev.push(...mailbox.emails.prev);
-                currentMailbox.emails.current.push(...mailbox.emails.current);
-                currentMailbox.emails.next.push(...mailbox.emails.next);
-            });
-            Object.values(currentMailbox.emails).forEach((emails) => {
-                emails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            })
-            return currentMailbox;
-        } else {
-            return SharedStore.mailboxes[
-                SharedStore.currentAccount.email_address
-            ]
-        }
-    });
+    let {
+        emailSelection = $bindable([]),
+        currentMailbox
+    }: Props = $props();
 
     let groupedEmailsByDate: Record<DateGroup, TEmail[]> = $derived.by(() => {
         const today = new Date();
