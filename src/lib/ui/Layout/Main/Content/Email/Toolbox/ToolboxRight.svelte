@@ -2,7 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email } from "$lib/types";
-    import { EMAIL_PAGINATION_TEMPLATE } from '$lib/constants';
+    import { EMAIL_PAGINATION_TEMPLATE } from "$lib/constants";
     import * as Button from "$lib/ui/Components/Button";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
@@ -11,72 +11,75 @@
         email: Email;
     }
 
-    let {
-        account,
-        email
-    }: Props = $props();
+    let { account, email }: Props = $props();
 
-    let currentOffset = $derived(SharedStore.currentMailbox.emails.findIndex(
-        em => em.uid === email.uid
-    ) + 1);
+    const currentMailbox = SharedStore.mailboxes[account.email_address];
 
-    const setEmailByUid = async (uid: string): Promise<void> => {
+    let currentOffset = $state(
+        currentMailbox.emails.current.findIndex((em) => em.uid === email.uid),
+    );
+
+    const updateShownEmail = async (): Promise<void> => {
+        const uid = currentMailbox.emails.current[currentOffset].uid;
+
         const response = await MailboxController.getEmailContent(
             account,
-            SharedStore.currentMailbox.folder,
-            uid
+            currentMailbox.folder,
+            uid,
         );
 
         if (!response.success || !response.data) {
-            showMessage({content: "Error while getting email content."});
+            showMessage({ content: "Error while getting email content." });
             console.error(response.message);
             return;
         }
 
         email = response.data;
-    }
+    };
 
     const getPreviousEmail = async () => {
-        const previousUidIndex = SharedStore.currentMailbox.emails.findIndex(
-            em => em.uid === email.uid
-        ) - 1;
-        if (previousUidIndex < 0)
+        if (currentOffset < 1) {
+            // TODO: prev calculation.
             return;
+        }
 
-        setEmailByUid(SharedStore.currentMailbox.emails[previousUidIndex].uid);
-    }
+        currentOffset -= 1;
+        updateShownEmail();
+    };
 
     const getNextEmail = async () => {
-        const nextUidIndex = SharedStore.currentMailbox.emails.findIndex(
-            em => em.uid === email.uid
-        ) - 1;
-        if (nextUidIndex < 0)
+        if (currentOffset >= currentMailbox.total) {
+            // TODO: what if currentoffset is bigger than emails.current.length, next calculation.
             return;
+        }
 
-        setEmailByUid(SharedStore.currentMailbox.emails[nextUidIndex].uid);
-    }
+        currentOffset += 1;
+        updateShownEmail();
+    };
 </script>
 
 <div class="toolbox-right">
     <div class="pagination">
         <Button.Action
             type="button"
-            class="btn-inline {currentOffset < 2 ? "disabled" : ""}"
+            class="btn-inline {currentOffset < 1 ? 'disabled' : ''}"
             onclick={getPreviousEmail}
         >
             Prev
         </Button.Action>
         <small>
-            {
-                EMAIL_PAGINATION_TEMPLATE
-                    .replace("{current}", Math.max(1, currentOffset).toString())
-                    .replace("{total}", SharedStore.currentMailbox.total.toString())
-                    .trim()
-            }
+            {EMAIL_PAGINATION_TEMPLATE.replace(
+                "{current}",
+                (currentOffset + 1).toString(),
+            )
+                .replace("{total}", currentMailbox.total.toString())
+                .trim()}
         </small>
         <Button.Action
             type="button"
-            class="btn-inline {currentOffset >= SharedStore.currentMailbox.total ? "disabled" : ""}"
+            class="btn-inline {currentOffset >= currentMailbox.total
+                ? 'disabled'
+                : ''}"
             onclick={getNextEmail}
         >
             Next
