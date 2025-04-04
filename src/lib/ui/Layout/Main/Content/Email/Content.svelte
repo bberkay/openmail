@@ -2,10 +2,18 @@
     import { onMount, onDestroy, mount, unmount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { create, BaseDirectory } from '@tauri-apps/plugin-fs';
-    import { ATTACHMENT_TEMPLATE, SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE, SENDER_TO_RECEIVER_TEMPLATE } from '$lib/constants';
+    import { create, BaseDirectory } from "@tauri-apps/plugin-fs";
+    import {
+        ATTACHMENT_TEMPLATE,
+        SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE,
+        SENDER_TO_RECEIVER_TEMPLATE,
+    } from "$lib/constants";
     import { type Account, type Email } from "$lib/types";
-    import { extractEmailAddress, extractFullname, makeSizeHumanReadable } from "$lib/utils";
+    import {
+        extractEmailAddress,
+        extractFullname,
+        makeSizeHumanReadable,
+    } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import Badge from "$lib/ui/Components/Badge";
     import Others from "./Others.svelte";
@@ -16,10 +24,7 @@
         email: Email;
     }
 
-    let {
-        account,
-        email
-    }: Props = $props();
+    let { account, email }: Props = $props();
 
     let body: HTMLElement;
     let senderToReceiver: HTMLElement;
@@ -35,8 +40,8 @@
                     toggleText: others.innerText,
                     receivers: email.receivers,
                     cc: email.cc,
-                    bcc: email.bcc
-                }
+                    bcc: email.bcc,
+                },
             });
         }
     });
@@ -45,7 +50,7 @@
         if (mountedOthers) {
             unmount(mountedOthers);
         }
-    })
+    });
 
     function renderBody(): void {
         body.innerHTML = "";
@@ -70,26 +75,34 @@
         const attachment = email.attachments![index];
         const response = await MailboxController.downloadAttachment(
             account,
-            SharedStore.currentFolder!,
+            SharedStore.mailboxes[(SharedStore.currentAccount as Account).email_address].folder,
             email.uid,
             attachment.name,
-            attachment.cid || undefined
+            attachment.cid || undefined,
         );
 
         if (!response.success || !response.data) {
-            showMessage({content: "Error, attachment could not be downloaded properly."});
+            showMessage({
+                content: "Error, attachment could not be downloaded properly.",
+            });
             console.error(response.message);
             return;
         }
 
-        const file = await create(response.data.name, { baseDir: BaseDirectory.Download });
-        await file.write(Uint8Array.from(atob(response.data.data), (char) => char.charCodeAt(0)));
+        const file = await create(response.data.name, {
+            baseDir: BaseDirectory.Download,
+        });
+        await file.write(
+            Uint8Array.from(atob(response.data.data), (char) =>
+                char.charCodeAt(0),
+            ),
+        );
         await file.close();
-    }
+    };
 </script>
 
 <div class="email-content">
-    <div class="flags">
+    <div class="tags">
         {#if Object.hasOwn(email, "flags") && email.flags}
             {#each email.flags as flag}
                 <Badge content={flag} />
@@ -100,20 +113,22 @@
         {email.subject || ""}
     </div>
     <div class="sender-to-receiver" bind:this={senderToReceiver}>
-        {
-            (email.receivers.split(",").length > 1 || email.cc || email.bcc
-                ? SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE
-                : SENDER_TO_RECEIVER_TEMPLATE)
-                    .replace("{sender_fullname}", extractFullname(email.sender))
-                    .replace("{sender_email}", extractEmailAddress(email.sender))
-                    .replace("{receiver_email}", (SharedStore.currentAccount as Account).email_address)
-                    .replace("{sent_at}", email.date)
-                    .trim()
-        }
+        {(email.receivers.split(",").length > 1 || email.cc || email.bcc
+            ? SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE
+            : SENDER_TO_RECEIVER_TEMPLATE
+        )
+            .replace("{sender_fullname}", extractFullname(email.sender))
+            .replace("{sender_email}", extractEmailAddress(email.sender))
+            .replace(
+                "{receiver_email}",
+                (SharedStore.currentAccount as Account).email_address,
+            )
+            .replace("{sent_at}", email.date)
+            .trim()}
     </div>
     <div class="separator"></div>
     <div class="body" bind:this={body}>
-        <!-- Body is going to be here -->
+        <!-- Body iframe will be rendered on mount. -->
     </div>
     {#if Object.hasOwn(email, "attachments") && email.attachments}
         <div class="separator"></div>
@@ -124,12 +139,15 @@
                     download={attachment.name}
                     onclick={() => downloadAttachment(index)}
                 >
-                    {
-                        ATTACHMENT_TEMPLATE
-                            .replace("{attachment_name}", attachment.name)
-                            .replace("{attachment_size}", makeSizeHumanReadable(parseInt(attachment.size)))
-                            .trim()
-                    }
+                    {ATTACHMENT_TEMPLATE.replace(
+                        "{attachment_name}",
+                        attachment.name,
+                    )
+                        .replace(
+                            "{attachment_size}",
+                            makeSizeHumanReadable(parseInt(attachment.size)),
+                        )
+                        .trim()}
                 </Button.Action>
             {/each}
         </div>
