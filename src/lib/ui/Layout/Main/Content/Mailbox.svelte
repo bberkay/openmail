@@ -51,7 +51,7 @@
                         : SharedStore.accounts.map((acc) => acc.email_address);
 
                 const processPrevBatch = () => {
-                    // TODO: Description
+                    // Check out `processNextBatch()`
                     currentMailbox.emails.next = currentMailbox.emails.current;
                     currentMailbox.emails.current = currentMailbox.emails.prev;
                     currentMailbox.emails.prev = [];
@@ -113,6 +113,30 @@
                           });
 
                 const processNextBatch = (): number => {
+                    // Here we are fetching the previous and next pages of the mailbox
+                    // to reduce the user's waiting time between mailbox pages,
+                    // and storing them in the shared store without causing the program to hang.
+                    // For example, at the start of the program, SharedStore.mailboxes
+                    // has a structure like this:
+                    // SharedStore.mailboxes = {
+                    //  someone1@mail.com: { prev: [], current: 1 to 10, next: 11 to 20},
+                    //  someone2@mail.com: { prev: [], current: 1 to 10, next: 11 to 20},
+                    // ...
+                    // }
+                    // For example, let's assume the current user is someone2@mail.com and
+                    // the current value ranges from 1 to 10. In this case,
+                    // when the user forward paginates the mailbox:
+                    // prev = current // current (1 to 10) now becomes prev
+                    // current = next // next (11 to 20) now becomes current,
+                    // which is exactly what we want - our mailbox previously showing 1 to 10
+                    // now shows 11 to 20.
+                    // next = [] // next naturally becomes empty, and here
+                    // we fetch emails 21 to 30 without causing the program to hang.
+                    // The user can scroll forward or backward at any time.
+                    // Simply put, we store 1 previous and 1 next page,
+                    // we might lose some memory but gain speed, and since
+                    // emails are generally small in size, I think this memory loss
+                    // is tolerable.
                     currentMailbox.emails.prev = currentMailbox.emails.current;
                     currentMailbox.emails.current = currentMailbox.emails.next;
                     currentMailbox.emails.next = [];
