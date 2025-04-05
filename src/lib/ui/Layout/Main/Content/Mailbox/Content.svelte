@@ -123,11 +123,6 @@
         account: Account,
         selectedEmail: TEmail,
     ): Promise<void> => {
-        const previouslyAtHome = SharedStore.currentAccount === "home";
-
-        if (account !== SharedStore.currentAccount)
-            SharedStore.currentAccount = account;
-
         const response = await MailboxController.getEmailContent(
             account,
             currentMailbox.folder,
@@ -145,7 +140,6 @@
         showContent(Email, {
             account: account,
             email: response.data,
-            previouslyAtHome: previouslyAtHome,
         });
     };
 </script>

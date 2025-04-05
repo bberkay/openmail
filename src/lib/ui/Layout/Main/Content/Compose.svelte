@@ -2,7 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { extractEmailAddress, isStandardFolder } from "$lib/utils";
     import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from "$lib/constants";
-    import { Folder, type Account, type Draft } from "$lib/types";
+    import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onDestroy, onMount } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";

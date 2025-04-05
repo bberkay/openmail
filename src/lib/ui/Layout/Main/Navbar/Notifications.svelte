@@ -180,7 +180,6 @@
         showContent(Email, {
             account,
             email,
-            previouslyAtHome: SharedStore.currentAccount === "home",
         });
     };
 

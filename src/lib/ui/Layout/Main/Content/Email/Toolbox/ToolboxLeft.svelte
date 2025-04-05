@@ -18,19 +18,13 @@
     interface Props {
         account: Account;
         email: Email;
-        previouslyAtHome: boolean;
     }
 
-    let { account, email, previouslyAtHome }: Props = $props();
+    let { account, email }: Props = $props();
 
     const currentFolder = SharedStore.mailboxes[account.email_address].folder;
     const customFolders: string[] = SharedStore.folders[account.email_address].custom;
     const isEmailInCustomFolder = customFolders.includes(currentFolder);
-
-    const goBack = () => {
-        if (previouslyAtHome) SharedStore.currentAccount = "home";
-        backToDefault();
-    };
 
     async function markAs(mark: string | Mark) {
         const response = await MailboxController.markEmails(
@@ -171,7 +165,7 @@
         type="button"
         class="btn-inline"
         style="margin-right: var(--spacing-sm)"
-        onclick={goBack}
+        onclick={() => backToDefault()}
     >
         Back
     </Button.Basic>
