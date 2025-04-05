@@ -9,6 +9,7 @@
         MAILBOX_SELECT_ALL_TEMPLATE,
         MAILBOX_SELECTION_INFO_TEMPLATE,
     } from "$lib/constants";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
     import Badge from "$lib/ui/Components/Badge/Badge.svelte";
@@ -18,7 +19,6 @@
 
     interface Props {
         emailSelection: "1:*" | string[];
-        currentMailbox: Mailbox;
     }
 
     type DateGroup =
@@ -30,7 +30,6 @@
 
     let {
         emailSelection = $bindable([]),
-        currentMailbox
     }: Props = $props();
 
     let groupedEmailsByDate: Record<DateGroup, TEmail[]> = $derived.by(() => {
@@ -54,7 +53,7 @@
             Older: [],
         };
 
-        currentMailbox.emails.current.forEach((email: TEmail) => {
+        getCurrentMailbox().emails.current.forEach((email: TEmail) => {
             const emailDate = new Date(email.date);
             emailDate.setHours(0, 0, 0, 0);
 
@@ -114,7 +113,7 @@
         emailSelection = [];
         selectAllButton.innerHTML = MAILBOX_SELECT_ALL_TEMPLATE.replace(
             "{total}",
-            currentMailbox.total.toString(),
+            getCurrentMailbox().total.toString(),
         );
         selectShownCheckbox.checked = false;
     };
@@ -125,7 +124,7 @@
     ): Promise<void> => {
         const response = await MailboxController.getEmailContent(
             account,
-            currentMailbox.folder,
+            getCurrentMailbox().folder,
             selectedEmail.uid,
         );
 
@@ -151,7 +150,7 @@
                 {MAILBOX_SELECTION_INFO_TEMPLATE.replace(
                     "{selection_count}",
                     (emailSelection === "1:*"
-                        ? currentMailbox.total
+                        ? getCurrentMailbox().total
                         : emailSelection.length
                     ).toString(),
                 )}
@@ -165,7 +164,7 @@
             >
                 {MAILBOX_SELECT_ALL_TEMPLATE.replace(
                     "{total}",
-                    currentMailbox.total.toString(),
+                    getCurrentMailbox().total.toString(),
                 )}
             </Button.Basic>
         </div>

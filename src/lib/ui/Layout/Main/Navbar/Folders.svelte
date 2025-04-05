@@ -8,7 +8,9 @@
     import RenameFolder from "$lib/ui/Layout/Main/Navbar/Folders/RenameFolder.svelte";
     import MoveFolder from "$lib/ui/Layout/Main/Navbar/Folders/MoveFolder.svelte";
     import DeleteFolder from "$lib/ui/Layout/Main/Navbar/Folders/DeleteFolder.svelte";
-    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import Mailbox, {
+        getCurrentMailbox,
+    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
     import { show as showMessage } from "$lib/ui/Components/Message";
@@ -36,11 +38,7 @@
     const setCurrentFolder = async (
         selectedFolder: string | Folder,
     ): Promise<void> => {
-        const currentFolder = SharedStore.mailboxes[
-            (SharedStore.currentAccount as Account).email_address
-        ].folder;
-
-        if (currentFolder !== selectedFolder) {
+        if (getCurrentMailbox().folder !== selectedFolder) {
             const response = await MailboxController.getMailbox(
                 SharedStore.currentAccount as Account,
                 selectedFolder,
@@ -90,10 +88,7 @@
 
 <Select.Root
     onchange={handleOperation}
-    value={SharedStore.currentAccount === "home"
-        ? Folder.Inbox
-        : SharedStore.mailboxes[SharedStore.currentAccount.email_address]
-              .folder}
+    value={getCurrentMailbox().folder}
     enableSearch={true}
     disabled={SharedStore.currentAccount === "home"}
 >
@@ -131,7 +126,9 @@
                     </Dropdown.Item>
                     <Dropdown.Item
                         onclick={() =>
-                            showModal(MoveFolder, { folderName: customFolder })}
+                            showModal(MoveFolder, {
+                                folderName: customFolder,
+                            })}
                     >
                         Move Folder
                     </Dropdown.Item>

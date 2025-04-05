@@ -1,9 +1,10 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Account, type Email } from "$lib/types";
+    import { MAILBOX_LENGTH, MailboxController } from "$lib/controllers/MailboxController";
+    import { type Account, type Email, Folder } from "$lib/types";
     import { EMAIL_PAGINATION_TEMPLATE } from "$lib/constants";
     import * as Button from "$lib/ui/Components/Button";
+    import { getCurrentMailbox, paginateMailboxBackward, paginateMailboxForward } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
     interface Props {
@@ -13,18 +14,16 @@
 
     let { account, email }: Props = $props();
 
-    const currentMailbox = SharedStore.mailboxes[account.email_address];
-
     let currentOffset = $state(
-        currentMailbox.emails.current.findIndex((em) => em.uid === email.uid),
+        getCurrentMailbox().emails.current.findIndex((em) => em.uid === email.uid) + 1
     );
 
     const updateShownEmail = async (): Promise<void> => {
-        const uid = currentMailbox.emails.current[currentOffset].uid;
+        const uid = getCurrentMailbox().emails.current[currentOffset].uid;
 
         const response = await MailboxController.getEmailContent(
             account,
-            currentMailbox.folder,
+            getCurrentMailbox().folder,
             uid,
         );
 
@@ -38,9 +37,9 @@
     };
 
     const getPreviousEmail = async () => {
-        if (currentOffset < 1) {
-            // TODO: prev calculation.
-            return;
+        if (currentOffset <= 1) return;
+        if (currentOffset - 1 % MAILBOX_LENGTH == 0) {
+            await paginateMailboxBackward(currentOffset - 1);
         }
 
         currentOffset -= 1;
@@ -48,9 +47,9 @@
     };
 
     const getNextEmail = async () => {
-        if (currentOffset >= currentMailbox.total) {
-            // TODO: what if currentoffset is bigger than emails.current.length, next calculation.
-            return;
+        if (currentOffset >= getCurrentMailbox().total) return;
+        if (currentOffset + 1 % MAILBOX_LENGTH == 1) {
+            await paginateMailboxBackward(currentOffset + 1);
         }
 
         currentOffset += 1;
@@ -59,30 +58,32 @@
 </script>
 
 <div class="toolbox-right">
-    <div class="pagination">
-        <Button.Action
-            type="button"
-            class="btn-inline {currentOffset < 1 ? 'disabled' : ''}"
-            onclick={getPreviousEmail}
-        >
-            Prev
-        </Button.Action>
-        <small>
-            {EMAIL_PAGINATION_TEMPLATE.replace(
-                "{current}",
-                (currentOffset + 1).toString(),
-            )
-                .replace("{total}", currentMailbox.total.toString())
+    {#if currentOffset > 0}
+        <div class="pagination">
+            <Button.Action
+                type="button"
+                class="btn-inline {currentOffset == 1 ? 'disabled' : ''}"
+                onclick={getPreviousEmail}
+            >
+                Prev
+            </Button.Action>
+            <small>
+                {EMAIL_PAGINATION_TEMPLATE.replace(
+                    "{current}",
+                    (currentOffset + 1).toString(),
+                )
+                .replace("{total}", getCurrentMailbox().total.toString())
                 .trim()}
-        </small>
-        <Button.Action
-            type="button"
-            class="btn-inline {currentOffset >= currentMailbox.total
+            </small>
+            <Button.Action
+                type="button"
+                class="btn-inline { currentOffset >= getCurrentMailbox().total
                 ? 'disabled'
                 : ''}"
-            onclick={getNextEmail}
-        >
-            Next
-        </Button.Action>
-    </div>
+                onclick={getNextEmail}
+            >
+                Next
+            </Button.Action>
+        </div>
+    {/if}
 </div>

@@ -9,6 +9,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import * as Context from "$lib/ui/Components/Context";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
@@ -16,10 +17,9 @@
 
     interface Props {
         emailSelection: "1:*" | string[];
-        currentMailbox: Mailbox;
     }
 
-    let { emailSelection = $bindable([]), currentMailbox }: Props = $props();
+    let { emailSelection = $bindable([]) }: Props = $props();
 
     let isMailboxOfCustomFolder = $derived.by(() => {
         if (SharedStore.currentAccount == "home")
@@ -27,7 +27,7 @@
 
         return SharedStore.folders[
             SharedStore.currentAccount.email_address
-        ].custom.includes(currentMailbox.folder);
+        ].custom.includes(getCurrentMailbox().folder);
     });
 
     let groupedEmailSelection: [string, string][] = $derived.by(() => {
@@ -78,7 +78,7 @@
     });
 
     $effect(() => {
-        if (currentMailbox) {
+        if (getCurrentMailbox()) {
             shownEmailUids = [];
             document
                 .querySelectorAll<HTMLInputElement>(
@@ -141,7 +141,7 @@
                 )!,
                 uids,
                 mark,
-                currentMailbox.folder
+                getCurrentMailbox().folder
             );
             if (!response.success) {
                 showMessage({
@@ -162,7 +162,7 @@
                 )!,
                 uids,
                 mark,
-                currentMailbox.folder
+                getCurrentMailbox().folder
             );
             if (!response.success) {
                 showMessage({
@@ -228,7 +228,7 @@
                 (acc) => acc.email_address === emailAddressOfSelection,
             )!,
             movingEmailUids,
-            currentMailbox.folder,
+            getCurrentMailbox().folder,
             destinationFolder,
         );
 
@@ -250,7 +250,7 @@
                 (acc) => acc.email_address === emailAddressOfSelection,
             )!,
             movingEmailUids,
-            currentMailbox.folder,
+            getCurrentMailbox().folder,
             destinationFolder,
         );
 
@@ -270,7 +270,7 @@
                     (acc) => acc.email_address === emailAddress,
                 )!,
                 emailUids,
-                currentMailbox.folder,
+                getCurrentMailbox().folder,
                 Folder.Archive,
             );
 
@@ -297,7 +297,7 @@
                             (acc) => acc.email_address === emailAddress,
                         )!,
                         uids,
-                        currentMailbox.folder,
+                        getCurrentMailbox().folder,
                     );
                     if (!response.success) {
                         showMessage({
@@ -507,7 +507,7 @@
                         </Select.Option>
                     {/if}
                     {#each SharedStore.folders[emailAddress].custom as customFolder}
-                        {#if SharedStore.currentAccount === "home" || customFolder !== currentMailbox.folder}
+                        {#if SharedStore.currentAccount === "home" || customFolder !== getCurrentMailbox().folder}
                             <Select.Option value={customFolder}>
                                 {customFolder}
                             </Select.Option>
@@ -524,7 +524,7 @@
                         </Select.Option>
                     {/if}
                     {#each SharedStore.folders[emailAddress].custom as customFolder}
-                        {#if SharedStore.currentAccount === "home" || customFolder !== currentMailbox.folder}
+                        {#if SharedStore.currentAccount === "home" || customFolder !== getCurrentMailbox().folder}
                             <Select.Option value={customFolder}>
                                 {customFolder}
                             </Select.Option>
