@@ -159,21 +159,15 @@ export class MailboxController {
         );
 
         if (response.success && response.data) {
-            const currentMailbox = SharedStore.mailboxes[account.email_address];
-            const mailboxes =
-                Object.keys(SharedStore.mailboxes).length > 0
-                    ? Object.values(response.data)
-                    : [response.data[account.email_address]];
-
-            mailboxes.forEach((mailbox) => {
-                currentMailbox.total = mailbox.total;
-                currentMailbox.folder = mailbox.folder;
-                currentMailbox.emails = {
+            SharedStore.mailboxes[account.email_address] = {
+                total: response.data[account.email_address].total,
+                emails: {
                     prev: [],
-                    current: mailbox.emails,
-                    next: [],
-                };
-            });
+                    current: response.data[account.email_address].emails,
+                    next: []
+                },
+                folder: response.data[account.email_address].folder,
+            }
 
             if (offsetStart > 1) {
                 MailboxController.paginateEmails(
@@ -183,7 +177,7 @@ export class MailboxController {
                 );
             }
 
-            if (currentMailbox.total > offsetEnd) {
+            if (offsetEnd < SharedStore.mailboxes[account.email_address].total) {
                 MailboxController.paginateEmails(
                     account,
                     offsetEnd + 1,
@@ -232,7 +226,7 @@ export class MailboxController {
 
         if (response.success && response.data) {
             const currentEmails = currentMailbox.emails.current;
-            const [, mailbox] = Object.values(response.data);
+            const mailbox = response.data[account.email_address];
             if (
                 Number(mailbox.emails[0].uid) <=
                 Number(currentEmails[currentEmails.length - 1].uid)
