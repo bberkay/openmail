@@ -262,28 +262,26 @@
     <Icon name="search" />
 </Button.Basic>
 
-{#if !isSimpleSearchHidden}
-    <div class="search-menu" transition:fade>
-        <Input.Group>
-            <Button.Action type="button" onclick={search}>
-                <Icon name="search" />
-            </Button.Action>
-            <Input.Basic
-                type="text"
-                id="simple-search"
-                placeholder="Search for {searchingAccount}..."
-                onkeyup={debouncedSearch}
-                onblur={debouncedSearch}
-            />
-            <Button.Basic type="button" onclick={toggleSimpleSearch}>
-                <Icon name="close" />
-            </Button.Basic>
-            <Button.Basic type="button" onclick={toggleExtraOptions}>
-                <Icon name="funnel" />
-            </Button.Basic>
-        </Input.Group>
-        {#if !isExtraOptionsHidden}
-            <div class="search-extra-options" bind:this={extraOptionsWrapper}>
+<div class="search-menu {isSimpleSearchHidden ? "hidden" : ""}" transition:fade>
+    <Input.Group>
+        <Button.Action type="button" onclick={search}>
+            <Icon name="search" />
+        </Button.Action>
+        <Input.Basic
+            type="text"
+            id="simple-search"
+            placeholder="Search for {searchingAccount}..."
+            onkeyup={debouncedSearch}
+            onblur={debouncedSearch}
+        />
+        <Button.Basic type="button" onclick={toggleSimpleSearch}>
+            <Icon name="close" />
+        </Button.Basic>
+        <Button.Basic type="button" onclick={toggleExtraOptions}>
+            <Icon name="funnel" />
+        </Button.Basic>
+    </Input.Group>
+    <div class="search-extra-options {isExtraOptionsHidden ? "hidden" : ""}" bind:this={extraOptionsWrapper}>
                 <FormGroup>
                     <Label for="searching-account">Searching Account</Label>
                     <Select.Root
@@ -588,10 +586,8 @@
                         Search
                     </Button.Action>
                 </div>
-            </div>
-        {/if}
     </div>
-{/if}
+</div>
 
 <style>
     :global {
