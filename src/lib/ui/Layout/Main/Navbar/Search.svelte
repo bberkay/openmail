@@ -81,21 +81,32 @@
         const accounts = searchingAccount === "home"
             ? SharedStore.accounts
             : [SharedStore.currentAccount as Account];
-        accounts.forEach(async (account) => {
-            const response = await MailboxController.getMailbox(
-                account,
-                searchingFolder,
-                isExtraOptionsHidden
+
+        const results = await Promise.allSettled(
+            accounts.map(async (account) => {
+                const response = await MailboxController.getMailbox(
+                    account,
+                    searchingFolder,
+                    isExtraOptionsHidden
                     ? simpleSearchInput.value
                     : isObjEmpty(searchCriteria)
-                      ? searchCriteria
-                      : undefined,
-            );
-            if (!response.success) {
-                showMessage({ content: "Error while searching for emails." });
-                console.error(response.message);
-            }
-        })
+                          ? searchCriteria
+                          : undefined,
+                );
+                if (!response.success) {
+                    throw new Error(response.message);
+                }
+            })
+        );
+
+        const failed = results.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+            showMessage({
+                content: "Error while searching for emails.",
+            });
+            failed.forEach((f) => console.error(f.reason));
+        }
     };
 
     const debouncedSearch = debounce((e: Event) => {
