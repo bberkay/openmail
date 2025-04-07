@@ -50,8 +50,8 @@
                         ? [SharedStore.currentAccount.email_address]
                         : SharedStore.accounts.map((acc) => acc.email_address);
 
-                const shiftEmailPagesBackward = () => {
-                    // Check out `processNextBatch()`
+                const shiftEmailPagesBackward = (): number => {
+                    // Check out `shiftEmailPagesForward()`
                     currentMailbox.emails.next = currentMailbox.emails.current;
                     currentMailbox.emails.current = currentMailbox.emails.prev;
                     currentMailbox.emails.prev = [];
@@ -96,9 +96,9 @@
         });
     }
 
-    export async function paginateMailboxForward(currentOffset: number): Promise<number> {
+    export async function paginateMailboxForward(currentOffset: number): Promise<void> {
         if (currentOffset >= currentMailbox.total)
-            return currentOffset;
+            return;
 
         return new Promise((resolve) => {
             if (!waitNext) {
@@ -112,8 +112,8 @@
                               );
                           });
 
-                const shiftEmailPagesForward = (): number => {
-                    // TODO: needs description.
+                const shiftEmailPagesForward = () => {
+                    // TODO: needs description for both mailbox and email.
                     currentMailbox.emails.prev = currentMailbox.emails.current;
                     currentMailbox.emails.current = currentMailbox.emails.next;
                     currentMailbox.emails.next = [];
@@ -138,22 +138,18 @@
                             );
                         });
                     }
-
-                    return Math.min(
-                        currentMailbox.total,
-                        currentOffset + MAILBOX_LENGTH,
-                    );
                 }
 
                 if (currentMailbox.emails.next.length > 0) {
-                    resolve(shiftEmailPagesForward());
+                    shiftEmailPagesForward()
+                    resolve();
                 } else {
                     waitNext = setInterval(() => {
                         if (currentMailbox.emails.next.length > 0) {
-                            const updatedOffset = shiftEmailPagesForward();
+                            shiftEmailPagesForward();
                             clearInterval(waitNext!);
                             waitNext = null;
-                            resolve(updatedOffset);
+                            resolve();
                         }
                     }, PAGINATE_MAILBOX_CHECK_DELAY);
                 }
@@ -166,8 +162,9 @@
     import Toolbox from "$lib/ui/Layout/Main/Content/Mailbox/Toolbox.svelte";
     import Content from "$lib/ui/Layout/Main/Content/Mailbox/Content.svelte";
 
+    let currentOffset = $state(1);
     let emailSelection: "1:*" | string[] = $state([]);
 </script>
 
-<Toolbox bind:emailSelection />
+<Toolbox bind:emailSelection bind:currentOffset />
 <Content bind:emailSelection />
