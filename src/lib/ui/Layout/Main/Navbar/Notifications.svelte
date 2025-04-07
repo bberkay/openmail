@@ -12,7 +12,9 @@
     import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
-    import Mailbox, { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import Mailbox, {
+        getCurrentMailbox,
+    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
@@ -30,8 +32,7 @@
             (acc) => acc.email_address == receiverEmailAddress,
         )!;
 
-        if (isStandardFolder(getCurrentMailbox().folder, Folder.Inbox))
-            return;
+        if (isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)) return;
 
         const response = await MailboxController.getMailbox(
             SharedStore.currentAccount,
@@ -142,19 +143,26 @@
         }
 
         if (nonInboxAccounts.length >= 1) {
-            nonInboxAccounts.forEach(async (account) => {
-                const response = await MailboxController.getMailbox(
-                    account,
-                    Folder.Inbox,
-                );
-                if (!response.success) {
-                    showMessage({
-                        content: `Error, inbox of ${account.email_address} could not retrived.`,
-                    });
-                    console.error(response.message);
-                    return;
-                }
-            });
+            const results = await Promise.allSettled(
+                nonInboxAccounts.map(async (account) => {
+                    const response = await MailboxController.getMailbox(
+                        account,
+                        Folder.Inbox,
+                    );
+                    if (!response.success) {
+                        throw new Error(response.message);
+                    }
+                })
+            );
+
+            const failed = results.filter((r) => r.status === "rejected");
+
+            if (failed.length > 0) {
+                showMessage({
+                    content: `Error, inbox of on or more accounts could not retrived.`,
+                });
+                failed.forEach((f) => console.error(f.reason));
+            }
         }
 
         showContent(Mailbox);
