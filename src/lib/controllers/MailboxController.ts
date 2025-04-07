@@ -24,6 +24,7 @@ import {
     removeFromPath,
     removeWhitespaces,
     replaceFolderName,
+    roundUpToMultiple,
 } from "$lib/utils";
 
 export const MAILBOX_LENGTH = 10;
@@ -164,10 +165,10 @@ export class MailboxController {
                 emails: {
                     prev: [],
                     current: response.data[account.email_address].emails,
-                    next: []
+                    next: [],
                 },
                 folder: response.data[account.email_address].folder,
-            }
+            };
 
             if (offsetStart > 1) {
                 MailboxController.paginateEmails(
@@ -177,7 +178,9 @@ export class MailboxController {
                 );
             }
 
-            if (offsetEnd < SharedStore.mailboxes[account.email_address].total) {
+            if (
+                offsetEnd < SharedStore.mailboxes[account.email_address].total
+            ) {
                 MailboxController.paginateEmails(
                     account,
                     offsetEnd + 1,
@@ -351,7 +354,7 @@ export class MailboxController {
         account: Account,
         selection: string,
         folder: string,
-        offsetEndBeforeDelete?: number,
+        offset?: number,
     ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
@@ -363,86 +366,88 @@ export class MailboxController {
             },
         );
 
-        if (response.success) {
-            const currentMailbox = SharedStore.mailboxes[account.email_address];
+        if (!response.success) return response;
 
-            // selection will be either 1:* or uids separated with comma
-            // something like 1,2,3,4 but not 2:* or 1,3:*:5
-            if (isExactFolderMatch(currentMailbox.folder, folder)) {
-                if (selection === "1:*") {
-                    currentMailbox.emails.current = [];
+        const currentMailbox = SharedStore.mailboxes[account.email_address];
 
-                    if (offsetEndBeforeDelete) {
-                        // After the selected emails are removed from current,
-                        // add back to current from next as many emails as were removed
-                        // (if not available, they should be loading, so wait for them;
-                        // if they are not loading, there is a problem because
-                        // when the number of emails in next decreases, new emails
-                        // should be loaded to bring next back to MAILBOX_LENGTH
-                        // using `paginateEmails()`) and then fetch enough emails from the server
-                        // with the `paginateEmails()` to bring next back to `MAILBOX_LENGTH`.
-                        const waitNext = setInterval(() => {
-                            if (currentMailbox.emails.next.length > 0) {
-                                currentMailbox.emails.current =
-                                    currentMailbox.emails.next;
-                                clearInterval(waitNext);
-                                MailboxController.paginateEmails(
-                                    account,
-                                    offsetEndBeforeDelete * 2 + 1,
-                                );
-                            }
-                        }, 100);
-                    }
-                } else {
-                    const countBeforeDelete =
-                        currentMailbox.emails.current.length;
-                    currentMailbox.emails.current =
-                        currentMailbox.emails.current.filter(
-                            (email) =>
-                                !isUidInSelection(
-                                    selection,
-                                    removeWhitespaces(email.uid),
-                                ),
-                        );
+        if (!isExactFolderMatch(currentMailbox.folder, folder)) return response;
 
-                    if (offsetEndBeforeDelete) {
-                        // Same as above, but part of the current not whole.
-                        // For example: current mailbox displays emails from
-                        // 1 to 10 and user delete 5 of them. Since next contains
-                        // emails from 11 to 20 (as explained above), get
-                        // first 5 emails from next i.e. 11,12,13,14,15 and
-                        // add them to the current. This way, the current should
-                        // reach `MAILBOX_LENGTH`. Hovewer, since 11,12,13,14,15 were
-                        // deleted, fill the gap of 5 emails by fetching 21,22,23,24,25
-                        // with `paginateEmails()` function.
-                        const waitNext = setInterval(() => {
-                            if (currentMailbox.emails.next.length > 0) {
-                                const deletedCount =
-                                    countBeforeDelete -
-                                    currentMailbox.emails.current.length;
-                                currentMailbox.emails.current.push(
-                                    ...currentMailbox.emails.next.splice(
-                                        0,
-                                        deletedCount,
-                                    ),
-                                );
-                                clearInterval(waitNext);
-                                MailboxController.paginateEmails(
-                                    account,
-                                    offsetEndBeforeDelete * 2 + 1,
-                                    offsetEndBeforeDelete * 2 + deletedCount,
-                                );
-                            }
-                        }, 100);
-                    }
-                }
-            }
+        // selection will be either 1:* or uids separated with comma
+        // something like 1,2,3,4 but not 2:* or 1,3:*:5
+        if (selection === "1:*") {
+            currentMailbox.emails = { prev: [], current: [], next: [] };
+            currentMailbox.total = 0;
+            return response;
         }
 
-        return {
-            success: response.success,
-            message: response.message,
+        // Delete emails from current mailbox and update total count.
+        const wasFullBeforeDelete =
+            currentMailbox.emails.current.length >= MAILBOX_LENGTH;
+        const countBeforeDelete = currentMailbox.emails.current.length;
+        currentMailbox.emails.current = currentMailbox.emails.current.filter(
+            (email) =>
+                !isUidInSelection(selection, removeWhitespaces(email.uid)),
+        );
+        const deletedCount =
+            countBeforeDelete - currentMailbox.emails.current.length;
+        currentMailbox.total -= deletedCount;
+
+        // If the offset is not given, we can't determine how
+        // deleted emails should be replaced.
+        // Also, if the `current` page wasn't full before deletion,
+        // there may be no emails available to replace the deleted ones.
+        if (!offset || !wasFullBeforeDelete) return response;
+
+        // If we have reached the end of the mailbox then again
+        // there can't be any email to replace deleted ones.
+        const offsetEnd = roundUpToMultiple(offset, MAILBOX_LENGTH);
+        if (currentMailbox.total <= offsetEnd) return response;
+
+        // After the selected emails are removed from current,
+        // add back to `current` from `next` as many emails as were removed
+        // (if not available, they should be loading, so wait for them;
+        // if they are not loading, there is a problem because
+        // when the number of emails in `next` decreases, new emails
+        // should be loaded to bring `next` back to MAILBOX_LENGTH
+        // using `paginateEmails()`) and then fetch enough emails from the server
+        // with the `paginateEmails()` to bring `next` back to `MAILBOX_LENGTH`.
+        // For example: current mailbox displays emails from
+        // 1 to 10 and user delete 5 of them. Since next contains
+        // emails from 11 to 20 (as explained above), get
+        // first 5 emails from next i.e. 11,12,13,14,15 and
+        // add them to the current. This way, the current should
+        // reach `MAILBOX_LENGTH`. Hovewer, since 11,12,13,14,15 were
+        // deleted, fill the gap of 5 emails by fetching 21,22,23,24,25
+        // with `paginateEmails()` function.
+        const processNextBatch = () => {
+            currentMailbox.emails.current.push(
+                ...currentMailbox.emails.next.splice(0, deletedCount),
+            );
+
+            const nextOfNext = offsetEnd + MAILBOX_LENGTH + 1;
+            if (currentMailbox.total >= nextOfNext + 1) {
+                MailboxController.paginateEmails(
+                    account,
+                    nextOfNext,
+                    nextOfNext + deletedCount - 1,
+                );
+            }
         };
+
+        return new Promise((resolve) => {
+            if (currentMailbox.emails.next.length > 0) {
+                processNextBatch();
+                resolve(response);
+            } else {
+                const waitNext = setInterval(() => {
+                    if (currentMailbox.emails.next.length > 0) {
+                        processNextBatch();
+                        clearInterval(waitNext);
+                        resolve(response);
+                    }
+                }, 100);
+            }
+        });
     }
 
     public static async moveEmails(
@@ -450,7 +455,7 @@ export class MailboxController {
         selection: string,
         sourceFolder: string,
         destinationFolder: string,
-        offsetEndBeforeMove?: number,
+        offset?: number,
     ): Promise<PostResponse> {
         const response = await ApiService.post(
             SharedStore.server,
@@ -463,67 +468,66 @@ export class MailboxController {
             },
         );
 
-        if (response.success) {
-            // same as `deleteEmails()`
-            const currentMailbox = SharedStore.mailboxes[account.email_address];
-            if (isExactFolderMatch(currentMailbox.folder, sourceFolder)) {
-                if (selection === "1:*") {
-                    currentMailbox.emails.current = [];
+        if (!response.success) return response;
 
-                    if (offsetEndBeforeMove) {
-                        const waitNext = setInterval(() => {
-                            if (currentMailbox.emails.next.length > 0) {
-                                currentMailbox.emails.current =
-                                    currentMailbox.emails.next;
-                                clearInterval(waitNext);
-                                MailboxController.paginateEmails(
-                                    account,
-                                    offsetEndBeforeMove * 2 + 1,
-                                );
-                            }
-                        }, 100);
-                    }
-                } else {
-                    const countBeforeMove =
-                        currentMailbox.emails.current.length;
-                    currentMailbox.emails.current =
-                        currentMailbox.emails.current.filter(
-                            (email) =>
-                                !isUidInSelection(
-                                    selection,
-                                    removeWhitespaces(email.uid),
-                                ),
-                        );
+        // Continue with the same steps as deleteEmails from this point,
+        // but only if the current folder matches the source folder.
 
-                    if (offsetEndBeforeMove) {
-                        const waitNext = setInterval(() => {
-                            if (currentMailbox.emails.next.length > 0) {
-                                const deletedCount =
-                                    countBeforeMove -
-                                    currentMailbox.emails.current.length;
-                                currentMailbox.emails.current.push(
-                                    ...currentMailbox.emails.next.splice(
-                                        0,
-                                        deletedCount,
-                                    ),
-                                );
-                                clearInterval(waitNext);
-                                MailboxController.paginateEmails(
-                                    account,
-                                    offsetEndBeforeMove * 2 + 1,
-                                    offsetEndBeforeMove * 2 + deletedCount,
-                                );
-                            }
-                        }, 100);
-                    }
-                }
-            }
+        const currentMailbox = SharedStore.mailboxes[account.email_address];
+
+        if (!isExactFolderMatch(currentMailbox.folder, sourceFolder)) return response;
+
+        if (selection === "1:*") {
+            currentMailbox.emails = { prev: [], current: [], next: [] };
+            currentMailbox.total = 0;
+            return response;
         }
 
-        return {
-            success: response.success,
-            message: response.message,
+        const wasFullBeforeMove =
+            currentMailbox.emails.current.length >= MAILBOX_LENGTH;
+        const countBeforeMove = currentMailbox.emails.current.length;
+        currentMailbox.emails.current = currentMailbox.emails.current.filter(
+            (email) =>
+                !isUidInSelection(selection, removeWhitespaces(email.uid)),
+        );
+        const movedCount =
+            countBeforeMove - currentMailbox.emails.current.length;
+        currentMailbox.total -= movedCount;
+
+        if (!offset || !wasFullBeforeMove) return response;
+
+        const offsetEnd = roundUpToMultiple(offset, MAILBOX_LENGTH);
+        if (currentMailbox.total <= offsetEnd) return response;
+
+        const processNextBatch = () => {
+            currentMailbox.emails.current.push(
+                ...currentMailbox.emails.next.splice(0, movedCount),
+            );
+
+            const nextOfNext = offsetEnd + MAILBOX_LENGTH + 1;
+            if (currentMailbox.total >= nextOfNext + 1) {
+                MailboxController.paginateEmails(
+                    account,
+                    nextOfNext,
+                    nextOfNext + movedCount - 1,
+                );
+            }
         };
+
+        return new Promise((resolve) => {
+            if (currentMailbox.emails.next.length > 0) {
+                processNextBatch();
+                resolve(response);
+            } else {
+                const waitNext = setInterval(() => {
+                    if (currentMailbox.emails.next.length > 0) {
+                        processNextBatch();
+                        clearInterval(waitNext);
+                        resolve(response);
+                    }
+                }, 100);
+            }
+        });
     }
 
     public static async copyEmails(
@@ -543,10 +547,7 @@ export class MailboxController {
             },
         );
 
-        return {
-            success: response.success,
-            message: response.message,
-        };
+        return response;
     }
 
     public static async markEmails(
@@ -583,10 +584,7 @@ export class MailboxController {
             });
         }
 
-        return {
-            success: response.success,
-            message: response.message,
-        };
+        return response;
     }
 
     public static async unmarkEmails(
@@ -625,10 +623,7 @@ export class MailboxController {
             });
         }
 
-        return {
-            success: response.success,
-            message: response.message,
-        };
+        return response;
     }
 
     public static async createFolder(
@@ -652,10 +647,7 @@ export class MailboxController {
             );
         }
 
-        return {
-            success: response.success,
-            message: response.message,
-        };
+        return response;
     }
 
     public static async moveFolder(
@@ -701,10 +693,7 @@ export class MailboxController {
             }
         }
 
-        return {
-            success: response.success,
-            message: response.message,
-        };
+        return response;
     }
 
     public static async renameFolder(
@@ -746,10 +735,7 @@ export class MailboxController {
             }
         }
 
-        return {
-            success: response.success,
-            message: response.message,
-        };
+        return response;
     }
 
     public static async deleteFolder(
@@ -796,9 +782,6 @@ export class MailboxController {
             }
         }
 
-        return {
-            success: response.success,
-            message: response.message,
-        };
+        return response;
     }
 }
