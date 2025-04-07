@@ -51,9 +51,10 @@
     let subjectInput: HTMLInputElement;
 
     let senderAccounts: Account[] = $state([]);
+    let isSendingEmail: boolean = $state(false);
     let draftAppenduids: { [account: string]: string } = {};
     let draftLoopTimeout: ReturnType<typeof setTimeout>;
-    let isSavingDraft: boolean = false;
+    let isSavingDraft: boolean = $state(false);
     let draftChangedAfterLastSave: boolean = true;
 
     let body: WYSIWYGEditor;
@@ -115,17 +116,14 @@
 
     onDestroy(() => {
         body.clear();
-        if(draftLoopTimeout) clearTimeout(draftLoopTimeout);
+        if (draftLoopTimeout) clearTimeout(draftLoopTimeout);
     });
 
     function startAutoSaveDraftLoop() {
         if (draftLoopTimeout) return;
 
         const loop = async () => {
-            if (isSavingDraft) return;
-            isSavingDraft = true;
             await saveEmailsAsDrafts();
-            isSavingDraft = false;
             draftLoopTimeout = setTimeout(loop, AUTO_SAVE_DRAFT_INTERVAL);
         };
 
@@ -142,25 +140,21 @@
         return formData;
     }
 
-    async function saveEmailAsDraft(sender: string): Promise<void> {
+    async function saveEmailAsDraft(sender: string): Promise<PostResponse> {
         const formData = createFormDataOfDraft(sender);
         const response = await MailboxController.saveEmailAsDraft(
             formData,
             draftAppenduids[sender],
         );
 
-        if (!response.success || !response.data) {
-            showMessage({ content: "Error, email could not saved as draft." });
-            console.error(response!.message);
-            return;
+        if (response.success && response.data) {
+            draftAppenduids[sender] = response.data;
         }
 
-        draftAppenduids[sender] = response.data;
+        return response;
     }
 
-    async function sendEmail(
-        sender: string,
-    ): Promise<void> {
+    async function sendEmail(sender: string): Promise<PostResponse> {
         const draft = createFormDataOfDraft(sender);
 
         // Remove saved draft before sending as email.
@@ -195,7 +189,7 @@
             sentResponse = await MailboxController.sendEmail(draft);
         }
 
-        return;
+        return sentResponse;
     }
 
     const addSenderAccount = (senderEmailAddr: string) => {
@@ -221,29 +215,62 @@
     };
 
     const saveEmailsAsDrafts = async () => {
-        if (draftChangedAfterLastSave) {
-            await Promise.allSettled(senderAccounts.map((account) => {
-                return saveEmailAsDraft(
+        if (isSendingEmail || isSavingDraft || !draftChangedAfterLastSave)
+            return;
+        isSavingDraft = true;
+
+        const results = await Promise.allSettled(
+            senderAccounts.map(async (account) => {
+                const response = await saveEmailAsDraft(
                     createSenderAddress(
                         account.email_address,
                         account.fullname,
                     ),
                 );
-            }))
+                if (!response.success) {
+                    throw new Error(response.message);
+                }
+            }),
+        );
+
+        const failed = results.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+            showMessage({ content: "Error, email could not saved as draft." });
+            failed.forEach((f) => console.error(f.reason));
         }
+
+        isSavingDraft = false;
         draftChangedAfterLastSave = false;
     };
 
     const sendEmails = async () => {
         const confirmWrapper = async () => {
-            await Promise.allSettled(senderAccounts.map((account) => {
-                return sendEmail(
-                    createSenderAddress(
-                        account.email_address,
-                        account.fullname,
-                    )
-                );
-            }));
+            isSendingEmail = true;
+            const results = await Promise.allSettled(
+                senderAccounts.map(async (account) => {
+                    const response = await sendEmail(
+                        createSenderAddress(
+                            account.email_address,
+                            account.fullname,
+                        ),
+                    );
+                    if (!response.success) {
+                        throw new Error(response.message);
+                    }
+                }),
+            );
+
+            const failed = results.filter((r) => r.status === "rejected");
+
+            if (failed.length > 0) {
+                showMessage({
+                    content: "Error while sending emails.",
+                });
+                failed.forEach((f) => console.error(f.reason));
+                isSendingEmail = false;
+                return;
+            }
 
             if (
                 SharedStore.currentAccount === "home" ||
@@ -269,8 +296,11 @@
                 }
             }
 
+            isSendingEmail = false;
             showContent(Mailbox);
         };
+
+        if (isSendingEmail || isSavingDraft) return;
 
         if (receivers.length == 0) {
             showMessage({ content: "At least one receiver must be added" });
@@ -443,17 +473,23 @@
                 <Input.File name="attachments" id="attachments" multiple />
             </FormGroup>
             <div style="margin-top:10px">
-                <Button.Basic type="submit" id="send-email" class="btn-cta">
+                <Button.Basic
+                    type="submit"
+                    id="send-email"
+                    class="btn-cta"
+                    disabled={isSendingEmail || isSavingDraft}
+                >
                     Send Email
                 </Button.Basic>
-                <Button.Basic
+                <Button.Action
                     type="button"
                     id="save-emails-as-drafts"
                     class="btn-outline"
                     onclick={saveEmailsAsDrafts}
+                    disabled={isSendingEmail || isSavingDraft}
                 >
                     Save as Draft
-                </Button.Basic>
+                </Button.Action>
             </div>
         </div>
     </Form>
