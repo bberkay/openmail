@@ -39,9 +39,9 @@
         return currentMailbox;
     }
 
-    export async function paginateMailboxBackward(currentOffset: number): Promise<number> {
+    export async function paginateMailboxBackward(currentOffset: number): Promise<void> {
         if (currentOffset <= MAILBOX_LENGTH)
-            return currentOffset;
+            return;
 
         return new Promise((resolve) => {
             if (!waitPrev) {
@@ -50,8 +50,7 @@
                         ? [SharedStore.currentAccount.email_address]
                         : SharedStore.accounts.map((acc) => acc.email_address);
 
-                const shiftEmailPagesBackward = (): number => {
-                    // Check out `shiftEmailPagesForward()`
+                const shiftEmailPagesBackward = () => {
                     currentMailbox.emails.next = currentMailbox.emails.current;
                     currentMailbox.emails.current = currentMailbox.emails.prev;
                     currentMailbox.emails.prev = [];
@@ -76,19 +75,18 @@
                             );
                         });
                     }
-
-                    return Math.max(1, currentOffset - MAILBOX_LENGTH);
                 }
 
                 if (currentMailbox.emails.prev.length > 0) {
-                    resolve(shiftEmailPagesBackward());
+                    shiftEmailPagesBackward()
+                    resolve();
                 } else {
                     waitPrev = setInterval(() => {
                         if (currentMailbox.emails.prev.length > 0) {
-                            const updatedOffset = shiftEmailPagesBackward();
+                            shiftEmailPagesBackward();
                             clearInterval(waitPrev!);
                             waitPrev = null;
-                            resolve(updatedOffset);
+                            resolve();
                         }
                     }, PAGINATE_MAILBOX_CHECK_DELAY);
                 }
@@ -113,7 +111,6 @@
                           });
 
                 const shiftEmailPagesForward = () => {
-                    // TODO: needs description for both mailbox and email.
                     currentMailbox.emails.prev = currentMailbox.emails.current;
                     currentMailbox.emails.current = currentMailbox.emails.next;
                     currentMailbox.emails.next = [];
