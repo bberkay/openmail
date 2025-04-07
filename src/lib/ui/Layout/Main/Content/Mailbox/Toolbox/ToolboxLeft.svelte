@@ -134,7 +134,7 @@
     }
 
     async function markEmails(mark: string | Mark) {
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
             groupedEmailSelection.map(async (group) => {
                 const emailAddress = group[0];
                 const uids = sortSelection(group[1]);
@@ -149,17 +149,23 @@
                 );
 
                 if (!response.success) {
-                    showMessage({
-                        content: `Unexpected error while marking email as ${mark}`,
-                    });
-                    console.error(response.message);
+                    throw new Error(response.message);
                 }
             }),
         );
+
+        const failed = results.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+            showMessage({
+                content: `Unexpected error while marking email as ${mark}`,
+            });
+            failed.forEach((f) => console.error(f.reason));
+        }
     }
 
     async function unmarkEmails(mark: string | Mark) {
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
             groupedEmailSelection.map(async (group) => {
                 const emailAddress = group[0];
                 const uids = sortSelection(group[1]);
@@ -174,13 +180,19 @@
                 );
 
                 if (!response.success) {
-                    showMessage({
-                        content: `Unexpected error while unmarking email as ${mark}`,
-                    });
-                    console.error(response.message);
+                    throw new Error(response.message);
                 }
             }),
         );
+
+        const failed = results.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+            showMessage({
+                content: `Unexpected error while unmarking email as ${mark}`,
+            });
+            failed.forEach((f) => console.error(f.reason));
+        }
     }
 
     const selectEmail = (e: Event) => {
@@ -273,7 +285,7 @@
     };
 
     const moveToArchive = async (): Promise<void> => {
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
             groupedEmailSelection.map(async (group) => {
                 const emailAddress = group[0];
                 const emailUids = sortSelection(group[1]);
@@ -289,44 +301,57 @@
                 );
 
                 if (!response.success) {
-                    showMessage({
-                        content: "Unexpected error while moving email.",
-                    });
-                    console.error(response.message);
+                    throw new Error(response.message);
                 }
             }),
         );
+
+        const failed = results.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+            showMessage({
+                content: "Unexpected error while moving email.",
+            });
+            failed.forEach((f) => console.error(f.reason));
+        }
     };
 
     const deleteFrom = async (): Promise<void> => {
+        const confirmWrapper = async () => {
+            const results = await Promise.allSettled(
+                groupedEmailSelection.map(async (group) => {
+                    const emailAddress = group[0];
+                    const uids = sortSelection(group[1]);
+
+                    const response = await MailboxController.deleteEmails(
+                        SharedStore.accounts.find(
+                            (acc) => acc.email_address === emailAddress,
+                        )!,
+                        uids,
+                        getCurrentMailbox().folder,
+                        currentOffset,
+                    );
+
+                    if (!response.success) {
+                        throw new Error(response.message);
+                    }
+                }),
+            );
+
+            const failed = results.filter((r) => r.status === "rejected");
+
+            if (failed.length > 0) {
+                showMessage({
+                    content: "Unexpected error while deleting email.",
+                });
+                failed.forEach((f) => console.error(f.reason));
+            }
+        }
+
         showConfirm({
             content: "Are you certain? Deleting an email cannot be undone.",
             onConfirmText: "Yes, delete.",
-            onConfirm: async (e: Event) => {
-                await Promise.allSettled(
-                    groupedEmailSelection.map(async (group) => {
-                        const emailAddress = group[0];
-                        const uids = sortSelection(group[1]);
-
-                        const response = await MailboxController.deleteEmails(
-                            SharedStore.accounts.find(
-                                (acc) => acc.email_address === emailAddress,
-                            )!,
-                            uids,
-                            getCurrentMailbox().folder,
-                            currentOffset,
-                        );
-
-                        if (!response.success) {
-                            showMessage({
-                                content:
-                                    "Unexpected error while deleting email.",
-                            });
-                            console.error(response.message);
-                        }
-                    }),
-                );
-            },
+            onConfirm: confirmWrapper
         });
     };
 
