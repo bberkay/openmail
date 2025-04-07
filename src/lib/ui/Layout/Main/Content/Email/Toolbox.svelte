@@ -6,15 +6,17 @@
     interface Props {
         account: Account;
         email: Email;
+        currentOffset: number;
     }
 
     let {
         account,
-        email,
+        email = $bindable(),
+        currentOffset = $bindable()
     }: Props = $props();
 </script>
 
 <div class="toolbox">
-    <ToolboxLeft {account} {email} />
-    <ToolboxRight {account} {email} />
+    <ToolboxLeft {account} {email} {currentOffset} />
+    <ToolboxRight {account} bind:email bind:currentOffset />
 </div>

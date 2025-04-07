@@ -8,16 +8,30 @@
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import * as Button from "$lib/ui/Components/Button";
 
-    let currentOffset = $state(1);
+    interface Props {
+        currentOffset: number;
+    }
+
+    let {
+        currentOffset = $bindable()
+    }: Props = $props();
 
     const getPreviousEmails = async () => {
         if (currentOffset <= MAILBOX_LENGTH) return;
-        currentOffset = await paginateMailboxBackward(currentOffset);
+        await paginateMailboxBackward(currentOffset);
+        currentOffset = Math.min(
+            getCurrentMailbox().total,
+            currentOffset + MAILBOX_LENGTH,
+        );
     };
 
     const getNextEmails = async () => {
         if (currentOffset >= getCurrentMailbox().total) return;
-        currentOffset = await paginateMailboxForward(currentOffset);
+        await paginateMailboxForward(currentOffset);
+        currentOffset = Math.min(
+            getCurrentMailbox().total,
+            currentOffset + MAILBOX_LENGTH,
+        );
     };
 </script>
 

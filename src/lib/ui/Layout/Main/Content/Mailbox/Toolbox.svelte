@@ -4,14 +4,16 @@
 
     interface Props {
         emailSelection: "1:*" | string[];
+        currentOffset: number;
     }
 
     let {
         emailSelection = $bindable([]),
+        currentOffset = $bindable()
     }: Props = $props();
 </script>
 
 <div class="toolbox">
-    <ToolboxLeft bind:emailSelection />
-    <ToolboxRight />
+    <ToolboxLeft bind:emailSelection {currentOffset} />
+    <ToolboxRight bind:currentOffset />
 </div>

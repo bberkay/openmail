@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { SharedStore } from "$lib/stores/shared.svelte";
     import { MAILBOX_LENGTH, MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email, Folder } from "$lib/types";
     import { EMAIL_PAGINATION_TEMPLATE } from "$lib/constants";
@@ -10,13 +9,14 @@
     interface Props {
         account: Account;
         email: Email;
+        currentOffset: number;
     }
 
-    let { account, email }: Props = $props();
-
-    let currentOffset = $state(
-        getCurrentMailbox().emails.current.findIndex((em) => em.uid === email.uid) + 1
-    );
+    let {
+        account,
+        email = $bindable(),
+        currentOffset = $bindable()
+    }: Props = $props();
 
     const updateShownEmail = async (): Promise<void> => {
         const uid = getCurrentMailbox().emails.current[currentOffset].uid;

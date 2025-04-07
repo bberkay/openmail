@@ -18,9 +18,14 @@
     interface Props {
         account: Account;
         email: Email;
+        currentOffset: number;
     }
 
-    let { account, email }: Props = $props();
+    let {
+        account,
+        email,
+        currentOffset
+    }: Props = $props();
 
     const currentFolder = SharedStore.mailboxes[account.email_address].folder;
     const customFolders: string[] = SharedStore.folders[account.email_address].custom;
@@ -92,6 +97,7 @@
             email.uid,
             currentFolder,
             destinationFolder,
+            currentOffset
         );
 
         if (!response.success) {
@@ -117,6 +123,7 @@
                     account,
                     email.uid,
                     currentFolder,
+                    currentOffset
                 );
 
                 if (!response.success) {

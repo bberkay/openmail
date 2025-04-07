@@ -17,13 +17,14 @@
 
     interface Props {
         emailSelection: "1:*" | string[];
+        currentOffset: number;
     }
 
-    let { emailSelection = $bindable([]) }: Props = $props();
+    let { emailSelection = $bindable([]), currentOffset = $bindable() }: Props =
+        $props();
 
     let isMailboxOfCustomFolder = $derived.by(() => {
-        if (SharedStore.currentAccount == "home")
-            return false;
+        if (SharedStore.currentAccount == "home") return false;
 
         return SharedStore.folders[
             SharedStore.currentAccount.email_address
@@ -94,7 +95,8 @@
         return groupedEmailSelection.every((group) => {
             const emailAddress = group[0];
             const uids = group[1].split(",");
-            const targetMailbox = SharedStore.mailboxes[emailAddress].emails.current;
+            const targetMailbox =
+                SharedStore.mailboxes[emailAddress].emails.current;
             return uids.every((uid) =>
                 targetMailbox.find(
                     (email) => email.uid == uid && !!email.list_unsubscribe,
@@ -107,7 +109,7 @@
         if (emailSelection === "1:*") return false;
 
         return emailSelection.every((selection) => {
-            const [emailAddress, uid] = selection.split(",")
+            const [emailAddress, uid] = selection.split(",");
             return SharedStore.mailboxes[emailAddress].emails.current.find(
                 (email: Email) =>
                     email.uid == uid &&
@@ -132,45 +134,53 @@
     }
 
     async function markEmails(mark: string | Mark) {
-        groupedEmailSelection.forEach(async (group) => {
-            const emailAddress = group[0];
-            const uids = sortSelection(group[1]);
-            const response = await MailboxController.markEmails(
-                SharedStore.accounts.find(
-                    (acc) => acc.email_address === emailAddress,
-                )!,
-                uids,
-                mark,
-                getCurrentMailbox().folder
-            );
-            if (!response.success) {
-                showMessage({
-                    content: `Unexpected error while marking email as ${mark}`,
-                });
-                console.error(response.message);
-            }
-        });
+        await Promise.allSettled(
+            groupedEmailSelection.map(async (group) => {
+                const emailAddress = group[0];
+                const uids = sortSelection(group[1]);
+
+                const response = await MailboxController.markEmails(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === emailAddress,
+                    )!,
+                    uids,
+                    mark,
+                    getCurrentMailbox().folder,
+                );
+
+                if (!response.success) {
+                    showMessage({
+                        content: `Unexpected error while marking email as ${mark}`,
+                    });
+                    console.error(response.message);
+                }
+            }),
+        );
     }
 
     async function unmarkEmails(mark: string | Mark) {
-        groupedEmailSelection.forEach(async (group) => {
-            const emailAddress = group[0];
-            const uids = sortSelection(group[1]);
-            const response = await MailboxController.unmarkEmails(
-                SharedStore.accounts.find(
-                    (acc) => acc.email_address === emailAddress,
-                )!,
-                uids,
-                mark,
-                getCurrentMailbox().folder
-            );
-            if (!response.success) {
-                showMessage({
-                    content: `Unexpected error while unmarking email as ${mark}`,
-                });
-                console.error(response.message);
-            }
-        });
+        await Promise.allSettled(
+            groupedEmailSelection.map(async (group) => {
+                const emailAddress = group[0];
+                const uids = sortSelection(group[1]);
+
+                const response = await MailboxController.unmarkEmails(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === emailAddress,
+                    )!,
+                    uids,
+                    mark,
+                    getCurrentMailbox().folder,
+                );
+
+                if (!response.success) {
+                    showMessage({
+                        content: `Unexpected error while unmarking email as ${mark}`,
+                    });
+                    console.error(response.message);
+                }
+            }),
+        );
     }
 
     const selectEmail = (e: Event) => {
@@ -252,6 +262,7 @@
             movingEmailUids,
             getCurrentMailbox().folder,
             destinationFolder,
+            currentOffset,
         );
 
         if (!response.success) {
@@ -262,26 +273,29 @@
     };
 
     const moveToArchive = async (): Promise<void> => {
-        groupedEmailSelection.forEach(async (group) => {
-            const emailAddress = group[0];
-            const emailUids = sortSelection(group[1]);
-            const response = await MailboxController.moveEmails(
-                SharedStore.accounts.find(
-                    (acc) => acc.email_address === emailAddress,
-                )!,
-                emailUids,
-                getCurrentMailbox().folder,
-                Folder.Archive,
-            );
+        await Promise.allSettled(
+            groupedEmailSelection.map(async (group) => {
+                const emailAddress = group[0];
+                const emailUids = sortSelection(group[1]);
 
-            if (!response.success) {
-                showMessage({
-                    content: "Unexpected error while moving email.",
-                });
-                console.error(response.message);
-                return;
-            }
-        });
+                const response = await MailboxController.moveEmails(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === emailAddress,
+                    )!,
+                    emailUids,
+                    getCurrentMailbox().folder,
+                    Folder.Archive,
+                    currentOffset,
+                );
+
+                if (!response.success) {
+                    showMessage({
+                        content: "Unexpected error while moving email.",
+                    });
+                    console.error(response.message);
+                }
+            }),
+        );
     };
 
     const deleteFrom = async (): Promise<void> => {
@@ -289,23 +303,29 @@
             content: "Are you certain? Deleting an email cannot be undone.",
             onConfirmText: "Yes, delete.",
             onConfirm: async (e: Event) => {
-                groupedEmailSelection.forEach(async (group) => {
-                    const emailAddress = group[0];
-                    const uids = sortSelection(group[1]);
-                    const response = await MailboxController.deleteEmails(
-                        SharedStore.accounts.find(
-                            (acc) => acc.email_address === emailAddress,
-                        )!,
-                        uids,
-                        getCurrentMailbox().folder,
-                    );
-                    if (!response.success) {
-                        showMessage({
-                            content: "Unexpected error while deleting email.",
-                        });
-                        console.error(response.message);
-                    }
-                });
+                await Promise.allSettled(
+                    groupedEmailSelection.map(async (group) => {
+                        const emailAddress = group[0];
+                        const uids = sortSelection(group[1]);
+
+                        const response = await MailboxController.deleteEmails(
+                            SharedStore.accounts.find(
+                                (acc) => acc.email_address === emailAddress,
+                            )!,
+                            uids,
+                            getCurrentMailbox().folder,
+                            currentOffset,
+                        );
+
+                        if (!response.success) {
+                            showMessage({
+                                content:
+                                    "Unexpected error while deleting email.",
+                            });
+                            console.error(response.message);
+                        }
+                    }),
+                );
             },
         });
     };
@@ -355,18 +375,27 @@
     };
 
     const refresh = async (): Promise<void> => {
-        const accounts = SharedStore.currentAccount !== "home"
-            ? [SharedStore.currentAccount]
-            : SharedStore.accounts;
+        const accounts =
+            SharedStore.currentAccount !== "home"
+                ? [SharedStore.currentAccount]
+                : SharedStore.accounts;
 
-        let response;
-        for(const account of accounts) {
-            response = await MailboxController.getMailbox(account);
-        }
+        const results = await Promise.allSettled(
+            accounts.map(async (account) => {
+                const response = await MailboxController.getMailbox(account);
+                if (!response.success) {
+                    throw new Error(response.message);
+                }
+            }),
+        );
 
-        if (!response!.success) {
-            showMessage({ content: "Error while refreshing mailboxes." });
-            console.error(response!.message);
+        const failed = results.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+            showMessage({
+                content: "One or more mailboxes failed to refresh.",
+            });
+            failed.forEach((f) => console.error(f.reason));
         }
     };
 </script>
