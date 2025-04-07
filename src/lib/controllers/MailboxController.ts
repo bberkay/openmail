@@ -37,8 +37,8 @@ export class MailboxController {
         };
 
         const folderResults = await Promise.allSettled(
-            SharedStore.accounts.map((account) =>
-                MailboxController.getFolders(account),
+            SharedStore.accounts.map(async (account) =>
+                await MailboxController.getFolders(account),
             ),
         );
 
@@ -57,8 +57,8 @@ export class MailboxController {
         });
 
         const mailboxResults = await Promise.allSettled(
-            SharedStore.accounts.map((account) =>
-                MailboxController.getMailbox(account, Folder.Inbox, {
+            SharedStore.accounts.map(async (account) =>
+                await MailboxController.getMailbox(account, Folder.Inbox, {
                     excluded_flags: [Mark.Seen],
                 }),
             ),
