@@ -49,7 +49,7 @@
     const getNextEmail = async () => {
         if (currentOffset >= getCurrentMailbox().total) return;
         if (currentOffset + 1 % MAILBOX_LENGTH == 1) {
-            await paginateMailboxBackward(currentOffset + 1);
+            await paginateMailboxForward(currentOffset + 1);
         }
 
         currentOffset += 1;
