@@ -229,8 +229,8 @@ export function replaceFolderName(
  * @returns Returns true if the path is not at the top level, false if it is
  */
 export function isTopLevel(folderPath: string): boolean {
-  const normalizedPath = path.normalize(folderPath);
-  return normalizedPath.split(path.sep).filter(Boolean).length <= 1;
+    const normalizedPath = path.normalize(folderPath);
+    return normalizedPath.split(path.sep).filter(Boolean).length <= 1;
 }
 
 export function removeFalsyParamsAndEmptyLists(
@@ -376,6 +376,10 @@ export function range(start: number, stop: number, step: number): number[] {
         { length: Math.ceil((stop - start) / step) },
         (_, i) => start + i * step,
     );
+}
+
+export function roundUpToMultiple(a: number, b: number): number {
+    return Math.ceil(a / b) * b;
 }
 
 export function createSenderAddress(
