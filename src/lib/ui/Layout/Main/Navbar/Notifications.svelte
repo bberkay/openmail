@@ -12,7 +12,7 @@
     import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
-    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import Mailbox, { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
@@ -30,13 +30,7 @@
             (acc) => acc.email_address == receiverEmailAddress,
         )!;
 
-        if (
-            isStandardFolder(
-                SharedStore.mailboxes[SharedStore.currentAccount.email_address]
-                    .folder,
-                Folder.Inbox,
-            )
-        )
+        if (isStandardFolder(getCurrentMailbox().folder, Folder.Inbox))
             return;
 
         const response = await MailboxController.getMailbox(
