@@ -1,18 +1,12 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
-    import { close, type AlertType } from "./index";
+    import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
     import Collapse from "$lib/ui/Components/Collapse";
 
-    interface Props {
+    interface PropsWithMountId extends Props {
         id: string;
-        content: string;
-        type: AlertType;
-        closeable?: boolean;
-        details?: string;
-        onManage?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
-        onManageText?: string;
     }
 
     let {
@@ -23,7 +17,7 @@
         details,
         onManage,
         onManageText
-    }: Props = $props();
+    }: PropsWithMountId = $props();
     let alert: HTMLElement;
 
     onMount(() => {

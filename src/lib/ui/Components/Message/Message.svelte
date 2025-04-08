@@ -1,13 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { close } from "./index";
+    import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
-
-    interface Props {
-        content: string;
-        onCloseText?: string;
-        onClose?: (((e: Event) => void) | ((e: Event) => Promise<void>));
-    }
 
     let {
         content,

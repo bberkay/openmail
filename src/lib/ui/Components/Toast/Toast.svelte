@@ -1,13 +1,10 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
-    import { close } from "./index";
+    import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
 
-    interface Props {
+    interface PropsWithMountId extends Props {
         id: string;
-        content: string;
-        autoCloseDelay?: number;
-        onUndo?: (((e: Event) => void) | ((e: Event) => Promise<void>));
     }
 
     let {
@@ -15,9 +12,9 @@
         content,
         onUndo,
         autoCloseDelay
-    }: Props = $props();
-    let toast: HTMLElement;
+    }: PropsWithMountId = $props();
 
+    let toast: HTMLElement;
     onMount(() => {
         autoCloseDelay = autoCloseDelay || 3000;
         setTimeout(() => toast.classList.add("show"), 10);

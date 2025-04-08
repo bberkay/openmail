@@ -4,25 +4,27 @@ import { generateRandomId } from "$lib/utils";
 
 let mountedToasts: Record<string, Record<string, any>> = {};
 
-export function show(props: {
-    content: string,
-    autoCloseDelay?: number,
-    onUndo?: (((e: Event) => void) | ((e: Event) => Promise<void>))
-}) {
-    const toastId = generateRandomId();
+export interface Props {
+    content: string;
+    autoCloseDelay?: number;
+    onUndo?: (((e: Event) => void) | ((e: Event) => Promise<void>));
+}
+
+export function show(props: Props) {
+    const mountId = generateRandomId();
     const mountedToast = mount(Toast, {
         target: document.getElementById("toast-container")!,
         props: {
-            id: toastId,
             ...props,
+            id: mountId,
         }
     });
-    mountedToasts[toastId] = mountedToast;
+    mountedToasts[mountId] = mountedToast;
 }
 
-export function close(toastId: string) {
-    if (Object.hasOwn(mountedToasts, toastId)) {
-        unmount(mountedToasts[toastId]);
-        delete mountedToasts[toastId];
+export function close(mountId: string) {
+    if (Object.hasOwn(mountedToasts, mountId)) {
+        unmount(mountedToasts[mountId]);
+        delete mountedToasts[mountId];
     }
 }

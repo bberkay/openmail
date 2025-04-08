@@ -9,6 +9,7 @@
     }
 
     let { children }: Props = $props();
+
     let modal: HTMLElement;
     onMount(() => {
         document.documentElement.scrollTop = 0;

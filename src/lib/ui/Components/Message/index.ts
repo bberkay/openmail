@@ -3,11 +3,13 @@ import { mount, unmount } from "svelte";
 
 let mountedMessage: Record<string, any> | null = null;
 
-export function show(props: {
-    content: string,
-    onCloseText?: string,
-    onClose?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
-}) {
+export interface Props {
+    content: string;
+    onCloseText?: string;
+    onClose?: (((e: Event) => void) | ((e: Event) => Promise<void>));
+}
+
+export function show(props: Props) {
     if (mountedMessage) return;
 
     mountedMessage = mount(Message, {
