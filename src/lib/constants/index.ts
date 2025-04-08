@@ -9,6 +9,34 @@ export const NOT_IMPLEMENTED_TEMPLATE = `
 
 /**
  * ----------------------------------------------------------------------------
+ * Constants generally used in Landing/Register/AccountList.svelte
+ * ----------------------------------------------------------------------------
+ */
+export const FAILED_ACCOUNT_TEMPLATE = `
+    <p>Failed accounts are:</p>
+    <ul>
+        {failed_account_list_items}
+    </ul>
+`;
+
+/**
+ * ----------------------------------------------------------------------------
+ * Constants generally used in Main/Content.svelte
+ * ----------------------------------------------------------------------------
+ */
+ export const FAILED_MAILBOX_OR_FOLDERS_TEMPLATE = `
+     <p>Accounts of failed mailboxes are:</p>
+     <ul>
+        {failed_mailbox_list_items}
+     </ul>
+     <p>Accounts of failed folders are:</p>
+     <ul>
+        {failed_folder_list_items}
+     </ul>
+ `;
+
+/**
+ * ----------------------------------------------------------------------------
  * Constants generally used in Main/Content/Compose.svelte
  * ----------------------------------------------------------------------------
  */

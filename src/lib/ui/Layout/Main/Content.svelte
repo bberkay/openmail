@@ -16,14 +16,50 @@
 </script>
 
 <script lang="ts">
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { show as showAlert } from "$lib/ui/Components/Alert";
+    import { FAILED_MAILBOX_OR_FOLDERS_TEMPLATE } from "$lib/constants";
+    import { createSenderAddress } from "$lib/utils";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+
     interface Props {
         children: Snippet;
     }
 
     let { children }: Props = $props();
+
+    $effect(() => {
+        if (SharedStore.failedMailboxes.length > 0 || SharedStore.failedFolders.length > 0) {
+            showAlert("mailboxes-alert-container", {
+                content: `There were some mailboxes and/or folders that failed to retrive.`,
+                type: "error",
+                details: FAILED_MAILBOX_OR_FOLDERS_TEMPLATE.replace(
+                    "{failed_mailbox_list_items}",
+                    SharedStore.failedMailboxes
+                        .map((account) => {
+                            return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;
+                        })
+                        .join(""),
+                ).replace(
+                    "{failed_folder_list_item}",
+                    SharedStore.failedFolders
+                        .map((account) => {
+                            return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;
+                        })
+                        .join(""),
+                ),
+                onManage: async () => {
+                    await MailboxController.init(true);
+                },
+                onManageText: "Retry",
+            });
+        }
+    });
 </script>
 
 <div class="content" bind:this={sectionContainer}>
+    <div class="alert-container" id="mailboxes-alert-container"></div>
+    <div class="alert-container" id="folders-alert-container"></div>
     {#if !isMounted}
         {@render children()}
     {/if}

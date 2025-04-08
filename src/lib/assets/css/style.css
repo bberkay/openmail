@@ -147,6 +147,12 @@ body {
     visibility: visible;
 }
 
+.alert-container {
+    display: flex;
+    flex-direction: column reverse;
+    margin-bottom: var(--spacing-md);
+}
+
 /* Dev */
 pre {
     overflow: scroll;

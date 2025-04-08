@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { exit, relaunch } from '@tauri-apps/plugin-process';
+    import { exit, relaunch } from "@tauri-apps/plugin-process";
     import {
         isPermissionGranted,
         requestPermission,
@@ -8,27 +8,22 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import {
-        Folder,
-        type Account,
-    } from "$lib/types";
+    import { Folder, type Account } from "$lib/types";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import * as Table from "$lib/ui/Components/Table";
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
-    import { isStandardFolder } from '$lib/utils';
+    import { createSenderAddress, isStandardFolder } from "$lib/utils";
+    import { FAILED_ACCOUNT_TEMPLATE } from "$lib/constants";
 
     interface Props {
-        editAccount: (account: Account) => void
-        onCancel: () => void
+        editAccount: (account: Account) => void;
+        onCancel: () => void;
     }
 
-    let {
-        editAccount,
-        onCancel,
-    }: Props = $props();
+    let { editAccount, onCancel }: Props = $props();
 
     let accountSelection: string[] = $state([]);
 
@@ -85,9 +80,13 @@
             showConfirm({
                 content: "Unexpected error while initializing mailboxes.",
                 onConfirmText: "Restart",
-                onConfirm: async () => { await relaunch() },
+                onConfirm: async () => {
+                    await relaunch();
+                },
                 onCancelText: "Exit",
-                onCancel: async () => { await exit(1) },
+                onCancel: async () => {
+                    await exit(1);
+                },
             });
             return;
         }
@@ -102,7 +101,8 @@
     async function listenForNotifications() {
         SharedStore.accounts.forEach(async (account) => {
             const ws = new WebSocket(
-                SharedStore.server.replace("http", "ws") + `/notifications/${account}`,
+                SharedStore.server.replace("http", "ws") +
+                    `/notifications/${account}`,
             );
 
             let permissionGranted = false;
@@ -125,32 +125,53 @@
                     });
                 }
 
-                Object.entries(e.data as typeof SharedStore.recentEmails).forEach((entry) => {
+                Object.entries(
+                    e.data as typeof SharedStore.recentEmails,
+                ).forEach((entry) => {
                     const emailAddr = entry[0];
                     const recentEmails = entry[1];
 
                     // Add email summary of recent email to the top of the
                     // current and shift emails that are overflowed from current
                     // to next.
-                    if (Object.hasOwn(SharedStore.mailboxes, emailAddr)
-                        && isStandardFolder(SharedStore.mailboxes[emailAddr].folder, Folder.Inbox)) {
+                    if (
+                        Object.hasOwn(SharedStore.mailboxes, emailAddr) &&
+                        isStandardFolder(
+                            SharedStore.mailboxes[emailAddr].folder,
+                            Folder.Inbox,
+                        )
+                    ) {
                         const recentEmailsLength = recentEmails.length;
-                        SharedStore.mailboxes[emailAddr].emails.current.unshift(...recentEmails);
-                        const overflowEmails = SharedStore.mailboxes[emailAddr].emails.current.splice(-1 * recentEmailsLength);
-                        SharedStore.mailboxes[emailAddr].emails.next.unshift(...overflowEmails);
-                        SharedStore.mailboxes[emailAddr].emails.next.splice(-1 * recentEmailsLength, recentEmailsLength);
+                        SharedStore.mailboxes[emailAddr].emails.current.unshift(
+                            ...recentEmails,
+                        );
+                        const overflowEmails = SharedStore.mailboxes[
+                            emailAddr
+                        ].emails.current.splice(-1 * recentEmailsLength);
+                        SharedStore.mailboxes[emailAddr].emails.next.unshift(
+                            ...overflowEmails,
+                        );
+                        SharedStore.mailboxes[emailAddr].emails.next.splice(
+                            -1 * recentEmailsLength,
+                            recentEmailsLength,
+                        );
                     }
 
                     // Fetch email content of recent email and add it into recentEmails.
                     if (Object.hasOwn(SharedStore.recentEmails, emailAddr)) {
-                        for(const recentEmail of recentEmails) {
+                        for (const recentEmail of recentEmails) {
                             MailboxController.getEmailContent(
-                                SharedStore.accounts.find(account => account.email_address === emailAddr)!,
+                                SharedStore.accounts.find(
+                                    (account) =>
+                                        account.email_address === emailAddr,
+                                )!,
                                 Folder.Inbox,
-                                recentEmail.uid
+                                recentEmail.uid,
                             ).then((response) => {
                                 if (response.success && response.data) {
-                                    SharedStore.recentEmails[emailAddr].push(response.data);
+                                    SharedStore.recentEmails[emailAddr].push(
+                                        response.data,
+                                    );
                                 }
                             });
                         }
@@ -168,16 +189,27 @@
 
     $effect(() => {
         if (SharedStore.failedAccounts.length > 0) {
-            showAlert("alert-container", {
+            showAlert("accounts-alert-container", {
                 content: `There were ${SharedStore.failedAccounts.length} accounts that failed to connect.`,
                 type: "error",
+                details: FAILED_ACCOUNT_TEMPLATE.replace(
+                    "{failed_account_list_items}",
+                    SharedStore.failedAccounts
+                        .map((account) => {
+                            return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;
+                        })
+                        .join(""),
+                ),
+                onManage: () => {
+                    editAccount(SharedStore.failedAccounts[0]);
+                },
             });
         }
     });
 </script>
 
 <div>
-    <div class="alert-container" style="margin-bottom:15px;"></div>
+    <div class="alert-container" id="accounts-alert-container"></div>
     {#if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
         {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
         <Table.Root>
@@ -234,7 +266,9 @@
                                 type="button"
                                 class="btn-inline"
                                 style="margin-right: 5px;"
-                                onclick={() => { editAccount(account) }}
+                                onclick={() => {
+                                    editAccount(account);
+                                }}
                             >
                                 Edit
                             </Button.Basic>
@@ -262,11 +296,7 @@
                 </Button.Action>
             {/if}
 
-            <Button.Basic
-                type="button"
-                class="btn-inline"
-                onclick={onCancel}
-            >
+            <Button.Basic type="button" class="btn-inline" onclick={onCancel}>
                 I want to add another account.
             </Button.Basic>
         </div>

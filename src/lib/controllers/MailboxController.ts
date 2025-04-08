@@ -30,51 +30,57 @@ import {
 export const MAILBOX_LENGTH = 10;
 
 export class MailboxController {
-    public static async init(): Promise<BaseResponse> {
+    public static async init(failedOnly: boolean = false): Promise<BaseResponse> {
         let response = {
             success: false,
             message: "Initialize does not finished.",
         };
 
         const folderResults = await Promise.allSettled(
-            SharedStore.accounts.map(async (account) =>
-                await MailboxController.getFolders(account),
-            ),
+            (failedOnly ? SharedStore.failedFolders : SharedStore.accounts).map(async (account) => {
+                return {
+                    account: account,
+                    response: await MailboxController.getFolders(account)
+                }
+            }),
         );
 
         folderResults.forEach((result) => {
             if (result.status === "fulfilled") {
-                response.success = result.value.success;
-                response.message = result.value.message;
-                if (!result.value.success) {
-                    // TODO: push result.value.something into failedFolders
+                response.success = result.value.response.success;
+                response.message = result.value.response.message;
+                if (!response.success) {
+                    SharedStore.failedFolders.push(result.value.account);
                 }
             } else {
                 response.success = false;
                 response.message = "Error while initializing folders.";
-                // TODO: push result.reason.something into failedFolders
             }
         });
 
         const mailboxResults = await Promise.allSettled(
-            SharedStore.accounts.map(async (account) =>
-                await MailboxController.getMailbox(account, Folder.Inbox, {
-                    excluded_flags: [Mark.Seen],
-                }),
-            ),
+            (failedOnly ? SharedStore.failedMailboxes : SharedStore.accounts).map(async (account) => {
+                return {
+                    account: account,
+                    response: await MailboxController.getMailbox(
+                        account,
+                        Folder.Inbox,
+                        { excluded_flags: [Mark.Seen] }
+                    )
+                }
+            })
         );
 
         mailboxResults.forEach((result) => {
             if (result.status === "fulfilled") {
-                response.success = result.value.success;
-                response.message = result.value.message;
-                if (!result.value.success) {
-                    // TODO: push result.value.something into failedFolders
+                response.success = result.value.response.success;
+                response.message = result.value.response.message;
+                if (!response.success) {
+                    SharedStore.failedMailboxes.push(result.value.account);
                 }
             } else {
                 response.success = false;
                 response.message = "Error while initializing mailboxes.";
-                // TODO: push result.reason.something into failedFolders
             }
         });
 
