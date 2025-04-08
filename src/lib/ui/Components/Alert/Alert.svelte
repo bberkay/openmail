@@ -3,19 +3,26 @@
     import { close, type AlertType } from "./index";
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
+    import Collapse from "$lib/ui/Components/Collapse";
 
     interface Props {
         id: string;
         content: string;
         type: AlertType;
         closeable?: boolean;
+        details?: string;
+        onManage?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
+        onManageText?: string;
     }
 
     let {
         id,
         content,
         type,
-        closeable
+        closeable,
+        details,
+        onManage,
+        onManageText
     }: Props = $props();
     let alert: HTMLElement;
 
@@ -36,25 +43,45 @@
 </script>
 
 <div class="alert {type}" bind:this={alert}>
-    <div class="alert-icon">
-        <Icon name={type} />
-    </div>
-    <div class="alert-body">
-        <div class="alert-type">
-            <span>{type}</span>
+    <div class="alert-content">
+        <div class="alert-icon">
+            <Icon name={type} />
         </div>
-        <div class="alert-content">
-            {@html content}
+        <div class="alert-body">
+            <div class="alert-type">
+                <span>{type}</span>
+            </div>
+            <div class="alert-content">
+                {@html content}
+            </div>
+        </div>
+        <div>
+            {#if onManage}
+                <Button.Action
+                    type="button"
+                    class="alert-manage"
+                    onclick={onManage}
+                >
+                    {onManageText || "Manage"}
+                </Button.Action>
+            {/if}
+            {#if closeable}
+                <Button.Basic
+                    type="button"
+                    class="alert-close"
+                    onclick={dismiss}
+                >
+                    X
+                </Button.Basic>
+            {/if}
         </div>
     </div>
-    {#if closeable}
-        <Button.Basic
-            type="button"
-            class="alert-close"
-            onclick={dismiss}
-        >
-            X
-        </Button.Basic>
+    {#if details}
+        <div class="alert-details">
+            <Collapse title="Details" openAtStart={false}>
+                {@html details}
+            </Collapse>
+        </div>
     {/if}
 </div>
 
@@ -70,9 +97,6 @@
             transform: translateX(-100%);
             transition: all var(--transition-normal) var(--ease-default);
             box-shadow: var(--shadow-sm);
-            display: flex;
-            align-items: center;
-            justify-content:space-between;
             gap: var(--spacing-sm);
             width: max-content;
 
@@ -101,28 +125,34 @@
                 transform: translateX(0);
             }
 
-            & .alert-icon svg {
-                width: var(--font-size-lg)!important;
-                height: var(--font-size-lg)!important;
-            }
+            & .alert-content {
+                display: flex;
+                align-items: center;
+                justify-content:space-between;
 
-            & .alert-body{
-                flex-grow:1;
-                margin-left: var(--spacing-2xs);
-                margin-right: var(--spacing-md);
-
-                & .alert-type {
-                    text-transform: capitalize;
-                    font-weight: bold;
+                & .alert-icon svg {
+                    width: var(--font-size-lg)!important;
+                    height: var(--font-size-lg)!important;
                 }
-            }
 
-            & .alert-close {
-                background: none;
-                border: none;
-                font-size: var(--font-size-md);
-                cursor: pointer;
-                padding: 0;
+                & .alert-body{
+                    flex-grow:1;
+                    margin-left: var(--spacing-2xs);
+                    margin-right: var(--spacing-md);
+
+                    & .alert-type {
+                        text-transform: capitalize;
+                        font-weight: bold;
+                    }
+                }
+
+                & .alert-close {
+                    background: none;
+                    border: none;
+                    font-size: var(--font-size-md);
+                    cursor: pointer;
+                    padding: 0;
+                }
             }
         }
     }

@@ -11,6 +11,9 @@ export function show(
         content: string,
         type: AlertType,
         closeable?: boolean,
+        details?: string,
+        onManage?: (e: Event) => void,
+        onManageText?: string,
     }
 ) {
     const alertId = generateRandomId();
