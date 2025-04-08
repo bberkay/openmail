@@ -13,12 +13,16 @@
         onclick,
         ...attributes
     }: Props = $props();
+
+    const onClickWrapper = async (e: Event) => {
+        await onclick(e);
+    }
 </script>
 
-<Button.Basic
+<Button.Action
     type="button"
-    {onclick}
+    onclick={onClickWrapper}
     {...attributes}
 >
     {@render children()}
-</Button.Basic>
+</Button.Action>

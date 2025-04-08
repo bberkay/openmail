@@ -7,7 +7,7 @@
         id: string;
         content: string;
         autoCloseDelay?: number;
-        onUndo?: (e: Event) => void;
+        onUndo?: (((e: Event) => void) | ((e: Event) => Promise<void>));
     }
 
     let {
@@ -40,22 +40,31 @@
             close(id);
         });
     }
+
+    const onUndoWrapper = async (e: Event) => {
+        if(onUndo) await onUndo(e);
+        dismiss();
+    }
 </script>
 
 <div class="toast" bind:this={toast}>
     <div>{@html content}</div>
     {#if onUndo}
-        <Button.Basic
+        <Button.Action
             type="button"
             class="toast-close"
-            onclick={onUndo}
-        >Undo</Button.Basic>
+            onclick={onUndoWrapper}
+        >
+            Undo
+        </Button.Action>
     {/if}
     <Button.Basic
         type="button"
         class="toast-close"
         onclick={dismiss}
-    >X</Button.Basic>
+    >
+        X
+    </Button.Basic>
 </div>
 
 <style>

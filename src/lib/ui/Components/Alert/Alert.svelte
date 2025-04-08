@@ -40,6 +40,11 @@
             close(id);
         });
     }
+
+    const onManageWrapper = async (e: Event) => {
+        if (onManage) onManage(e);
+        dismiss();
+    }
 </script>
 
 <div class="alert {type}" bind:this={alert}>
@@ -60,7 +65,7 @@
                 <Button.Action
                     type="button"
                     class="alert-manage"
-                    onclick={onManage}
+                    onclick={onManageWrapper}
                 >
                     {onManageText || "Manage"}
                 </Button.Action>

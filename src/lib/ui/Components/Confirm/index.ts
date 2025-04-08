@@ -6,9 +6,9 @@ let mountedConfirm: Record<string, any> | null = null;
 export function show(props: {
     content: string,
     onConfirmText: string,
-    onConfirm: (e: Event) => void,
+    onConfirm: (((e: Event) => void) | ((e: Event) => Promise<void>)),
     onCancelText?: string,
-    onCancel?: (e: Event) => void,
+    onCancel?: (((e: Event) => void) | ((e: Event) => Promise<void>))
 }) {
     if (mountedConfirm) return;
 

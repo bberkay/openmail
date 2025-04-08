@@ -20,7 +20,7 @@
         document.body.scrollTop = 0;
     });
 
-    const onOkWrapper = async (e: Event) => {
+    const onCloseWrapper = async (e: Event) => {
         if (onClose) await onClose(e);
         close();
     };
@@ -28,12 +28,12 @@
 
 <div class="modal message">
     {@html content}
-    <Button.Basic
+    <Button.Action
         type="button"
-        onclick={onOkWrapper}
+        onclick={onCloseWrapper}
     >
         {onCloseText || "Close"}
-    </Button.Basic>
+    </Button.Action>
 </div>
 
 <style>

@@ -12,7 +12,7 @@ export function show(
         type: AlertType,
         closeable?: boolean,
         details?: string,
-        onManage?: (e: Event) => void,
+        onManage?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
         onManageText?: string,
     }
 ) {

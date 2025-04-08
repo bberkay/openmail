@@ -8,17 +8,21 @@
     }
 
     let { onclick, children }: Props = $props();
+
+    const onClickWrapper = async (e: Event) => {
+        await onclick(e);
+    };
 </script>
 
 <div class="context-menu-item">
-    <Button.Basic
+    <Button.Action
         type="button"
         class="btn-inline"
         style="width: 100%"
-        {onclick}
+        onclick={onClickWrapper}
     >
         {@render children()}
-    </Button.Basic>
+    </Button.Action>
 </div>
 
 <style>

@@ -37,18 +37,18 @@
 
 <div class="modal confirm">
     {@html content}
-    <Button.Basic
+    <Button.Action
         type="button"
         onclick={onCancelWrapper}
     >
         {onCancelText || "Cancel"}
-    </Button.Basic>
-    <Button.Basic
+    </Button.Action>
+    <Button.Action
         type="button"
         onclick={onConfirmWrapper}
     >
         {onConfirmText}
-    </Button.Basic>
+    </Button.Action>
 </div>
 
 <style>

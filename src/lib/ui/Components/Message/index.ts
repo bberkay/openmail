@@ -6,7 +6,7 @@ let mountedMessage: Record<string, any> | null = null;
 export function show(props: {
     content: string,
     onCloseText?: string,
-    onClose?: (e: Event) => void,
+    onClose?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
 }) {
     if (mountedMessage) return;
 

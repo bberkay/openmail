@@ -1,6 +1,6 @@
 <script lang="ts">
     import { slide } from "svelte/transition";
-    import { mount, unmount, type Snippet } from "svelte";
+    import { type Snippet } from "svelte";
     import Icon from "$lib/ui/Components/Icon";
 
     interface Props {
