@@ -3,6 +3,8 @@
     import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
     import { combine } from "$lib/utils";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     let {
         content,
@@ -43,7 +45,7 @@
         type="button"
         onclick={onCancelWrapper}
     >
-        {onCancelText || "Cancel"}
+        {onCancelText || local.cancel[DEFAULT_LANGUAGE]}
     </Button.Action>
     <Button.Action
         type="button"

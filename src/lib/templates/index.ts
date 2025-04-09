@@ -20,7 +20,7 @@ export function getNotImplementedTemplate(feature: string) {
  */
 export function getFailedAccountTemplate(failed_account_list_items: string) {
     return `
-    <p>${local.failed_accounts_are[DEFAULT_LANGUAGE]}:</p>
+    <p>${local.failed_accounts_are[DEFAULT_LANGUAGE]}</p>
     <ul>
         {failed_account_list_items}
     </ul>
@@ -37,11 +37,11 @@ export function getFailedMailboxOrFoldersTemplate(
     failed_folder_list_items: string,
 ) {
     return `
-     <p>${local.accounts_of_failed_mailboxes_are[DEFAULT_LANGUAGE]}:</p>
+     <p>${local.accounts_of_failed_mailboxes_are[DEFAULT_LANGUAGE]}</p>
      <ul>
         {failed_mailbox_list_items}
      </ul>
-     <p>${local.accounts_of_failed_folders_are[DEFAULT_LANGUAGE]}:</p>
+     <p>${local.accounts_of_failed_folders_are[DEFAULT_LANGUAGE]}</p>
      <ul>
         {failed_folder_list_items}
      </ul>
@@ -63,7 +63,7 @@ export function getReplyTemplate(
     return `
     <br/><br/>
     <div>
-        ${local.on_wrote[DEFAULT_LANGUAGE]}:<br/>
+        ${local.on_wrote[DEFAULT_LANGUAGE]}<br/>
         <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
             {original_body}
         </blockquote>

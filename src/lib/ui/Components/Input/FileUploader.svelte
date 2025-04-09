@@ -3,6 +3,8 @@
     import { makeSizeHumanReadable, combine } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         [attribute: string]: unknown;
@@ -73,7 +75,7 @@
 >
     <div class="file-upload-area">
         <label class="upload-btn">
-            Upload a file.
+            {local.upload_file[DEFAULT_LANGUAGE]}
             <Input.Basic
                 type="file"
                 class="file-input"
@@ -87,7 +89,7 @@
             role="button"
             tabindex="0"
         >
-            <span class="file-msg">or drop files here</span>
+            <span class="file-msg">{local.drop_files_here[DEFAULT_LANGUAGE]}</span>
         </div>
     </div>
     <div class="file-list">
@@ -103,7 +105,7 @@
                         class="btn-inline"
                         onclick={() => removeFile(index)}
                     >
-                        Remove
+                        {local.remove[DEFAULT_LANGUAGE]}
                     </Button.Basic>
                 </div>
             {/each}

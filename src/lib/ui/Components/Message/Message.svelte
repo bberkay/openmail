@@ -3,6 +3,8 @@
     import { close, type Props } from "./index";
     import { combine } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     let {
         content,
@@ -36,7 +38,7 @@
         type="button"
         onclick={onCloseWrapper}
     >
-        {onCloseText || "Close"}
+        {onCloseText || local.close[DEFAULT_LANGUAGE]}
     </Button.Action>
 </div>
 

@@ -3,16 +3,16 @@ export const local = {
         en: "{feature} feature does not implemented yet"
     },
     failed_accounts_are: {
-        en: "Failed accounts are"
+        en: "Failed accounts are:"
     },
     accounts_of_failed_mailboxes_are: {
-        en: "Accounts of failed mailboxes are"
+        en: "Accounts of failed mailboxes are:"
     },
     accounts_of_failed_folders_are: {
-        en: "Accounts of failed folders are"
+        en: "Accounts of failed folders are:"
     },
     on_wrote: {
-        en: "On {original_date}, {original_sender} wrote"
+        en: "On {original_date}, {original_sender} wrote:"
     },
     forwarded_message: {
         en: "---------- Forwarded message ----------"
@@ -55,5 +55,92 @@ export const local = {
     },
     no_match_found: {
         en: "No matching options found"
+    },
+    undo: {
+        en: "Undo"
+    },
+    search: {
+        en: "Search"
+    },
+    close: {
+        en: "Close"
+    },
+    password: {
+        en: "Password"
+    },
+    upload_file: {
+        en: "Upload a file."
+    },
+    drop_files_here: {
+        en: "or drop files here"
+    },
+    remove: {
+        en: "Remove"
+    },
+    january: {
+        en: "January"
+    },
+    february: {
+        en: "February"
+    },
+    march: {
+        en: "March"
+    },
+    april: {
+        en: "April"
+    },
+    may: {
+        en: "May"
+    },
+    june: {
+        en: "June"
+    },
+    july: {
+        en: "July"
+    },
+    august: {
+        en: "August"
+    },
+    september: {
+        en: "September"
+    },
+    october: {
+        en: "October"
+    },
+    november: {
+        en: "November"
+    },
+    december: {
+        en: "December"
+    },
+    sun: {
+        en: "Sun"
+    },
+    mon: {
+        en: "Mon"
+    },
+    tue: {
+        en: "Tue"
+    },
+    wed: {
+        en: "Wed"
+    },
+    thu: {
+        en: "Thu"
+    },
+    fri: {
+        en: "Fri"
+    },
+    sat: {
+        en: "Sat"
+    },
+    cancel: {
+        en: "Cancel"
+    },
+    manage: {
+        en: "Manage"
+    },
+    loading: {
+        en: "Loading"
     }
 }

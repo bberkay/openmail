@@ -3,7 +3,8 @@
     import { combine } from "$lib/utils";
     import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
-    import { AUTO_CLOSE_TOAST_DELAY_MS, ANIMATION_INIT_DELAY_MS } from "$lib/constants";
+    import { AUTO_CLOSE_TOAST_DELAY_MS, ANIMATION_INIT_DELAY_MS, DEFAULT_LANGUAGE } from "$lib/constants";
+    import { local } from "$lib/locales";
 
     interface PropsWithMountId extends Props {
         id: string;
@@ -64,7 +65,7 @@
             class="toast-close"
             onclick={onUndoWrapper}
         >
-            Undo
+            {local.undo[DEFAULT_LANGUAGE]}
         </Button.Action>
     {/if}
     <Button.Basic

@@ -5,7 +5,8 @@
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
     import { getNoMatchFoundTemplate } from "$lib/templates";
-    import { TOGGLE_TEXT_SEPARATOR } from "$lib/constants";
+    import { DEFAULT_LANGUAGE, TOGGLE_TEXT_SEPARATOR } from "$lib/constants";
+    import { local } from "$lib/locales";
 
     interface Props {
         children: Snippet;
@@ -182,7 +183,7 @@
                     <Input.Basic
                         type="text"
                         class="search-input"
-                        placeholder="Search"
+                        placeholder={local.search[DEFAULT_LANGUAGE]}
                         onclick={(e: Event) => { e.stopPropagation() }}
                         oninput={handleSearch}
                     />

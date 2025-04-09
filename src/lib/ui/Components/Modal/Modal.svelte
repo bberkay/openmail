@@ -3,6 +3,8 @@
     import type { Snippet } from "svelte";
     import { close } from "./index";
     import { combine, createDomElement } from "$lib/utils";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         children: Snippet;
@@ -24,7 +26,7 @@
         let closeButton = modal.querySelector("button[data-modal-close]");
         if (!closeButton) {
             closeButton = createDomElement(
-                `<button type="button" data-modal-close>Close</button>`,
+                `<button type="button" data-modal-close>${local.close[DEFAULT_LANGUAGE]}</button>`,
             );
             modal.appendChild(closeButton);
         }

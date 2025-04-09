@@ -1,3 +1,5 @@
+import { DEFAULT_LANGUAGE } from "$lib/constants";
+import { local } from "$lib/locales";
 import { Folder, Size } from "$lib/types";
 import * as path from "path";
 
@@ -408,23 +410,31 @@ export function extractEmailAddress(sender: string): string {
 
 export function getMonths(): string[] {
     return [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
+        local.january[DEFAULT_LANGUAGE],
+        local.february[DEFAULT_LANGUAGE],
+        local.march[DEFAULT_LANGUAGE],
+        local.april[DEFAULT_LANGUAGE],
+        local.may[DEFAULT_LANGUAGE],
+        local.june[DEFAULT_LANGUAGE],
+        local.july[DEFAULT_LANGUAGE],
+        local.august[DEFAULT_LANGUAGE],
+        local.september[DEFAULT_LANGUAGE],
+        local.october[DEFAULT_LANGUAGE],
+        local.november[DEFAULT_LANGUAGE],
+        local.december[DEFAULT_LANGUAGE],
     ];
 }
 
 export function getDays(): string[] {
-    return ["Sun", "Mon", "Tue", "Wed", "Thu", "Sat", "Fri"];
+    return [
+        local.sun[DEFAULT_LANGUAGE],
+        local.mon[DEFAULT_LANGUAGE],
+        local.tue[DEFAULT_LANGUAGE],
+        local.wed[DEFAULT_LANGUAGE],
+        local.thu[DEFAULT_LANGUAGE],
+        local.fri[DEFAULT_LANGUAGE],
+        local.sat[DEFAULT_LANGUAGE],
+    ];
 }
 
 export function addEmailToAddressList(

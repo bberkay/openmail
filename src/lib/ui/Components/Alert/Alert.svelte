@@ -5,7 +5,8 @@
     import Icon from "$lib/ui/Components/Icon";
     import Collapse from "$lib/ui/Components/Collapse";
     import { combine } from "$lib/utils";
-    import { ANIMATION_INIT_DELAY_MS, SLIDE_TRANSITION_DURATION_MS } from "$lib/constants";
+    import { ANIMATION_INIT_DELAY_MS, DEFAULT_LANGUAGE } from "$lib/constants";
+    import { local } from "$lib/locales";
 
     interface PropsWithMountId extends Props {
         id: string;
@@ -73,7 +74,7 @@
                     class="alert-manage"
                     onclick={onManageWrapper}
                 >
-                    {onManageText || "Manage"}
+                    {onManageText || local.manage[DEFAULT_LANGUAGE]}
                 </Button.Action>
             {/if}
             {#if closeable}

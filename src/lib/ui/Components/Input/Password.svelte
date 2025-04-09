@@ -2,6 +2,8 @@
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         name?: string;
@@ -15,7 +17,7 @@
     let {
         name = "password",
         id = "password",
-        placeholder = "Password",
+        placeholder = local.password[DEFAULT_LANGUAGE],
         autocomplete="new-password",
         required=true,
         ...attributes
