@@ -4,6 +4,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
+    import { NO_MATCH_FOUND_TEMPLATE } from "$lib/constants";
 
     interface Props {
         children: Snippet;
@@ -42,8 +43,6 @@
     let optionsList: HTMLElement;
     let searchInput: HTMLInputElement;
 
-    const noResultWarning = `<div class="no-results">No matching options found</div>`;
-
     onMount(() => {
         searchInput = selectWrapper.querySelector(".search-input")!;
         options = Array.from(selectWrapper.querySelectorAll(".option")) as HTMLElement[];
@@ -74,7 +73,7 @@
         })
 
         if(searchTerm && !isAnyOptionFound) {
-            optionsList.innerHTML += noResultWarning;
+            optionsList.innerHTML += NO_MATCH_FOUND_TEMPLATE;
         }
     }
 

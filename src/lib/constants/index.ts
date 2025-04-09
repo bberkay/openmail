@@ -113,3 +113,12 @@ export const MAILBOX_CLEAR_SELECTION_TEMPLATE = `
 export const NEW_MESSAGE_TEMPLATE = `
     {sender_fullname} <a class="sender-email">&lt;{sender_email}&gt;</a> to <a class="receiver-email">&lt;{receiver_email}&gt;</a> at {sent_at}
 `;
+
+/**
+ * ----------------------------------------------------------------------------
+ * Constants generally used in Components/Select/Select.svelte
+ * ----------------------------------------------------------------------------
+ */
+export const NO_MATCH_FOUND_TEMPLATE = `
+    <div class="no-results">No matching options found</div>
+`;
