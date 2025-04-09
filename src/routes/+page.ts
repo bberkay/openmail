@@ -5,11 +5,7 @@ import { error } from "@sveltejs/kit";
 import type { PageLoad } from './$types';
 import { ApiService, GetRoutes } from "$lib/services/ApiService";
 import { AccountController } from "$lib/controllers/AccountController";
-
-/**
- * Constants
- */
-const SERVER_CONNECTION_TRY_SLEEP = 1000 * 2; // 2 seconds
+import { SERVER_CONNECTION_TRY_SLEEP_MS } from "$lib/constants";
 
 /**
  * Load the accounts from the server
@@ -54,7 +50,7 @@ async function connectToLocalServer(): Promise<void> {
     }).catch(() => {
         setTimeout(async () => {
             await connectToLocalServer();
-        }, SERVER_CONNECTION_TRY_SLEEP);
+        }, SERVER_CONNECTION_TRY_SLEEP_MS);
     })
 }
 

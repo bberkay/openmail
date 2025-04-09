@@ -1,8 +1,5 @@
 <script lang="ts">
-    import {
-        MAILBOX_LENGTH,
-        MailboxController,
-    } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email } from "$lib/types";
     import { getEmailPaginationTemplate } from "$lib/templates";
     import * as Button from "$lib/ui/Components/Button";
@@ -12,6 +9,7 @@
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { MAILBOX_LENGTH } from "$lib/constants";
 
     interface Props {
         account: Account;

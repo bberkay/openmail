@@ -1,11 +1,14 @@
 import { ApiService, GetRoutes } from "./ApiService";
 import { SharedStore } from "$lib/stores/shared.svelte";
 
+const RSA_ALGORITHM_NAME = "RSA-OAEP";
+const RSA_HASH_ALGORITHM = "SHA-256";
+const RSA_KEY_FORMAT = "spki";
+const PEM_CLEANUP_REGEX = /(-----(BEGIN|END) PUBLIC KEY-----|\n)/g;
+
 export class RSAEncryptor {
     private pemToArrayBuffer(pem: string) {
-        const binary = atob(
-            pem.replace(/(-----(BEGIN|END) PUBLIC KEY-----|\n)/g, ""),
-        );
+        const binary = atob(pem.replace(PEM_CLEANUP_REGEX, ""));
         const buffer = new ArrayBuffer(binary.length);
         const view = new Uint8Array(buffer);
         for (let i = 0; i < binary.length; i++) {
@@ -24,11 +27,11 @@ export class RSAEncryptor {
 
         const publicKeyPem = this.pemToArrayBuffer(response.data.public_key);
         const publicKey = await window.crypto.subtle.importKey(
-            "spki",
+            RSA_KEY_FORMAT,
             publicKeyPem,
             {
-                name: "RSA-OAEP",
-                hash: { name: "SHA-256" },
+                name: RSA_ALGORITHM_NAME,
+                hash: { name: RSA_HASH_ALGORITHM },
             },
             true,
             ["encrypt"],
@@ -45,7 +48,7 @@ export class RSAEncryptor {
         const encoder = new TextEncoder();
         const encodedPassword = encoder.encode(plaint_text_password);
         const encryptedPassword = await window.crypto.subtle.encrypt(
-            { name: "RSA-OAEP" },
+            { name: RSA_ALGORITHM_NAME },
             publicKey,
             encodedPassword,
         );

@@ -63,7 +63,7 @@
                     if (!response.success) {
                         throw new Error(response.message);
                     }
-                })
+                }),
             );
 
             const failed = results.filter((r) => r.status === "rejected");

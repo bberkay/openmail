@@ -2,7 +2,8 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { extractEmailAddress, isStandardFolder } from "$lib/utils";
     import { getReplyTemplate, getForwardTemplate } from "$lib/templates";
-    import { Folder, type Account, type Draft } from "$lib/types";
+    import { AUTO_SAVE_DRAFT_INTERVAL_MS } from "$lib/constants";
+    import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onDestroy, onMount } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
@@ -26,8 +27,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import type { PostResponse } from "$lib/services/ApiService";
-
-    const AUTO_SAVE_DRAFT_INTERVAL = 1000 * 5;
 
     interface Props {
         originalMessageContext?: {
@@ -108,7 +107,7 @@
 
         const loop = async () => {
             await saveEmailsAsDrafts();
-            draftLoopTimeout = setTimeout(loop, AUTO_SAVE_DRAFT_INTERVAL);
+            draftLoopTimeout = setTimeout(loop, AUTO_SAVE_DRAFT_INTERVAL_MS);
         };
 
         loop();

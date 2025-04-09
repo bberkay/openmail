@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { TOGGLE_TEXT_SEPARATOR } from "$lib/constants";
     import { combine } from "$lib/utils";
     import type { Snippet } from "svelte";
 
@@ -21,6 +22,6 @@
     class={combine("dropdown-toggle-container", additionalClass)}
     {...restAttributes}
 >
-    <span style="display:none;">#separator#</span>
+    <span style="display:none;">{TOGGLE_TEXT_SEPARATOR}</span>
     {@render children()}
 </div>

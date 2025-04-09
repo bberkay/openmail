@@ -205,10 +205,10 @@ export class ApiService {
     static createQueryString<T extends GetRoutes | PostRoutes>(params: QueryParams[T]): string {
         let queryString = "";
 
-        if (params && "pathParams" in params && params.pathParams)
+        if (params && Object.hasOwn(params, "pathParams") && params.pathParams)
             queryString += "/" + Object.values(params.pathParams).join("/");
 
-        if (params && "queryParams" in params && params.queryParams)
+        if (params && Object.hasOwn(params, "queryParams") && params.queryParams)
             queryString +=
                     "?" +
                     new URLSearchParams(

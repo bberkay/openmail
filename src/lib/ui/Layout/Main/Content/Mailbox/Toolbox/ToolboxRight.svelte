@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { MAILBOX_LENGTH } from "$lib/controllers/MailboxController";
     import { getMailboxPaginationTemplate } from "$lib/templates";
     import {
         getCurrentMailbox,
@@ -7,6 +6,7 @@
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import * as Button from "$lib/ui/Components/Button";
+    import { MAILBOX_LENGTH } from "$lib/constants";
 
     interface Props {
         currentOffset: number;

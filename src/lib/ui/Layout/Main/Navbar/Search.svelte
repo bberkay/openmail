@@ -28,8 +28,7 @@
     import Badge from "$lib/ui/Components/Badge";
     import { FormGroup } from "$lib/ui/Components/Form";
     import { show as showMessage } from "$lib/ui/Components/Message";
-
-    const REALTIME_SEARCH_DELAY = 300;
+    import { REALTIME_SEARCH_DELAY_MS } from "$lib/constants";
 
     let isSimpleSearchHidden = $state(true);
     let isExtraOptionsHidden = $state(true);
@@ -63,24 +62,27 @@
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
             ? SharedStore.folders[
-                (SharedStore.currentAccount as Account).email_address
-            ].standard
-            : []
+                  (SharedStore.currentAccount as Account).email_address
+              ].standard
+            : [],
     );
     let customFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
             ? SharedStore.folders[
-                (SharedStore.currentAccount as Account).email_address
-            ].custom
-            : []
+                  (SharedStore.currentAccount as Account).email_address
+              ].custom
+            : [],
     );
 
-    let searchingAccount: typeof SharedStore.currentAccount = $state(SharedStore.currentAccount);
+    let searchingAccount: typeof SharedStore.currentAccount = $state(
+        SharedStore.currentAccount,
+    );
 
     const search = async (): Promise<void> => {
-        const accounts = searchingAccount === "home"
-            ? SharedStore.accounts
-            : [SharedStore.currentAccount as Account];
+        const accounts =
+            searchingAccount === "home"
+                ? SharedStore.accounts
+                : [SharedStore.currentAccount as Account];
 
         const results = await Promise.allSettled(
             accounts.map(async (account) => {
@@ -88,15 +90,15 @@
                     account,
                     searchingFolder,
                     isExtraOptionsHidden
-                    ? simpleSearchInput.value
-                    : isObjEmpty(searchCriteria)
+                        ? simpleSearchInput.value
+                        : isObjEmpty(searchCriteria)
                           ? searchCriteria
                           : undefined,
                 );
                 if (!response.success) {
                     throw new Error(response.message);
                 }
-            })
+            }),
         );
 
         const failed = results.filter((r) => r.status === "rejected");
@@ -111,7 +113,7 @@
 
     const debouncedSearch = debounce((e: Event) => {
         search();
-    }, REALTIME_SEARCH_DELAY);
+    }, REALTIME_SEARCH_DELAY_MS);
 
     const toggleSimpleSearch = () => {
         isSimpleSearchHidden = !isSimpleSearchHidden;
@@ -122,11 +124,13 @@
     };
 
     const selectSearchingAccount = (selectedAccount: string) => {
-        searchingAccount = selectedAccount === "home"
-            ? selectedAccount
-            : SharedStore.accounts.find(acc => acc.email_address === selectedAccount)!;
-        ;
-    }
+        searchingAccount =
+            selectedAccount === "home"
+                ? selectedAccount
+                : SharedStore.accounts.find(
+                      (acc) => acc.email_address === selectedAccount,
+                  )!;
+    };
 
     const selectFolder = (selectedFolder: string | Folder) => {
         searchingFolder = selectedFolder;
@@ -262,7 +266,7 @@
     <Icon name="search" />
 </Button.Basic>
 
-<div class="search-menu {isSimpleSearchHidden ? "hidden" : ""}" transition:fade>
+<div class="search-menu {isSimpleSearchHidden ? 'hidden' : ''}" transition:fade>
     <Input.Group>
         <Button.Action type="button" onclick={search}>
             <Icon name="search" />
@@ -281,311 +285,314 @@
             <Icon name="funnel" />
         </Button.Basic>
     </Input.Group>
-    <div class="search-extra-options {isExtraOptionsHidden ? "hidden" : ""}" bind:this={extraOptionsWrapper}>
-                <FormGroup>
-                    <Label for="searching-account">Searching Account</Label>
-                    <Select.Root
-                        id="searching-account"
-                        value={SharedStore.currentAccount === "home" ? "home" : SharedStore.currentAccount.email_address}
-                        onchange={selectSearchingAccount}
-                    >
-                        <Select.Option value="home">Home</Select.Option>
-                        <Select.Separator />
-                        {#each SharedStore.accounts as account}
-                            <Select.Option value={account.email_address}>
-                                {createSenderAddress(account.email_address, account.fullname)}
-                            </Select.Option>
-                        {/each}
-                    </Select.Root>
-                </FormGroup>
-                {#if SharedStore.currentAccount !== "home"}
-                    <FormGroup>
-                        <Label for="searching-folder">Folder</Label>
-                        <Select.Root
-                            id="searching-folder"
-                            value={Folder.All}
-                            onchange={selectFolder}
-                        >
-                            {#each standardFolders as standardFolder}
-                                {@const [folderTag, folderName] =
-                                    standardFolder.split(":")}
-                                <Select.Option value={folderTag}>
-                                    {folderName}
-                                </Select.Option>
-                            {/each}
-                            <Select.Separator />
-                            {#each customFolders as customFolder}
-                                <Select.Option value={customFolder}>
-                                    {customFolder}
-                                </Select.Option>
-                            {/each}
-                        </Select.Root>
-                    </FormGroup>
+    <div
+        class="search-extra-options {isExtraOptionsHidden ? 'hidden' : ''}"
+        bind:this={extraOptionsWrapper}
+    >
+        <FormGroup>
+            <Label for="searching-account">Searching Account</Label>
+            <Select.Root
+                id="searching-account"
+                value={SharedStore.currentAccount === "home"
+                    ? "home"
+                    : SharedStore.currentAccount.email_address}
+                onchange={selectSearchingAccount}
+            >
+                <Select.Option value="home">Home</Select.Option>
+                <Select.Separator />
+                {#each SharedStore.accounts as account}
+                    <Select.Option value={account.email_address}>
+                        {createSenderAddress(
+                            account.email_address,
+                            account.fullname,
+                        )}
+                    </Select.Option>
+                {/each}
+            </Select.Root>
+        </FormGroup>
+        {#if SharedStore.currentAccount !== "home"}
+            <FormGroup>
+                <Label for="searching-folder">Folder</Label>
+                <Select.Root
+                    id="searching-folder"
+                    value={Folder.All}
+                    onchange={selectFolder}
+                >
+                    {#each standardFolders as standardFolder}
+                        {@const [folderTag, folderName] =
+                            standardFolder.split(":")}
+                        <Select.Option value={folderTag}>
+                            {folderName}
+                        </Select.Option>
+                    {/each}
+                    <Select.Separator />
+                    {#each customFolders as customFolder}
+                        <Select.Option value={customFolder}>
+                            {customFolder}
+                        </Select.Option>
+                    {/each}
+                </Select.Root>
+            </FormGroup>
+        {/if}
+        <FormGroup>
+            <Label for="searching-senders">Sender(s)</Label>
+            <Input.Group>
+                <Input.Basic
+                    type="email"
+                    id="searching-senders"
+                    placeholder="Enter sender@mail.xyz then press 'Space'"
+                    onkeyup={addSender}
+                    onblur={addSender}
+                />
+                <Button.Basic type="button" onclick={addSender}>
+                    <Icon name="add" />
+                </Button.Basic>
+            </Input.Group>
+            <div class="tags">
+                {#if searchCriteria.senders}
+                    {#each searchCriteria.senders as sender}
+                        <Badge
+                            content={sender}
+                            onclick={() => {
+                                searchCriteria.senders =
+                                    searchCriteria.senders!.filter(
+                                        (addr) => addr !== sender,
+                                    );
+                            }}
+                        />
+                    {/each}
                 {/if}
-                <FormGroup>
-                    <Label for="searching-senders">Sender(s)</Label>
-                    <Input.Group>
-                        <Input.Basic
-                            type="email"
-                            id="searching-senders"
-                            placeholder="Enter sender@mail.xyz then press 'Space'"
-                            onkeyup={addSender}
-                            onblur={addSender}
+            </div>
+        </FormGroup>
+        <FormGroup>
+            <Label for="searching-receivers">Receiver(s)</Label>
+            <Input.Group>
+                <Input.Basic
+                    type="email"
+                    id="searching-receivers"
+                    placeholder="Enter sender@mail.xyz then press 'Space'"
+                    onkeyup={addReceiver}
+                    onblur={addReceiver}
+                />
+                <Button.Basic type="button" onclick={addReceiver}>
+                    <Icon name="add" />
+                </Button.Basic>
+            </Input.Group>
+            <div class="tags">
+                {#if searchCriteria.receivers}
+                    {#each searchCriteria.receivers as receiver}
+                        <Badge
+                            content={receiver}
+                            onclick={() => {
+                                searchCriteria.receivers =
+                                    searchCriteria.receivers!.filter(
+                                        (addr) => addr !== receiver,
+                                    );
+                            }}
                         />
-                        <Button.Basic type="button" onclick={addSender}>
-                            <Icon name="add" />
-                        </Button.Basic>
-                    </Input.Group>
-                    <div class="tags">
-                        {#if searchCriteria.senders}
-                            {#each searchCriteria.senders as sender}
-                                <Badge
-                                    content={sender}
-                                    onclick={() => {
-                                        searchCriteria.senders =
-                                            searchCriteria.senders!.filter(
-                                                (addr) => addr !== sender,
-                                            );
-                                    }}
-                                />
-                            {/each}
-                        {/if}
-                    </div>
-                </FormGroup>
-                <FormGroup>
-                    <Label for="searching-receivers">Receiver(s)</Label>
-                    <Input.Group>
-                        <Input.Basic
-                            type="email"
-                            id="searching-receivers"
-                            placeholder="Enter sender@mail.xyz then press 'Space'"
-                            onkeyup={addReceiver}
-                            onblur={addReceiver}
+                    {/each}
+                {/if}
+            </div>
+        </FormGroup>
+        <FormGroup>
+            <Label for="searching-cc">Cc</Label>
+            <Input.Group>
+                <Input.Basic
+                    type="email"
+                    id="searching-cc"
+                    placeholder="Enter sender@mail.xyz then press 'Space'"
+                    onkeyup={addCc}
+                    onblur={addCc}
+                />
+                <Button.Basic type="button" onclick={addCc}>
+                    <Icon name="add" />
+                </Button.Basic>
+            </Input.Group>
+            <div class="tags">
+                {#if searchCriteria.cc}
+                    {#each searchCriteria.cc as cc}
+                        <Badge
+                            content={cc}
+                            onclick={() => {
+                                searchCriteria.cc = searchCriteria.cc!.filter(
+                                    (addr) => addr !== cc,
+                                );
+                            }}
                         />
-                        <Button.Basic type="button" onclick={addReceiver}>
-                            <Icon name="add" />
-                        </Button.Basic>
-                    </Input.Group>
-                    <div class="tags">
-                        {#if searchCriteria.receivers}
-                            {#each searchCriteria.receivers as receiver}
-                                <Badge
-                                    content={receiver}
-                                    onclick={() => {
-                                        searchCriteria.receivers =
-                                            searchCriteria.receivers!.filter(
-                                                (addr) => addr !== receiver,
-                                            );
-                                    }}
-                                />
-                            {/each}
-                        {/if}
-                    </div>
-                </FormGroup>
-                <FormGroup>
-                    <Label for="searching-cc">Cc</Label>
-                    <Input.Group>
-                        <Input.Basic
-                            type="email"
-                            id="searching-cc"
-                            placeholder="Enter sender@mail.xyz then press 'Space'"
-                            onkeyup={addCc}
-                            onblur={addCc}
-                        />
-                        <Button.Basic type="button" onclick={addCc}>
-                            <Icon name="add" />
-                        </Button.Basic>
-                    </Input.Group>
-                    <div class="tags">
-                        {#if searchCriteria.cc}
-                            {#each searchCriteria.cc as cc}
-                                <Badge
-                                    content={cc}
-                                    onclick={() => {
-                                        searchCriteria.cc =
-                                            searchCriteria.cc!.filter(
-                                                (addr) => addr !== cc,
-                                            );
-                                    }}
-                                />
-                            {/each}
-                        {/if}
-                    </div>
-                </FormGroup>
-                <FormGroup>
-                    <Label for="searching-subject">Subject</Label>
-                    <Input.Basic
-                        type="text"
-                        id="searching-subject"
-                        placeholder="For example: Project Proposal, Meeting Notes"
-                        onkeydown={setSubject}
-                    />
-                </FormGroup>
-                <FormGroup>
-                    <Label>Date Range</Label>
-                    <FormGroup direction="horizontal">
-                        <Label for="since">Since</Label>
-                        <Input.Date
-                            id="since"
-                            value={selectedSince}
-                            onchange={setSince}
-                        />
-                    </FormGroup>
-                    <FormGroup direction="horizontal">
-                        <Label for="before">Before</Label>
-                        <Input.Date
-                            id="before"
-                            value={selectedBefore}
-                            onchange={setBefore}
-                        />
-                    </FormGroup>
-                </FormGroup>
-                <FormGroup>
-                    <Label for="searching-include">Includes</Label>
-                    <Input.Basic
-                        type="text"
-                        id="searching-include"
-                        placeholder="Words to include in search..."
-                        onkeydown={setInclude}
-                    />
-                </FormGroup>
-                <FormGroup>
-                    <Label for="searching-exclude">Excludes</Label>
-                    <Input.Basic
-                        type="text"
-                        id="searching-exclude"
-                        placeholder="Words to exclude from search..."
-                        onkeydown={setExclude}
-                    />
-                </FormGroup>
-                <FormGroup>
-                    <Label>Flags</Label>
-                    <FormGroup direction="horizontal">
-                        <div>
-                            <Label for="included-flags">Included Flags</Label>
-                            <FormGroup direction="horizontal">
-                                <Select.Root
-                                    id="included-flags"
-                                    resetAfterSelect={true}
-                                >
-                                    {#each Object.entries(Mark) as mark}
-                                        <Select.Option value={mark[1]}>
-                                            {mark[0]}
-                                        </Select.Option>
-                                    {/each}
-                                </Select.Root>
-                                <Button.Basic
-                                    type="button"
-                                    class="btn-inline"
-                                    onclick={addIncludedFlag}
-                                >
-                                    <Icon name="add" />
-                                </Button.Basic>
-                            </FormGroup>
-                            <div class="tags">
-                                {#if searchCriteria.included_flags}
-                                    {#each searchCriteria.included_flags as included_flag}
-                                        <Badge content={included_flag} />
-                                    {/each}
-                                {/if}
-                            </div>
-                        </div>
-                        <div>
-                            <Label for="excluded-flags">Excluded Flags</Label>
-                            <FormGroup direction="horizontal">
-                                <Select.Root
-                                    id="excluded-flags"
-                                    resetAfterSelect={true}
-                                >
-                                    {#each Object.entries(Mark) as mark}
-                                        <Select.Option value={mark[1]}>
-                                            {mark[0]}
-                                        </Select.Option>
-                                    {/each}
-                                </Select.Root>
-                                <Button.Basic
-                                    type="button"
-                                    class="btn-inline"
-                                    onclick={addExcludedFlag}
-                                >
-                                    <Icon name="add" />
-                                </Button.Basic>
-                            </FormGroup>
-                            <div class="tags">
-                                {#if searchCriteria.excluded_flags}
-                                    {#each searchCriteria.excluded_flags as excluded_flag}
-                                        <Badge content={excluded_flag} />
-                                    {/each}
-                                {/if}
-                            </div>
-                        </div>
-                    </FormGroup>
-                </FormGroup>
-                <FormGroup>
-                    <Label>Size</Label>
-                    <FormGroup direction="horizontal">
-                        <Label for="larger-than">Larger Than</Label>
-                        <Input.Basic
-                            type="number"
-                            id="larger-than"
-                            placeholder="1"
-                            onkeydown={setEnteredSize}
-                        />
-                        <Select.Root
-                            placeholder={Size.KB}
-                            value={largerThanUnit}
-                            onchange={setLargerThanUnit}
-                        >
-                            {#each Object.entries(Size) as size}
-                                <Select.Option value={size[0]}>
-                                    {size[1]}
-                                </Select.Option>
-                            {/each}
-                        </Select.Root>
-                    </FormGroup>
-                    <FormGroup direction="horizontal">
-                        <Label for="smaller-than">Smaller Than</Label>
-                        <Input.Basic
-                            type="number"
-                            id="smaller-than"
-                            placeholder="1"
-                            onkeydown={setEnteredSize}
-                        />
-                        <Select.Root
-                            placeholder={Size.MB}
-                            value={smallerThanUnit}
-                            onchange={setSmallerThanUnit}
-                        >
-                            {#each Object.entries(Size) as size}
-                                <Select.Option value={size[0]}>
-                                    {size[1]}
-                                </Select.Option>
-                            {/each}
-                        </Select.Root>
-                    </FormGroup>
-                </FormGroup>
-                <FormGroup direction="horizontal">
-                    <Input.Basic
-                        type="checkbox"
-                        id="has-attachments"
-                        onchange={setHasAttachments}
-                    />
-                    <Label for="has-attachments">Has attachments</Label>
-                </FormGroup>
+                    {/each}
+                {/if}
+            </div>
+        </FormGroup>
+        <FormGroup>
+            <Label for="searching-subject">Subject</Label>
+            <Input.Basic
+                type="text"
+                id="searching-subject"
+                placeholder="For example: Project Proposal, Meeting Notes"
+                onkeydown={setSubject}
+            />
+        </FormGroup>
+        <FormGroup>
+            <Label>Date Range</Label>
+            <FormGroup direction="horizontal">
+                <Label for="since">Since</Label>
+                <Input.Date
+                    id="since"
+                    value={selectedSince}
+                    onchange={setSince}
+                />
+            </FormGroup>
+            <FormGroup direction="horizontal">
+                <Label for="before">Before</Label>
+                <Input.Date
+                    id="before"
+                    value={selectedBefore}
+                    onchange={setBefore}
+                />
+            </FormGroup>
+        </FormGroup>
+        <FormGroup>
+            <Label for="searching-include">Includes</Label>
+            <Input.Basic
+                type="text"
+                id="searching-include"
+                placeholder="Words to include in search..."
+                onkeydown={setInclude}
+            />
+        </FormGroup>
+        <FormGroup>
+            <Label for="searching-exclude">Excludes</Label>
+            <Input.Basic
+                type="text"
+                id="searching-exclude"
+                placeholder="Words to exclude from search..."
+                onkeydown={setExclude}
+            />
+        </FormGroup>
+        <FormGroup>
+            <Label>Flags</Label>
+            <FormGroup direction="horizontal">
                 <div>
-                    <Button.Basic
-                        type="button"
-                        class="btn-outline"
-                        onclick={clear}
-                    >
-                        <Icon name="clear" />
-                        Clear
-                    </Button.Basic>
-                    <Button.Action type="button" onclick={search}>
-                        <Icon name="search" />
-                        Search
-                    </Button.Action>
+                    <Label for="included-flags">Included Flags</Label>
+                    <FormGroup direction="horizontal">
+                        <Select.Root
+                            id="included-flags"
+                            resetAfterSelect={true}
+                        >
+                            {#each Object.entries(Mark) as mark}
+                                <Select.Option value={mark[1]}>
+                                    {mark[0]}
+                                </Select.Option>
+                            {/each}
+                        </Select.Root>
+                        <Button.Basic
+                            type="button"
+                            class="btn-inline"
+                            onclick={addIncludedFlag}
+                        >
+                            <Icon name="add" />
+                        </Button.Basic>
+                    </FormGroup>
+                    <div class="tags">
+                        {#if searchCriteria.included_flags}
+                            {#each searchCriteria.included_flags as included_flag}
+                                <Badge content={included_flag} />
+                            {/each}
+                        {/if}
+                    </div>
                 </div>
+                <div>
+                    <Label for="excluded-flags">Excluded Flags</Label>
+                    <FormGroup direction="horizontal">
+                        <Select.Root
+                            id="excluded-flags"
+                            resetAfterSelect={true}
+                        >
+                            {#each Object.entries(Mark) as mark}
+                                <Select.Option value={mark[1]}>
+                                    {mark[0]}
+                                </Select.Option>
+                            {/each}
+                        </Select.Root>
+                        <Button.Basic
+                            type="button"
+                            class="btn-inline"
+                            onclick={addExcludedFlag}
+                        >
+                            <Icon name="add" />
+                        </Button.Basic>
+                    </FormGroup>
+                    <div class="tags">
+                        {#if searchCriteria.excluded_flags}
+                            {#each searchCriteria.excluded_flags as excluded_flag}
+                                <Badge content={excluded_flag} />
+                            {/each}
+                        {/if}
+                    </div>
+                </div>
+            </FormGroup>
+        </FormGroup>
+        <FormGroup>
+            <Label>Size</Label>
+            <FormGroup direction="horizontal">
+                <Label for="larger-than">Larger Than</Label>
+                <Input.Basic
+                    type="number"
+                    id="larger-than"
+                    placeholder="1"
+                    onkeydown={setEnteredSize}
+                />
+                <Select.Root
+                    placeholder={Size.KB}
+                    value={largerThanUnit}
+                    onchange={setLargerThanUnit}
+                >
+                    {#each Object.entries(Size) as size}
+                        <Select.Option value={size[0]}>
+                            {size[1]}
+                        </Select.Option>
+                    {/each}
+                </Select.Root>
+            </FormGroup>
+            <FormGroup direction="horizontal">
+                <Label for="smaller-than">Smaller Than</Label>
+                <Input.Basic
+                    type="number"
+                    id="smaller-than"
+                    placeholder="1"
+                    onkeydown={setEnteredSize}
+                />
+                <Select.Root
+                    placeholder={Size.MB}
+                    value={smallerThanUnit}
+                    onchange={setSmallerThanUnit}
+                >
+                    {#each Object.entries(Size) as size}
+                        <Select.Option value={size[0]}>
+                            {size[1]}
+                        </Select.Option>
+                    {/each}
+                </Select.Root>
+            </FormGroup>
+        </FormGroup>
+        <FormGroup direction="horizontal">
+            <Input.Basic
+                type="checkbox"
+                id="has-attachments"
+                onchange={setHasAttachments}
+            />
+            <Label for="has-attachments">Has attachments</Label>
+        </FormGroup>
+        <div>
+            <Button.Basic type="button" class="btn-outline" onclick={clear}>
+                <Icon name="clear" />
+                Clear
+            </Button.Basic>
+            <Button.Action type="button" onclick={search}>
+                <Icon name="search" />
+                Search
+            </Button.Action>
+        </div>
     </div>
 </div>
 

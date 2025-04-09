@@ -8,6 +8,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import { getFailedAccountTemplate } from "$lib/templates";
     import { Folder, type Account } from "$lib/types";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
@@ -16,7 +17,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { createSenderAddress, isStandardFolder } from "$lib/utils";
-    import { get_failed_account_template } from "$lib/templates";
 
     interface Props {
         editAccount: (account: Account) => void;
@@ -192,7 +192,7 @@
             showAlert("accounts-alert-container", {
                 content: `There were ${SharedStore.failedAccounts.length} accounts that failed to connect.`,
                 type: "error",
-                details: get_failed_account_template(
+                details: getFailedAccountTemplate(
                     SharedStore.failedAccounts
                         .map((account) => {
                             return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;

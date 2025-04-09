@@ -7,6 +7,7 @@ import {
     PostRoutes,
     type PostResponse,
 } from "$lib/services/ApiService";
+import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS } from "$lib/constants";
 import {
     Folder,
     Mark,
@@ -26,8 +27,6 @@ import {
     replaceFolderName,
     roundUpToMultiple,
 } from "$lib/utils";
-
-export const MAILBOX_LENGTH = 10;
 
 export class MailboxController {
     public static async init(failedOnly: boolean = false): Promise<BaseResponse> {
@@ -387,9 +386,8 @@ export class MailboxController {
         }
 
         // Delete emails from current mailbox and update total count.
-        const wasFullBeforeDelete =
-            currentMailbox.emails.current.length >= MAILBOX_LENGTH;
         const countBeforeDelete = currentMailbox.emails.current.length;
+        const wasFullBeforeDelete = countBeforeDelete >= MAILBOX_LENGTH;
         currentMailbox.emails.current = currentMailbox.emails.current.filter(
             (email) =>
                 !isUidInSelection(selection, removeWhitespaces(email.uid)),
@@ -451,7 +449,7 @@ export class MailboxController {
                         clearInterval(waitNext);
                         resolve(response);
                     }
-                }, 100);
+                }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
             }
         });
     }
@@ -489,15 +487,13 @@ export class MailboxController {
             return response;
         }
 
-        const wasFullBeforeMove =
-            currentMailbox.emails.current.length >= MAILBOX_LENGTH;
         const countBeforeMove = currentMailbox.emails.current.length;
+        const wasFullBeforeMove = countBeforeMove >= MAILBOX_LENGTH;
         currentMailbox.emails.current = currentMailbox.emails.current.filter(
             (email) =>
                 !isUidInSelection(selection, removeWhitespaces(email.uid)),
         );
-        const movedCount =
-            countBeforeMove - currentMailbox.emails.current.length;
+        const movedCount = countBeforeMove - currentMailbox.emails.current.length;
         currentMailbox.total -= movedCount;
 
         if (!offset || !wasFullBeforeMove) return response;
@@ -531,7 +527,7 @@ export class MailboxController {
                         clearInterval(waitNext);
                         resolve(response);
                     }
-                }, 100);
+                }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
             }
         });
     }

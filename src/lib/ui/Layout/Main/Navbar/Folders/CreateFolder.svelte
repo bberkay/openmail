@@ -19,9 +19,9 @@
     let customFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
             ? SharedStore.folders[
-                (SharedStore.currentAccount as Account).email_address
-            ].custom
-            : []
+                  (SharedStore.currentAccount as Account).email_address
+              ].custom
+            : [],
     );
 
     const handleCreateFolderForm = async (e: Event): Promise<void> => {

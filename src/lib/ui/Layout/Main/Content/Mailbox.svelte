@@ -1,12 +1,8 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { type Mailbox, Folder } from "$lib/types";
-    import {
-        MailboxController,
-        MAILBOX_LENGTH,
-    } from "$lib/controllers/MailboxController";
-
-    const PAGINATE_MAILBOX_CHECK_DELAY = 100;
+    import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS } from "$lib/constants";
+    import { MailboxController } from "$lib/controllers/MailboxController";
 
     let waitPrev: ReturnType<typeof setInterval> | null;
     let waitNext: ReturnType<typeof setInterval> | null;
@@ -88,7 +84,7 @@
                             waitPrev = null;
                             resolve();
                         }
-                    }, PAGINATE_MAILBOX_CHECK_DELAY);
+                    }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
                 }
             }
         });
@@ -148,7 +144,7 @@
                             waitNext = null;
                             resolve();
                         }
-                    }, PAGINATE_MAILBOX_CHECK_DELAY);
+                    }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
                 }
             }
         })

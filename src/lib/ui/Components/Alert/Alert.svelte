@@ -5,6 +5,7 @@
     import Icon from "$lib/ui/Components/Icon";
     import Collapse from "$lib/ui/Components/Collapse";
     import { combine } from "$lib/utils";
+    import { ANIMATION_INIT_DELAY_MS, SLIDE_TRANSITION_DURATION_MS } from "$lib/constants";
 
     interface PropsWithMountId extends Props {
         id: string;
@@ -28,7 +29,7 @@
 
     let alert: HTMLElement;
     onMount(() => {
-        setTimeout(() => alert.classList.add("show"), 10);
+        setTimeout(() => alert.classList.add("show"), ANIMATION_INIT_DELAY_MS);
     });
 
     onDestroy(() => {
