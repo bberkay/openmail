@@ -5,6 +5,7 @@
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
     import { getNoMatchFoundTemplate } from "$lib/templates";
+    import { TOGGLE_TEXT_SEPARATOR } from "$lib/constants";
 
     interface Props {
         children: Snippet;
@@ -159,7 +160,7 @@
             <div class="select-trigger-content">
                 {#if selectedOption}
                     <span data-value={selectedOption.getAttribute("data-value")!}>
-                        {selectedOption.textContent!.split("#separator#")[0].trim()}
+                        {selectedOption.textContent!.split(TOGGLE_TEXT_SEPARATOR)[0].trim()}
                     </span>
                     <Button.Basic
                         type="button"
