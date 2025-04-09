@@ -18,7 +18,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { show as showAlert } from "$lib/ui/Components/Alert";
-    import { FAILED_MAILBOX_OR_FOLDERS_TEMPLATE } from "$lib/constants";
+    import { getFailedMailboxOrFoldersTemplate } from "$lib/templates";
     import { createSenderAddress } from "$lib/utils";
     import { MailboxController } from "$lib/controllers/MailboxController";
 
@@ -29,19 +29,19 @@
     let { children }: Props = $props();
 
     $effect(() => {
-        if (SharedStore.failedMailboxes.length > 0 || SharedStore.failedFolders.length > 0) {
+        if (
+            SharedStore.failedMailboxes.length > 0 ||
+            SharedStore.failedFolders.length > 0
+        ) {
             showAlert("mailboxes-alert-container", {
                 content: `There were some mailboxes and/or folders that failed to retrive.`,
                 type: "error",
-                details: FAILED_MAILBOX_OR_FOLDERS_TEMPLATE.replace(
-                    "{failed_mailbox_list_items}",
+                details: getFailedMailboxOrFoldersTemplate(
                     SharedStore.failedMailboxes
                         .map((account) => {
                             return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;
                         })
                         .join(""),
-                ).replace(
-                    "{failed_folder_list_item}",
                     SharedStore.failedFolders
                         .map((account) => {
                             return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;

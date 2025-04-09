@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { NOT_IMPLEMENTED_TEMPLATE } from "$lib/constants";
+    import { getNotImplementedTemplate } from "$lib/templates";
     import { type Email, Mark, Folder, type Mailbox } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import * as Input from "$lib/ui/Components/Input";
@@ -450,10 +450,7 @@
         <Context.Item
             onclick={() => {
                 showMessage({
-                    content: NOT_IMPLEMENTED_TEMPLATE.replace(
-                        "{feature}",
-                        "Unsubscribe",
-                    ),
+                    content: getNotImplementedTemplate("Unsubscribe"),
                 });
             }}
         >
@@ -463,10 +460,7 @@
         <Context.Item
             onclick={() => {
                 showMessage({
-                    content: NOT_IMPLEMENTED_TEMPLATE.replace(
-                        "{feature}",
-                        "Unsubscribe All",
-                    ),
+                    content: getNotImplementedTemplate("Unsubscribe All"),
                 });
             }}
         >

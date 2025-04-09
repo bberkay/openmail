@@ -2,7 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email, Folder, Mark } from "$lib/types";
-    import { NOT_IMPLEMENTED_TEMPLATE } from "$lib/constants";
+    import { getNotImplementedTemplate } from "$lib/templates";
     import * as Button from "$lib/ui/Components/Button";
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
@@ -278,10 +278,7 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: NOT_IMPLEMENTED_TEMPLATE.replace(
-                                "{feature}",
-                                "Spam",
-                            ),
+                            content: getNotImplementedTemplate("Spam"),
                         });
                     }}
                 >
@@ -290,10 +287,7 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: NOT_IMPLEMENTED_TEMPLATE.replace(
-                                "{feature}",
-                                "Print",
-                            ),
+                            content: getNotImplementedTemplate("Print"),
                         });
                     }}
                 >
@@ -302,10 +296,7 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: NOT_IMPLEMENTED_TEMPLATE.replace(
-                                "{feature}",
-                                "Show Original",
-                            ),
+                            content: getNotImplementedTemplate("Show Original"),
                         });
                     }}
                 >
@@ -314,10 +305,7 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: NOT_IMPLEMENTED_TEMPLATE.replace(
-                                "{feature}",
-                                "Unsubscribe",
-                            ),
+                            content: getNotImplementedTemplate("Unsubscribe"),
                         });
                     }}
                 >

@@ -3,7 +3,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Email as TEmail, type Account, Folder } from "$lib/types";
-    import { NEW_MESSAGE_TEMPLATE } from "$lib/constants";
+    import { getNewMessageTemplate } from "$lib/templates";
     import {
         extractEmailAddress,
         extractFullname,
@@ -152,7 +152,7 @@
                     if (!response.success) {
                         throw new Error(response.message);
                     }
-                })
+                }),
             );
 
             const failed = results.filter((r) => r.status === "rejected");
@@ -249,22 +249,12 @@
                                     <span class="receivers hidden">
                                         {recentEmail.receivers}
                                     </span>
-                                    {NEW_MESSAGE_TEMPLATE.replace(
-                                        "{sender_fullname}",
+                                    {getNewMessageTemplate(
                                         extractFullname(recentEmail.sender),
-                                    )
-                                        .replace(
-                                            "{sender_email}",
-                                            extractEmailAddress(
-                                                recentEmail.sender,
-                                            ),
-                                        )
-                                        .replace(
-                                            "{receiver_email}",
-                                            emailAddress,
-                                        )
-                                        .replace("{sent_at}", recentEmail.date)
-                                        .trim()}
+                                        extractEmailAddress(recentEmail.sender),
+                                        emailAddress,
+                                        recentEmail.date,
+                                    )}
                                 </span>
                                 <span class="message">
                                     {#if recentEmail.attachments && recentEmail.attachments.length > 0}

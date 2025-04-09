@@ -2,13 +2,18 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { type Email as TEmail, type Account, type Mailbox, Folder } from "$lib/types";
+    import {
+        type Email as TEmail,
+        type Account,
+        type Mailbox,
+        Folder,
+    } from "$lib/types";
     import { extractEmailAddress, extractFullname } from "$lib/utils";
     import {
-        MAILBOX_CLEAR_SELECTION_TEMPLATE,
-        MAILBOX_SELECT_ALL_TEMPLATE,
-        MAILBOX_SELECTION_INFO_TEMPLATE,
-    } from "$lib/constants";
+        getMailboxClearSelectionTemplate,
+        getMailboxSelectAllTemplate,
+        getMailboxSelectionInfoTemplate,
+    } from "$lib/templates";
     import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
@@ -28,9 +33,7 @@
         | "This Month"
         | "Older";
 
-    let {
-        emailSelection = $bindable([]),
-    }: Props = $props();
+    let { emailSelection = $bindable([]) }: Props = $props();
 
     let groupedEmailsByDate: Record<DateGroup, TEmail[]> = $derived.by(() => {
         const today = new Date();
@@ -86,9 +89,9 @@
     function getAccountByEmail(email: TEmail): Account {
         if (SharedStore.currentAccount === "home") {
             return SharedStore.accounts.find((acc) => {
-                return SharedStore.mailboxes[acc.email_address].emails.current.find(
-                    em => em.uid === email.uid
-                );
+                return SharedStore.mailboxes[
+                    acc.email_address
+                ].emails.current.find((em) => em.uid === email.uid);
             })!;
         } else {
             return SharedStore.currentAccount;
@@ -104,15 +107,14 @@
     const selectAllEmails = (event: Event) => {
         const selectAllButton = event.target as HTMLButtonElement;
         emailSelection = "1:*";
-        selectAllButton.innerHTML = MAILBOX_CLEAR_SELECTION_TEMPLATE;
+        selectAllButton.innerHTML = getMailboxClearSelectionTemplate();
         selectShownCheckbox.checked = true;
     };
 
     const deselectAllEmails = (event: Event) => {
         const selectAllButton = event.target as HTMLButtonElement;
         emailSelection = [];
-        selectAllButton.innerHTML = MAILBOX_SELECT_ALL_TEMPLATE.replace(
-            "{total}",
+        selectAllButton.innerHTML = getMailboxSelectAllTemplate(
             getCurrentMailbox().total.toString(),
         );
         selectShownCheckbox.checked = false;
@@ -147,8 +149,7 @@
     {#if emailSelection}
         <div class="selection-info">
             <span>
-                {MAILBOX_SELECTION_INFO_TEMPLATE.replace(
-                    "{selection_count}",
+                {getMailboxSelectionInfoTemplate(
                     (emailSelection === "1:*"
                         ? getCurrentMailbox().total
                         : emailSelection.length
@@ -162,8 +163,7 @@
                     ? deselectAllEmails
                     : selectAllEmails}
             >
-                {MAILBOX_SELECT_ALL_TEMPLATE.replace(
-                    "{total}",
+                {getMailboxSelectAllTemplate(
                     getCurrentMailbox().total.toString(),
                 )}
             </Button.Basic>

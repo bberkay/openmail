@@ -1,6 +1,6 @@
 <script lang="ts">
     import { MAILBOX_LENGTH } from "$lib/controllers/MailboxController";
-    import { MAILBOX_PAGINATION_TEMPLATE } from "$lib/constants";
+    import { getMailboxPaginationTemplate } from "$lib/templates";
     import {
         getCurrentMailbox,
         paginateMailboxBackward,
@@ -12,9 +12,7 @@
         currentOffset: number;
     }
 
-    let {
-        currentOffset = $bindable()
-    }: Props = $props();
+    let { currentOffset = $bindable() }: Props = $props();
 
     const getPreviousEmails = async () => {
         if (currentOffset <= MAILBOX_LENGTH) return;
@@ -47,16 +45,11 @@
             Prev
         </Button.Action>
         <small>
-            {MAILBOX_PAGINATION_TEMPLATE.replace(
-                "{offset_start}",
+            {getMailboxPaginationTemplate(
                 currentOffset.toString(),
-            )
-                .replace(
-                    "{offset_end}",
-                    (currentOffset - 1 + MAILBOX_LENGTH).toString(),
-                )
-                .replace("{total}", getCurrentMailbox().total.toString())
-                .trim()}
+                (currentOffset - 1 + MAILBOX_LENGTH).toString(),
+                getCurrentMailbox().total.toString(),
+            )}
         </small>
         <Button.Action
             type="button"

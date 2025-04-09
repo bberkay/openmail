@@ -4,10 +4,10 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { create, BaseDirectory } from "@tauri-apps/plugin-fs";
     import {
-        ATTACHMENT_TEMPLATE,
-        SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE,
-        SENDER_TO_RECEIVER_TEMPLATE,
-    } from "$lib/constants";
+        getAttachmentTemplate,
+        getSenderToReceiverTemplate,
+        getSenderToReceiverAndOthersTemplate,
+    } from "$lib/templates";
     import { type Account, type Email } from "$lib/types";
     import {
         extractEmailAddress,
@@ -31,6 +31,18 @@
     let mountedOthers: Record<string, any> | null = null;
     onMount(() => {
         renderBody();
+
+        const senderToReceiverTemplate =
+            email.receivers.split(",").length > 1 || email.cc || email.bcc
+                ? getSenderToReceiverAndOthersTemplate
+                : getSenderToReceiverTemplate;
+
+        senderToReceiver.innerHTML = senderToReceiverTemplate(
+            extractFullname(email.sender),
+            extractEmailAddress(email.sender),
+            account.email_address,
+            email.date,
+        );
 
         const others = senderToReceiver.querySelector<HTMLElement>(".others");
         if (others) {
@@ -113,18 +125,7 @@
         {email.subject || ""}
     </div>
     <div class="sender-to-receiver" bind:this={senderToReceiver}>
-        {(email.receivers.split(",").length > 1 || email.cc || email.bcc
-            ? SENDER_TO_RECEIVER_AND_OTHERS_TEMPLATE
-            : SENDER_TO_RECEIVER_TEMPLATE
-        )
-            .replace("{sender_fullname}", extractFullname(email.sender))
-            .replace("{sender_email}", extractEmailAddress(email.sender))
-            .replace(
-                "{receiver_email}",
-                account.email_address,
-            )
-            .replace("{sent_at}", email.date)
-            .trim()}
+        <!-- Sender to receiver will be rendered on mount -->
     </div>
     <div class="separator"></div>
     <div class="body" bind:this={body}>
@@ -139,15 +140,10 @@
                     download={attachment.name}
                     onclick={() => downloadAttachment(index)}
                 >
-                    {ATTACHMENT_TEMPLATE.replace(
-                        "{attachment_name}",
+                    {getAttachmentTemplate(
                         attachment.name,
-                    )
-                        .replace(
-                            "{attachment_size}",
-                            makeSizeHumanReadable(parseInt(attachment.size)),
-                        )
-                        .trim()}
+                        makeSizeHumanReadable(parseInt(attachment.size)),
+                    )}
                 </Button.Action>
             {/each}
         </div>

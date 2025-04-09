@@ -1,7 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { extractEmailAddress, isStandardFolder } from "$lib/utils";
-    import { REPLY_TEMPLATE, FORWARD_TEMPLATE } from "$lib/constants";
+    import { getReplyTemplate, getForwardTemplate } from "$lib/templates";
     import { Folder, type Account, type Draft } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onDestroy, onMount } from "svelte";
@@ -81,33 +81,17 @@
             draftChangedAfterLastSave = true;
         };
         if (originalMessageContext) {
+            const getBodyTemplate = originalMessageContext.composeType == "reply" ? getReplyTemplate : getForwardTemplate;
             body.addFullHTMLPage(
-                (originalMessageContext.composeType == "reply"
-                    ? REPLY_TEMPLATE
-                    : FORWARD_TEMPLATE
-                )
-                    .replace(
-                        "{original_sender}",
-                        escapeHTML(originalMessageContext.originalSender || ""),
-                    )
-                    .replace(
-                        "{original_receivers}",
-                        escapeHTML(
-                            originalMessageContext.originalReceivers || "",
-                        ),
-                    )
-                    .replace(
-                        "{original_subject}",
-                        originalMessageContext.originalSubject || "",
-                    )
-                    .replace(
-                        "{original_body}",
-                        originalMessageContext.originalBody || "",
-                    )
-                    .replace(
-                        "{original_date}",
-                        originalMessageContext.originalDate || "",
+                getBodyTemplate(
+                    escapeHTML(originalMessageContext.originalSender || ""),
+                    escapeHTML(
+                        originalMessageContext.originalReceivers || "",
                     ),
+                    originalMessageContext.originalSubject || "",
+                    originalMessageContext.originalBody || "",
+                    originalMessageContext.originalDate || ""
+                )
             );
         }
 

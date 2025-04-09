@@ -1,9 +1,16 @@
 <script lang="ts">
-    import { MAILBOX_LENGTH, MailboxController } from "$lib/controllers/MailboxController";
-    import { type Account, type Email, Folder } from "$lib/types";
-    import { EMAIL_PAGINATION_TEMPLATE } from "$lib/constants";
+    import {
+        MAILBOX_LENGTH,
+        MailboxController,
+    } from "$lib/controllers/MailboxController";
+    import { type Account, type Email } from "$lib/types";
+    import { getEmailPaginationTemplate } from "$lib/templates";
     import * as Button from "$lib/ui/Components/Button";
-    import { getCurrentMailbox, paginateMailboxBackward, paginateMailboxForward } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import {
+        getCurrentMailbox,
+        paginateMailboxBackward,
+        paginateMailboxForward,
+    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
     interface Props {
@@ -15,7 +22,7 @@
     let {
         account,
         email = $bindable(),
-        currentOffset = $bindable()
+        currentOffset = $bindable(),
     }: Props = $props();
 
     const updateShownEmail = async (): Promise<void> => {
@@ -38,7 +45,7 @@
 
     const getPreviousEmail = async () => {
         if (currentOffset <= 1) return;
-        if (currentOffset - 1 % MAILBOX_LENGTH == 0) {
+        if (currentOffset - (1 % MAILBOX_LENGTH) == 0) {
             await paginateMailboxBackward(currentOffset - 1);
         }
 
@@ -48,7 +55,7 @@
 
     const getNextEmail = async () => {
         if (currentOffset >= getCurrentMailbox().total) return;
-        if (currentOffset + 1 % MAILBOX_LENGTH == 1) {
+        if (currentOffset + (1 % MAILBOX_LENGTH) == 1) {
             await paginateMailboxForward(currentOffset + 1);
         }
 
@@ -68,18 +75,16 @@
                 Prev
             </Button.Action>
             <small>
-                {EMAIL_PAGINATION_TEMPLATE.replace(
-                    "{current}",
+                {getEmailPaginationTemplate(
                     (currentOffset + 1).toString(),
-                )
-                .replace("{total}", getCurrentMailbox().total.toString())
-                .trim()}
+                    getCurrentMailbox().total.toString(),
+                )}
             </small>
             <Button.Action
                 type="button"
-                class="btn-inline { currentOffset >= getCurrentMailbox().total
-                ? 'disabled'
-                : ''}"
+                class="btn-inline {currentOffset >= getCurrentMailbox().total
+                    ? 'disabled'
+                    : ''}"
                 onclick={getNextEmail}
             >
                 Next

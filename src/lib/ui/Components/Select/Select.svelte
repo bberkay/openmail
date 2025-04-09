@@ -4,7 +4,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
-    import { NO_MATCH_FOUND_TEMPLATE } from "$lib/constants";
+    import { getNoMatchFoundTemplate } from "$lib/templates";
 
     interface Props {
         children: Snippet;
@@ -73,7 +73,7 @@
         })
 
         if(searchTerm && !isAnyOptionFound) {
-            optionsList.innerHTML += NO_MATCH_FOUND_TEMPLATE;
+            optionsList.innerHTML += getNoMatchFoundTemplate();
         }
     }
 
