@@ -10,7 +10,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::process::Command;
-use tauri::RunEvent;
+use tauri::{AppHandle, Manager, RunEvent};
 
 struct ServerInfo {
     url: String,
@@ -106,7 +106,19 @@ fn get_server_url() -> String {
 }
 
 fn main() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                window.set_focus().ok();
+            } else {
+                println!("Main window not found");
+            }
+        }));
+    }
+
+    builder
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
