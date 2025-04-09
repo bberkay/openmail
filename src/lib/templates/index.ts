@@ -1,10 +1,13 @@
+import { local } from "$lib/locales";
+import { DEFAULT_LANGUAGE } from "$lib/constants";
+
 /**
  * ----------------------------------------------------------------------------
  * Generally used constants
  * ----------------------------------------------------------------------------
  */
 export function getNotImplementedTemplate(feature: string) {
-    return `{feature} feature does not implemented yet`.replace(
+    return local.feature_not_implemented[DEFAULT_LANGUAGE].replace(
         "{feature}",
         feature,
     );
@@ -17,7 +20,7 @@ export function getNotImplementedTemplate(feature: string) {
  */
 export function getFailedAccountTemplate(failed_account_list_items: string) {
     return `
-    <p>Failed accounts are:</p>
+    <p>${local.failed_accounts_are[DEFAULT_LANGUAGE]}:</p>
     <ul>
         {failed_account_list_items}
     </ul>
@@ -34,11 +37,11 @@ export function getFailedMailboxOrFoldersTemplate(
     failed_folder_list_items: string,
 ) {
     return `
-     <p>Accounts of failed mailboxes are:</p>
+     <p>${local.accounts_of_failed_mailboxes_are[DEFAULT_LANGUAGE]}:</p>
      <ul>
         {failed_mailbox_list_items}
      </ul>
-     <p>Accounts of failed folders are:</p>
+     <p>${local.accounts_of_failed_folders_are[DEFAULT_LANGUAGE]}:</p>
      <ul>
         {failed_folder_list_items}
      </ul>
@@ -60,7 +63,7 @@ export function getReplyTemplate(
     return `
     <br/><br/>
     <div>
-        On {original_date}, {original_sender} wrote:<br/>
+        ${local.on_wrote[DEFAULT_LANGUAGE]}:<br/>
         <blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
             {original_body}
         </blockquote>
@@ -80,11 +83,11 @@ export function getForwardTemplate(
 ) {
     return `
     <div>
-        ---------- Forwarded message ----------<br/>
-        From: {original_sender}<br/>
-        Date: {original_date}<br/>
-        Subject: {original_subject}<br/>
-        To: {original_receivers}<br/>
+        ${local.forwarded_message[DEFAULT_LANGUAGE]}:<br/>
+        ${local.from[DEFAULT_LANGUAGE]}: {original_sender}<br/>
+        ${local.date[DEFAULT_LANGUAGE]}: {original_date}<br/>
+        ${local.subject[DEFAULT_LANGUAGE]}: {original_subject}<br/>
+        ${local.to[DEFAULT_LANGUAGE]}: {original_receivers}<br/>
         <blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\">
             {original_body}
         </blockquote>
@@ -103,10 +106,11 @@ export function getSenderToReceiverTemplate(
     receiver_email: string,
     sent_at: string,
 ) {
-    return `
-    {sender_fullname} <a>&lt;{sender_email}&gt;</a> to {receiver_email} at {sent_at}
-    `
-        .replace("{sender_fullname}", sender_fullname)
+    return;
+    local.sender_to_receiver[DEFAULT_LANGUAGE].replace(
+        "{sender_fullname}",
+        sender_fullname,
+    )
         .replace("{sender_email}", sender_email)
         .replace("{receiver_email}", receiver_email)
         .replace("{sent_at}", sent_at);
@@ -118,10 +122,10 @@ export function getSenderToReceiverAndOthersTemplate(
     receiver_email: string,
     sent_at: string,
 ) {
-    return `
-    {sender_fullname} <a>&lt;{sender_email}&gt;</a> to {receiver_email} and <u class="others">others</u> at {sent_at}
-    `
-        .replace("{sender_fullname}", sender_fullname)
+    return local.sender_to_receiver_and_others[DEFAULT_LANGUAGE].replace(
+        "{sender_fullname}",
+        sender_fullname,
+    )
         .replace("{sender_email}", sender_email)
         .replace("{receiver_email}", receiver_email)
         .replace("{sent_at}", sent_at);
@@ -147,11 +151,10 @@ export function getEmailPaginationTemplate(
     current: string | number,
     total: string | number,
 ) {
-    return `
-    {current} of {total}
-    `
-        .replace("{current}", String(current))
-        .replace("{total}", String(total));
+    return local.current_email_offset[DEFAULT_LANGUAGE].replace(
+        "{current}",
+        String(current),
+    ).replace("{total}", String(total));
 }
 
 /**
@@ -164,10 +167,10 @@ export function getMailboxPaginationTemplate(
     offset_end: string | number,
     total: string | number,
 ) {
-    return `
-    {offset_start} - {offset_end} of {total}
-    `
-        .replace("{offset_start}", String(offset_start))
+    return local.current_mailbox_offset[DEFAULT_LANGUAGE].replace(
+        "{offset_start}",
+        String(offset_start),
+    )
         .replace("{offset_end}", String(offset_end))
         .replace("{total}", String(total));
 }
@@ -175,21 +178,21 @@ export function getMailboxPaginationTemplate(
 export function getMailboxSelectionInfoTemplate(
     selection_count: string | number,
 ) {
-    return `
-    <b>{selection_count}</b> emails in this page selected.
-    `.replace("{selection_count}", String(selection_count));
+    return local.x_count_email_selected[DEFAULT_LANGUAGE].replace(
+        "{selection_count}",
+        String(selection_count),
+    );
 }
 
 export function getMailboxSelectAllTemplate(total: string | number) {
-    return `
-    Select all <b>{total}</b> emails in this page.
-    `.replace("{total}", String(total));
+    return local.select_all_emails_in_mailbox[DEFAULT_LANGUAGE].replace(
+        "{total}",
+        String(total),
+    );
 }
 
 export function getMailboxClearSelectionTemplate() {
-    return `
-    Clear selection
-    `;
+    return local.clear_selection[DEFAULT_LANGUAGE];
 }
 
 /**
@@ -203,10 +206,10 @@ export function getNewMessageTemplate(
     receiver_email: string,
     sent_at: string,
 ) {
-    return `
-    {sender_fullname} <a class="sender-email">&lt;{sender_email}&gt;</a> to <a class="receiver-email">&lt;{receiver_email}&gt;</a> at {sent_at}
-    `
-        .replace("{sender_fullname}", sender_fullname)
+    return local.sender_to_receiver_of_new_message[DEFAULT_LANGUAGE].replace(
+        "{sender_fullname}",
+        sender_fullname,
+    )
         .replace("{sender_email}", sender_email)
         .replace("{receiver_email}", receiver_email)
         .replace("{sent_at}", sent_at);
@@ -219,6 +222,6 @@ export function getNewMessageTemplate(
  */
 export function getNoMatchFoundTemplate() {
     return `
-    <div class="no-results">No matching options found</div>
+    <div class="no-results">${local.no_match_found[DEFAULT_LANGUAGE]}</div>
     `;
 }
