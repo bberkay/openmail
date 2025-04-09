@@ -2,13 +2,19 @@
     import { onMount } from "svelte";
     import type { Snippet } from "svelte";
     import { close } from "./index";
-    import { createDomElement } from "$lib/utils";
+    import { combine, createDomElement } from "$lib/utils";
 
     interface Props {
         children: Snippet;
+        [attribute: string]: unknown;
     }
 
-    let { children }: Props = $props();
+    let { children, ...attributes }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     let modal: HTMLElement;
     onMount(() => {
@@ -26,7 +32,11 @@
     });
 </script>
 
-<div class="modal" bind:this={modal}>
+<div
+    bind:this={modal}
+    class={combine("modal", additionalClass)}
+    {...restAttributes}
+>
     {@render children()}
 </div>
 

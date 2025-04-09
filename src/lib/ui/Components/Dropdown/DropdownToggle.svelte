@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { combine } from "$lib/utils";
     import type { Snippet } from "svelte";
 
     interface Props {
@@ -7,13 +8,18 @@
     }
 
     let { children, ...attributes }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 </script>
 
 <div
-    class="dropdown-toggle-container"
     role="button"
     tabindex="0"
-    {...attributes}
+    class={combine("dropdown-toggle-container", additionalClass)}
+    {...restAttributes}
 >
     <span style="display:none;">#separator#</span>
     {@render children()}

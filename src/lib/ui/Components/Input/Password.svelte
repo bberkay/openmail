@@ -40,13 +40,13 @@
 
 <Input.Group>
     <Input.Basic
-        {...attributes}
         type="password"
         {name}
         {id}
         {placeholder}
         {autocomplete}
         {required}
+        {...attributes}
     />
     <Button.Basic
         type="button"

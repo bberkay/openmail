@@ -8,6 +8,7 @@ export interface Props {
     content: string;
     autoCloseDelay?: number;
     onUndo?: (((e: Event) => void) | ((e: Event) => Promise<void>));
+    [attribute: string]: unknown;
 }
 
 export function show(props: Props) {

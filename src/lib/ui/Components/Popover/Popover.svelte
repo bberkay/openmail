@@ -1,12 +1,19 @@
 <script lang="ts">
+    import { combine } from "$lib/utils";
     import { onMount } from "svelte";
     import { type Snippet } from "svelte";
 
     interface Props {
         children: Snippet;
+        [attribute: string]: unknown;
     }
 
-    let { children }: Props = $props();
+    let { children, ...attributes }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     let popoverContainer: HTMLElement;
     let toggleContainer: HTMLElement;
@@ -36,7 +43,11 @@
 
 <svelte:body onclick={closeWhenClickedOutside} />
 
-<div class="popover-container" bind:this={popoverContainer}>
+<div
+    bind:this={popoverContainer}
+    class={combine("popover-container", additionalClass)}
+    {...restAttributes}
+>
     {@render children()}
 </div>
 

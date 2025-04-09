@@ -4,6 +4,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
     import Collapse from "$lib/ui/Components/Collapse";
+    import { combine } from "$lib/utils";
 
     interface PropsWithMountId extends Props {
         id: string;
@@ -16,10 +17,16 @@
         closeable,
         details,
         onManage,
-        onManageText
+        onManageText,
+        ...attributes
     }: PropsWithMountId = $props();
-    let alert: HTMLElement;
 
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
+
+    let alert: HTMLElement;
     onMount(() => {
         setTimeout(() => alert.classList.add("show"), 10);
     });
@@ -41,7 +48,11 @@
     }
 </script>
 
-<div class="alert {type}" bind:this={alert}>
+<div
+    bind:this={alert}
+    class={combine("alert", type, additionalClass)}
+    {...restAttributes}
+>
     <div class="alert-content">
         <div class="alert-icon">
             <Icon name={type} />

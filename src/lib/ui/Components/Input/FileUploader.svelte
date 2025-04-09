@@ -10,6 +10,11 @@
 
     let { ...attributes }: Props = $props();
 
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
+
     let files: FileList | null | undefined = $state();
     let fileUploaderWrapper: HTMLElement;
     let fileInput: HTMLInputElement;
@@ -59,21 +64,19 @@
         files = dt.files;
         fileInput.files = files;
     };
-
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
 </script>
 
-<div class="file-uploader-container" bind:this={fileUploaderWrapper}>
+<div
+    bind:this={fileUploaderWrapper}
+    class={combine("file-uploader-container", additionalClass)}
+    {...restAttributes}
+>
     <div class="file-upload-area">
         <label class="upload-btn">
             Upload a file.
             <Input.Basic
                 type="file"
-                class={combine("file-input", additionalClass)}
-                {...restAttributes}
+                class="file-input"
             />
         </label>
         <div

@@ -1,12 +1,21 @@
 <script lang="ts">
     import { onMount, type Snippet } from "svelte";
-    import { createDomElement } from "$lib/utils";
+    import { combine, createDomElement } from "$lib/utils";
 
     interface Props {
         children: Snippet
+        [attribute: string]: unknown;
     }
 
-    let { children }: Props  = $props();
+    let {
+        children,
+        ...attributes
+    }: Props  = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     let wrapper: HTMLElement;
     onMount(() => {
@@ -38,7 +47,11 @@
     })
 </script>
 
-<div class="input-group" bind:this={wrapper}>
+<div
+    bind:this={wrapper}
+    class={combine("input-group", additionalClass)}
+    {...restAttributes}
+>
     {@render children()}
 </div>
 

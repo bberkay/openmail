@@ -1,12 +1,19 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { type Snippet } from "svelte";
+    import { combine } from "$lib/utils";
 
     interface Props {
         children: Snippet;
+        [attribute: string]: unknown;
     }
 
-    let { children }: Props = $props();
+    let { children, ...attributes }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     let dropdownContainer: HTMLElement;
     let toggleContainer: HTMLElement;
@@ -36,7 +43,11 @@
 
 <svelte:body onclick={closeWhenClickedOutside} />
 
-<div class="dropdown-container" bind:this={dropdownContainer}>
+<div
+    bind:this={dropdownContainer}
+    class={combine("dropdown-container", additionalClass)}
+    {...restAttributes}
+>
     {@render children()}
 </div>
 

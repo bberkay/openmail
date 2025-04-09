@@ -18,8 +18,8 @@
 </script>
 
 <input
-    class={combine("input", additionalClass)}
     bind:group
+    class={combine("input", additionalClass)}
     {...restAttributes}
 />
 

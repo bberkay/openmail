@@ -1,5 +1,6 @@
 <script lang="ts">
     import { mount, unmount, type Snippet } from "svelte";
+    import { combine } from "$lib/utils";
     import { Spinner } from "$lib/ui/Components/Loader";
     import * as Button from "$lib/ui/Components/Button";
 
@@ -14,6 +15,11 @@
         children,
         ...attributes
     }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     const makeAnApiRequest = async (e: Event): Promise<void> => {
         e.preventDefault();
@@ -38,7 +44,8 @@
 <Button.Basic
     type="button"
     onclick={makeAnApiRequest}
-    {...attributes}
+    class={combine("btn", additionalClass)}
+    {...restAttributes}
 >
     {@render children()}
 </Button.Basic>

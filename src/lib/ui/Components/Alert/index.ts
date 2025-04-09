@@ -11,6 +11,7 @@ export interface Props {
     details?: string;
     onManage?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
     onManageText?: string;
+    [attribute: string]: unknown;
 }
 
 let mountedAlerts: Record<string, Record<string, any>> = {};

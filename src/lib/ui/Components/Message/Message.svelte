@@ -1,13 +1,20 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { close, type Props } from "./index";
+    import { combine } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
 
     let {
         content,
         onCloseText,
-        onClose
+        onClose,
+        ...attributes
     }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     onMount(() => {
         document.documentElement.scrollTop = 0;
@@ -20,7 +27,10 @@
     };
 </script>
 
-<div class="modal message">
+<div
+    class={combine("modal message", additionalClass)}
+    {...restAttributes}
+>
     {@html content}
     <Button.Action
         type="button"

@@ -1,14 +1,16 @@
 <script lang="ts">
     interface Props {
         text?: string;
+        [attribute: string]: unknown;
     }
 
     let {
-        text = "Loading"
+        text = "Loading",
+        ...attributes
     }: Props = $props();
 </script>
 
-<span>
+<span {...attributes}>
     <small class="loader"></small> {text}
 </span>
 

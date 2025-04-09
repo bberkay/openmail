@@ -2,14 +2,21 @@
     import { onMount } from "svelte";
     import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
+    import { combine } from "$lib/utils";
 
     let {
         content,
         onConfirmText,
         onConfirm,
         onCancelText,
-        onCancel
+        onCancel,
+        ...attributes
     }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     onMount(() => {
         document.documentElement.scrollTop = 0;
@@ -27,7 +34,10 @@
     };
 </script>
 
-<div class="modal confirm">
+<div
+    class={combine("modal confirm", additionalClass)}
+    {...restAttributes}
+>
     {@html content}
     <Button.Action
         type="button"

@@ -1,14 +1,24 @@
 <script lang="ts">
     import type { Snippet } from "svelte";
+    import { combine } from "$lib/utils";
 
     interface Props {
         children: Snippet;
+        [attribute: string]: unknown;
     }
 
-    let { children }: Props = $props();
+    let { children, ...attributes }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 </script>
 
-<div class="dropdown-content hidden">
+<div
+    class={combine("dropdown-content hidden", additionalClass)}
+    {...restAttributes}
+>
     {@render children()}
 </div>
 

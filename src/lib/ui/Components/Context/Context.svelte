@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { combine } from "$lib/utils";
     import { onMount, type Snippet } from "svelte";
 
     interface Props {
@@ -6,11 +7,23 @@
         beforeOpen?: ((e: Event) => void) | ((e: Event) => Promise<void>);
         afterClose?: ((e: Event) => void) | ((e: Event) => Promise<void>);
         children: Snippet;
+        [attribute: string]: unknown;
     }
 
-    let { target, beforeOpen, afterClose, children }: Props = $props();
-    let targetElements: NodeListOf<HTMLElement>;
+    let {
+        target,
+        beforeOpen,
+        afterClose,
+        children,
+        ...attributes
+    }: Props = $props();
 
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
+
+    let targetElements: NodeListOf<HTMLElement>;
     let cursor = $state({ x: 0, y: 0 });
     let menu = $state({ w: 0, h: 0 });
     let browser = $state({ w: 0, h: 0 });
@@ -71,10 +84,11 @@
         <div
             role="menu"
             tabindex="0"
-            class="context-menu"
             oncontextmenu={(e) => {
                 e.preventDefault();
             }}
+            class={combine("context-menu", additionalClass)}
+            {...restAttributes}
         >
             {@render children()}
         </div>

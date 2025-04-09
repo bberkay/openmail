@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, type Snippet } from "svelte";
+    import { combine } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
@@ -13,6 +14,7 @@
         enableSearch?: boolean;
         resetAfterSelect?: boolean;
         disabled?: boolean;
+        [attribute: string]: unknown;
     }
 
     let {
@@ -23,8 +25,14 @@
         onchange,
         enableSearch,
         resetAfterSelect,
-        disabled
+        disabled,
+        ...attributes
     }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     let isOpen = $state(false);
     let options: HTMLElement[] = $state([]);
@@ -134,7 +142,11 @@
 
 <svelte:body onclick={closeWhenClickedOutside} />
 
-<div class="custom-select-wrapper" bind:this={selectWrapper}>
+<div
+    bind:this={selectWrapper}
+    class={combine("custom-select-wrapper", additionalClass)}
+    {...restAttributes}
+>
     <div
         id={id}
         class="custom-select {isOpen ? "open" : ""} {disabled ? "disabled" : ""}"

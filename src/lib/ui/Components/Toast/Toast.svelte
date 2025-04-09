@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
+    import { combine } from "$lib/utils";
     import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
 
@@ -11,8 +12,14 @@
         id,
         content,
         onUndo,
-        autoCloseDelay
+        autoCloseDelay,
+        ...attributes
     }: PropsWithMountId = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     let toast: HTMLElement;
     onMount(() => {
@@ -44,7 +51,11 @@
     }
 </script>
 
-<div class="toast" bind:this={toast}>
+<div
+    bind:this={toast}
+    class={combine("toast", additionalClass)}
+    {...restAttributes}
+>
     <div>{@html content}</div>
     {#if onUndo}
         <Button.Action

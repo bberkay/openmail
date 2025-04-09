@@ -15,6 +15,11 @@
         ...attributes
     }: Props = $props();
 
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
+
     const makeAnApiRequest = async (e: Event) => {
         e.preventDefault();
 
@@ -38,16 +43,11 @@
         unmount(loader);
         form.reset();
     }
-
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
 </script>
 
 <form
-    class={combine("form", additionalClass)}
     onsubmit={makeAnApiRequest}
+    class={combine("form", additionalClass)}
     {...restAttributes}
 >
     {@render children()}

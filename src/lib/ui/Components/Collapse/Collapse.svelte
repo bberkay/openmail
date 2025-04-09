@@ -1,5 +1,6 @@
 <script lang="ts">
     import { slide } from "svelte/transition";
+    import { combine } from "$lib/utils";
     import { type Snippet } from "svelte";
     import Icon from "$lib/ui/Components/Icon";
 
@@ -17,13 +18,21 @@
         ...attributes
     }: Props = $props();
 
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
+
     let isOpen = $state(openAtStart ?? false);
     const toggle = () => {
         isOpen = !isOpen;
     };
 </script>
 
-<div class="collapse-wrapper" {...attributes}>
+<div
+    class={combine("collapse-wrapper", additionalClass)}
+    {...restAttributes}
+>
     <div
         class="collapse-header"
         onclick={toggle}

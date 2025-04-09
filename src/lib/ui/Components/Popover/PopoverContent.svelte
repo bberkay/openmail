@@ -1,14 +1,24 @@
 <script lang="ts">
+    import { combine } from "$lib/utils";
     import type { Snippet } from "svelte";
 
     interface Props {
         children: Snippet;
+        [attribute: string]: unknown;
     }
 
-    let { children }: Props = $props();
+    let { children, ...attributes }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 </script>
 
-<div class="popover-content hidden">
+<div
+    class={combine("popover-content hidden", additionalClass)}
+    {...restAttributes}
+>
     {@render children()}
 </div>
 

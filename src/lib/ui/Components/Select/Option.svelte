@@ -1,15 +1,30 @@
 <script lang="ts">
     import type { Snippet } from "svelte";
+    import { combine } from "$lib/utils";
 
     interface Props {
         value: string;
         children: Snippet;
+        [attribute: string]: unknown;
     }
 
-    let { value, children }: Props = $props();
+    let {
+        value,
+        children,
+        ...attributes
+    }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 </script>
 
-<div class="option" data-value={value}>
+<div
+    data-value={value}
+    class={combine("option", additionalClass)}
+    {...restAttributes}
+>
     {@render children()}
 </div>
 

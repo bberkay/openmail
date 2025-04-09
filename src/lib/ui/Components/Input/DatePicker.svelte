@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { getDays, getMonths, convertToIMAPDate } from "$lib/utils";
+    import { getDays, getMonths, convertToIMAPDate, combine } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import * as Table from "$lib/ui/Components/Table";
@@ -10,14 +10,21 @@
         placeholder?: string,
         value?: Date,
         onchange?: (selectedDay: Date) => void,
+        [attribute: string]: unknown;
     }
 
     let {
         id,
         placeholder,
         value,
-        onchange
+        onchange,
+        ...attributes
     }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     let currentDate = new Date();
     let currentYear = currentDate.getFullYear();
@@ -165,7 +172,11 @@
 
 <svelte:body onclick={closeWhenClickedOutside} />
 
-<div class="date-input-wrapper" bind:this={datePickerWrapper}>
+<div
+    bind:this={datePickerWrapper}
+    class={combine("date-input-wrapper", additionalClass)}
+    {...restAttributes}
+>
     <Input.Basic
         id={id}
         type="text"
