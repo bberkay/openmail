@@ -1,7 +1,7 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { type Mailbox, Folder } from "$lib/types";
-    import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS } from "$lib/constants";
+    import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT } from "$lib/constants";
     import { MailboxController } from "$lib/controllers/MailboxController";
 
     let waitPrev: ReturnType<typeof setInterval> | null;
@@ -73,16 +73,26 @@
                     }
                 }
 
+                const clearWaitPrevInterval = () => {
+                    if (waitPrev) {
+                       clearInterval(waitPrev);
+                       waitPrev = null;
+                       resolve();
+                    }
+                }
+
                 if (currentMailbox.emails.prev.length > 0) {
                     shiftEmailPagesBackward()
-                    resolve();
+                    clearWaitPrevInterval();
                 } else {
+                    const startTime = Date.now();
                     waitPrev = setInterval(() => {
+                        if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT) {
+                            clearWaitPrevInterval();
+                        }
                         if (currentMailbox.emails.prev.length > 0) {
                             shiftEmailPagesBackward();
-                            clearInterval(waitPrev!);
-                            waitPrev = null;
-                            resolve();
+                            clearWaitPrevInterval();
                         }
                     }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
                 }
@@ -133,16 +143,26 @@
                     }
                 }
 
+                const clearWaitNextInterval = () => {
+                    if (waitNext) {
+                        clearInterval(waitNext);
+                        waitNext = null;
+                        resolve();
+                    }
+                }
+
                 if (currentMailbox.emails.next.length > 0) {
                     shiftEmailPagesForward()
-                    resolve();
+                    clearWaitNextInterval();
                 } else {
+                    const startTime = Date.now();
                     waitNext = setInterval(() => {
+                        if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT) {
+                            clearWaitNextInterval();
+                        }
                         if (currentMailbox.emails.next.length > 0) {
                             shiftEmailPagesForward();
-                            clearInterval(waitNext!);
-                            waitNext = null;
-                            resolve();
+                            clearWaitNextInterval();
                         }
                     }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
                 }

@@ -7,7 +7,7 @@ import {
     PostRoutes,
     type PostResponse,
 } from "$lib/services/ApiService";
-import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS } from "$lib/constants";
+import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT } from "$lib/constants";
 import {
     Folder,
     Mark,
@@ -439,15 +439,28 @@ export class MailboxController {
         };
 
         return new Promise((resolve) => {
+            let waitNext: ReturnType<typeof setInterval> | null;
+
+            const clearWaitNextInterval = () => {
+                if (waitNext) {
+                    clearInterval(waitNext)
+                    waitNext = null;
+                    resolve(response);
+                }
+            }
+
             if (currentMailbox.emails.next.length > 0) {
                 processNextBatch();
-                resolve(response);
+                clearWaitNextInterval();
             } else {
-                const waitNext = setInterval(() => {
+                const startTime = Date.now();
+                waitNext = setInterval(() => {
+                    if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT) {
+                        clearWaitNextInterval();
+                    }
                     if (currentMailbox.emails.next.length > 0) {
                         processNextBatch();
-                        clearInterval(waitNext);
-                        resolve(response);
+                        clearWaitNextInterval();
                     }
                 }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
             }
@@ -517,15 +530,28 @@ export class MailboxController {
         };
 
         return new Promise((resolve) => {
+            let waitNext: ReturnType<typeof setInterval> | null;
+
+            const clearNextInterval = () => {
+                if (waitNext) {
+                    clearInterval(waitNext);
+                    waitNext = null;
+                    resolve(response);
+                }
+            }
+
             if (currentMailbox.emails.next.length > 0) {
                 processNextBatch();
-                resolve(response);
+                clearNextInterval();
             } else {
-                const waitNext = setInterval(() => {
+                const startTime = Date.now();
+                waitNext = setInterval(() => {
+                    if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT) {
+                        clearNextInterval();
+                    }
                     if (currentMailbox.emails.next.length > 0) {
                         processNextBatch();
-                        clearInterval(waitNext);
-                        resolve(response);
+                        clearNextInterval();
                     }
                 }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
             }
