@@ -27,6 +27,10 @@ export function getFailedAccountTemplate(failed_account_list_items: string) {
     `.replace("{failed_account_list_items}", failed_account_list_items);
 }
 
+export function getSelectedAccountTemplate(count: string) {
+    return local.account_selected[DEFAULT_LANGUAGE].replace("{count}", count);
+}
+
 /**
  * ----------------------------------------------------------------------------
  * Constants generally used in Main/Content.svelte

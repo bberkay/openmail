@@ -8,6 +8,8 @@
     import * as Button from "$lib/ui/Components/Button";
     import Label from "$lib/ui/Components/Label";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         editingAccount: Account;
@@ -26,7 +28,7 @@
         );
 
         if (!response.success) {
-            showMessage({content: "Error while editing account."});
+            showMessage({content: local.error_edit_account[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
     };
@@ -35,7 +37,7 @@
 <Form onsubmit={editAccount}>
     <div>
         <FormGroup>
-            <Label for="email_address">Email Address</Label>
+            <Label for="email_address">{local.email_address[DEFAULT_LANGUAGE]}</Label>
             <Input.Basic
                 type="email"
                 name="email_address"
@@ -47,31 +49,31 @@
             />
         </FormGroup>
         <FormGroup>
-            <Label for="password">Password</Label>
+            <Label for="password">{local.password[DEFAULT_LANGUAGE]}</Label>
             <Input.Password/>
         </FormGroup>
         <FormGroup>
-            <Label for="fullname">Full Name (Optional)</Label>
+            <Label for="fullname">{local.full_name_optional[DEFAULT_LANGUAGE]}</Label>
             <Input.Basic
                 type="text"
                 name="fullname"
                 id="fullname"
-                placeholder="Alex Doe"
+                placeholder={local.full_name_placeholder[DEFAULT_LANGUAGE]}
                 value={editingAccount.fullname}
                 autocomplete="off"
             />
-            <span class="muted">Example: Alex Doe &lt;alex.doe@openmail.com&gt;</span>
+            <span class="muted">{local.full_name_example[DEFAULT_LANGUAGE]}</span>
         </FormGroup>
         <div class="landing-body-footer">
             <Button.Basic type="submit">
-                Connect to account
+                {local.connect_to_account[DEFAULT_LANGUAGE]}
             </Button.Basic>
             <Button.Basic
                 type="button"
                 class="btn-inline"
                 onclick={onCancel}
             >
-                Cancel
+                {local.cancel[DEFAULT_LANGUAGE]}
             </Button.Basic>
         </div>
     </div>

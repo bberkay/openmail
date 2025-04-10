@@ -21,6 +21,8 @@
     import { getFailedMailboxOrFoldersTemplate } from "$lib/templates";
     import { createSenderAddress } from "$lib/utils";
     import { MailboxController } from "$lib/controllers/MailboxController";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         children: Snippet;
@@ -51,7 +53,7 @@
                 onManage: async () => {
                     await MailboxController.init(true);
                 },
-                onManageText: "Retry",
+                onManageText: local.retry[DEFAULT_LANGUAGE],
             });
         }
     });

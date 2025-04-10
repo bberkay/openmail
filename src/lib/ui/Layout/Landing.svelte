@@ -16,6 +16,9 @@
 </script>
 
 <script lang="ts">
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { local } from "$lib/locales";
+
     interface Props {
         children: Snippet;
     }
@@ -25,8 +28,10 @@
 
 <section class="landing-container" bind:this={sectionContainer}>
     <div class="landing-header">
-        <h1 class="landing-title">Openmail</h1>
-        <p class="landing-subtitle">Secure and Fast Email Communication</p>
+        <h1 class="landing-title">{local.openmail[DEFAULT_LANGUAGE]}</h1>
+        <p class="landing-subtitle">
+            {local.secure_and_fast_email_client[DEFAULT_LANGUAGE]}
+        </p>
     </div>
     <div class="landing-body">
         {#if !isMounted}

@@ -8,7 +8,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { getFailedAccountTemplate } from "$lib/templates";
+    import { getFailedAccountTemplate, getSelectedAccountTemplate } from "$lib/templates";
     import { Folder, type Account } from "$lib/types";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
@@ -17,6 +17,8 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { createSenderAddress, isStandardFolder } from "$lib/utils";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { local } from "$lib/locales";
 
     interface Props {
         editAccount: (account: Account) => void;
@@ -38,8 +40,8 @@
 
     const removeAccount = async (e: Event): Promise<void> => {
         showConfirm({
-            content: "Are you certain? Deleting an account cannot be undone.",
-            onConfirmText: "Yes, remove.",
+            content: local.are_you_certain_remove_account[DEFAULT_LANGUAGE],
+            onConfirmText: local.yes_remove[DEFAULT_LANGUAGE],
             onConfirm: async (e: Event) => {
                 const target = e.target as HTMLButtonElement;
                 const account = target.getAttribute("data-email-address")!;
@@ -47,7 +49,7 @@
 
                 if (!response.success) {
                     showMessage({
-                        content: "Unexpected error while removing account.",
+                        content: local.error_remove_account[DEFAULT_LANGUAGE],
                     });
                     console.error(response.message);
                 }
@@ -57,14 +59,14 @@
 
     const removeAllAccounts = async (): Promise<void> => {
         showConfirm({
-            content: "Are you certain? You are about to remove all accounts.",
-            onConfirmText: "Yes, remove all.",
+            content: local.are_you_certain_remove_all_accounts[DEFAULT_LANGUAGE],
+            onConfirmText: local.remove_all[DEFAULT_LANGUAGE],
             onConfirm: async (e: Event) => {
                 const response = await AccountController.removeAll();
 
                 if (!response.success) {
                     showMessage({
-                        content: "Unexpected error while removing accounts.",
+                        content: local.error_remove_all_account[DEFAULT_LANGUAGE],
                     });
                     console.error(response.message);
                 }
@@ -78,12 +80,12 @@
         if (!response.success) {
             console.error(response.message);
             showConfirm({
-                content: "Unexpected error while initializing mailboxes.",
-                onConfirmText: "Restart",
+                content: local.error_initialize_mailboxes[DEFAULT_LANGUAGE],
+                onConfirmText: local.restart[DEFAULT_LANGUAGE],
                 onConfirm: async () => {
                     await relaunch();
                 },
-                onCancelText: "Exit",
+                onCancelText: local.exit[DEFAULT_LANGUAGE],
                 onCancel: async () => {
                     await exit(1);
                 },
@@ -120,8 +122,8 @@
                 // Send app notification.
                 if (permissionGranted) {
                     sendNotification({
-                        title: "New Email Received!",
-                        body: "Here, look at your new email.",
+                        title: local.new_email_received_title[DEFAULT_LANGUAGE],
+                        body: local.new_email_received_body[DEFAULT_LANGUAGE],
                     });
                 }
 
@@ -190,7 +192,7 @@
     $effect(() => {
         if (SharedStore.failedAccounts.length > 0) {
             showAlert("accounts-alert-container", {
-                content: `There were ${SharedStore.failedAccounts.length} accounts that failed to connect.`,
+                content: local.accounts_failed_to_connect[DEFAULT_LANGUAGE],
                 type: "error",
                 details: getFailedAccountTemplate(
                     SharedStore.failedAccounts
@@ -221,9 +223,11 @@
                         />
                     </Table.Head>
                     <Table.Head class="body-cell">
-                        Account{accountSelection.length > 0
-                            ? ` (${accountSelection.length} selected)`
-                            : ""}
+                        {
+                            accountSelection.length > 0
+                                ? getSelectedAccountTemplate(accountSelection.length.toString())
+                                : local.account[DEFAULT_LANGUAGE]
+                        }
                     </Table.Head>
                     <Table.Head>
                         {#if accountSelection.length > 0}
@@ -231,7 +235,7 @@
                                 class="btn-inline"
                                 onclick={removeAllAccounts}
                             >
-                                Remove All
+                                {local.remove_all[DEFAULT_LANGUAGE]}
                             </Button.Action>
                         {:else}
                             <Button.Action
@@ -257,7 +261,7 @@
                             />
                         </Table.Cell>
                         <Table.Cell class="body-cell">
-                            {index < failedAccountLength ? "Warning" : ""}
+                            {index < failedAccountLength ? local.warning[DEFAULT_LANGUAGE] : ""}
                             {account.fullname} &lt;{account.email_address}&gt;
                         </Table.Cell>
                         <Table.Cell class="action-cell">
@@ -269,14 +273,14 @@
                                     editAccount(account);
                                 }}
                             >
-                                Edit
+                                {local.edit[DEFAULT_LANGUAGE]}
                             </Button.Basic>
                             <Button.Action
                                 class="btn-inline"
                                 onclick={removeAccount}
                                 data-email-address={account.email_address}
                             >
-                                Remove
+                                {local.remove[DEFAULT_LANGUAGE]}
                             </Button.Action>
                         </Table.Cell>
                     </Table.Row>
@@ -291,12 +295,12 @@
                     disabled={!SharedStore.accounts ||
                         SharedStore.accounts.length == 0}
                 >
-                    Continue to mailbox.
+                    {local.continue_to_mailbox[DEFAULT_LANGUAGE]}
                 </Button.Action>
             {/if}
 
             <Button.Basic type="button" class="btn-inline" onclick={onCancel}>
-                I want to add another account.
+                {local.add_another_account[DEFAULT_LANGUAGE]}
             </Button.Basic>
         </div>
     {/if}

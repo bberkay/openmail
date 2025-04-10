@@ -142,5 +142,101 @@ export const local = {
     },
     loading: {
         en: "Loading"
+    },
+    openmail: {
+        en: "Openmail"
+    },
+    secure_and_fast_email_client: {
+        en: "Secure, Private and Fast Email Client"
+    },
+    connecting_to_accounts: {
+        en: "Connecting to accounts..."
+    },
+    email_address: {
+        en: "Email Address"
+    },
+    email_address_example: {
+        en: "alexdoe@mail.com"
+    },
+    full_name_optional: {
+        en: "Full Name (Optional)"
+    },
+    full_name_example: {
+        en: "Example: Alex Doe <alex.doe@openmail.com>"
+    },
+    full_name_placeholder: {
+        en: "Alex Doe"
+    },
+    connect_to_account: {
+        en: "Connect to account"
+    },
+    error_add_account: {
+        en: "Something went wrong while adding account."
+    },
+    error_edit_account: {
+        en: "Something went wrong while updating your account."
+    },
+    error_remove_account: {
+        en: "Something went wrong while removing your account."
+    },
+    error_remove_all_account: {
+        en: "Something went wrong while removing accounts."
+    },
+    error_initialize_mailboxes: {
+        en: "Something went wrong while loading mailboxes. Try restarting the app."
+    },
+    are_you_certain_remove_account: {
+        en: "Are you certain? Removing an account cannot be undone."
+    },
+    are_you_certain_remove_all_accounts: {
+        en: "Are you certain? You are about to remove all accounts, this action cannot be undone."
+    },
+    which_accounts_added: {
+        en: "Which accounts have I added?"
+    },
+    add_another_account: {
+        en: "I want to add another account."
+    },
+    continue_to_mailbox: {
+        en: "Continue to mailbox."
+    },
+    edit: {
+        en: "Edit"
+    },
+    warning: {
+        en: "Warning"
+    },
+    remove_all: {
+        en: "Remove All"
+    },
+    account_selected: {
+        en: `Account ({count} selected)`
+    },
+    accounts_failed_to_connect: {
+        en: `There were one or more accounts that failed to connect.`
+    },
+    new_email_received_title: {
+        en: "New Email Received!"
+    },
+    new_email_received_body: {
+        en: "Here, look at your new email."
+    },
+    exit: {
+        en: "Exit"
+    },
+    restart: {
+        en: "Restart"
+    },
+    yes_remove_all: {
+        en: "Yes, remove all."
+    },
+    yes_remove: {
+        en: "Yes, remove."
+    },
+    retry: {
+        en: "Retry"
+    },
+    account: {
+        en: "Account"
     }
 }
