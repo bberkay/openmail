@@ -191,6 +191,9 @@ export const local = {
     error_search_emails: {
         en: "Something went wrong while searching for emails.",
     },
+    error_sent_mailbox_after_sending_emails: {
+        en: "Email has sent but something went wrong while loading sent mailbox."
+    },
     error_get_mailbox: {
         en: "Something went wrong while loading mailbox.",
     },
@@ -218,6 +221,15 @@ export const local = {
     error_move_folder: {
         en: "Something went wrong while moving folder."
     },
+    error_save_emails_as_draft: {
+        en: "Something went wrong while saving email(s) as draft.",
+    },
+    error_send_emails: {
+        en: "Something went wrong while sending email(s)."
+    },
+    at_least_one_receiver: {
+        en: "At least one receiver must be added"
+    },
     are_you_certain_remove_account: {
         en: "Are you certain? Removing an account cannot be undone.",
     },
@@ -229,6 +241,12 @@ export const local = {
     },
     are_you_certain_quit_app: {
         en: "Are you sure you want to close the application? Any unsaved changes will be lost.",
+    },
+    are_you_certain_subject_is_empty: {
+        en: "The subject field is empty. Are you sure you want to send the email without a subject?"
+    },
+    are_you_certain_body_is_empty: {
+        en: "The message body is empty. Are you sure you want to send the email without any content?"
     },
     which_accounts_added: {
         en: "Which accounts have I added?",
@@ -436,5 +454,20 @@ export const local = {
     },
     select_folder: {
         en: "Select Folder"
+    },
+    yes_send: {
+        en: "Yes, send."
+    },
+    body: {
+        en: "Body"
+    },
+    attachment_s: {
+        en: "Attachment(s)"
+    },
+    send_email: {
+        en: "Send Email"
+    },
+    save_as_draft: {
+        en: "Save as Draft"
     }
 };

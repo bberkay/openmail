@@ -2,7 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { extractEmailAddress, isStandardFolder } from "$lib/utils";
     import { getReplyTemplate, getForwardTemplate } from "$lib/templates";
-    import { AUTO_SAVE_DRAFT_INTERVAL_MS } from "$lib/constants";
+    import { AUTO_SAVE_DRAFT_INTERVAL_MS, DEFAULT_LANGUAGE } from "$lib/constants";
     import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onDestroy, onMount } from "svelte";
@@ -27,6 +27,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import type { PostResponse } from "$lib/services/ApiService";
+    import { local } from "$lib/locales";
 
     interface Props {
         originalMessageContext?: {
@@ -219,7 +220,7 @@
         const failed = results.filter((r) => r.status === "rejected");
 
         if (failed.length > 0) {
-            showMessage({ content: "Error, email could not saved as draft." });
+            showMessage({ content:  local.error_save_emails_as_draft[DEFAULT_LANGUAGE] });
             failed.forEach((f) => console.error(f.reason));
         }
 
@@ -248,7 +249,7 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    content: "Error while sending emails.",
+                    content: local.error_send_emails[DEFAULT_LANGUAGE]
                 });
                 failed.forEach((f) => console.error(f.reason));
                 isSendingEmail = false;
@@ -271,8 +272,7 @@
 
                 if (!response.success) {
                     showMessage({
-                        content:
-                            "Failed to retrieve sent folder. Please try again",
+                        content: local.error_sent_mailbox_after_sending_emails[DEFAULT_LANGUAGE]
                     });
                     console.error(response.message);
                     return;
@@ -286,16 +286,15 @@
         if (isSendingEmail || isSavingDraft) return;
 
         if (receivers.length == 0) {
-            showMessage({ content: "At least one receiver must be added" });
-            console.error("At least one receiver must be added");
+            showMessage({ content: local.at_least_one_receiver[DEFAULT_LANGUAGE] });
+            console.error(local.at_least_one_receiver[DEFAULT_LANGUAGE]);
             return;
         }
 
         if (!subjectInput.value) {
             showConfirm({
-                content:
-                    "The subject field is empty. Are you sure you want to send the email without a subject?",
-                onConfirmText: "Yes, send.",
+                content: local.are_you_certain_subject_is_empty[DEFAULT_LANGUAGE],
+                onConfirmText: local.yes_send[DEFAULT_LANGUAGE],
                 onConfirm: confirmWrapper,
             });
             return;
@@ -303,9 +302,8 @@
 
         if (!body.getHTMLContent()) {
             showConfirm({
-                content:
-                    "The message body is empty. Are you sure you want to send the email without any content?",
-                onConfirmText: "Yes, send.",
+                content: local.are_you_certain_body_is_empty[DEFAULT_LANGUAGE],
+                onConfirmText: local.yes_send[DEFAULT_LANGUAGE],
                 onConfirm: confirmWrapper,
             });
         }
@@ -316,10 +314,10 @@
     <Form onsubmit={sendEmails} id="compose-form">
         <div>
             <FormGroup>
-                <Label for="senders">Sender(s)</Label>
+                <Label for="senders">{local.sender_s[DEFAULT_LANGUAGE]}</Label>
                 <Select.Root
                     id="senders"
-                    placeholder="Add sender"
+                    placeholder={local.account[DEFAULT_LANGUAGE]}
                     onchange={addSenderAccount}
                 >
                     {#each SharedStore.accounts as account}
@@ -348,12 +346,12 @@
                 </div>
             </FormGroup>
             <FormGroup>
-                <Label for="receivers">Receiver(s)</Label>
+                <Label for="receivers">{local.receiver_s[DEFAULT_LANGUAGE]}</Label>
                 <Input.Group>
                     <Input.Basic
                         type="email"
                         id="receivers"
-                        placeholder="Enter sender@mail.xyz then press 'Space'"
+                        placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
                         onkeyup={addReceiver}
                         onblur={addReceiver}
                     />
@@ -375,12 +373,12 @@
                 </div>
             </FormGroup>
             <FormGroup>
-                <Label for="subject">Subject</Label>
+                <Label for="subject">{local.subject[DEFAULT_LANGUAGE]}</Label>
                 <Input.Basic
                     type="text"
                     name="subject"
                     id="subject"
-                    placeholder="Subject"
+                    placeholder={local.subject_placeholder[DEFAULT_LANGUAGE]}
                     value={originalMessageContext
                         ? (originalMessageContext.composeType == "reply"
                               ? "Re: "
@@ -395,12 +393,12 @@
             </FormGroup>
             <FormGroup>
                 <Collapse title="Cc">
-                    <Label for="cc">Cc</Label>
+                    <Label for="cc">{local.cc[DEFAULT_LANGUAGE]}</Label>
                     <Input.Group>
                         <Input.Basic
                             type="email"
                             id="cc"
-                            placeholder="Enter sender@mail.xyz then press 'Space'"
+                            placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
                             onkeyup={addCc}
                             onblur={addCc}
                         />
@@ -422,12 +420,12 @@
             </FormGroup>
             <FormGroup>
                 <Collapse title="Bcc">
-                    <Label for="bcc">Bcc</Label>
+                    <Label for="bcc">{local.bcc[DEFAULT_LANGUAGE]}</Label>
                     <Input.Group>
                         <Input.Basic
                             type="email"
                             id="bcc"
-                            placeholder="Enter sender@mail.xyz then press 'Space'"
+                            placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
                             onkeyup={addBcc}
                             onblur={addBcc}
                         />
@@ -448,11 +446,11 @@
                 </div>
             </FormGroup>
             <FormGroup>
-                <Label for="body">Body</Label>
+                <Label for="body">{local.body[DEFAULT_LANGUAGE]}</Label>
                 <div id="body"></div>
             </FormGroup>
             <FormGroup>
-                <Label for="attachments">Attachment(s)</Label>
+                <Label for="attachments">{local.attachment_s[DEFAULT_LANGUAGE]}</Label>
                 <Input.File name="attachments" id="attachments" multiple />
             </FormGroup>
             <div style="margin-top:10px">
@@ -462,7 +460,7 @@
                     class="btn-cta"
                     disabled={isSendingEmail || isSavingDraft}
                 >
-                    Send Email
+                    {local.send_email[DEFAULT_LANGUAGE]}
                 </Button.Basic>
                 <Button.Action
                     type="button"
@@ -471,7 +469,7 @@
                     onclick={saveEmailsAsDrafts}
                     disabled={isSendingEmail || isSavingDraft}
                 >
-                    Save as Draft
+                    {local.save_as_draft[DEFAULT_LANGUAGE]}
                 </Button.Action>
             </div>
         </div>
