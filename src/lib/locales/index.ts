@@ -200,6 +200,9 @@ export const local = {
     error_refresh_folders: {
         en: "Something went wrong while refreshing folders.",
     },
+    error_refresh_mailbox_s: {
+        en: "Something went wrong while refreshing one or more mailboxes.",
+    },
     error_show_home: {
         en: "Something went wrong while loading inboxes.",
     },
@@ -259,6 +262,9 @@ export const local = {
     },
     are_you_certain_delete_email: {
         en: "Are you certain? Deleting an email cannot be undone"
+    },
+    are_you_certain_delete_email_s: {
+        en: "Are you certain? Deleting email(s) cannot be undone",
     },
     are_you_certain_quit_app: {
         en: "Are you sure you want to close the application? Any unsaved changes will be lost.",
@@ -541,5 +547,29 @@ export const local = {
     },
     prev: {
         en: "Prev"
+    },
+    new: {
+        en: "New"
+    },
+    today: {
+        en: "Today"
+    },
+    yesterday: {
+        en: "Yesterday"
+    },
+    this_week: {
+        en: "This Week"
+    },
+    this_month: {
+        en: "This Month"
+    },
+    older: {
+        en: "Older"
+    },
+    unsubscribe_all: {
+        en: "Unsubscribe All"
+    },
+    refresh: {
+        en: "Refresh"
     }
 };

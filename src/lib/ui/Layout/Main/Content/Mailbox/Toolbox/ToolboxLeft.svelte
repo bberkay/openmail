@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { getNotImplementedTemplate } from "$lib/templates";
+    import { getErrorCopyEmailsTemplate, getErrorMarkEmailsTemplate, getErrorMoveEmailsTemplate, getErrorUnmarkEmailsTemplate, getNotImplementedTemplate } from "$lib/templates";
     import { type Email, Mark, Folder, type Mailbox } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import * as Input from "$lib/ui/Components/Input";
@@ -14,6 +14,8 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { sortSelection } from "$lib/utils";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         emailSelection: "1:*" | string[];
@@ -158,7 +160,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: `Unexpected error while marking email as ${mark}`,
+                content: getErrorMarkEmailsTemplate(mark),
             });
             failed.forEach((f) => console.error(f.reason));
         }
@@ -189,7 +191,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: `Unexpected error while unmarking email as ${mark}`,
+                content: getErrorUnmarkEmailsTemplate(mark),
             });
             failed.forEach((f) => console.error(f.reason));
         }
@@ -255,7 +257,7 @@
         );
 
         if (!response.success) {
-            showMessage({ content: "Unexpected error while copying email." });
+            showMessage({ content: getErrorCopyEmailsTemplate(getCurrentMailbox().folder, destinationFolder) });
             console.error(response.message);
         }
     };
@@ -278,7 +280,7 @@
         );
 
         if (!response.success) {
-            showMessage({ content: "Unexpected error while moving email." });
+            showMessage({ content: getErrorMoveEmailsTemplate(getCurrentMailbox().folder, destinationFolder) });
             console.error(response.message);
             return;
         }
@@ -309,49 +311,45 @@
         const failed = results.filter((r) => r.status === "rejected");
 
         if (failed.length > 0) {
-            showMessage({
-                content: "Unexpected error while moving email.",
-            });
+            showMessage({ content: getErrorMoveEmailsTemplate(getCurrentMailbox().folder, Folder.Archive) });
             failed.forEach((f) => console.error(f.reason));
         }
     };
 
     const deleteFrom = async (): Promise<void> => {
-        const confirmWrapper = async () => {
-            const results = await Promise.allSettled(
-                groupedEmailSelection.map(async (group) => {
-                    const emailAddress = group[0];
-                    const uids = sortSelection(group[1]);
-
-                    const response = await MailboxController.deleteEmails(
-                        SharedStore.accounts.find(
-                            (acc) => acc.email_address === emailAddress,
-                        )!,
-                        uids,
-                        getCurrentMailbox().folder,
-                        currentOffset,
-                    );
-
-                    if (!response.success) {
-                        throw new Error(response.message);
-                    }
-                }),
-            );
-
-            const failed = results.filter((r) => r.status === "rejected");
-
-            if (failed.length > 0) {
-                showMessage({
-                    content: "Unexpected error while deleting email.",
-                });
-                failed.forEach((f) => console.error(f.reason));
-            }
-        }
-
         showConfirm({
-            content: "Are you certain? Deleting an email cannot be undone.",
-            onConfirmText: "Yes, delete.",
-            onConfirm: confirmWrapper
+            content: local.are_you_certain_delete_email_s[DEFAULT_LANGUAGE],
+            onConfirmText: local.yes_delete[DEFAULT_LANGUAGE],
+            onConfirm: async () => {
+                const results = await Promise.allSettled(
+                    groupedEmailSelection.map(async (group) => {
+                        const emailAddress = group[0];
+                        const uids = sortSelection(group[1]);
+
+                        const response = await MailboxController.deleteEmails(
+                            SharedStore.accounts.find(
+                                (acc) => acc.email_address === emailAddress,
+                            )!,
+                            uids,
+                            getCurrentMailbox().folder,
+                            currentOffset,
+                        );
+
+                        if (!response.success) {
+                            throw new Error(response.message);
+                        }
+                    }),
+                );
+
+                const failed = results.filter((r) => r.status === "rejected");
+
+                if (failed.length > 0) {
+                    showMessage({
+                        content: local.error_delete_email_s[DEFAULT_LANGUAGE]
+                    });
+                    failed.forEach((f) => console.error(f.reason));
+                }
+            }
         });
     };
 
@@ -418,7 +416,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: "One or more mailboxes failed to refresh.",
+                content: local.error_refresh_mailbox_s[DEFAULT_LANGUAGE]
             });
             failed.forEach((f) => console.error(f.reason));
         }
@@ -431,45 +429,61 @@
     afterClose={deselectEmail}
 >
     {#if !isSelectedEmailsIncludesGivenMark(Mark.Flagged)}
-        <Context.Item onclick={markAsImportant}>Star</Context.Item>
+        <Context.Item onclick={markAsImportant}>
+            {local.star[DEFAULT_LANGUAGE]}
+        </Context.Item>
     {/if}
     {#if !isSelectedEmailsExcludesGivenMark(Mark.Flagged)}
-        <Context.Item onclick={markAsNotImportant}>Remove Star</Context.Item>
+        <Context.Item onclick={markAsNotImportant}>
+            {local.remove_star[DEFAULT_LANGUAGE]}
+        </Context.Item>
     {/if}
     {#if !isSelectedEmailsExcludesGivenMark(Mark.Seen)}
-        <Context.Item onclick={markAsRead}>Mark as Read</Context.Item>
+        <Context.Item onclick={markAsRead}>
+            {local.mark_as_read[DEFAULT_LANGUAGE]}
+        </Context.Item>
     {/if}
     {#if !isSelectedEmailsExcludesGivenMark(Mark.Seen)}
-        <Context.Item onclick={markAsUnread}>Mark as Unread</Context.Item>
+        <Context.Item onclick={markAsUnread}>
+            {local.mark_as_unread[DEFAULT_LANGUAGE]}
+        </Context.Item>
     {/if}
     {#if emailSelection.length == 1}
         <Context.Separator />
-        <Context.Item onclick={reply}>Reply</Context.Item>
-        <Context.Item onclick={forward}>Forward</Context.Item>
+        <Context.Item onclick={reply}>
+            {local.reply[DEFAULT_LANGUAGE]}
+        </Context.Item>
+        <Context.Item onclick={forward}>
+            {local.forward[DEFAULT_LANGUAGE]}
+        </Context.Item>
         <Context.Separator />
         <Context.Item
             onclick={() => {
                 showMessage({
-                    content: getNotImplementedTemplate("Unsubscribe"),
+                    content: getNotImplementedTemplate(local.unsubscribe[DEFAULT_LANGUAGE]),
                 });
             }}
         >
-            Unsubscribe
+            {local.unsubscribe[DEFAULT_LANGUAGE]}
         </Context.Item>
     {:else if isSelectedEmailsHaveUnsubscribeOption()}
         <Context.Item
             onclick={() => {
                 showMessage({
-                    content: getNotImplementedTemplate("Unsubscribe All"),
+                    content: getNotImplementedTemplate(local.unsubscribe_all[DEFAULT_LANGUAGE]),
                 });
             }}
         >
-            Unsubscribe All
+            {local.unsubscribe_all[DEFAULT_LANGUAGE]}
         </Context.Item>
     {/if}
     <Context.Separator />
-    <Context.Item onclick={moveToArchive}>Archive</Context.Item>
-    <Context.Item onclick={deleteFrom}>Delete</Context.Item>
+    <Context.Item onclick={moveToArchive}>
+        {local.archive[DEFAULT_LANGUAGE]}
+    </Context.Item>
+    <Context.Item onclick={deleteFrom}>
+        {local.delete[DEFAULT_LANGUAGE]}
+    </Context.Item>
 </Context.Root>
 
 <div class="toolbox-left">
@@ -488,7 +502,7 @@
                     class="btn-inline"
                     onclick={markAsImportant}
                 >
-                    Star
+                    {local.star[DEFAULT_LANGUAGE]}
                 </Button.Action>
             </div>
         {/if}
@@ -499,7 +513,7 @@
                     class="btn-inline"
                     onclick={markAsNotImportant}
                 >
-                    Remove Star
+                    {local.remove_star[DEFAULT_LANGUAGE]}
                 </Button.Action>
             </div>
         {/if}
@@ -510,7 +524,7 @@
                     class="btn-inline"
                     onclick={markAsRead}
                 >
-                    Mark as Read
+                    {local.mark_as_read[DEFAULT_LANGUAGE]}
                 </Button.Action>
             </div>
         {/if}
@@ -521,7 +535,7 @@
                     class="btn-inline"
                     onclick={markAsUnread}
                 >
-                    Mark as Unread
+                    {local.mark_as_unread[DEFAULT_LANGUAGE]}
                 </Button.Action>
             </div>
         {/if}
@@ -531,7 +545,7 @@
                 class="btn-inline"
                 onclick={moveToArchive}
             >
-                Archive
+                {local.archive[DEFAULT_LANGUAGE]}
             </Button.Action>
         </div>
         <div class="tool">
@@ -540,14 +554,14 @@
                 class="btn-inline"
                 onclick={deleteFrom}
             >
-                Delete
+                {local.delete[DEFAULT_LANGUAGE]}
             </Button.Action>
         </div>
         {#if groupedEmailSelection.length == 1}
             {@const emailAddress = groupedEmailSelection[0][0]}
             <div class="tool-separator"></div>
             <div class="tool">
-                <Select.Root onchange={copyTo} placeholder="Copy To">
+                <Select.Root onchange={copyTo} placeholder={local.copy_to[DEFAULT_LANGUAGE]}>
                     {#if isMailboxOfCustomFolder}
                         <!-- Add inbox option if email is in custom folder -->
                         <Select.Option value={Folder.Inbox}>
@@ -564,7 +578,7 @@
                 </Select.Root>
             </div>
             <div class="tool">
-                <Select.Root onchange={moveTo} placeholder="Move To">
+                <Select.Root onchange={moveTo} placeholder={local.move_to[DEFAULT_LANGUAGE]}>
                     {#if isMailboxOfCustomFolder}
                         <!-- Add inbox option if email is in custom folder -->
                         <Select.Option value={Folder.Inbox}>
@@ -584,7 +598,7 @@
     {:else}
         <div class="tool">
             <Button.Action type="button" class="btn-inline" onclick={refresh}>
-                Refresh
+                {local.refresh[DEFAULT_LANGUAGE]}>
             </Button.Action>
         </div>
     {/if}

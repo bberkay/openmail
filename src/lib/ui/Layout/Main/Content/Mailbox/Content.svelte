@@ -21,17 +21,19 @@
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         emailSelection: "1:*" | string[];
     }
 
     type DateGroup =
-        | "Today"
-        | "Yesterday"
-        | "This Week"
-        | "This Month"
-        | "Older";
+        | (typeof local.today)[typeof DEFAULT_LANGUAGE]
+        | (typeof local.yesterday)[typeof DEFAULT_LANGUAGE]
+        | (typeof local.this_week)[typeof DEFAULT_LANGUAGE]
+        | (typeof local.this_month)[typeof DEFAULT_LANGUAGE]
+        | (typeof local.older)[typeof DEFAULT_LANGUAGE];
 
     let { emailSelection = $bindable([]) }: Props = $props();
 
@@ -49,11 +51,11 @@
         lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
 
         const groupedEmails: Record<DateGroup, TEmail[]> = {
-            Today: [],
-            Yesterday: [],
-            "This Week": [],
-            "This Month": [],
-            Older: [],
+            [local.today[DEFAULT_LANGUAGE]]: [],
+            [local.yesterday[DEFAULT_LANGUAGE]]: [],
+            [local.this_week[DEFAULT_LANGUAGE]]: [],
+            [local.this_month[DEFAULT_LANGUAGE]]: [],
+            [local.older[DEFAULT_LANGUAGE]]: [],
         };
 
         getCurrentMailbox().emails.current.forEach((email: TEmail) => {
@@ -61,18 +63,18 @@
             emailDate.setHours(0, 0, 0, 0);
 
             if (emailDate.getTime() === today.getTime()) {
-                groupedEmails["Today"].push(email);
+                groupedEmails[local.today[DEFAULT_LANGUAGE]].push(email);
             } else if (emailDate.getTime() === yesterday.getTime()) {
-                groupedEmails["Yesterday"].push(email);
+                groupedEmails[local.yesterday[DEFAULT_LANGUAGE]].push(email);
             } else if (emailDate >= lastWeekStart && emailDate < yesterday) {
-                groupedEmails["This Week"].push(email);
+                groupedEmails[local.this_week[DEFAULT_LANGUAGE]].push(email);
             } else if (
                 emailDate >= lastMonthStart &&
                 emailDate < lastWeekStart
             ) {
-                groupedEmails["This Month"].push(email);
+                groupedEmails[local.this_month[DEFAULT_LANGUAGE]].push(email);
             } else {
-                groupedEmails["Older"].push(email);
+                groupedEmails[local.older[DEFAULT_LANGUAGE]].push(email);
             }
         });
 
@@ -132,7 +134,7 @@
 
         if (!response.success || !response.data) {
             showMessage({
-                content: "Error, email content not fetch properly.",
+                content: local.error_get_email_content[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
             return;
@@ -202,7 +204,7 @@
                         </span>
                         {#if isRecentEmail(account, email)}
                             <div class="new-message-icon">
-                                <span>New</span>
+                                <span>{local.new[DEFAULT_LANGUAGE]}</span>
                             </div>
                         {/if}
                     </div>

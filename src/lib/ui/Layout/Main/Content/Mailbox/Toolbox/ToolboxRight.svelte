@@ -6,7 +6,8 @@
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import * as Button from "$lib/ui/Components/Button";
-    import { MAILBOX_LENGTH } from "$lib/constants";
+    import { DEFAULT_LANGUAGE, MAILBOX_LENGTH } from "$lib/constants";
+    import { local } from "$lib/locales";
 
     interface Props {
         currentOffset: number;
@@ -42,7 +43,7 @@
                 : ''}"
             onclick={getPreviousEmails}
         >
-            Prev
+            {local.prev[DEFAULT_LANGUAGE]}
         </Button.Action>
         <small>
             {getMailboxPaginationTemplate(
@@ -58,7 +59,7 @@
                 : ''}"
             onclick={getNextEmails}
         >
-            Next
+            {local.next[DEFAULT_LANGUAGE]}
         </Button.Action>
     </div>
 </div>
