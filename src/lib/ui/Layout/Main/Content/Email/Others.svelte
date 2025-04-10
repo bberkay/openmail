@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { local } from "$lib/locales";
     import * as Popover from "$lib/ui/Components/Popover";
 
     interface Props {
@@ -17,18 +19,18 @@
     </Popover.Toggle>
     <Popover.Content>
         <span>
-            <b>Receivers:</b>
+            <b>{local.receiver_s[DEFAULT_LANGUAGE]}:</b>
             <small>{receivers}</small>
         </span>
         {#if cc}
             <span>
-                <b>Cc:</b>
+                <b>{local.cc[DEFAULT_LANGUAGE]}:</b>
                 <small>{cc}</small>
             </span>
         {/if}
         {#if bcc}
             <span>
-                <b>Bcc:</b>
+                <b>{local.bcc[DEFAULT_LANGUAGE]}:</b>
                 <small>{bcc}</small>
             </span>
         {/if}

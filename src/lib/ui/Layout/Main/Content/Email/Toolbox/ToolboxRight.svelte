@@ -9,7 +9,8 @@
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
-    import { MAILBOX_LENGTH } from "$lib/constants";
+    import { DEFAULT_LANGUAGE, MAILBOX_LENGTH } from "$lib/constants";
+    import { local } from "$lib/locales";
 
     interface Props {
         account: Account;
@@ -33,7 +34,7 @@
         );
 
         if (!response.success || !response.data) {
-            showMessage({ content: "Error while getting email content." });
+            showMessage({ content: local.error_get_email_content[DEFAULT_LANGUAGE] });
             console.error(response.message);
             return;
         }
@@ -70,7 +71,7 @@
                 class="btn-inline {currentOffset == 1 ? 'disabled' : ''}"
                 onclick={getPreviousEmail}
             >
-                Prev
+                {local.prev[DEFAULT_LANGUAGE]}
             </Button.Action>
             <small>
                 {getEmailPaginationTemplate(
@@ -85,7 +86,7 @@
                     : ''}"
                 onclick={getNextEmail}
             >
-                Next
+                {local.next[DEFAULT_LANGUAGE]}
             </Button.Action>
         </div>
     {/if}

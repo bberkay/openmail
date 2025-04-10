@@ -2,7 +2,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email, Folder, Mark } from "$lib/types";
-    import { getNotImplementedTemplate } from "$lib/templates";
+    import { getErrorCopyEmailsTemplate, getErrorMarkEmailsTemplate, getErrorMoveEmailsTemplate, getErrorUnmarkEmailsTemplate, getNotImplementedTemplate } from "$lib/templates";
     import * as Button from "$lib/ui/Components/Button";
     import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
@@ -14,6 +14,8 @@
     } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         account: Account;
@@ -40,7 +42,7 @@
         );
         if (!response.success) {
             showMessage({
-                content: `Unexpected error while marking email as ${mark}`,
+                content: getErrorMarkEmailsTemplate(mark),
             });
             console.error(response.message);
         }
@@ -55,7 +57,7 @@
         );
         if (!response.success) {
             showMessage({
-                content: `Unexpected error while marking email as ${mark}`,
+                content: getErrorUnmarkEmailsTemplate(mark),
             });
             console.error(response.message);
         }
@@ -86,7 +88,7 @@
             destinationFolder,
         );
         if (!response.success) {
-            showMessage({ content: "Unexpected error while copying email." });
+            showMessage({ content: getErrorCopyEmailsTemplate(currentFolder, destinationFolder) });
             console.error(response.message);
         }
     };
@@ -101,7 +103,7 @@
         );
 
         if (!response.success) {
-            showMessage({ content: "Unexpected error while moving email." });
+            showMessage({ content: getErrorMoveEmailsTemplate(currentFolder, destinationFolder) });
             console.error(response.message);
             return;
         }
@@ -116,8 +118,8 @@
 
     const deleteFrom = async () => {
         showConfirm({
-            content: "Are you certain? Deleting an email cannot be undone.",
-            onConfirmText: "Yes, delete.",
+            content: local.are_you_certain_delete_email[DEFAULT_LANGUAGE],
+            onConfirmText: local.yes_delete[DEFAULT_LANGUAGE],
             onConfirm: async (e: Event) => {
                 const response = await MailboxController.deleteEmails(
                     account,
@@ -128,7 +130,7 @@
 
                 if (!response.success) {
                     showMessage({
-                        content: "Unexpected error while deleting email.",
+                        content: local.error_delete_email_s[DEFAULT_LANGUAGE]
                     });
                     console.error(response.message);
                 }
@@ -174,7 +176,7 @@
         style="margin-right: var(--spacing-sm)"
         onclick={() => backToDefault()}
     >
-        Back
+        {local.back[DEFAULT_LANGUAGE]}
     </Button.Basic>
     <div class="tool">
         {#if Object.hasOwn(email, "flags") && email.flags && email.flags.includes(Mark.Flagged)}
@@ -183,7 +185,7 @@
                 class="btn-inline"
                 onclick={markAsNotImportant}
             >
-                Remove Star
+                {local.remove_star[DEFAULT_LANGUAGE]}
             </Button.Action>
         {:else}
             <Button.Action
@@ -191,7 +193,7 @@
                 class="btn-inline"
                 onclick={markAsImportant}
             >
-                Star
+                {local.star[DEFAULT_LANGUAGE]}
             </Button.Action>
         {/if}
     </div>
@@ -202,7 +204,7 @@
                 class="btn-inline"
                 onclick={markAsUnread}
             >
-                Mark as Unread
+                {local.mark_as_unread[DEFAULT_LANGUAGE]}
             </Button.Action>
         {:else}
             <Button.Action
@@ -210,23 +212,23 @@
                 class="btn-inline"
                 onclick={markAsRead}
             >
-                Mark as Read
+                {local.mark_as_read[DEFAULT_LANGUAGE]}
             </Button.Action>
         {/if}
     </div>
     <div class="tool">
         <Button.Action type="button" class="btn-inline" onclick={moveToArchive}>
-            Archive
+            {local.archive[DEFAULT_LANGUAGE]}
         </Button.Action>
     </div>
     <div class="tool">
         <Button.Action type="button" class="btn-inline" onclick={deleteFrom}>
-            Delete
+            {local.delete[DEFAULT_LANGUAGE]}
         </Button.Action>
     </div>
     <div class="tool-separator"></div>
     <div class="tool">
-        <Select.Root onchange={copyTo} placeholder="Copy To">
+        <Select.Root onchange={copyTo} placeholder={local.copy_to[DEFAULT_LANGUAGE]}>
             {#if isEmailInCustomFolder}
                 <!-- Add inbox option if email is in custom folder -->
                 <Select.Option value={Folder.Inbox}>
@@ -243,7 +245,7 @@
         </Select.Root>
     </div>
     <div class="tool">
-        <Select.Root onchange={moveTo} placeholder="Move To">
+        <Select.Root onchange={moveTo} placeholder={local.move_to[DEFAULT_LANGUAGE]}>
             {#if isEmailInCustomFolder}
                 <!-- Add inbox option if email is in custom folder -->
                 <Select.Option value={Folder.Inbox}>
@@ -262,12 +264,12 @@
     <div class="tool-separator"></div>
     <div class="tool">
         <Button.Basic type="button" class="btn-inline" onclick={reply}>
-            Reply
+            {local.reply[DEFAULT_LANGUAGE]}
         </Button.Basic>
     </div>
     <div class="tool">
         <Button.Basic type="button" class="btn-inline" onclick={forward}>
-            Forward
+            {local.forward[DEFAULT_LANGUAGE]}
         </Button.Basic>
     </div>
     <div class="tool-separator"></div>
@@ -278,38 +280,38 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: getNotImplementedTemplate("Spam"),
+                            content: getNotImplementedTemplate(local.spam[DEFAULT_LANGUAGE]),
                         });
                     }}
                 >
-                    Spam
+                    {local.spam[DEFAULT_LANGUAGE]}
                 </Dropdown.Item>
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: getNotImplementedTemplate("Print"),
+                            content: getNotImplementedTemplate(local.print[DEFAULT_LANGUAGE]),
                         });
                     }}
                 >
-                    Print
+                    {local.print[DEFAULT_LANGUAGE]}
                 </Dropdown.Item>
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: getNotImplementedTemplate("Show Original"),
+                            content: getNotImplementedTemplate(local.show_original[DEFAULT_LANGUAGE]),
                         });
                     }}
                 >
-                    Show Original
+                    {local.show_original[DEFAULT_LANGUAGE]}
                 </Dropdown.Item>
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: getNotImplementedTemplate("Unsubscribe"),
+                            content: getNotImplementedTemplate(local.unsubscribe[DEFAULT_LANGUAGE]),
                         });
                     }}
                 >
-                    Unsubcribe
+                    {local.unsubscribe[DEFAULT_LANGUAGE]}
                 </Dropdown.Item>
             </Dropdown.Content>
         </Dropdown.Root>

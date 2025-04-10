@@ -221,11 +221,29 @@ export const local = {
     error_move_folder: {
         en: "Something went wrong while moving folder."
     },
-    error_save_emails_as_draft: {
+    error_save_email_s_as_draft: {
         en: "Something went wrong while saving email(s) as draft.",
     },
-    error_send_emails: {
+    error_send_email_s: {
         en: "Something went wrong while sending email(s)."
+    },
+    error_attachment_download: {
+        en: "Something went wrong while downloading attachment. Please try again."
+    },
+    error_mark_email_s: {
+        en: "Something went wrong while marking email(s) as {mark}."
+    },
+    error_unmark_email_s: {
+        en: "Something went wrong while unmarking email(s) as {mark}"
+    },
+    error_copy_email_s: {
+        en: "Something went wrong while copying email(s) from {source_folder} to {destination_folder}"
+    },
+    error_move_email_s: {
+        en: "Something went wrong while moving email(s) from {source_folder} to {destination_folder}"
+    },
+    error_delete_email_s: {
+        en: "Something went wrong while deleting email(s)"
     },
     at_least_one_receiver: {
         en: "At least one receiver must be added"
@@ -238,6 +256,9 @@ export const local = {
     },
     are_you_certain_log_out: {
         en: "Are you sure you want to log out? You will need to sign in again to access your account",
+    },
+    are_you_certain_delete_email: {
+        en: "Are you certain? Deleting an email cannot be undone"
     },
     are_you_certain_quit_app: {
         en: "Are you sure you want to close the application? Any unsaved changes will be lost.",
@@ -286,6 +307,9 @@ export const local = {
     },
     yes_remove_all: {
         en: "Yes, remove all.",
+    },
+    yes_delete: {
+        en: "Yes, delete."
     },
     yes_remove: {
         en: "Yes, remove.",
@@ -469,5 +493,53 @@ export const local = {
     },
     save_as_draft: {
         en: "Save as Draft"
+    },
+    back: {
+        en: "Back"
+    },
+    star: {
+        en: "Star"
+    },
+    remove_star: {
+        en: "Remove Star"
+    },
+    mark_as_read: {
+        en: "Mark as Read"
+    },
+    mark_as_unread: {
+        en: "Mark as Unread"
+    },
+    archive: {
+        en: "Archive"
+    },
+    reply: {
+        en: "Reply"
+    },
+    forward: {
+        en: "Forward"
+    },
+    print: {
+        en: "Print"
+    },
+    spam: {
+        en: "Spam"
+    },
+    show_original: {
+        en: "Show Original"
+    },
+    unsubscribe: {
+        en: "Unsubscribe"
+    },
+    copy_to: {
+        en: "Copy To"
+    },
+    move_to: {
+        en: "Move To"
+    },
+    next: {
+        en: "Next"
+    },
+    prev: {
+        en: "Prev"
     }
 };

@@ -15,6 +15,17 @@ export function getNotImplementedTemplate(feature: string) {
 
 /**
  * ----------------------------------------------------------------------------
+ * Constants generally used in Components/Select/Select.svelte
+ * ----------------------------------------------------------------------------
+ */
+export function getNoMatchFoundTemplate() {
+    return `
+    <div class="no-results">${local.no_match_found[DEFAULT_LANGUAGE]}</div>
+    `;
+}
+
+/**
+ * ----------------------------------------------------------------------------
  * Constants generally used in Landing/Register/AccountList.svelte
  * ----------------------------------------------------------------------------
  */
@@ -39,8 +50,28 @@ export function getSelectedAccountTemplate(count: string) {
 export function getSearchForAccountTemplate(account: string) {
     return local.search_for_account[DEFAULT_LANGUAGE].replace(
         "{account}",
-        account.toString()
+        account.toString(),
     );
+}
+
+/**
+ * ----------------------------------------------------------------------------
+ * Constants generally used in Main/Navbar/Notifications.svelte
+ * ----------------------------------------------------------------------------
+ */
+export function getNewMessageTemplate(
+    sender_fullname: string,
+    sender_email: string,
+    receiver_email: string,
+    sent_at: string,
+) {
+    return local.sender_to_receiver_of_new_message[DEFAULT_LANGUAGE].replace(
+        "{sender_fullname}",
+        sender_fullname,
+    )
+        .replace("{sender_email}", sender_email)
+        .replace("{receiver_email}", receiver_email)
+        .replace("{sent_at}", sent_at);
 }
 
 /**
@@ -51,14 +82,14 @@ export function getSearchForAccountTemplate(account: string) {
 export function getLogoutFromTemplate(account: string) {
     return local.logout_from_account[DEFAULT_LANGUAGE].replace(
         "{account}",
-        account.toString()
+        account.toString(),
     );
 }
 
 export function getNotLoggedOutFromTemplate(account: string) {
     return local.error_not_logged_out_account[DEFAULT_LANGUAGE].replace(
         "{account}",
-        account.toString()
+        account.toString(),
     );
 }
 
@@ -141,8 +172,7 @@ export function getSenderToReceiverTemplate(
     receiver_email: string,
     sent_at: string,
 ) {
-    return;
-    local.sender_to_receiver[DEFAULT_LANGUAGE].replace(
+    return local.sender_to_receiver[DEFAULT_LANGUAGE].replace(
         "{sender_fullname}",
         sender_fullname,
     )
@@ -192,9 +222,49 @@ export function getEmailPaginationTemplate(
     ).replace("{total}", String(total));
 }
 
+export function getErrorMarkEmailsTemplate(mark: string) {
+    return local.error_mark_email_s[DEFAULT_LANGUAGE].replace(
+        "{mark}",
+        mark
+    );
+}
+
+export function getErrorUnmarkEmailsTemplate(mark: string) {
+    return local.error_unmark_email_s[DEFAULT_LANGUAGE].replace(
+        "{mark}",
+        mark
+    );
+}
+
+export function getErrorCopyEmailsTemplate(
+    source_folder: string,
+    destination_folder: string
+) {
+    return local.error_copy_email_s[DEFAULT_LANGUAGE].replace(
+        "{source_folder}",
+        source_folder
+    ).replace(
+        "{destination_folder}",
+        destination_folder
+    );
+}
+
+export function getErrorMoveEmailsTemplate(
+    source_folder: string,
+    destination_folder: string
+) {
+    return local.error_move_email_s[DEFAULT_LANGUAGE].replace(
+        "{source_folder}",
+        source_folder
+    ).replace(
+        "{destination_folder}",
+        destination_folder
+    );
+}
+
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Main/Content/Inbox.svelte
+ * Constants generally used in Main/Content/Mailbox.svelte
  * ----------------------------------------------------------------------------
  */
 export function getMailboxPaginationTemplate(
@@ -228,35 +298,4 @@ export function getMailboxSelectAllTemplate(total: string | number) {
 
 export function getMailboxClearSelectionTemplate() {
     return local.clear_selection[DEFAULT_LANGUAGE];
-}
-
-/**
- * ----------------------------------------------------------------------------
- * Constants generally used in Main/Navbar/Notifications.svelte
- * ----------------------------------------------------------------------------
- */
-export function getNewMessageTemplate(
-    sender_fullname: string,
-    sender_email: string,
-    receiver_email: string,
-    sent_at: string,
-) {
-    return local.sender_to_receiver_of_new_message[DEFAULT_LANGUAGE].replace(
-        "{sender_fullname}",
-        sender_fullname,
-    )
-        .replace("{sender_email}", sender_email)
-        .replace("{receiver_email}", receiver_email)
-        .replace("{sent_at}", sent_at);
-}
-
-/**
- * ----------------------------------------------------------------------------
- * Constants generally used in Components/Select/Select.svelte
- * ----------------------------------------------------------------------------
- */
-export function getNoMatchFoundTemplate() {
-    return `
-    <div class="no-results">${local.no_match_found[DEFAULT_LANGUAGE]}</div>
-    `;
 }

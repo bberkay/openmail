@@ -18,6 +18,8 @@
     import Badge from "$lib/ui/Components/Badge";
     import Others from "./Others.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         account: Account;
@@ -95,7 +97,7 @@
 
         if (!response.success || !response.data) {
             showMessage({
-                content: "Error, attachment could not be downloaded properly.",
+                content: local.error_attachment_download[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
             return;
