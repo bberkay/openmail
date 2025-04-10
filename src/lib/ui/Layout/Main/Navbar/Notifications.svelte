@@ -18,6 +18,8 @@
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     let isNotificationsHidden = $state(true);
 
@@ -40,7 +42,7 @@
         );
         if (!response.success) {
             showMessage({
-                content: "Error, folder could not fetch.",
+                content: local.error_get_mailbox[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
             return;
@@ -57,7 +59,7 @@
         );
         if (!response.success || !response.data) {
             showMessage({
-                content: "Error, email content not fetch properly.",
+                content: local.error_get_email_content[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
             return;
@@ -159,9 +161,10 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    content: `Error, inbox of on or more accounts could not retrived.`,
+                    content: local.error_show_home[DEFAULT_LANGUAGE]
                 });
                 failed.forEach((f) => console.error(f.reason));
+                return;
             }
         }
 
@@ -214,14 +217,14 @@
     {#if isNotificationsHidden}
         <div class="notifications">
             <div class="notifications-header">
-                <div class="title">Notifications</div>
+                <div class="title">{local.notifications[DEFAULT_LANGUAGE]}</div>
                 <div class="action">
                     <Button.Basic
                         type="button"
                         class="btn-inline"
                         onclick={clearRecentEmails}
                     >
-                        Clear
+                        {local.clear[DEFAULT_LANGUAGE]}
                     </Button.Basic>
                 </div>
             </div>
@@ -290,7 +293,7 @@
                     class="btn-inline"
                     onclick={showHome}
                 >
-                    Go to Home
+                    {local.go_to_home[DEFAULT_LANGUAGE]}
                 </Button.Basic>
             </div>
         </div>

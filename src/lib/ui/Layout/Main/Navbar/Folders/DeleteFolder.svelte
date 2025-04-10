@@ -8,6 +8,8 @@
     import * as Button from "$lib/ui/Components/Button";
     import Label from "$lib/ui/Components/Label";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         folderName: string;
@@ -30,7 +32,7 @@
             delete_subfolders,
         );
         if (!response.success) {
-            showMessage({ content: "Error while deleting folder." });
+            showMessage({ content: local.error_delete_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
 
@@ -42,7 +44,7 @@
     <Form onsubmit={handleDeleteFolderForm}>
         <div>
             <FormGroup>
-                <Label for="folder-name">Folder Name</Label>
+                <Label for="folder-name">{local.folder_name[DEFAULT_LANGUAGE]}</Label>
                 <Input.Basic
                     type="text"
                     name="folder_name"
@@ -53,7 +55,7 @@
                 />
             </FormGroup>
             <FormGroup>
-                <label for="subfolders">Delete Subfolders</label>
+                <label for="subfolders">{local.delete_subfolders[DEFAULT_LANGUAGE]}</label>
                 <Input.Basic
                     type="checkbox"
                     name="delete_subfolders"
@@ -61,7 +63,7 @@
                     required
                 />
             </FormGroup>
-            <Button.Basic type="submit">Delete</Button.Basic>
+            <Button.Basic type="submit">{local.delete[DEFAULT_LANGUAGE]}</Button.Basic>
         </div>
     </Form>
 </Modal>

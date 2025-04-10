@@ -8,6 +8,8 @@
     import * as Button from "$lib/ui/Components/Button";
     import Label from "$lib/ui/Components/Label";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         folderName: string;
@@ -30,7 +32,7 @@
             newFolderName
         );
         if (!response.success) {
-            showMessage({ content: "Error while renaming folder." });
+            showMessage({ content: local.error_rename_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
 
@@ -42,7 +44,7 @@
     <Form onsubmit={handleRenameFolderForm}>
         <div>
             <FormGroup>
-                <Label for="folder-name">Folder Name</Label>
+                <Label for="folder-name">{local.folder_name[DEFAULT_LANGUAGE]}</Label>
                 <Input.Basic
                     type="text"
                     name="folder_name"
@@ -53,16 +55,16 @@
                 />
             </FormGroup>
             <FormGroup>
-                <Label for="new-folder-name">New Folder Name</Label>
+                <Label for="new-folder-name">{local.new_folder_name[DEFAULT_LANGUAGE]}</Label>
                 <Input.Basic
                     type="text"
                     name="new_folder_name"
                     id="new-folder-name"
-                    placeholder="My Custom Folder"
+                    placeholder={local.new_folder_placeholde[DEFAULT_LANGUAGE]}
                     required
                 />
             </FormGroup>
-            <Button.Basic type="submit">Rename</Button.Basic>
+            <Button.Basic type="submit">{local.rename[DEFAULT_LANGUAGE]}</Button.Basic>
         </div>
     </Form>
 </Modal>

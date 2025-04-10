@@ -9,6 +9,8 @@
     import * as Button from "$lib/ui/Components/Button";
     import Label from "$lib/ui/Components/Label";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         parentFolderName?: string;
@@ -36,7 +38,7 @@
             parentFolderName || undefined,
         );
         if (!response.success) {
-            showMessage({ content: "Error while creating folder. " });
+            showMessage({ content: local.error_create_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
 
@@ -52,21 +54,21 @@
     <Form onsubmit={handleCreateFolderForm}>
         <div>
             <FormGroup>
-                <Label for="folder-name">Folder Name</Label>
+                <Label for="folder-name">{local.folder_name[DEFAULT_LANGUAGE]}</Label>
                 <Input.Basic
                     type="text"
                     name="folder_name"
                     id="folder-name"
-                    placeholder="My New Folder"
+                    placeholder={local.new_folder_placeholde[DEFAULT_LANGUAGE]}
                     required
                 />
             </FormGroup>
             <FormGroup>
-                <Label for="parent-folder">Parent Folder</Label>
+                <Label for="parent-folder">{local.parent_folder[DEFAULT_LANGUAGE]}</Label>
                 <Select.Root
                     id="parent-folder"
                     onchange={handleParentFolder}
-                    placeholder="Select Parent Folder"
+                    placeholder={local.select_parent_folder[DEFAULT_LANGUAGE]}
                     value={parentFolderName || undefined}
                     disabled={!!parentFolderName}
                 >
@@ -77,7 +79,9 @@
                     {/each}
                 </Select.Root>
             </FormGroup>
-            <Button.Basic type="submit">Create</Button.Basic>
+            <Button.Basic type="submit">
+                {local.create[DEFAULT_LANGUAGE]}
+            </Button.Basic>
         </div>
     </Form>
 </Modal>

@@ -10,6 +10,12 @@
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { AccountController } from "$lib/controllers/AccountController";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import {
+        getLogoutFromTemplate,
+        getNotLoggedOutFromTemplate,
+    } from "$lib/templates";
 
     const AccountOperation = {
         Home: "create",
@@ -70,9 +76,10 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    content: `Error, inbox of on or more accounts could not retrived.`,
+                    content: local.error_show_home[DEFAULT_LANGUAGE],
                 });
                 failed.forEach((f) => console.error(f.reason));
+                return;
             }
         }
 
@@ -85,19 +92,18 @@
 
     const logout = () => {
         showConfirm({
-            content:
-                "Are you sure you want to log out? You will need to sign in again to access your account",
-            onConfirmText: "Yes, logout.",
+            content: local.are_you_certain_log_out[DEFAULT_LANGUAGE],
+            onConfirmText: local.yes_logout[DEFAULT_LANGUAGE],
             onConfirm: async () => {
                 const response = await AccountController.remove(
                     (SharedStore.currentAccount as Account).email_address,
                 );
                 if (!response.success) {
                     showMessage({
-                        content: `Error, could not logged out from ${
+                        content: getNotLoggedOutFromTemplate(
                             (SharedStore.currentAccount as Account)
-                                .email_address
-                        } Please try again.`,
+                                .email_address,
+                        ),
                     });
                     console.error(response.message);
                     return;
@@ -108,9 +114,8 @@
 
     const quit = () => {
         showConfirm({
-            content:
-                "Are you sure you want to close the application? Any unsaved changes will be lost.",
-            onConfirmText: "Yes, close the app.",
+            content: local.are_you_certain_quit_app[DEFAULT_LANGUAGE],
+            onConfirmText: local.yes_close_the_app[DEFAULT_LANGUAGE],
             onConfirm: async () => {
                 await exit(0);
             },
@@ -141,12 +146,14 @@
 <Select.Root
     onchange={handleOperation}
     value={SharedStore.currentAccount === "home"
-        ? "Home"
+        ? local.home[DEFAULT_LANGUAGE]
         : SharedStore.currentAccount.email_address}
-    placeholder="Account"
+    placeholder={local.account[DEFAULT_LANGUAGE]}
     enableSearch={true}
 >
-    <Select.Option value={AccountOperation.Home}>Home</Select.Option>
+    <Select.Option value={AccountOperation.Home}>
+        {local.home[DEFAULT_LANGUAGE]}
+    </Select.Option>
     <Select.Separator />
     {#each SharedStore.accounts as account}
         <Select.Option value={account.email_address}>
@@ -155,15 +162,20 @@
     {/each}
     <Select.Separator />
     <Select.Option value={AccountOperation.Minimize}>
-        Minimize to tray
+        {local.minimize_to_tray[DEFAULT_LANGUAGE]}
     </Select.Option>
-    <Select.Option value={AccountOperation.Settings}>Settings</Select.Option>
+    <Select.Option value={AccountOperation.Settings}>
+        {local.settings[DEFAULT_LANGUAGE]}
+    </Select.Option>
     {#if SharedStore.currentAccount !== "home"}
         <Select.Option value={AccountOperation.Logout}>
-            Logout from
-            {SharedStore.currentAccount.fullname ||
-                SharedStore.currentAccount.email_address}
+            {getLogoutFromTemplate(
+                SharedStore.currentAccount.fullname ||
+                    SharedStore.currentAccount.email_address,
+            )}
         </Select.Option>
     {/if}
-    <Select.Option value={AccountOperation.Quit}>Quit</Select.Option>
+    <Select.Option value={AccountOperation.Quit}>
+        {local.quit[DEFAULT_LANGUAGE]}
+    </Select.Option>
 </Select.Root>

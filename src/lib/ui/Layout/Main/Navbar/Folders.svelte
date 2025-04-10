@@ -14,6 +14,8 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     const FolderOperation = {
         Create: "create",
@@ -45,7 +47,7 @@
             );
             if (!response.success) {
                 showMessage({
-                    content: "Error, folder could not fetch.",
+                    content: local.error_get_mailbox[DEFAULT_LANGUAGE],
                 });
                 console.error(response.message);
                 return;
@@ -64,7 +66,9 @@
             SharedStore.currentAccount as Account,
         );
         if (!response.success) {
-            showMessage({ content: "Error while refreshing folders" });
+            showMessage({
+                content: local.error_refresh_folders[DEFAULT_LANGUAGE],
+            });
             console.error(response.message);
         }
     };
@@ -98,9 +102,11 @@
     {/each}
     <Select.Separator />
     <Select.Option value={FolderOperation.Refresh}>
-        Refresh folders
+        {local.refresh_folders[DEFAULT_LANGUAGE]}
     </Select.Option>
-    <Select.Option value={FolderOperation.Create}>Create Folder</Select.Option>
+    <Select.Option value={FolderOperation.Create}>
+        {local.create_folder[DEFAULT_LANGUAGE]}
+    </Select.Option>
     <Select.Separator />
     {#each customFolders as customFolder}
         <Select.Option value={customFolder}>
@@ -114,7 +120,7 @@
                                 parentFolderName: customFolder,
                             })}
                     >
-                        Create Subfolder
+                        {local.create_subfolder[DEFAULT_LANGUAGE]}
                     </Dropdown.Item>
                     <Dropdown.Item
                         onclick={() =>
@@ -122,7 +128,7 @@
                                 folderName: customFolder,
                             })}
                     >
-                        Rename Folder
+                        {local.rename_folder[DEFAULT_LANGUAGE]}
                     </Dropdown.Item>
                     <Dropdown.Item
                         onclick={() =>
@@ -130,7 +136,7 @@
                                 folderName: customFolder,
                             })}
                     >
-                        Move Folder
+                        {local.move_folder[DEFAULT_LANGUAGE]}
                     </Dropdown.Item>
                     <Dropdown.Item
                         onclick={() =>
@@ -138,7 +144,7 @@
                                 folderName: customFolder,
                             })}
                     >
-                        Delete Folder
+                        {local.delete_folder[DEFAULT_LANGUAGE]}
                     </Dropdown.Item>
                 </Dropdown.Content>
             </Dropdown.Root>

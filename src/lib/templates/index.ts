@@ -33,6 +33,37 @@ export function getSelectedAccountTemplate(count: string) {
 
 /**
  * ----------------------------------------------------------------------------
+ * Constants generally used in Main/Navbar/Search.svelte
+ * ----------------------------------------------------------------------------
+ */
+export function getSearchForAccountTemplate(account: string) {
+    return local.search_for_account[DEFAULT_LANGUAGE].replace(
+        "{account}",
+        account.toString()
+    );
+}
+
+/**
+ * ----------------------------------------------------------------------------
+ * Constants generally used in Main/Navbar/Account.svelte
+ * ----------------------------------------------------------------------------
+ */
+export function getLogoutFromTemplate(account: string) {
+    return local.logout_from_account[DEFAULT_LANGUAGE].replace(
+        "{account}",
+        account.toString()
+    );
+}
+
+export function getNotLoggedOutFromTemplate(account: string) {
+    return local.error_not_logged_out_account[DEFAULT_LANGUAGE].replace(
+        "{account}",
+        account.toString()
+    );
+}
+
+/**
+ * ----------------------------------------------------------------------------
  * Constants generally used in Main/Content.svelte
  * ----------------------------------------------------------------------------
  */

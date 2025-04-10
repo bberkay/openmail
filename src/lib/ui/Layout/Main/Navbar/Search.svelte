@@ -28,7 +28,9 @@
     import Badge from "$lib/ui/Components/Badge";
     import { FormGroup } from "$lib/ui/Components/Form";
     import { show as showMessage } from "$lib/ui/Components/Message";
-    import { REALTIME_SEARCH_DELAY_MS } from "$lib/constants";
+    import { DEFAULT_LANGUAGE, REALTIME_SEARCH_DELAY_MS } from "$lib/constants";
+    import { local } from "$lib/locales";
+    import { getSearchForAccountTemplate } from "$lib/templates";
 
     let isSimpleSearchHidden = $state(true);
     let isExtraOptionsHidden = $state(true);
@@ -105,7 +107,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: "Error while searching for emails.",
+                content: local.error_search_emails[DEFAULT_LANGUAGE],
             });
             failed.forEach((f) => console.error(f.reason));
         }
@@ -274,7 +276,14 @@
         <Input.Basic
             type="text"
             id="simple-search"
-            placeholder="Search for {searchingAccount}..."
+            placeholder={getSearchForAccountTemplate(
+                searchingAccount !== "home"
+                    ? createSenderAddress(
+                        searchingAccount.email_address,
+                        searchingAccount.fullname
+                    )
+                    : searchingAccount,
+            )}
             onkeyup={debouncedSearch}
             onblur={debouncedSearch}
         />
@@ -290,7 +299,7 @@
         bind:this={extraOptionsWrapper}
     >
         <FormGroup>
-            <Label for="searching-account">Searching Account</Label>
+            <Label for="searching-account">{local.searching_account[DEFAULT_LANGUAGE]}</Label>
             <Select.Root
                 id="searching-account"
                 value={SharedStore.currentAccount === "home"
@@ -298,7 +307,7 @@
                     : SharedStore.currentAccount.email_address}
                 onchange={selectSearchingAccount}
             >
-                <Select.Option value="home">Home</Select.Option>
+                <Select.Option value="home">{local.home[DEFAULT_LANGUAGE]}</Select.Option>
                 <Select.Separator />
                 {#each SharedStore.accounts as account}
                     <Select.Option value={account.email_address}>
@@ -312,7 +321,7 @@
         </FormGroup>
         {#if SharedStore.currentAccount !== "home"}
             <FormGroup>
-                <Label for="searching-folder">Folder</Label>
+                <Label for="searching-folder">{local.folder[DEFAULT_LANGUAGE]}</Label>
                 <Select.Root
                     id="searching-folder"
                     value={Folder.All}
@@ -335,12 +344,12 @@
             </FormGroup>
         {/if}
         <FormGroup>
-            <Label for="searching-senders">Sender(s)</Label>
+            <Label for="searching-senders">{local.sender_s[DEFAULT_LANGUAGE]}</Label>
             <Input.Group>
                 <Input.Basic
                     type="email"
                     id="searching-senders"
-                    placeholder="Enter sender@mail.xyz then press 'Space'"
+                    placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
                     onkeyup={addSender}
                     onblur={addSender}
                 />
@@ -365,12 +374,12 @@
             </div>
         </FormGroup>
         <FormGroup>
-            <Label for="searching-receivers">Receiver(s)</Label>
+            <Label for="searching-receivers">{local.receiver_s[DEFAULT_LANGUAGE]})</Label>
             <Input.Group>
                 <Input.Basic
                     type="email"
                     id="searching-receivers"
-                    placeholder="Enter sender@mail.xyz then press 'Space'"
+                    placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
                     onkeyup={addReceiver}
                     onblur={addReceiver}
                 />
@@ -395,12 +404,12 @@
             </div>
         </FormGroup>
         <FormGroup>
-            <Label for="searching-cc">Cc</Label>
+            <Label for="searching-cc">{local.cc[DEFAULT_LANGUAGE]}</Label>
             <Input.Group>
                 <Input.Basic
                     type="email"
                     id="searching-cc"
-                    placeholder="Enter sender@mail.xyz then press 'Space'"
+                    placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
                     onkeyup={addCc}
                     onblur={addCc}
                 />
@@ -424,18 +433,18 @@
             </div>
         </FormGroup>
         <FormGroup>
-            <Label for="searching-subject">Subject</Label>
+            <Label for="searching-subject">{local.subject[DEFAULT_LANGUAGE]}</Label>
             <Input.Basic
                 type="text"
                 id="searching-subject"
-                placeholder="For example: Project Proposal, Meeting Notes"
+                placeholder={local.subject_placeholder[DEFAULT_LANGUAGE]}
                 onkeydown={setSubject}
             />
         </FormGroup>
         <FormGroup>
-            <Label>Date Range</Label>
+            <Label>{local.date_range[DEFAULT_LANGUAGE]}</Label>
             <FormGroup direction="horizontal">
-                <Label for="since">Since</Label>
+                <Label for="since">{local.since[DEFAULT_LANGUAGE]}</Label>
                 <Input.Date
                     id="since"
                     value={selectedSince}
@@ -443,7 +452,7 @@
                 />
             </FormGroup>
             <FormGroup direction="horizontal">
-                <Label for="before">Before</Label>
+                <Label for="before">{local.before[DEFAULT_LANGUAGE]}</Label>
                 <Input.Date
                     id="before"
                     value={selectedBefore}
@@ -452,28 +461,28 @@
             </FormGroup>
         </FormGroup>
         <FormGroup>
-            <Label for="searching-include">Includes</Label>
+            <Label for="searching-include">{local.includes[DEFAULT_LANGUAGE]}</Label>
             <Input.Basic
                 type="text"
                 id="searching-include"
-                placeholder="Words to include in search..."
+                placeholder={local.includes_placeholder[DEFAULT_LANGUAGE]}
                 onkeydown={setInclude}
             />
         </FormGroup>
         <FormGroup>
-            <Label for="searching-exclude">Excludes</Label>
+            <Label for="searching-exclude">{local.excludes[DEFAULT_LANGUAGE]}</Label>
             <Input.Basic
                 type="text"
                 id="searching-exclude"
-                placeholder="Words to exclude from search..."
+                placeholder={local.excludes_placeholder[DEFAULT_LANGUAGE]}
                 onkeydown={setExclude}
             />
         </FormGroup>
         <FormGroup>
-            <Label>Flags</Label>
+            <Label>{local.flags[DEFAULT_LANGUAGE]}</Label>
             <FormGroup direction="horizontal">
                 <div>
-                    <Label for="included-flags">Included Flags</Label>
+                    <Label for="included-flags">{local.included_flags[DEFAULT_LANGUAGE]}</Label>
                     <FormGroup direction="horizontal">
                         <Select.Root
                             id="included-flags"
@@ -502,7 +511,7 @@
                     </div>
                 </div>
                 <div>
-                    <Label for="excluded-flags">Excluded Flags</Label>
+                    <Label for="excluded-flags">{local.excluded_flags[DEFAULT_LANGUAGE]}</Label>
                     <FormGroup direction="horizontal">
                         <Select.Root
                             id="excluded-flags"
@@ -533,13 +542,13 @@
             </FormGroup>
         </FormGroup>
         <FormGroup>
-            <Label>Size</Label>
+            <Label>{local.size[DEFAULT_LANGUAGE]}</Label>
             <FormGroup direction="horizontal">
-                <Label for="larger-than">Larger Than</Label>
+                <Label for="larger-than">{local.larger_than[DEFAULT_LANGUAGE]}</Label>
                 <Input.Basic
                     type="number"
                     id="larger-than"
-                    placeholder="1"
+                    placeholder={local.larger_than_placeholder[DEFAULT_LANGUAGE]}
                     onkeydown={setEnteredSize}
                 />
                 <Select.Root
@@ -555,11 +564,11 @@
                 </Select.Root>
             </FormGroup>
             <FormGroup direction="horizontal">
-                <Label for="smaller-than">Smaller Than</Label>
+                <Label for="smaller-than">{local.smaller_than[DEFAULT_LANGUAGE]}</Label>
                 <Input.Basic
                     type="number"
                     id="smaller-than"
-                    placeholder="1"
+                    placeholder={local.smaller_than_placeholder[DEFAULT_LANGUAGE]}
                     onkeydown={setEnteredSize}
                 />
                 <Select.Root
@@ -581,16 +590,16 @@
                 id="has-attachments"
                 onchange={setHasAttachments}
             />
-            <Label for="has-attachments">Has attachments</Label>
+            <Label for="has-attachments">{local.has_attachments[DEFAULT_LANGUAGE]}</Label>
         </FormGroup>
         <div>
             <Button.Basic type="button" class="btn-outline" onclick={clear}>
                 <Icon name="clear" />
-                Clear
+                {local.clear[DEFAULT_LANGUAGE]}
             </Button.Basic>
             <Button.Action type="button" onclick={search}>
                 <Icon name="search" />
-                Search
+                {local.search[DEFAULT_LANGUAGE]}
             </Button.Action>
         </div>
     </div>

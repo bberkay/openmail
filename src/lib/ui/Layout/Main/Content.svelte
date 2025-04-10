@@ -36,7 +36,7 @@
             SharedStore.failedFolders.length > 0
         ) {
             showAlert("mailboxes-alert-container", {
-                content: `There were some mailboxes and/or folders that failed to retrive.`,
+                content: local.error_failed_mailboxes_or_folders[DEFAULT_LANGUAGE],
                 type: "error",
                 details: getFailedMailboxOrFoldersTemplate(
                     SharedStore.failedMailboxes

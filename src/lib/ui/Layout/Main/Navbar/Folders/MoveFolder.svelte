@@ -10,6 +10,8 @@
     import * as Button from "$lib/ui/Components/Button";
     import Label from "$lib/ui/Components/Label";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
         folderName: string;
@@ -38,7 +40,7 @@
             destinationFolder,
         );
         if (!response.success) {
-            showMessage({ content: "Error while moving folder." });
+            showMessage({ content: local.error_move_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
 
@@ -54,7 +56,7 @@
     <Form onsubmit={handleMoveFolderForm}>
         <div>
             <FormGroup>
-                <Label for="folder-name">Select Folder</Label>
+                <Label for="folder-name">{local.select_folder[DEFAULT_LANGUAGE]}</Label>
                 <Input.Basic
                     type="text"
                     name="folder_name"
@@ -65,11 +67,11 @@
                 />
             </FormGroup>
             <FormGroup>
-                <Label for="destination-folder">Destination Folder</Label>
+                <Label for="destination-folder">{local.destination_folder[DEFAULT_LANGUAGE]}</Label>
                 <Select.Root
                     id="destination-folder"
                     onchange={handleDestinationFolder}
-                    placeholder="Select Destination Folder"
+                    placeholder={local.folder_name[DEFAULT_LANGUAGE]}
                 >
                     {#if !isTopLevel(folderName)}
                         <Select.Option value="">/</Select.Option>
@@ -83,7 +85,7 @@
                     {/each}
                 </Select.Root>
             </FormGroup>
-            <Button.Basic type="submit">Move</Button.Basic>
+            <Button.Basic type="submit">{local.move[DEFAULT_LANGUAGE]}</Button.Basic>
         </div>
     </Form>
 </Modal>
