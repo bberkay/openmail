@@ -49,56 +49,41 @@ secure_storage = SecureStorage()
 uvicorn_logger = UvicornLogger()
 
 openmail_clients: dict[str, OpenMail] = {}
-openmail_clients_for_new_messages: dict[str, OpenMail] = {}
 failed_openmail_clients: list[str] = []
+openmail_clients_for_new_messages: dict[str, OpenMail] = {}
 monitor_logged_out_clients_task = None
 
-def shutdown_openmail_clients(exit: bool = False):
-    try:
-        uvicorn_logger.info("Shutting down openmail clients...")
-        for email, openmail_client in openmail_clients.items():
-            openmail_client.disconnect()
-    except Exception as e:
-        uvicorn_logger.error(f"Openmail clients could not properly terminated: {e}")
-
-def shutdown_monitors():
-    global monitor_logged_out_clients_task
-    if monitor_logged_out_clients_task:
-        monitor_logged_out_clients_task.cancel()
-
-def shutdown_completely() -> None:
-    uvicorn_logger.info("Shutdown signal received. Starting to logging out and terminating threads...")
-    try:
-        shutdown_openmail_clients()
-        shutdown_monitors()
-    except Exception as e:
-        uvicorn_logger.error("Shutdown could not properly executed.")
-
-def connect_to_account(account: AccountWithPassword):
+def connect_to_account(
+    account: AccountWithPassword,
+    for_new_messages: bool = False
+):
     print(f"Connecting to {account.email_address}...")
+    target_openmail_clients = openmail_clients_for_new_messages if for_new_messages else openmail_clients
+    target_failed_openmail_clients = None if for_new_messages else failed_openmail_clients
     try:
-        openmail_clients[account.email_address] = OpenMail()
-        status, _ = openmail_clients[account.email_address].connect(
+        target_openmail_clients[account.email_address] = OpenMail()
+        status, _ = target_openmail_clients[account.email_address].connect(
             account.email_address,
             RSACipher.decrypt_password(
                 account.encrypted_password,
                 cast(SecureStorageKeyValue, secure_storage.get_key_value(SecureStorageKey.PrivatePem))["value"]
             ),
             imap_enable_idle_optimization=True,
-            imap_listen_new_messages=False
+            imap_listen_new_messages=for_new_messages
         )
         if status:
             print(f"Successfully connected to {account.email_address}")
-            #openmail_clients[account.email_address].imap.idle()
-            try: failed_openmail_clients.remove(account.email_address)
+            #target_openmail_clients[account.email_address].imap.idle()
+            try:
+                if target_failed_openmail_clients: target_failed_openmail_clients.remove(account.email_address)
             except ValueError: pass
         else:
             print(f"Could not successfully connected to {account.email_address}.")
-            del openmail_clients[account.email_address]
-            failed_openmail_clients.append(account.email_address)
+            del target_openmail_clients[account.email_address]
+            if target_failed_openmail_clients: target_failed_openmail_clients.append(account.email_address)
     except Exception as e:
-        del openmail_clients[account.email_address]
-        failed_openmail_clients.append(account.email_address)
+        del target_openmail_clients[account.email_address]
+        if target_failed_openmail_clients: target_failed_openmail_clients.append(account.email_address)
         uvicorn_logger.error(f"Failed while connecting to {account.email_address}: {e}")
 
 def create_openmail_clients():
@@ -114,7 +99,9 @@ def create_openmail_clients():
         uvicorn_logger.error(f"Error while creating openmail clients: {e}")
         raise e
 
-    """# Check logged out clients and reconnect them.
+    """
+    # TODO: Open this later
+    # Check logged out clients and reconnect them.
     try:
         global monitor_logged_out_clients_task
         monitor_logged_out_clients_task = asyncio.create_task(monitor_logged_out_openmail_clients())
@@ -122,41 +109,71 @@ def create_openmail_clients():
         uvicorn_logger.error(f"Error while creating monitors to logged out openmail clients: {e}")
         pass"""
 
-def reconnect_to_account(email_address: str):
+def reconnect_to_account(
+    email_address: str,
+    for_new_messages: bool = False
+):
     print(f"Reconnecton for {email_address}...")
+    target_openmail_clients = openmail_clients_for_new_messages if for_new_messages else openmail_clients
+    target_failed_openmail_clients = None if for_new_messages else failed_openmail_clients
     try:
-        created_openmail_clients = openmail_clients.keys()
+        created_openmail_clients = target_openmail_clients.keys()
         if email_address not in created_openmail_clients:
             return
 
-        if not openmail_clients[email_address].imap.is_logged_out():
+        if not target_openmail_clients[email_address].imap.is_logged_out():
             print(f"No need to reconnect for {email_address}")
             return
 
-        account: list[AccountWithPassword] = account_manager.get(email_address)
+        account = account_manager.get(email_address)
         if account:
-            connect_to_account(account)
+            connect_to_account(account, for_new_messages)
         else:
             print(f"{email_address} could not found while trying to reconnect.")
     except Exception as e:
-        del openmail_clients[email_address]
-        failed_openmail_clients.append(email_address)
+        del target_openmail_clients[email_address]
+        if target_failed_openmail_clients: target_failed_openmail_clients.append(email_address)
         uvicorn_logger.error(f"Failed while reconnecting to {email_address}: {e}")
 
-def reconnect_logged_out_openmail_clients(email_addresses: set[str]):
-    print("Reconnecting to OpenMail clients: ", email_addresses)
+def reconnect_logged_out_openmail_clients():
+    print("Reconnecting to OpenMail clients...",)
     with ThreadPoolExecutor(max_workers=MAX_TASK_WORKER) as executor:
-        executor.map(reconnect_to_account, email_addresses)
+        for email_address, client in openmail_clients.items():
+            executor.submit(reconnect_to_account, email_address, False)
+        for email_address, client in openmail_clients_for_new_messages.items():
+            executor.submit(reconnect_to_account, email_address, True)
 
 async def monitor_logged_out_openmail_clients():
     try:
         while True:
             await asyncio.sleep(IMAP_LOGGED_OUT_INTERVAL)
             print("Checking logged out OpenMail clients...")
-            reconnect_logged_out_openmail_clients(set(openmail_clients.keys()))
+            reconnect_logged_out_openmail_clients()
     except asyncio.CancelledError:
         uvicorn_logger.info("Monitoring logged out clients task is being cancelled...")
         raise
+
+def shutdown_openmail_clients():
+    try:
+        uvicorn_logger.info("Shutting down openmail clients...")
+        with ThreadPoolExecutor(max_workers=MAX_TASK_WORKER) as executor:
+            for clients in [openmail_clients, openmail_clients_for_new_messages]:
+                executor.map(lambda client: client[1].disconnect(), clients.items())
+    except Exception as e:
+        uvicorn_logger.error(f"Openmail clients could not properly terminated: {e}")
+
+def shutdown_monitors():
+    global monitor_logged_out_clients_task
+    if monitor_logged_out_clients_task:
+        monitor_logged_out_clients_task.cancel()
+
+def shutdown_completely() -> None:
+    uvicorn_logger.info("Shutdown signal received. Starting to logging out and terminating threads...")
+    try:
+        shutdown_openmail_clients()
+        shutdown_monitors()
+    except Exception as e:
+        uvicorn_logger.error("Shutdown could not properly executed.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -428,14 +445,19 @@ execute_openmail_task_concurrently(
 )
 """
 
-def check_openmail_connection_availability(account: str) -> Response | bool:
-    if not openmail_clients[account].imap.is_logged_out():
+def check_openmail_connection_availability(
+    account: str,
+    for_new_messages: bool = False
+) -> Response | bool:
+    target_openmail_clients = openmail_clients_for_new_messages if for_new_messages else openmail_clients
+
+    if not target_openmail_clients[account].imap.is_logged_out():
         print(f"No need to reconnect for {account}")
         return True
 
-    reconnect_logged_out_openmail_clients(set(account))
+    reconnect_to_account(account, for_new_messages)
 
-    if not openmail_clients[account].imap.is_logged_out():
+    if not target_openmail_clients[account].imap.is_logged_out():
         print(f"No need to reconnect for {account}")
         return True
 
@@ -451,16 +473,21 @@ async def notifications_socket(websocket: WebSocket, account: str):
     try:
         while True:
             account = extract_email_address(account)
-            response = check_openmail_connection_availability(account)
-            if isinstance(response, Response):
-                await websocket.close(reason=response.message)
-                uvicorn_logger.websocket(websocket, response.message)
-                break
-
-            """
-            TODO: Independent openmail clients just for recent messages.
-            openmail_clients_for_new_messages[account] = OpenMail()
-            """
+            if account in openmail_clients_for_new_messages:
+                response = check_openmail_connection_availability(account, True)
+                if isinstance(response, Response):
+                    await websocket.close(reason=response.message)
+                    uvicorn_logger.websocket(websocket, response.message)
+                    break
+            else:
+                account = account_manager.get(account)
+                if account:
+                    connect_to_account(account, True)
+                else:
+                    reason = f"There is no account with {account} email address."
+                    await websocket.close(reason=reason)
+                    uvicorn_logger.websocket(websocket, reason)
+                    break
 
             # Listen for new messages and send notification when
             # any new message received.
@@ -468,9 +495,9 @@ async def notifications_socket(websocket: WebSocket, account: str):
                 try:
                     await asyncio.sleep(NEW_EMAIL_CHECK_INTERVAL)
                     print(f"Checking for new emails for {account}")
-                    if openmail_clients[account].imap.any_new_email():
+                    if openmail_clients_for_new_messages[account].imap.any_new_email():
                         print(f"Account {account} has new emails")
-                        recent_emails = openmail_clients[account].imap.get_recent_emails()
+                        recent_emails = openmail_clients_for_new_messages[account].imap.get_recent_emails()
                         await websocket.send_json({account: recent_emails})
                         uvicorn_logger.websocket(websocket, recent_emails)
                 except Exception as e:
