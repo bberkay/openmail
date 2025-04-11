@@ -223,43 +223,31 @@ export function getEmailPaginationTemplate(
 }
 
 export function getErrorMarkEmailsTemplate(mark: string) {
-    return local.error_mark_email_s[DEFAULT_LANGUAGE].replace(
-        "{mark}",
-        mark
-    );
+    return local.error_mark_email_s[DEFAULT_LANGUAGE].replace("{mark}", mark);
 }
 
 export function getErrorUnmarkEmailsTemplate(mark: string) {
-    return local.error_unmark_email_s[DEFAULT_LANGUAGE].replace(
-        "{mark}",
-        mark
-    );
+    return local.error_unmark_email_s[DEFAULT_LANGUAGE].replace("{mark}", mark);
 }
 
 export function getErrorCopyEmailsTemplate(
     source_folder: string,
-    destination_folder: string
+    destination_folder: string,
 ) {
     return local.error_copy_email_s[DEFAULT_LANGUAGE].replace(
         "{source_folder}",
-        source_folder
-    ).replace(
-        "{destination_folder}",
-        destination_folder
-    );
+        source_folder,
+    ).replace("{destination_folder}", destination_folder);
 }
 
 export function getErrorMoveEmailsTemplate(
     source_folder: string,
-    destination_folder: string
+    destination_folder: string,
 ) {
     return local.error_move_email_s[DEFAULT_LANGUAGE].replace(
         "{source_folder}",
-        source_folder
-    ).replace(
-        "{destination_folder}",
-        destination_folder
-    );
+        source_folder,
+    ).replace("{destination_folder}", destination_folder);
 }
 
 /**
@@ -298,4 +286,11 @@ export function getMailboxSelectAllTemplate(total: string | number) {
 
 export function getMailboxClearSelectionTemplate() {
     return local.clear_selection[DEFAULT_LANGUAGE];
+}
+
+export function getEmptyTrashTemplate(total: string | number) {
+    return local.trash_contains[DEFAULT_LANGUAGE].replace(
+        "{total}",
+        String(total),
+    );
 }

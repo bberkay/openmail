@@ -251,6 +251,9 @@ export const local = {
     error_unsubscribe_s: {
         en: "Something went wrong while unsubscribing from newsletter(s)."
     },
+    error_empty_trash: {
+        en: "Something went wrong while emptying the trash."
+    },
     at_least_one_receiver: {
         en: "At least one receiver must be added"
     },
@@ -574,5 +577,11 @@ export const local = {
     },
     refresh: {
         en: "Refresh"
+    },
+    empty_trash: {
+        en: "Empty Trash"
+    },
+    trash_contains: {
+        en: "The trash contains {total} email(s) in total."
     }
 };

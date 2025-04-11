@@ -8,8 +8,9 @@
         type Mailbox,
         Folder,
     } from "$lib/types";
-    import { extractEmailAddress, extractFullname } from "$lib/utils";
+    import { extractEmailAddress, extractFullname, isStandardFolder } from "$lib/utils";
     import {
+    getEmptyTrashTemplate,
         getMailboxClearSelectionTemplate,
         getMailboxSelectAllTemplate,
         getMailboxSelectionInfoTemplate,
@@ -122,6 +123,26 @@
         selectShownCheckbox.checked = false;
     };
 
+    const emptyTrash = async () => {
+        // If current account is home then current
+        // folder must be Inbox.
+        if (SharedStore.currentAccount === "home")
+            return;
+
+        const response = await MailboxController.deleteEmails(
+            SharedStore.currentAccount,
+            "1:*",
+            Folder.Trash
+        );
+
+        if (!response.success) {
+            showMessage({
+                content: local.error_empty_trash[DEFAULT_LANGUAGE],
+            });
+            console.error(response.message);
+        }
+    }
+
     const showEmailContent = async (
         account: Account,
         selectedEmail: TEmail,
@@ -148,7 +169,20 @@
 </script>
 
 <div class="mailbox">
-    {#if emailSelection}
+    {#if isStandardFolder(getCurrentMailbox().folder, Folder.Trash) && getCurrentMailbox().total > 0}
+        <div class="selection-info">
+            <span>
+                {getEmptyTrashTemplate(getCurrentMailbox().total)}
+            </span>
+            <Button.Action
+                type="button"
+                class="btn-inline"
+                onclick={emptyTrash}
+            >
+                {local.empty_trash[DEFAULT_LANGUAGE]}
+            </Button.Action>
+        </div>
+    {:else if emailSelection}
         <div class="selection-info">
             <span>
                 {getMailboxSelectionInfoTemplate(
