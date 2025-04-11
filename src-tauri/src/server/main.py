@@ -37,7 +37,7 @@ from utils import is_email_valid, err_msg, parse_err_msg, get_key_by_value
 #################### SET UP #######################
 T = TypeVar("T")
 MAX_TASK_WORKER = 5
-OpenMailTaskResults = dict[str, Any]
+OpenMailTaskResults = dict[str, T]
 
 # Timeouts (in seconds)
 IMAP_OPERATION_TIMEOUT = 60
@@ -487,7 +487,7 @@ async def get_mailbox(
     search: Optional[str] = None,
     offset_start: Optional[int] = None,
     offset_end: Optional[int] = None,
-) -> Response[Mailbox]:
+) -> Response[OpenMailTaskResults[Mailbox]]:
     try:
         account = extract_email_address(account)
         response = check_openmail_connection_availability(account)
@@ -511,7 +511,7 @@ async def paginate_mailbox(
     account: str,
     offset_start: int | None = None,
     offset_end: int | None = None
-) -> Response[OpenMailTaskResults]:
+) -> Response[OpenMailTaskResults[Mailbox]]:
     try:
         account = extract_email_address(account)
         response = check_openmail_connection_availability(account)
@@ -529,7 +529,7 @@ async def paginate_mailbox(
 @app.get("/get-folders/{account}")
 async def get_folders(
     account: str,
-) -> Response[OpenMailTaskResults]:
+) -> Response[OpenMailTaskResults[list[str]]]:
     try:
         account = extract_email_address(account)
         response = check_openmail_connection_availability(account)
