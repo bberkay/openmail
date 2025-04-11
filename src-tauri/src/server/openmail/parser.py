@@ -56,6 +56,7 @@ class MessageHeaders(TypedDict):
     in_reply_to: NotRequired[str]
     references: NotRequired[str]
     list_unsubscribe: NotRequired[str]
+    list_unsubscribe_post: NotRequired[str]
 
 MESSAGE_HEADER_PATTERN_MAP = {
     "subject": re.compile(rb'Subject:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
@@ -67,7 +68,8 @@ MESSAGE_HEADER_PATTERN_MAP = {
     "message_id": re.compile(rb'Message-ID:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
     "in_reply_to": re.compile(rb'In-Reply-To:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
     "references": re.compile(rb'References:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
-    "list_unsubscribe": re.compile(rb'List-Unsubscribe:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
+    "list_unsubscribe": re.compile(rb'List-Unsubscribe:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE),
+    "list_unsubscribe_post": re.compile(rb'List-Unsubscribe-Post:\s+(.*?)(?:\r\n[A-Za-z\-]+:|\r\n\r\n)', re.DOTALL | re.IGNORECASE)
 }
 
 """

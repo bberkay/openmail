@@ -26,6 +26,7 @@ export interface Email {
     in_reply_to?: string;
     references?: string;
     list_unsubscribe?: string;
+    list_unsubscribe_post?: string;
 }
 
 export interface SearchCriteria {

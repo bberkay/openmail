@@ -13,7 +13,7 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
-    import { sortSelection } from "$lib/utils";
+    import { isUidInSelection, sortSelection } from "$lib/utils";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
@@ -353,6 +353,84 @@
         });
     };
 
+    const unsubscribe = async () => {
+        if (emailSelection.length > 1)
+            return;
+
+        // Same as `copyTo()` function.
+        const emailAddressOfSelection = groupedEmailSelection[0][0];
+        const unsubscribingEmailUid = groupedEmailSelection[0][1];
+
+        const email = SharedStore.mailboxes[emailAddressOfSelection].emails.current.find(
+            em => em.uid == unsubscribingEmailUid
+        )!;
+        if (!Object.hasOwn(email, "list_unsubscribe") || !email.list_unsubscribe)
+            return;
+
+        const response = await MailboxController.unsubscribe(
+            SharedStore.accounts.find(
+                account => account.email_address === emailAddressOfSelection
+            )!,
+            email.list_unsubscribe!,
+            email.list_unsubscribe_post,
+        );
+
+        if (!response.success) {
+            showMessage({
+                content: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
+            });
+            console.error(response.message);
+        }
+    }
+
+    const unsubscribe_all = async () => {
+        const results = await Promise.allSettled(
+            groupedEmailSelection.map(async (group) => {
+                const emailAddress = group[0];
+                const uids = group[1];
+
+                const account = SharedStore.accounts.find(
+                    (acc) => acc.email_address === emailAddress,
+                )!
+                const emails = SharedStore.mailboxes[emailAddress].emails.current.filter(
+                    email => isUidInSelection(uids, email.uid) && email.list_unsubscribe
+                );
+
+                // Is at least 1 email has list_unsubscribe?
+                if (emails[0].list_unsubscribe) {
+                    const unsubscribeResultOfAccount = await Promise.allSettled(
+                        emails.map(async (email) => {
+                            const response = await MailboxController.unsubscribe(
+                                account,
+                                email.list_unsubscribe!,
+                                email.list_unsubscribe_post,
+                            );
+
+                            if (!response.success) {
+                                throw new Error(response.message);
+                            }
+                        })
+                    );
+
+                    const failed = unsubscribeResultOfAccount.filter((r) => r.status === "rejected");
+                    if (failed.length > 0) {
+                        failed.forEach((f) => console.error(f.reason));
+                        throw new Error();
+                    }
+                }
+            }),
+        );
+
+        const failed = results.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+            showMessage({
+                content: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
+            });
+            failed.forEach((f) => console.error(f.reason));
+        }
+    }
+
     const reply = async () => {
         // Same as `copyTo()` function.
         const emailAddressOfSelection = groupedEmailSelection[0][0];
@@ -457,23 +535,11 @@
             {local.forward[DEFAULT_LANGUAGE]}
         </Context.Item>
         <Context.Separator />
-        <Context.Item
-            onclick={() => {
-                showMessage({
-                    content: getNotImplementedTemplate(local.unsubscribe[DEFAULT_LANGUAGE]),
-                });
-            }}
-        >
+        <Context.Item onclick={unsubscribe}>
             {local.unsubscribe[DEFAULT_LANGUAGE]}
         </Context.Item>
     {:else if isSelectedEmailsHaveUnsubscribeOption()}
-        <Context.Item
-            onclick={() => {
-                showMessage({
-                    content: getNotImplementedTemplate(local.unsubscribe_all[DEFAULT_LANGUAGE]),
-                });
-            }}
-        >
+        <Context.Item onclick={unsubscribe_all}>
             {local.unsubscribe_all[DEFAULT_LANGUAGE]}
         </Context.Item>
     {/if}

@@ -248,6 +248,9 @@ export const local = {
     error_delete_email_s: {
         en: "Something went wrong while deleting email(s)"
     },
+    error_unsubscribe_s: {
+        en: "Something went wrong while unsubscribing from newsletter(s)."
+    },
     at_least_one_receiver: {
         en: "At least one receiver must be added"
     },

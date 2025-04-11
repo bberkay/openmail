@@ -18,6 +18,10 @@ License: MIT
 import base64
 import smtplib
 import copy
+import re
+import urllib.request
+import urllib.parse
+import urllib.error
 from typing import Generator, Sequence, cast, override
 from types import MappingProxyType
 from email.message import EmailMessage, Message
@@ -32,7 +36,7 @@ from .parser import HTMLParser, MessageParser
 from .encoder import FileBase64Encoder
 from .converter import AttachmentConverter
 from .utils import extract_domain, choose_positive, extract_email_address, extract_email_addresses, extract_fullname, extract_username, tuple_to_sender_string
-from .types import Draft, Attachment
+from .types import Draft, Attachment, Email
 
 """
 Exceptions
@@ -57,6 +61,8 @@ SMTP_SERVERS = MappingProxyType({
     'yandex': 'smtp.yandex.com',
 })
 SMTP_PORT = 587
+MAILTO_PATTERN = re.compile(r'<mailto:([^>]+)>', re.IGNORECASE | re.DOTALL)
+URL_PATTERN = re.compile(r'<(https?://[^>]+)>', re.IGNORECASE | re.DOTALL)
 
 """
 Custom consts
@@ -342,7 +348,7 @@ class SMTPManager(smtplib.SMTP):
                 to_addrs,
                 mail_options,
                 rcpt_options
-            ) or (True, "Email sent successfully")
+            ) or (True, "Email sent successfully") # type: ignore
         except Exception as e:
             raise SMTPManagerException(f"Error, email prepared but could not be sent: {str(e)}") from e
 
@@ -488,6 +494,87 @@ class SMTPManager(smtplib.SMTP):
 
         return status, message
 
+    def unsubscribe(self, receiver: str, list_unsubscribe: str, list_unsubscribe_post: str | None = None) -> SMTPCommandResult:
+        """
+        Unsubscribe from an email newsletter using the List-Unsubscribe header. First
+
+        This function processes an unsubscribe request using either an HTTP/HTTPS URL
+        or a mailto link found in the List-Unsubscribe header. If List-Unsubscribe-Post
+        is provided, it will use the POST method according to RFC 8058 for one-click unsubscribe.
+
+        Args:
+            receiver (str): The email address of the recipient who wants to unsubscribe.
+            list_unsubscribe (str): The List-Unsubscribe header value from the email
+                (e.g. "<https://example.com/unsub>", "<mailto:unsub@example.com>").
+            list_unsubscribe_post (str | None, optional): The List-Unsubscribe-Post header value
+                if present (e.g. "List-Unsubscribe=One-Click"). Defaults to None.
+
+        Returns:
+            SMTPCommandResult: A tuple containing:
+                - A bool indicating whether the unsubscribe operation was successful.
+                - A string containing a success message or an error message.
+
+        Examples:
+            >>> unsubscribe("user@example.com", "<https://newsletter.example.com/unsubscribe?token=abc123>")
+            (True, "Successfully unsubscribed from https://newsletter.example.com/unsubscribe?token=abc123")
+
+            >>> unsubscribe("user@example.com", "<mailto:unsub@example.com>")
+            (True, "Successfully unsubscribed from unsub@example.com")
+
+            >>> unsubscribe("user@example.com",
+            ...             "<https://newsletter.example.com/unsubscribe?token=abc123>",
+            ...             "List-Unsubscribe=One-Click")
+            (True, "Successfully unsubscribed from https://newsletter.example.com/unsubscribe?token=abc123")
+
+        References:
+            - https://datatracker.ietf.org/doc/html/rfc8058#autoid-12
+        """
+        if not list_unsubscribe:
+            return True, "Email does not have unsubscribe link"
+
+        url_match = URL_PATTERN.search(list_unsubscribe)
+        if url_match:
+            try:
+                unsubscribe_url = url_match.group(1)
+                req_or_url = unsubscribe_url
+                if list_unsubscribe_post:
+                    # Check out RFC 8050 for more info about List-Unsubscribe-Post
+                    # https://datatracker.ietf.org/doc/html/rfc8058#autoid-12
+                    req_or_url = urllib.request.Request(
+                        unsubscribe_url,
+                        method="POST",
+                        data="List-Unsubscribe=One-Click".encode(),
+                        headers={
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "List-Unsubscribe": "One-Click",
+                            "User-Agent": "OpenMail/1.0" # TODO: change this later
+                        }
+                    )
+                with urllib.request.urlopen(req_or_url) as response:
+                    if 200 <= response.status < 300:
+                        return True, f"Successfully unsubscribed from {unsubscribe_url}"
+                    else:
+                        return False, f"Error, could not unsubscribed from {unsubscribe_url}: {response.status}"
+            except urllib.error.HTTPError as e:
+                return False, f'HTTP error occurred: {e.code} {e.reason}',
+
+        # If url couldn't found, check mailto.
+        mailto_match = MAILTO_PATTERN.search(list_unsubscribe)
+        if not mailto_match:
+            return False, "Error, Unsubscribe link could not parsed properly."
+
+        unsubscribe_mail = mailto_match.group(1)
+        unsubscribe_result = self.send_email(Draft(
+            sender=receiver,
+            receivers=unsubscribe_mail,
+            subject="Unsubscribe request",
+            body="Unsubscribe"
+        ))
+
+        if unsubscribe_result[0]:
+            return True, f"Successfully unsubscribed from {unsubscribe_mail}"
+        else:
+            return False, unsubscribe_result[1]
 
 __all__ = [
     "SMTPManager",

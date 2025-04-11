@@ -37,6 +37,7 @@ export enum PostRoutes {
     RENAME_FOLDER = "/rename-folder",
     MOVE_FOLDER = "/move-folder",
     DELETE_FOLDER = "/delete-folder",
+    UNSUBSCRIBE_EMAIL = "/unsubscribe-email"
 }
 
 interface QueryParams {
@@ -167,6 +168,11 @@ interface PostBody {
         account: string;
         folder_name: string;
         delete_subfolders: boolean;
+    };
+    [PostRoutes.UNSUBSCRIBE_EMAIL]: {
+        account: string;
+        list_unsubscribe: string;
+        list_unsubscribe_post?: string;
     };
 }
 

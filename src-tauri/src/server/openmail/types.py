@@ -64,6 +64,7 @@ class Email():
     in_reply_to: Optional[str] = ""
     references: Optional[str] = ""
     list_unsubscribe: Optional[str] = ""
+    list_unsubscribe_post: Optional[str] = ""
 
     def __getitem__(self, item):
         """Allows dictionary-like access to dataclass attributes."""

@@ -812,4 +812,35 @@ export class MailboxController {
 
         return response;
     }
+
+    public static async unsubscribe(
+        account: Account,
+        list_unsubscribe: string,
+        list_unsubscribe_post?: string,
+    ): Promise<PostResponse> {
+        const response = await ApiService.post(
+            SharedStore.server,
+            PostRoutes.UNSUBSCRIBE_EMAIL,
+            {
+                account: account.email_address,
+                list_unsubscribe,
+                list_unsubscribe_post
+            }
+        );
+
+        if (response.success) {
+            const currentMailbox = SharedStore.mailboxes[account.email_address].emails.current;
+            // Even when the user refreshes/reloads the mailbox or restarts the app, the list_unsubscribe
+            // properties will come back, but by removing the list_unsubscribe properties
+            // we are providing a temporary feedback of the unsubscription operation's success.
+            currentMailbox.forEach((email) => {
+                if (email.list_unsubscribe && email.list_unsubscribe.startsWith(list_unsubscribe)) {
+                    email.list_unsubscribe = undefined;
+                    email.list_unsubscribe_post = undefined;
+                }
+            });
+        }
+
+        return response;
+    }
 }

@@ -140,6 +140,24 @@
         });
     };
 
+    const unsubscribe = async () => {
+        if (!Object.hasOwn(email, "list_unsubscribe") || !email.list_unsubscribe)
+            return;
+
+        const response = await MailboxController.unsubscribe(
+            account,
+            email.list_unsubscribe!,
+            email.list_unsubscribe_post,
+        );
+
+        if (!response.success) {
+            showMessage({
+                content: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
+            });
+            console.error(response.message);
+        }
+    }
+
     const reply = async () => {
         showContent(Compose, {
             originalMessageContext: {
@@ -304,13 +322,7 @@
                 >
                     {local.show_original[DEFAULT_LANGUAGE]}
                 </Dropdown.Item>
-                <Dropdown.Item
-                    onclick={() => {
-                        showMessage({
-                            content: getNotImplementedTemplate(local.unsubscribe[DEFAULT_LANGUAGE]),
-                        });
-                    }}
-                >
+                <Dropdown.Item onclick={unsubscribe}>
                     {local.unsubscribe[DEFAULT_LANGUAGE]}
                 </Dropdown.Item>
             </Dropdown.Content>

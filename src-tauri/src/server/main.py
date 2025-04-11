@@ -941,6 +941,28 @@ async def delete_folder(request_body: DeleteFolderRequest) -> Response:
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while deleting folder.", str(e)))
 
+class UnsubscribeEmailRequest(BaseModel):
+    account: str
+    list_unsubscribe: str
+    list_unsubscribe_post: str | None = None
+
+@app.post("/unsubscribe-email")
+async def unsubscribe_email(request_body: UnsubscribeEmailRequest) -> Response:
+    try:
+        account = extract_email_address(request_body.account)
+        response = check_openmail_connection_availability(account)
+        if isinstance(response, Response):
+            return response
+
+        status, msg = openmail_clients[account].smtp.unsubscribe(
+            request_body.account,
+            request_body.list_unsubscribe,
+            request_body.list_unsubscribe_post
+        )
+        return Response(success=status, message=msg)
+    except Exception as e:
+        return Response(success=False, message=err_msg("There was an error while unsubscribing.", str(e)))
+
 #######################################################
 
 def main():
