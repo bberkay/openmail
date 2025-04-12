@@ -184,6 +184,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         self.login(email_address, password)
 
+    @property
+    def hierarchy_delimiter(self) -> str:
+        """Returns the server's folder hierarchy delimiter character (e.g. '/', '.')."""
+        return self._hierarchy_delimiter
+
     def _find_imap_server(self, email_address: str) -> str:
         """
         Determines the IMAP server address for a given email address.
@@ -268,9 +273,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         try:
             if result[0] == "OK" or result[0] == "BYE":
-                return True, success_message or result[1][0].decode("utf-8")
+                return True, success_message or (result[1][0] or b"").decode("utf-8")
             else:
-                return False, failure_message + ": " + result[1][0].decode("utf-8")
+                return False, failure_message + ": " + (result[1][0] or b"").decode("utf-8")
         except Exception as e:
             raise IMAPManagerException(f"There was an error while parsing command `{result}` result: {str(e)}") from None
 

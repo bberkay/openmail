@@ -507,6 +507,24 @@ async def notifications_socket(websocket: WebSocket, account: str):
     except WebSocketDisconnect:
         pass
 
+@app.get("/get-hierarchy-delimiter/{account}")
+async def get_hierarchy_delimiter(
+    account: str
+) -> Response[OpenMailTaskResults[str]]:
+    try:
+        account = extract_email_address(account)
+        response = check_openmail_connection_availability(account)
+        if isinstance(response, Response):
+            return response
+
+        return Response(
+            success=True,
+            message="IMAP hierarchy delimiter found successfully.",
+            data={account: openmail_clients[account].imap.hierarchy_delimiter}
+        )
+    except Exception as e:
+        return Response(success=False, message=err_msg("There was an error while getting IMAP hierarchy delimiter", str(e)))
+
 @app.get("/get-mailbox/{account}")
 async def get_mailbox(
     account: str,
