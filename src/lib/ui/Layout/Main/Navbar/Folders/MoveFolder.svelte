@@ -73,7 +73,7 @@
                     onchange={handleDestinationFolder}
                     placeholder={local.folder_name[DEFAULT_LANGUAGE]}
                 >
-                    {#if !isTopLevel(folderName)}
+                    {#if !isTopLevel(folderName, SharedStore.hierarchyDelimiters[(SharedStore.currentAccount as Account).email_address])}
                         <Select.Option value="">/</Select.Option>
                     {/if}
                     {#each customFolders as customFolder}
