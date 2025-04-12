@@ -42,7 +42,7 @@ export class MailboxController {
         };
 
         const folderResults = await Promise.allSettled(
-            (failedOnly ? SharedStore.failedFolders : SharedStore.accounts).map(
+            (failedOnly ? SharedStore.accountsWithFailedFolders : SharedStore.accounts).map(
                 async (account) => {
                     return {
                         account: account,
@@ -57,7 +57,7 @@ export class MailboxController {
                 response.success = result.value.response.success;
                 response.message = result.value.response.message;
                 if (!response.success) {
-                    SharedStore.failedFolders.push(result.value.account);
+                    SharedStore.accountsWithFailedFolders.push(result.value.account);
                 }
             } else {
                 response.success = false;
@@ -65,23 +65,22 @@ export class MailboxController {
             }
         });
 
-        if (!response.success) return response;
-
-        // This shouldn't be unsuccessful, after folders are fetched successfully.
-        await Promise.allSettled(
-            (failedOnly ? SharedStore.failedFolders : SharedStore.accounts).map(
-                async (account) => {
-                    return {
-                        account: account,
-                        response: await MailboxController.getFolders(account),
-                    };
-                },
-            ),
-        );
+        if (SharedStore.accounts.length > SharedStore.accountsWithFailedFolders.length) {
+            await Promise.allSettled(
+                (failedOnly ? SharedStore.accountsWithFailedFolders : SharedStore.accounts).map(
+                    async (account) => {
+                        return {
+                            account: account,
+                            response: await MailboxController.getFolders(account),
+                        };
+                    },
+                ),
+            );
+        }
 
         const mailboxResults = await Promise.allSettled(
             (failedOnly
-                ? SharedStore.failedMailboxes
+                ? SharedStore.accountsWithFailedMailboxes
                 : SharedStore.accounts
             ).map(async (account) => {
                 return {
@@ -100,7 +99,7 @@ export class MailboxController {
                 response.success = result.value.response.success;
                 response.message = result.value.response.message;
                 if (!response.success) {
-                    SharedStore.failedMailboxes.push(result.value.account);
+                    SharedStore.accountsWithFailedMailboxes.push(result.value.account);
                 }
             } else {
                 response.success = false;
@@ -800,6 +799,7 @@ export class MailboxController {
         );
 
         if (response.success) {
+            // TODO: Should we should fetch folders again?
             const currentMailbox = SharedStore.mailboxes[account.email_address];
             const hierarchyDelimiter = SharedStore.hierarchyDelimiters[account.email_address];
             const oldFolderName = extractFolderName(folderName, hierarchyDelimiter);

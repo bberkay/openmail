@@ -4,41 +4,21 @@ import { SharedStore } from "$lib/stores/shared.svelte";
 import { error } from "@sveltejs/kit";
 import type { PageLoad } from './$types';
 import { ApiService, GetRoutes } from "$lib/services/ApiService";
-import { AccountController } from "$lib/controllers/AccountController";
 import { SERVER_CONNECTION_TRY_SLEEP_MS } from "$lib/constants";
 
 /**
- * Load the accounts from the server
- * and set them in the shared store
- */
-async function loadAccounts() {
-    if(!SharedStore.server)
-        return;
-
-    const response = await AccountController.init();
-    if (!response.success) {
-        error(500, response.message);
-    }
-}
-
-/**
  * Get the server url from the tauri app and
- * check if the server is running. If it is,
- * then set the server url in the shared store and
- * load the accounts. If not, then wait
- * `SERVER_CONNECTION_TIMEOUT` seconds and try
- * again max `SERVER_CONNECTION_TRY_COUNT` times.
+ * check if the server is running.
  */
 async function connectToLocalServer(): Promise<void> {
     if (SharedStore.server) {
         return;
     }
 
-    const checkUrlAndLoadAccounts = async (url: string) => {
+    const verifyAndSetServer = async (url: string) => {
         const response = await ApiService.get<GetRoutes.HELLO>(url, GetRoutes.HELLO);
         if (response.success) {
             SharedStore.server = url;
-            await loadAccounts();
         } else {
             error(500, response.message);
         }
@@ -46,7 +26,7 @@ async function connectToLocalServer(): Promise<void> {
     }
 
     await invoke<string>(TauriCommand.GET_SERVER_URL).then(async (url) => {
-        await checkUrlAndLoadAccounts(url);
+        await verifyAndSetServer(url);
     }).catch(() => {
         setTimeout(async () => {
             await connectToLocalServer();

@@ -29,7 +29,7 @@ export function getNoMatchFoundTemplate() {
  * Constants generally used in Landing/Register/AccountList.svelte
  * ----------------------------------------------------------------------------
  */
-export function getFailedAccountTemplate(failed_account_list_items: string) {
+export function getFailedAccountsTemplate(failed_account_list_items: string) {
     return `
     <p>${local.failed_accounts_are[DEFAULT_LANGUAGE]}</p>
     <ul>
@@ -114,6 +114,10 @@ export function getFailedMailboxOrFoldersTemplate(
      `
         .replace("{failed_mailbox_list_items}", failed_mailbox_list_items)
         .replace("{failed_folder_list_items}", failed_folder_list_items);
+}
+
+export function getFailedItemTemplate(email_address: string) {
+    return `<li>{email_address}</li>`.replace("{email_address}", email_address)
 }
 
 /**

@@ -182,6 +182,9 @@ export const local = {
     error_remove_all_account: {
         en: "Something went wrong while removing accounts.",
     },
+    error_initialize_accounts: {
+        en: "Something went wrong while loading accounts. Please check your account list.",
+    },
     error_initialize_mailboxes: {
         en: "Something went wrong while loading mailboxes. Please try restarting the app.",
     },
@@ -314,8 +317,8 @@ export const local = {
     exit: {
         en: "Exit",
     },
-    restart: {
-        en: "Restart",
+    restart_app: {
+        en: "Restart the App",
     },
     yes_remove_all: {
         en: "Yes, remove all.",
@@ -583,5 +586,11 @@ export const local = {
     },
     trash_contains: {
         en: "The trash contains {total} email(s) in total."
+    },
+    dismiss: {
+        en: "Dismiss"
+    },
+    manage_accounts: {
+        en: "Manage Accounts"
     }
 };

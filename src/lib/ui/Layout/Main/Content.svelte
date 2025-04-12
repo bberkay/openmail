@@ -18,7 +18,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { show as showAlert } from "$lib/ui/Components/Alert";
-    import { getFailedMailboxOrFoldersTemplate } from "$lib/templates";
+    import { getFailedAccountsTemplate, getFailedItemTemplate, getFailedMailboxOrFoldersTemplate } from "$lib/templates";
     import { createSenderAddress } from "$lib/utils";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { local } from "$lib/locales";
@@ -31,22 +31,47 @@
     let { children }: Props = $props();
 
     $effect(() => {
+        if (SharedStore.failedAccounts.length > 0) {
+            showAlert("accounts-alert-container", {
+                content: local.accounts_failed_to_connect[DEFAULT_LANGUAGE],
+                type: "error",
+                details: getFailedAccountsTemplate(
+                    SharedStore.failedAccounts
+                        .map((account) => {
+                            return getFailedItemTemplate(
+                                createSenderAddress(account.email_address, account.fullname)
+                            )
+                        })
+                        .join(""),
+                ),
+                onManage: () => {
+                    // TODO: showContent account list on settings.
+                },
+                onManageText: local.manage_accounts[DEFAULT_LANGUAGE],
+                closeable: true
+            });
+        }
+
         if (
-            SharedStore.failedMailboxes.length > 0 ||
-            SharedStore.failedFolders.length > 0
+            SharedStore.accountsWithFailedMailboxes.length > 0 ||
+            SharedStore.accountsWithFailedFolders.length > 0
         ) {
-            showAlert("mailboxes-alert-container", {
+            showAlert("mailboxes-or-folders-alert-container", {
                 content: local.error_failed_mailboxes_or_folders[DEFAULT_LANGUAGE],
                 type: "error",
                 details: getFailedMailboxOrFoldersTemplate(
-                    SharedStore.failedMailboxes
+                    SharedStore.accountsWithFailedMailboxes
                         .map((account) => {
-                            return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;
+                            return getFailedItemTemplate(
+                                createSenderAddress(account.email_address, account.fullname)
+                            )
                         })
                         .join(""),
-                    SharedStore.failedFolders
+                    SharedStore.accountsWithFailedFolders
                         .map((account) => {
-                            return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;
+                            return getFailedItemTemplate(
+                                createSenderAddress(account.email_address, account.fullname)
+                            )
                         })
                         .join(""),
                 ),
@@ -54,14 +79,15 @@
                     await MailboxController.init(true);
                 },
                 onManageText: local.retry[DEFAULT_LANGUAGE],
+                closeable: true
             });
         }
     });
 </script>
 
 <div class="content" bind:this={sectionContainer}>
-    <div class="alert-container" id="mailboxes-alert-container"></div>
-    <div class="alert-container" id="folders-alert-container"></div>
+    <div class="alert-container" id="accounts-alert-container"></div>
+    <div class="alert-container" id="mailboxes-or-folders-alert-container"></div>
     {#if !isMounted}
         {@render children()}
     {/if}

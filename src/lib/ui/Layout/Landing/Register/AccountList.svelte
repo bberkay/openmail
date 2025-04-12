@@ -8,7 +8,11 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { getFailedAccountTemplate, getSelectedAccountTemplate } from "$lib/templates";
+    import {
+        getFailedAccountsTemplate,
+        getFailedItemTemplate,
+        getSelectedAccountTemplate,
+    } from "$lib/templates";
     import { Folder, type Account } from "$lib/types";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
@@ -40,7 +44,7 @@
 
     const removeAccount = async (e: Event): Promise<void> => {
         showConfirm({
-            content: local.are_you_certain_remove_account[DEFAULT_LANGUAGE],
+            title: local.are_you_certain_remove_account[DEFAULT_LANGUAGE],
             onConfirmText: local.yes_remove[DEFAULT_LANGUAGE],
             onConfirm: async (e: Event) => {
                 const target = e.target as HTMLButtonElement;
@@ -49,7 +53,7 @@
 
                 if (!response.success) {
                     showMessage({
-                        content: local.error_remove_account[DEFAULT_LANGUAGE],
+                        title: local.error_remove_account[DEFAULT_LANGUAGE],
                     });
                     console.error(response.message);
                 }
@@ -59,14 +63,14 @@
 
     const removeAllAccounts = async (): Promise<void> => {
         showConfirm({
-            content: local.are_you_certain_remove_all_accounts[DEFAULT_LANGUAGE],
+            title: local.are_you_certain_remove_all_accounts[DEFAULT_LANGUAGE],
             onConfirmText: local.remove_all[DEFAULT_LANGUAGE],
             onConfirm: async (e: Event) => {
                 const response = await AccountController.removeAll();
 
                 if (!response.success) {
                     showMessage({
-                        content: local.error_remove_all_account[DEFAULT_LANGUAGE],
+                        title: local.error_remove_all_account[DEFAULT_LANGUAGE],
                     });
                     console.error(response.message);
                 }
@@ -78,18 +82,9 @@
         const response = await MailboxController.init();
         if (!response.success) {
             console.error(response.message);
-            showConfirm({
-                content: local.error_initialize_mailboxes[DEFAULT_LANGUAGE],
-                onConfirmText: local.restart[DEFAULT_LANGUAGE],
-                onConfirm: async () => {
-                    await relaunch();
-                },
-                onCancelText: local.exit[DEFAULT_LANGUAGE],
-                onCancel: async () => {
-                    await exit(1);
-                },
+            showMessage({
+                title: local.error_initialize_mailboxes[DEFAULT_LANGUAGE]
             });
-            return;
         }
         // TODO: Open this later.
         //await listenForNotifications();
@@ -194,16 +189,18 @@
             showAlert("accounts-alert-container", {
                 content: local.accounts_failed_to_connect[DEFAULT_LANGUAGE],
                 type: "error",
-                details: getFailedAccountTemplate(
+                details: getFailedAccountsTemplate(
                     SharedStore.failedAccounts
                         .map((account) => {
-                            return `<li>${createSenderAddress(account.email_address, account.fullname)}</li>`;
+                            return getFailedItemTemplate(
+                                createSenderAddress(account.email_address, account.fullname)
+                            )
                         })
                         .join(""),
                 ),
-                onManage: () => {
-                    editAccount(SharedStore.failedAccounts[0]);
-                },
+                onManageText: local.manage_accounts[DEFAULT_LANGUAGE],
+                onManage: () => { editAccount(SharedStore.failedAccounts[0]) },
+                closeable: false
             });
         }
     });
@@ -223,11 +220,11 @@
                         />
                     </Table.Head>
                     <Table.Head class="body-cell">
-                        {
-                            accountSelection.length > 0
-                                ? getSelectedAccountTemplate(accountSelection.length.toString())
-                                : local.account[DEFAULT_LANGUAGE]
-                        }
+                        {accountSelection.length > 0
+                            ? getSelectedAccountTemplate(
+                                  accountSelection.length.toString(),
+                              )
+                            : local.account[DEFAULT_LANGUAGE]}
                     </Table.Head>
                     <Table.Head>
                         {#if accountSelection.length > 0}
@@ -261,7 +258,9 @@
                             />
                         </Table.Cell>
                         <Table.Cell class="body-cell">
-                            {index < failedAccountLength ? local.warning[DEFAULT_LANGUAGE] : ""}
+                            {index < failedAccountLength
+                                ? local.warning[DEFAULT_LANGUAGE]
+                                : ""}
                             {account.fullname} &lt;{account.email_address}&gt;
                         </Table.Cell>
                         <Table.Cell class="action-cell">
@@ -289,15 +288,13 @@
         </Table.Root>
 
         <div class="landing-body-footer">
-            {#if failedAccountLength === 0}
-                <Button.Action
-                    onclick={initMailboxes}
-                    disabled={!SharedStore.accounts ||
-                        SharedStore.accounts.length == 0}
-                >
-                    {local.continue_to_mailbox[DEFAULT_LANGUAGE]}
-                </Button.Action>
-            {/if}
+            <Button.Action
+                onclick={initMailboxes}
+                disabled={!SharedStore.accounts ||
+                    SharedStore.accounts.length == 0}
+            >
+                {local.continue_to_mailbox[DEFAULT_LANGUAGE]}
+            </Button.Action>
 
             <Button.Basic type="button" class="btn-inline" onclick={onCancel}>
                 {local.add_another_account[DEFAULT_LANGUAGE]}

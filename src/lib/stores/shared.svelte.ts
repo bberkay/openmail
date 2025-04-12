@@ -14,8 +14,8 @@ export enum SharedStoreKeys {
     recentEmails = "recentEmails",
     mailboxes = "mailboxes",
     failedAccounts = "failedAccounts",
-    failedMailboxes = "failedMailboxes",
-    failedFolders = "failedFolders"
+    accountsWithFailedFolders = "accountsWithFailedFolders",
+    accountsWithFailedMailboxes = "accountsWithFailedMailboxes",
 }
 
 interface ISharedStore {
@@ -30,8 +30,8 @@ interface ISharedStore {
     [SharedStoreKeys.recentEmails]: OpenMailTaskResults<Email[]>;
     [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
     [SharedStoreKeys.failedAccounts]: Account[];
-    [SharedStoreKeys.failedFolders]: Account[]; // Accounts of failed folders
-    [SharedStoreKeys.failedMailboxes]: Account[]; // Accounts of failed mailboxes
+    [SharedStoreKeys.accountsWithFailedFolders]: Account[];
+    [SharedStoreKeys.accountsWithFailedMailboxes]: Account[];
 }
 
 export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = $state({
@@ -43,6 +43,6 @@ export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = $state({
     [SharedStoreKeys.recentEmails]: {},
     [SharedStoreKeys.mailboxes]: {},
     [SharedStoreKeys.failedAccounts]: [],
-    [SharedStoreKeys.failedFolders]: [],
-    [SharedStoreKeys.failedMailboxes]: [],
+    [SharedStoreKeys.accountsWithFailedFolders]: [],
+    [SharedStoreKeys.accountsWithFailedMailboxes]: [],
 });
