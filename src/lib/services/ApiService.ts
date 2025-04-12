@@ -11,6 +11,7 @@ import { removeFalsyParamsAndEmptyLists } from "$lib/utils";
 export enum GetRoutes {
     HELLO = "/hello",
     GET_ACCOUNTS = "/get-accounts",
+    GET_HIERARCHY_DELIMITER = "/get-hierarchy-delimiter",
     GET_MAILBOX = "/get-mailbox",
     PAGINATE_MAILBOX = "/paginate-mailbox",
     GET_FOLDERS = "/get-folders",
@@ -43,6 +44,11 @@ export enum PostRoutes {
 interface QueryParams {
     [GetRoutes.HELLO]: {};
     [GetRoutes.GET_ACCOUNTS]: {};
+    [GetRoutes.GET_HIERARCHY_DELIMITER]: {
+        pathParams: {
+            account: string
+        }
+    };
     [GetRoutes.GET_MAILBOX]: {
         pathParams: {
             account: string;
@@ -63,7 +69,7 @@ interface QueryParams {
     };
     [GetRoutes.GET_FOLDERS]: {
         pathParams: {
-            accounts: string;
+            account: string;
         };
     };
     [GetRoutes.GET_EMAIL_CONTENT]: {
@@ -187,6 +193,7 @@ export interface GetQueryResponse {
         connected: Account[];
         failed: Account[];
     };
+    [GetRoutes.GET_HIERARCHY_DELIMITER]: OpenMailTaskResults<string>,
     [GetRoutes.GET_MAILBOX]: OpenMailTaskResults<PMailbox>;
     [GetRoutes.PAGINATE_MAILBOX]: OpenMailTaskResults<PMailbox>;
     [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>;
