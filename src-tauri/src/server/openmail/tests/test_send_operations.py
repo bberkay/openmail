@@ -129,7 +129,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_multiple_recipients_email(self):
@@ -146,7 +146,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_html_email(self):
@@ -171,7 +171,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_filepath_attachment(self):
@@ -191,7 +191,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_link_attachment(self):
@@ -211,7 +211,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_all_options_attachment(self):
@@ -234,7 +234,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_inline_path_attachment(self):
@@ -262,7 +262,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_inline_link_attachment(self):
@@ -290,7 +290,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_inline_base64_attachment(self):
@@ -318,7 +318,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_inline_all_options_attachment(self):
@@ -352,7 +352,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_both_attachment_and_inline_attachment(self):
@@ -384,7 +384,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_duplicate_attachments(self):
@@ -417,7 +417,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_email_with_large_attachment(self):
@@ -445,7 +445,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_send_nonascii_name_attachment(self):
@@ -465,7 +465,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
     def test_reply_email(self):
@@ -486,7 +486,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
         # Find sent email to reply it.
@@ -524,7 +524,7 @@ class TestSendOperations(unittest.TestCase):
         mailbox = self.__class__._openmail.imap.get_emails()
         found_reply_email = mailbox.emails[0]
 
-        self._sent_test_email_uids.append(found_reply_email.uid)
+        self.__class__._sent_test_email_uids.append(found_reply_email.uid)
 
         # Check the reply if it has correct structure.
         self.assertTrue(found_reply_email.subject.startswith("Re: "))
@@ -550,7 +550,7 @@ class TestSendOperations(unittest.TestCase):
             self.__class__._openmail,
             copy.copy(email_to_send)
         )
-        self._sent_test_email_uids.append(uid)
+        self.__class__._sent_test_email_uids.append(uid)
         self.is_sent_email_valid(email_to_send, uid)
 
         # Find sent email to forward it.
@@ -590,7 +590,7 @@ class TestSendOperations(unittest.TestCase):
         mailbox = self.__class__._openmail.imap.get_emails()
         found_reply_email = mailbox.emails[0]
 
-        self._sent_test_email_uids.append(found_reply_email.uid)
+        self.__class__._sent_test_email_uids.append(found_reply_email.uid)
 
         # Check the forward if it has correct structure.
         self.assertTrue(found_reply_email.subject.startswith("Fwd: "))
