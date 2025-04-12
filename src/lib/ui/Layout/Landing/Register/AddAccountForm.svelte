@@ -25,7 +25,7 @@
         );
 
         if (!response.success) {
-            showMessage({content: local.error_add_account[DEFAULT_LANGUAGE] });
+            showMessage({title: local.error_add_account[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
     };

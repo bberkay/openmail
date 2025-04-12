@@ -40,7 +40,7 @@
             destinationFolder,
         );
         if (!response.success) {
-            showMessage({ content: local.error_move_folder[DEFAULT_LANGUAGE] });
+            showMessage({ title: local.error_move_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
 

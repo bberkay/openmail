@@ -76,7 +76,7 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    content: local.error_show_home[DEFAULT_LANGUAGE],
+                    title: local.error_show_home[DEFAULT_LANGUAGE],
                 });
                 failed.forEach((f) => console.error(f.reason));
                 return;
@@ -92,7 +92,7 @@
 
     const logout = () => {
         showConfirm({
-            content: local.are_you_certain_log_out[DEFAULT_LANGUAGE],
+            title: local.are_you_certain_log_out[DEFAULT_LANGUAGE],
             onConfirmText: local.yes_logout[DEFAULT_LANGUAGE],
             onConfirm: async () => {
                 const response = await AccountController.remove(
@@ -100,7 +100,7 @@
                 );
                 if (!response.success) {
                     showMessage({
-                        content: getNotLoggedOutFromTemplate(
+                        title: getNotLoggedOutFromTemplate(
                             (SharedStore.currentAccount as Account)
                                 .email_address,
                         ),
@@ -114,7 +114,7 @@
 
     const quit = () => {
         showConfirm({
-            content: local.are_you_certain_quit_app[DEFAULT_LANGUAGE],
+            title: local.are_you_certain_quit_app[DEFAULT_LANGUAGE],
             onConfirmText: local.yes_close_the_app[DEFAULT_LANGUAGE],
             onConfirm: async () => {
                 await exit(0);

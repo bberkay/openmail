@@ -28,7 +28,7 @@
         );
 
         if (!response.success) {
-            showMessage({content: local.error_edit_account[DEFAULT_LANGUAGE] });
+            showMessage({title: local.error_edit_account[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
     };

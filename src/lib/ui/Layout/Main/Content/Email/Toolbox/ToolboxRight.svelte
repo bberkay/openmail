@@ -34,7 +34,7 @@
         );
 
         if (!response.success || !response.data) {
-            showMessage({ content: local.error_get_email_content[DEFAULT_LANGUAGE] });
+            showMessage({ title: local.error_get_email_content[DEFAULT_LANGUAGE] });
             console.error(response.message);
             return;
         }

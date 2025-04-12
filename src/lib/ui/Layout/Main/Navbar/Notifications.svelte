@@ -42,7 +42,7 @@
         );
         if (!response.success) {
             showMessage({
-                content: local.error_get_mailbox[DEFAULT_LANGUAGE],
+                title: local.error_get_mailbox[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
             return;
@@ -59,7 +59,7 @@
         );
         if (!response.success || !response.data) {
             showMessage({
-                content: local.error_get_email_content[DEFAULT_LANGUAGE],
+                title: local.error_get_email_content[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
             return;
@@ -161,7 +161,7 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    content: local.error_show_home[DEFAULT_LANGUAGE]
+                    title: local.error_show_home[DEFAULT_LANGUAGE]
                 });
                 failed.forEach((f) => console.error(f.reason));
                 return;

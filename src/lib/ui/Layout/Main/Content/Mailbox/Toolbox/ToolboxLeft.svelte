@@ -160,7 +160,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: getErrorMarkEmailsTemplate(mark),
+                title: getErrorMarkEmailsTemplate(mark),
             });
             failed.forEach((f) => console.error(f.reason));
         }
@@ -191,7 +191,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: getErrorUnmarkEmailsTemplate(mark),
+                title: getErrorUnmarkEmailsTemplate(mark),
             });
             failed.forEach((f) => console.error(f.reason));
         }
@@ -257,7 +257,7 @@
         );
 
         if (!response.success) {
-            showMessage({ content: getErrorCopyEmailsTemplate(getCurrentMailbox().folder, destinationFolder) });
+            showMessage({ title: getErrorCopyEmailsTemplate(getCurrentMailbox().folder, destinationFolder) });
             console.error(response.message);
         }
     };
@@ -280,7 +280,7 @@
         );
 
         if (!response.success) {
-            showMessage({ content: getErrorMoveEmailsTemplate(getCurrentMailbox().folder, destinationFolder) });
+            showMessage({ title: getErrorMoveEmailsTemplate(getCurrentMailbox().folder, destinationFolder) });
             console.error(response.message);
             return;
         }
@@ -311,14 +311,14 @@
         const failed = results.filter((r) => r.status === "rejected");
 
         if (failed.length > 0) {
-            showMessage({ content: getErrorMoveEmailsTemplate(getCurrentMailbox().folder, Folder.Archive) });
+            showMessage({ title: getErrorMoveEmailsTemplate(getCurrentMailbox().folder, Folder.Archive) });
             failed.forEach((f) => console.error(f.reason));
         }
     };
 
     const deleteFrom = async (): Promise<void> => {
         showConfirm({
-            content: local.are_you_certain_delete_email_s[DEFAULT_LANGUAGE],
+            title: local.are_you_certain_delete_email_s[DEFAULT_LANGUAGE],
             onConfirmText: local.yes_delete[DEFAULT_LANGUAGE],
             onConfirm: async () => {
                 const results = await Promise.allSettled(
@@ -345,7 +345,7 @@
 
                 if (failed.length > 0) {
                     showMessage({
-                        content: local.error_delete_email_s[DEFAULT_LANGUAGE]
+                        title: local.error_delete_email_s[DEFAULT_LANGUAGE]
                     });
                     failed.forEach((f) => console.error(f.reason));
                 }
@@ -377,7 +377,7 @@
 
         if (!response.success) {
             showMessage({
-                content: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
+                title: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
             });
             console.error(response.message);
         }
@@ -425,7 +425,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
+                title: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
             });
             failed.forEach((f) => console.error(f.reason));
         }
@@ -494,7 +494,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: local.error_refresh_mailbox_s[DEFAULT_LANGUAGE]
+                title: local.error_refresh_mailbox_s[DEFAULT_LANGUAGE]
             });
             failed.forEach((f) => console.error(f.reason));
         }

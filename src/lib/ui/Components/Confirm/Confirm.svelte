@@ -7,9 +7,10 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     let {
-        content,
+        title,
         onConfirmText,
         onConfirm,
+        details,
         onCancelText,
         onCancel,
         ...attributes
@@ -40,7 +41,10 @@
     class={combine("modal confirm", additionalClass)}
     {...restAttributes}
 >
-    {@html content}
+    <h3>{title}</h3>
+    {#if details}
+        <p>{@html details}</p>
+    {/if}
     <Button.Action
         type="button"
         onclick={onCancelWrapper}

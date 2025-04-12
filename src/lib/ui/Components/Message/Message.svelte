@@ -7,7 +7,8 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     let {
-        content,
+        title,
+        details,
         onCloseText,
         onClose,
         ...attributes
@@ -33,7 +34,10 @@
     class={combine("modal message", additionalClass)}
     {...restAttributes}
 >
-    {@html content}
+    <h3>{title}</h3>
+    {#if details}
+        <p>{@html details}</p>
+    {/if}
     <Button.Action
         type="button"
         onclick={onCloseWrapper}

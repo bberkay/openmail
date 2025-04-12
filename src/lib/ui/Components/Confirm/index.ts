@@ -4,9 +4,10 @@ import { mount, unmount } from "svelte";
 let mountedConfirm: Record<string, any> | null = null;
 
 export interface Props {
-    content: string;
+    title: string;
     onConfirmText: string;
     onConfirm: (((e: Event) => void) | ((e: Event) => Promise<void>));
+    details?: string;
     onCancelText?: string;
     onCancel?: (((e: Event) => void) | ((e: Event) => Promise<void>));
     [attribute: string]: unknown;

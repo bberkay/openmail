@@ -38,7 +38,7 @@
             parentFolderName || undefined,
         );
         if (!response.success) {
-            showMessage({ content: local.error_create_folder[DEFAULT_LANGUAGE] });
+            showMessage({ title: local.error_create_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
 

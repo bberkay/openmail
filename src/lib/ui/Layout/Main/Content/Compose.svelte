@@ -220,7 +220,7 @@
         const failed = results.filter((r) => r.status === "rejected");
 
         if (failed.length > 0) {
-            showMessage({ content:  local.error_save_emails_as_draft[DEFAULT_LANGUAGE] });
+            showMessage({ title:  local.error_save_emails_as_draft[DEFAULT_LANGUAGE] });
             failed.forEach((f) => console.error(f.reason));
         }
 
@@ -249,7 +249,7 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    content: local.error_send_emails[DEFAULT_LANGUAGE]
+                    title: local.error_send_emails[DEFAULT_LANGUAGE]
                 });
                 failed.forEach((f) => console.error(f.reason));
                 isSendingEmail = false;
@@ -272,7 +272,7 @@
 
                 if (!response.success) {
                     showMessage({
-                        content: local.error_sent_mailbox_after_sending_emails[DEFAULT_LANGUAGE]
+                        title: local.error_sent_mailbox_after_sending_emails[DEFAULT_LANGUAGE]
                     });
                     console.error(response.message);
                     return;
@@ -286,14 +286,14 @@
         if (isSendingEmail || isSavingDraft) return;
 
         if (receivers.length == 0) {
-            showMessage({ content: local.at_least_one_receiver[DEFAULT_LANGUAGE] });
+            showMessage({ title: local.at_least_one_receiver[DEFAULT_LANGUAGE] });
             console.error(local.at_least_one_receiver[DEFAULT_LANGUAGE]);
             return;
         }
 
         if (!subjectInput.value) {
             showConfirm({
-                content: local.are_you_certain_subject_is_empty[DEFAULT_LANGUAGE],
+                title: local.are_you_certain_subject_is_empty[DEFAULT_LANGUAGE],
                 onConfirmText: local.yes_send[DEFAULT_LANGUAGE],
                 onConfirm: confirmWrapper,
             });
@@ -302,7 +302,7 @@
 
         if (!body.getHTMLContent()) {
             showConfirm({
-                content: local.are_you_certain_body_is_empty[DEFAULT_LANGUAGE],
+                title: local.are_you_certain_body_is_empty[DEFAULT_LANGUAGE],
                 onConfirmText: local.yes_send[DEFAULT_LANGUAGE],
                 onConfirm: confirmWrapper,
             });

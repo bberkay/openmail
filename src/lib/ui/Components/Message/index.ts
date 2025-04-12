@@ -4,7 +4,8 @@ import { mount, unmount } from "svelte";
 let mountedMessage: Record<string, any> | null = null;
 
 export interface Props {
-    content: string;
+    title: string
+    details?: string;
     onCloseText?: string;
     onClose?: (((e: Event) => void) | ((e: Event) => Promise<void>));
     [attribute: string]: unknown;

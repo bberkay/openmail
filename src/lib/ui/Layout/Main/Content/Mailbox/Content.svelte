@@ -137,7 +137,7 @@
 
         if (!response.success) {
             showMessage({
-                content: local.error_empty_trash[DEFAULT_LANGUAGE],
+                title: local.error_empty_trash[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
         }
@@ -155,7 +155,7 @@
 
         if (!response.success || !response.data) {
             showMessage({
-                content: local.error_get_email_content[DEFAULT_LANGUAGE],
+                title: local.error_get_email_content[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
             return;

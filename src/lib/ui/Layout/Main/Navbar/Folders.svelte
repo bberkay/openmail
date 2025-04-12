@@ -47,7 +47,7 @@
             );
             if (!response.success) {
                 showMessage({
-                    content: local.error_get_mailbox[DEFAULT_LANGUAGE],
+                    title: local.error_get_mailbox[DEFAULT_LANGUAGE],
                 });
                 console.error(response.message);
                 return;
@@ -67,7 +67,7 @@
         );
         if (!response.success) {
             showMessage({
-                content: local.error_refresh_folders[DEFAULT_LANGUAGE],
+                title: local.error_refresh_folders[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
         }

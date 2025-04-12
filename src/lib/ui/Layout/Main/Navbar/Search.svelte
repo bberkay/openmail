@@ -107,7 +107,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                content: local.error_search_emails[DEFAULT_LANGUAGE],
+                title: local.error_search_emails[DEFAULT_LANGUAGE],
             });
             failed.forEach((f) => console.error(f.reason));
         }

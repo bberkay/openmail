@@ -42,7 +42,7 @@
         );
         if (!response.success) {
             showMessage({
-                content: getErrorMarkEmailsTemplate(mark),
+                title: getErrorMarkEmailsTemplate(mark),
             });
             console.error(response.message);
         }
@@ -57,7 +57,7 @@
         );
         if (!response.success) {
             showMessage({
-                content: getErrorUnmarkEmailsTemplate(mark),
+                title: getErrorUnmarkEmailsTemplate(mark),
             });
             console.error(response.message);
         }
@@ -88,7 +88,7 @@
             destinationFolder,
         );
         if (!response.success) {
-            showMessage({ content: getErrorCopyEmailsTemplate(currentFolder, destinationFolder) });
+            showMessage({ title: getErrorCopyEmailsTemplate(currentFolder, destinationFolder) });
             console.error(response.message);
         }
     };
@@ -103,7 +103,7 @@
         );
 
         if (!response.success) {
-            showMessage({ content: getErrorMoveEmailsTemplate(currentFolder, destinationFolder) });
+            showMessage({ title: getErrorMoveEmailsTemplate(currentFolder, destinationFolder) });
             console.error(response.message);
             return;
         }
@@ -118,7 +118,7 @@
 
     const deleteFrom = async () => {
         showConfirm({
-            content: local.are_you_certain_delete_email[DEFAULT_LANGUAGE],
+            title: local.are_you_certain_delete_email[DEFAULT_LANGUAGE],
             onConfirmText: local.yes_delete[DEFAULT_LANGUAGE],
             onConfirm: async (e: Event) => {
                 const response = await MailboxController.deleteEmails(
@@ -130,7 +130,7 @@
 
                 if (!response.success) {
                     showMessage({
-                        content: local.error_delete_email_s[DEFAULT_LANGUAGE]
+                        title: local.error_delete_email_s[DEFAULT_LANGUAGE]
                     });
                     console.error(response.message);
                 }
@@ -152,7 +152,7 @@
 
         if (!response.success) {
             showMessage({
-                content: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
+                title: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
             });
             console.error(response.message);
         }
@@ -298,7 +298,7 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: getNotImplementedTemplate(local.spam[DEFAULT_LANGUAGE]),
+                            title: getNotImplementedTemplate(local.spam[DEFAULT_LANGUAGE]),
                         });
                     }}
                 >
@@ -307,7 +307,7 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: getNotImplementedTemplate(local.print[DEFAULT_LANGUAGE]),
+                            title: getNotImplementedTemplate(local.print[DEFAULT_LANGUAGE]),
                         });
                     }}
                 >
@@ -316,7 +316,7 @@
                 <Dropdown.Item
                     onclick={() => {
                         showMessage({
-                            content: getNotImplementedTemplate(local.show_original[DEFAULT_LANGUAGE]),
+                            title: getNotImplementedTemplate(local.show_original[DEFAULT_LANGUAGE]),
                         });
                     }}
                 >

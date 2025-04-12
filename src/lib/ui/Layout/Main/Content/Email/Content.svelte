@@ -97,7 +97,7 @@
 
         if (!response.success || !response.data) {
             showMessage({
-                content: local.error_attachment_download[DEFAULT_LANGUAGE],
+                title: local.error_attachment_download[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
             return;

@@ -32,7 +32,7 @@
             delete_subfolders,
         );
         if (!response.success) {
-            showMessage({ content: local.error_delete_folder[DEFAULT_LANGUAGE] });
+            showMessage({ title: local.error_delete_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
         }
 
