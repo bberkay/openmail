@@ -1,7 +1,6 @@
 import { DEFAULT_LANGUAGE } from "$lib/constants";
 import { local } from "$lib/locales";
 import { Folder, Size } from "$lib/types";
-import * as path from "path";
 
 export function createDomElement(html: string): HTMLElement {
     const template = document.createElement("template");
@@ -111,128 +110,117 @@ export function isStandardFolder(
     ).some((standardFolder) => folderName.startsWith(standardFolder + ":"));
 }
 
-/**
- * Checks if the given folder name is the path itself or a subfolder of the path
- * @param folderPath - The main folder path to check
- * @param folderName - The folder name to search for (full path or just folder name)
- * @returns Returns true if folderName is part of folderPath, false otherwise
- */
-export function isSubfolderOrMatch(
+export function removeTrailingDelimiter(
     folderPath: string,
-    folderName: string,
-): boolean {
-    const normalizedPath = path.normalize(folderPath);
-
-    if (folderName.includes(path.sep)) {
-        const normalizedName = path.normalize(folderName);
-        return (
-            normalizedPath === normalizedName ||
-            normalizedPath.startsWith(normalizedName + path.sep)
-        );
-    }
-
-    const parts = normalizedPath.split(path.sep);
-    return parts.includes(folderName);
+    hierarchyDelimiter: string,
+): string {
+    return folderPath.endsWith(hierarchyDelimiter)
+        ? folderPath.slice(0, -hierarchyDelimiter.length)
+        : folderPath;
 }
 
-/**
- * Checks if the given folder name exactly matches the last part of the path
- * @param folderPath - The folder path to check
- * @param folderName - The folder name to check (full path or just folder name)
- * @returns  Returns true if there's an exact match, false otherwise
- */
+export function removeLeadingDelimiter(
+    folderPath: string,
+    hierarchyDelimiter: string,
+): string {
+    return folderPath.startsWith(hierarchyDelimiter)
+        ? folderPath.slice(hierarchyDelimiter.length)
+        : folderPath;
+}
+
+export function trimDelimiters(
+    folderPath: string,
+    hierarchyDelimiter: string,
+): string {
+    return removeLeadingDelimiter(
+        removeTrailingDelimiter(folderPath, hierarchyDelimiter),
+        hierarchyDelimiter,
+    );
+}
+
+export function extractFolderName(
+    folderPath: string,
+    hierarchyDelimiter: string,
+): string {
+    const normalizedPath = removeTrailingDelimiter(
+        folderPath,
+        hierarchyDelimiter,
+    );
+
+    const lastDelimiterIndex = normalizedPath.lastIndexOf(hierarchyDelimiter);
+    if (lastDelimiterIndex === -1) {
+        return folderPath;
+    }
+
+    return folderPath.slice(lastDelimiterIndex);
+}
+
 export function isExactFolderMatch(
     folderPath: string,
     folderName: string,
+    hierarchyDelimiter: string,
 ): boolean {
-    const normalizedPath = path.normalize(folderPath);
+    if (folderPath === folderName) return true;
 
-    if (folderName.includes(path.sep)) {
-        const normalizedName = path.normalize(folderName);
-        return normalizedPath === normalizedName;
+    if (folderName.includes(hierarchyDelimiter)) {
+        return (
+            trimDelimiters(folderPath, hierarchyDelimiter) ===
+            trimDelimiters(folderName, hierarchyDelimiter)
+        );
     }
 
-    const basename = path.basename(normalizedPath);
-    return basename === folderName;
+    return extractFolderName(folderPath, hierarchyDelimiter) === folderName;
 }
 
-/**
- * Removes the specified folder from the given path
- * @param folderPath - The folder path to process
- * @param folderName - The folder name to remove (full path or just folder name)
- * @returns The path after removing folderName
- */
-export function removeFromPath(folderPath: string, folderName: string): string {
-    const normalizedPath = path.normalize(folderPath);
-
-    if (folderName.includes(path.sep)) {
-        const normalizedName = path.normalize(folderName);
-
-        if (normalizedPath === normalizedName) {
-            return "";
-        }
-
-        if (normalizedPath.startsWith(normalizedName + path.sep)) {
-            return normalizedPath.substring(
-                normalizedName.length + path.sep.length,
-            );
-        }
-
-        return normalizedPath;
+export function isSubfolderOrMatch(
+    folderPath: string,
+    folderName: string,
+    hierarchyDelimiter: string,
+): boolean {
+    if (folderName.includes(hierarchyDelimiter)) {
+        return isExactFolderMatch(folderPath, folderName, hierarchyDelimiter);
     }
 
-    const parts = normalizedPath.split(path.sep);
-    const index = parts.indexOf(folderName);
-
-    if (index === -1) {
-        return normalizedPath;
-    }
-
-    parts.splice(index, 1);
-    return parts.join(path.sep);
+    return folderPath.split(hierarchyDelimiter).includes(folderName);
 }
 
-/**
- * Extracts the folder name from a given path
- * @param {string} folderPath - The folder path to extract the name from
- * @returns {string} - The extracted folder name
- */
-export function extractFolderName(folderPath: string): string {
-    return path.basename(path.normalize(folderPath));
+export function removeFromPath(
+    folderPath: string,
+    folderName: string,
+    hierarchyDelimiter: string,
+): string {
+    if (folderPath === folderName) return "";
+    const index = folderPath.lastIndexOf(
+        hierarchyDelimiter +
+            removeLeadingDelimiter(folderPath, hierarchyDelimiter),
+    );
+    if (index === -1) return folderPath;
+
+    return folderPath.slice(index);
 }
 
-/**
- * Replaces a folder name in a path with a new folder name
- * @param folderPath - The original folder path
- * @param oldFolderName - The folder name to replace
- * @param newFolderName - The new folder name
- * @returns The path with the replaced folder name
- */
 export function replaceFolderName(
     folderPath: string,
     oldFolderName: string,
     newFolderName: string,
+    hierarchyDelimiter: string,
 ): string {
-    const normalizedPath = path.normalize(folderPath);
-    const parts = normalizedPath.split(path.sep);
-
-    for (let i = 0; i < parts.length; i++) {
-        if (parts[i] === oldFolderName) {
-            parts[i] = newFolderName;
-        }
-    }
-
-    return parts.join(path.sep);
+    return folderPath
+        .split(hierarchyDelimiter)
+        .map((part) => {
+            if (part === oldFolderName) return newFolderName;
+            return part;
+        })
+        .join(hierarchyDelimiter);
 }
 
-/**
- * Checks whether the path is at the top level
- * @param folderPath - The path to be checked
- * @returns Returns true if the path is not at the top level, false if it is
- */
-export function isTopLevel(folderPath: string): boolean {
-    const normalizedPath = path.normalize(folderPath);
-    return normalizedPath.split(path.sep).filter(Boolean).length <= 1;
+export function isTopLevel(
+    folderPath: string,
+    hierarchyDelimiter: string,
+): boolean {
+    return trimDelimiters(folderPath, hierarchyDelimiter).includes(
+        hierarchyDelimiter,
+    );
 }
 
 export function removeFalsyParamsAndEmptyLists(

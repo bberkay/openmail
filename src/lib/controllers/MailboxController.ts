@@ -7,7 +7,11 @@ import {
     PostRoutes,
     type PostResponse,
 } from "$lib/services/ApiService";
-import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT } from "$lib/constants";
+import {
+    MAILBOX_LENGTH,
+    PAGINATE_MAILBOX_CHECK_DELAY_MS,
+    WAIT_FOR_EMAILS_TIMEOUT,
+} from "$lib/constants";
 import {
     Folder,
     Mark,
@@ -29,19 +33,23 @@ import {
 } from "$lib/utils";
 
 export class MailboxController {
-    public static async init(failedOnly: boolean = false): Promise<BaseResponse> {
+    public static async init(
+        failedOnly: boolean = false,
+    ): Promise<BaseResponse> {
         let response = {
             success: false,
             message: "Initialize does not finished.",
         };
 
         const folderResults = await Promise.allSettled(
-            (failedOnly ? SharedStore.failedFolders : SharedStore.accounts).map(async (account) => {
-                return {
-                    account: account,
-                    response: await MailboxController.getFolders(account)
-                }
-            }),
+            (failedOnly ? SharedStore.failedFolders : SharedStore.accounts).map(
+                async (account) => {
+                    return {
+                        account: account,
+                        response: await MailboxController.getFolders(account),
+                    };
+                },
+            ),
         );
 
         folderResults.forEach((result) => {
@@ -57,17 +65,34 @@ export class MailboxController {
             }
         });
 
+        if (!response.success) return response;
+
+        // This shouldn't be unsuccessful, after folders are fetched successfully.
+        await Promise.allSettled(
+            (failedOnly ? SharedStore.failedFolders : SharedStore.accounts).map(
+                async (account) => {
+                    return {
+                        account: account,
+                        response: await MailboxController.getFolders(account),
+                    };
+                },
+            ),
+        );
+
         const mailboxResults = await Promise.allSettled(
-            (failedOnly ? SharedStore.failedMailboxes : SharedStore.accounts).map(async (account) => {
+            (failedOnly
+                ? SharedStore.failedMailboxes
+                : SharedStore.accounts
+            ).map(async (account) => {
                 return {
                     account: account,
                     response: await MailboxController.getMailbox(
                         account,
                         Folder.Inbox,
-                        { excluded_flags: [Mark.Seen] }
-                    )
-                }
-            })
+                        { excluded_flags: [Mark.Seen] },
+                    ),
+                };
+            }),
         );
 
         mailboxResults.forEach((result) => {
@@ -83,12 +108,35 @@ export class MailboxController {
             }
         });
 
+        if (!response.success) return response;
+
         return {
-            success: response.success,
-            message: response.success
-                ? "Mailbox Controller Initialized"
-                : response.message,
+            success: true,
+            message: "Mailbox Controller Initialized",
         };
+    }
+
+    public static async getHiearchyDelimiter(
+        account: Account,
+    ): Promise<BaseResponse> {
+        const response = await ApiService.get(
+            SharedStore.server,
+            GetRoutes.GET_HIERARCHY_DELIMITER,
+            {
+                pathParams: {
+                    account: account.email_address,
+                },
+            },
+        );
+
+        if (response.success && response.data) {
+            for (const email_address in response.data) {
+                SharedStore.hierarchyDelimiters[email_address] =
+                    response.data[email_address];
+            }
+        }
+
+        return response;
     }
 
     public static async getFolders(account: Account): Promise<BaseResponse> {
@@ -97,29 +145,21 @@ export class MailboxController {
             GetRoutes.GET_FOLDERS,
             {
                 pathParams: {
-                    accounts: account.email_address,
+                    account: account.email_address,
                 },
             },
         );
 
         if (response.success && response.data) {
-            // Extract standard and custom folders from data
-            // and add them to SharedStore
             for (const email_address in response.data) {
-                let folders = SharedStore.folders[email_address];
-                if (!folders) {
-                    SharedStore.folders[email_address] = {
-                        standard: [],
-                        custom: [],
-                    };
-                }
+                let targetFolders = SharedStore.folders[email_address];
+                targetFolders.standard = [];
+                targetFolders.custom = [];
                 response.data[email_address].forEach((folder) => {
                     if (isStandardFolder(folder)) {
-                        SharedStore.folders[email_address].standard.push(
-                            folder,
-                        );
+                        targetFolders.standard.push(folder);
                     } else {
-                        SharedStore.folders[email_address].custom.push(folder);
+                        targetFolders.custom.push(folder);
                     }
                 });
             }
@@ -375,7 +415,15 @@ export class MailboxController {
 
         const currentMailbox = SharedStore.mailboxes[account.email_address];
 
-        if (!isExactFolderMatch(currentMailbox.folder, folder)) return response;
+        if (
+            !isExactFolderMatch(
+                currentMailbox.folder,
+                folder,
+                SharedStore.hierarchyDelimiters[account.email_address],
+            )
+        ) {
+            return response;
+        }
 
         // selection will be either 1:* or uids separated with comma
         // something like 1,2,3,4 but not 2:* or 1,3:*:5
@@ -443,11 +491,11 @@ export class MailboxController {
 
             const clearWaitNextInterval = () => {
                 if (waitNext) {
-                    clearInterval(waitNext)
+                    clearInterval(waitNext);
                     waitNext = null;
                     resolve(response);
                 }
-            }
+            };
 
             if (currentMailbox.emails.next.length > 0) {
                 processNextBatch();
@@ -492,7 +540,15 @@ export class MailboxController {
 
         const currentMailbox = SharedStore.mailboxes[account.email_address];
 
-        if (!isExactFolderMatch(currentMailbox.folder, sourceFolder)) return response;
+        if (
+            !isExactFolderMatch(
+                currentMailbox.folder,
+                sourceFolder,
+                SharedStore.hierarchyDelimiters[account.email_address],
+            )
+        ) {
+            return response;
+        }
 
         if (selection === "1:*") {
             currentMailbox.emails = { prev: [], current: [], next: [] };
@@ -506,7 +562,8 @@ export class MailboxController {
             (email) =>
                 !isUidInSelection(selection, removeWhitespaces(email.uid)),
         );
-        const movedCount = countBeforeMove - currentMailbox.emails.current.length;
+        const movedCount =
+            countBeforeMove - currentMailbox.emails.current.length;
         currentMailbox.total -= movedCount;
 
         if (!offset || !wasFullBeforeMove) return response;
@@ -538,7 +595,7 @@ export class MailboxController {
                     waitNext = null;
                     resolve(response);
                 }
-            }
+            };
 
             if (currentMailbox.emails.next.length > 0) {
                 processNextBatch();
@@ -695,28 +752,31 @@ export class MailboxController {
 
         if (response.success) {
             const currentMailbox = SharedStore.mailboxes[account.email_address];
+            const hierarchyDelimiter = SharedStore.hierarchyDelimiters[account.email_address];
 
-            const oldFolderName = extractFolderName(folderName);
-            if (destinationFolder !== "") destinationFolder += "/";
+            const oldFolderName = extractFolderName(folderName, hierarchyDelimiter);
+            if (destinationFolder !== "") destinationFolder += hierarchyDelimiter;
             const newFolderPath = `${destinationFolder}${folderName}`;
 
             SharedStore.folders[account.email_address].custom.map(
                 (customFolderPath) => {
-                    if (isSubfolderOrMatch(customFolderPath, oldFolderName)) {
+                    if (isSubfolderOrMatch(customFolderPath, oldFolderName, hierarchyDelimiter)) {
                         return replaceFolderName(
                             customFolderPath,
                             oldFolderName,
                             newFolderPath,
+                            hierarchyDelimiter
                         );
                     }
                 },
             );
 
-            if (isSubfolderOrMatch(currentMailbox.folder, oldFolderName)) {
+            if (isSubfolderOrMatch(currentMailbox.folder, oldFolderName, hierarchyDelimiter)) {
                 currentMailbox.folder = replaceFolderName(
                     currentMailbox.folder,
                     oldFolderName,
                     newFolderPath,
+                    hierarchyDelimiter
                 );
             }
         }
@@ -741,8 +801,8 @@ export class MailboxController {
 
         if (response.success) {
             const currentMailbox = SharedStore.mailboxes[account.email_address];
-
-            const oldFolderName = extractFolderName(folderName);
+            const hierarchyDelimiter = SharedStore.hierarchyDelimiters[account.email_address];
+            const oldFolderName = extractFolderName(folderName, hierarchyDelimiter);
 
             SharedStore.folders[account.email_address].custom.map(
                 (customFolder) => {
@@ -750,15 +810,17 @@ export class MailboxController {
                         customFolder,
                         oldFolderName,
                         newFolderName,
+                        hierarchyDelimiter
                     );
                 },
             );
 
-            if (isSubfolderOrMatch(currentMailbox.folder, oldFolderName)) {
+            if (isSubfolderOrMatch(currentMailbox.folder, oldFolderName, hierarchyDelimiter)) {
                 currentMailbox.folder = replaceFolderName(
                     currentMailbox.folder,
                     oldFolderName,
                     newFolderName,
+                    hierarchyDelimiter
                 );
             }
         }
@@ -784,28 +846,31 @@ export class MailboxController {
         if (response.success) {
             const currentMailbox = SharedStore.mailboxes[account.email_address];
             const currentFolders = SharedStore.folders[account.email_address];
+            const hierarchyDelimiter = SharedStore.hierarchyDelimiters[account.email_address];
+
             currentFolders.custom = currentFolders.custom.filter(
                 (customFolderPath) => {
-                    if (isExactFolderMatch(customFolderPath, folderName)) {
+                    if (isExactFolderMatch(customFolderPath, folderName, hierarchyDelimiter)) {
                         return false;
                     } else if (
-                        isSubfolderOrMatch(customFolderPath, folderName)
+                        isSubfolderOrMatch(customFolderPath, folderName, hierarchyDelimiter)
                     ) {
                         return !delete_subfolders;
                     }
                 },
             );
 
-            if (isExactFolderMatch(currentMailbox.folder, folderName)) {
+            if (isExactFolderMatch(currentMailbox.folder, folderName, hierarchyDelimiter)) {
                 SharedStore.mailboxes[account.email_address] = {
                     folder: "",
                     emails: { prev: [], current: [], next: [] },
                     total: 0,
                 };
-            } else if (isSubfolderOrMatch(currentMailbox.folder, folderName)) {
+            } else if (isSubfolderOrMatch(currentMailbox.folder, folderName, hierarchyDelimiter)) {
                 currentMailbox.folder = removeFromPath(
                     currentMailbox.folder,
                     folderName,
+                    hierarchyDelimiter
                 );
             }
         }
@@ -824,17 +889,21 @@ export class MailboxController {
             {
                 account: account.email_address,
                 list_unsubscribe,
-                list_unsubscribe_post
-            }
+                list_unsubscribe_post,
+            },
         );
 
         if (response.success) {
-            const currentMailbox = SharedStore.mailboxes[account.email_address].emails.current;
+            const currentMailbox =
+                SharedStore.mailboxes[account.email_address].emails.current;
             // Even when the user refreshes/reloads the mailbox or restarts the app, the list_unsubscribe
             // properties will come back, but by removing the list_unsubscribe properties
             // we are providing a temporary feedback of the unsubscription operation's success.
             currentMailbox.forEach((email) => {
-                if (email.list_unsubscribe && email.list_unsubscribe.startsWith(list_unsubscribe)) {
+                if (
+                    email.list_unsubscribe &&
+                    email.list_unsubscribe.startsWith(list_unsubscribe)
+                ) {
                     email.list_unsubscribe = undefined;
                     email.list_unsubscribe_post = undefined;
                 }
