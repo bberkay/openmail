@@ -1,8 +1,10 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
+    import type { PostResponse } from "$lib/services/ApiService";
+    import { local } from "$lib/locales";
     import { extractEmailAddress, isStandardFolder } from "$lib/utils";
     import { getReplyTemplate, getForwardTemplate } from "$lib/templates";
-    import { AUTO_SAVE_DRAFT_INTERVAL_MS, DEFAULT_LANGUAGE } from "$lib/constants";
+    import { AUTO_SAVE_DRAFT_INTERVAL_MS, DEFAULT_LANGUAGE, SEND_RECALL_DELAY_MS } from "$lib/constants";
     import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onDestroy, onMount } from "svelte";
@@ -26,8 +28,7 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
-    import type { PostResponse } from "$lib/services/ApiService";
-    import { local } from "$lib/locales";
+    import { show as showToast } from "$lib/ui/Components/Toast";
 
     interface Props {
         originalMessageContext?: {
@@ -220,7 +221,7 @@
         const failed = results.filter((r) => r.status === "rejected");
 
         if (failed.length > 0) {
-            showMessage({ title:  local.error_save_emails_as_draft[DEFAULT_LANGUAGE] });
+            showMessage({ title:  local.error_save_email_s_as_draft[DEFAULT_LANGUAGE] });
             failed.forEach((f) => console.error(f.reason));
         }
 
@@ -249,7 +250,7 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    title: local.error_send_emails[DEFAULT_LANGUAGE]
+                    title: local.error_send_email_s[DEFAULT_LANGUAGE]
                 });
                 failed.forEach((f) => console.error(f.reason));
                 isSendingEmail = false;

@@ -10,7 +10,7 @@ import {
 import {
     MAILBOX_LENGTH,
     PAGINATE_MAILBOX_CHECK_DELAY_MS,
-    WAIT_FOR_EMAILS_TIMEOUT,
+    WAIT_FOR_EMAILS_TIMEOUT_MS,
 } from "$lib/constants";
 import {
     Folder,
@@ -502,7 +502,7 @@ export class MailboxController {
             } else {
                 const startTime = Date.now();
                 waitNext = setInterval(() => {
-                    if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT) {
+                    if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT_MS) {
                         clearWaitNextInterval();
                     }
                     if (currentMailbox.emails.next.length > 0) {
@@ -602,7 +602,7 @@ export class MailboxController {
             } else {
                 const startTime = Date.now();
                 waitNext = setInterval(() => {
-                    if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT) {
+                    if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT_MS) {
                         clearNextInterval();
                     }
                     if (currentMailbox.emails.next.length > 0) {

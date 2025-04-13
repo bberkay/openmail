@@ -1,7 +1,7 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { type Mailbox, Folder } from "$lib/types";
-    import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT } from "$lib/constants";
+    import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT_MS } from "$lib/constants";
     import { MailboxController } from "$lib/controllers/MailboxController";
 
     let waitPrev: ReturnType<typeof setInterval> | null;
@@ -87,7 +87,7 @@
                 } else {
                     const startTime = Date.now();
                     waitPrev = setInterval(() => {
-                        if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT) {
+                        if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT_MS) {
                             clearWaitPrevInterval();
                         }
                         if (currentMailbox.emails.prev.length > 0) {
@@ -157,7 +157,7 @@
                 } else {
                     const startTime = Date.now();
                     waitNext = setInterval(() => {
-                        if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT) {
+                        if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT_MS) {
                             clearWaitNextInterval();
                         }
                         if (currentMailbox.emails.next.length > 0) {
