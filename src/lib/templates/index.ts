@@ -117,7 +117,7 @@ export function getFailedMailboxOrFoldersTemplate(
 }
 
 export function getFailedItemTemplate(email_address: string) {
-    return `<li>{email_address}</li>`.replace("{email_address}", email_address)
+    return `<li>{email_address}</li>`.replace("{email_address}", email_address);
 }
 
 /**
@@ -254,6 +254,20 @@ export function getErrorMoveEmailsTemplate(
     ).replace("{destination_folder}", destination_folder);
 }
 
+export function getErrorSearhCopiedEmailTemplate(destination_folder: string) {
+    return local.error_search_copied_email[DEFAULT_LANGUAGE].replace(
+        "{destination_folder}",
+        destination_folder,
+    );
+}
+
+export function getErrorSearhMovedEmailTemplate(destination_folder: string) {
+    return local.error_search_moved_email[DEFAULT_LANGUAGE].replace(
+        "{destination_folder}",
+        destination_folder,
+    );
+}
+
 /**
  * ----------------------------------------------------------------------------
  * Constants generally used in Main/Content/Mailbox.svelte
@@ -297,4 +311,12 @@ export function getEmptyTrashTemplate(total: string | number) {
         "{total}",
         String(total),
     );
+}
+
+export function getEmailsMarkedTemplate(mark: string) {
+    return local.email_s_marked[DEFAULT_LANGUAGE].replace("{mark}", mark);
+}
+
+export function getEmailsUnmarkedTemplate(mark: string) {
+    return local.email_s_unmarked[DEFAULT_LANGUAGE].replace("{mark}", mark);
 }

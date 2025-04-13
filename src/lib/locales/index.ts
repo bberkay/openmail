@@ -197,6 +197,12 @@ export const local = {
     error_sent_mailbox_after_sending_emails: {
         en: "Email has sent but something went wrong while loading sent mailbox."
     },
+    error_search_copied_email: {
+        en: "Copied email could not found in {destination_folder}"
+    },
+    error_search_moved_email: {
+        en: "Moved email could not found in {destination_folder}"
+    },
     error_get_mailbox: {
         en: "Something went wrong while loading mailbox.",
     },
@@ -598,5 +604,14 @@ export const local = {
     },
     delete_completely: {
         en: "Delete Completely"
+    },
+    email_s_marked: {
+        en: "Email(s) marked as {mark}."
+    },
+    email_s_unmarked: {
+        en: "{mark} mark removed from Email(s)."
+    },
+    undo_done: {
+        en: "Operation undone."
     }
 };
