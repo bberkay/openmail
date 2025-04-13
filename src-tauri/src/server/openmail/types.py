@@ -15,6 +15,7 @@ class SearchCriteria():
     References:
         - https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
     """
+    message_id: Optional[str] = ""
     senders: Optional[list[str]] = field(default_factory=list)
     receivers: Optional[list[str]] = field(default_factory=list)
     cc: Optional[list[str]] = field(default_factory=list)
@@ -38,7 +39,6 @@ class SearchCriteria():
         """Parses a string representation of a SearchCriteria object."""
         if not raw:
             return ""
-
         try:
             data = json.loads(raw)
             if not isinstance(data, dict):

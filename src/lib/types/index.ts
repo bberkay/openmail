@@ -30,6 +30,7 @@ export interface Email {
 }
 
 export interface SearchCriteria {
+    message_id: string;
     senders?: string[];
     receivers?: string[];
     cc?: string[];

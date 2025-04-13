@@ -168,6 +168,7 @@ class TestFetchOperations(unittest.TestCase):
         self.assertEqual(
             self.__class__._openmail.imap.build_search_criteria_query(
                 SearchCriteria(
+                    message_id="123",
                     senders=["sender@mail.com"],
                     receivers=["receiver1@mail.com", "receiver2@mail.com"],
                     cc=["cc1@mail.com", "cc2@mail.com"],
@@ -183,7 +184,7 @@ class TestFetchOperations(unittest.TestCase):
                     has_attachments=True
                 )
             ),
-            '(FROM "sender@mail.com") (OR (TO "receiver1@mail.com") (TO "receiver2@mail.com")) ' \
+            '(HEADER MESSAGE-ID "123") (FROM "sender@mail.com") (OR (TO "receiver1@mail.com") (TO "receiver2@mail.com")) ' \
             '(OR (CC "cc1@mail.com") (CC "cc2@mail.com")) (SUBJECT "Hello") (SINCE "2023-01-01") ' \
             '(BEFORE "2023-12-31") (BODY "word") (NOT BODY "good bye") FLAGGED SEEN KEYWORD CUSTOMFLAG ' \
             'ANSWERED UNDRAFT UNKEYWORD CUSTOMFLAG2 (TEXT "ATTACHMENT") (LARGER 150) (SMALLER 300)'
