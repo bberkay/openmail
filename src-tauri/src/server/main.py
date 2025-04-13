@@ -525,6 +525,26 @@ async def get_hierarchy_delimiter(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while getting IMAP hierarchy delimiter", str(e)))
 
+@app.get("/search-emails/{account}")
+async def search_emails(
+    account: str,
+    folder: Optional[str] = None,
+    search: Optional[str] = None,
+) -> Response[OpenMailTaskResults[list[str]]]:
+    try:
+        account = extract_email_address(account)
+        response = check_openmail_connection_availability(account)
+        if isinstance(response, Response):
+            return response
+
+        return Response(
+            success=True,
+            message="Emails searched successfully.",
+            data={account: openmail_clients[account].imap.search_emails(folder, search or "")}
+        )
+    except Exception as e:
+        return Response(success=False, message=err_msg("There was an error while searching emails.", str(e)))
+
 @app.get("/get-mailbox/{account}")
 async def get_mailbox(
     account: str,
@@ -539,10 +559,8 @@ async def get_mailbox(
         if isinstance(response, Response):
             return response
 
-        # Search Emails
-        openmail_clients[account].imap.search_emails(folder=folder)
+        openmail_clients[account].imap.search_emails(folder, search or "")
 
-        # Fetch and send fetched emails.
         return Response(
             success=True,
             message="Emails fetched successfully.",

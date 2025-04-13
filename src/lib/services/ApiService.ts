@@ -12,6 +12,7 @@ export enum GetRoutes {
     HELLO = "/hello",
     GET_ACCOUNTS = "/get-accounts",
     GET_HIERARCHY_DELIMITER = "/get-hierarchy-delimiter",
+    SEARCH_EMAILS = "/search-emails",
     GET_MAILBOX = "/get-mailbox",
     PAGINATE_MAILBOX = "/paginate-mailbox",
     GET_FOLDERS = "/get-folders",
@@ -47,6 +48,15 @@ interface GetQueryParams {
     [GetRoutes.GET_HIERARCHY_DELIMITER]: {
         pathParams: {
             account: string;
+        };
+    };
+    [GetRoutes.SEARCH_EMAILS]: {
+        pathParams: {
+            account: string;
+        };
+        queryParams?: {
+            folder?: string;
+            search?: string;
         };
     };
     [GetRoutes.GET_MAILBOX]: {
@@ -213,6 +223,7 @@ export interface GetQueryResponse {
         failed: Account[];
     };
     [GetRoutes.GET_HIERARCHY_DELIMITER]: OpenMailTaskResults<string>,
+    [GetRoutes.SEARCH_EMAILS]: OpenMailTaskResults<string[]>; // uid list
     [GetRoutes.GET_MAILBOX]: OpenMailTaskResults<RawMailbox>;
     [GetRoutes.PAGINATE_MAILBOX]: OpenMailTaskResults<RawMailbox>;
     [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>;

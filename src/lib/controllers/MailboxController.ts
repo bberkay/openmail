@@ -170,6 +170,29 @@ export class MailboxController {
         };
     }
 
+    public static async searchEmails(
+        account: Account,
+        folder?: Folder | string,
+        searchCriteria?: SearchCriteria | string,
+    ): Promise<GetResponse<GetRoutes.SEARCH_EMAILS>> {
+        return await ApiService.get(
+            SharedStore.server,
+            GetRoutes.SEARCH_EMAILS,
+            {
+                pathParams: {
+                    account: account.email_address,
+                },
+                queryParams: {
+                    folder: folder,
+                    search:
+                        searchCriteria && typeof searchCriteria !== "string"
+                            ? JSON.stringify(searchCriteria)
+                            : searchCriteria,
+                },
+            },
+        );
+    }
+
     public static async getMailbox(
         account: Account,
         folder?: Folder | string,

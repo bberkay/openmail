@@ -1380,29 +1380,27 @@ class IMAPManager(imaplib.IMAP4_SSL):
     def search_emails(self,
         folder: str | None = None,
         search: str | SearchCriteria = ""
-    ) -> IMAPCommandResult:
+    ) -> List[str]:
         """
-        Get email uids from a specified folder based on search criteria. Does not
-        return search result but saves the uids for use them in `get_emails` method.
+        Get email uids from a specified folder based on search criteria. Also saves
+        the result to use them with `get_emails()`.
 
         Args:
-            folder (str, optional): Folder to search in. If not provided, selected folder
-            will be used. If there is no selected folder then `All` folder will be selected
-            if search is not None otherwise `Inbox` will be selected. Inbox will be selected
-            if folder and search not provided, if only search provided but folder not provided
-            then fol
+            folder (str, optional): Folder to search in. If folder not provided but
+            search is, then Folder will be Folder.All, but neither folder and search
+            are provided then folder will be Folder.Inbox
             search (str | SearchCriteria, optional): Search criteria. Defaults to "ALL".
 
         Example:
             >>> search_emails("INBOX") # Search all emails in INBOX.
-            True, "Search in folder `INBOX` was successful. Results are saved."
+            ["1", "2", "3", "4", "5", "6"]
             >>> search_emails("Archived", "FROM 'a@mail.com'") # Search emails from 'a@mail.com'.
-            True, "Search in folder `Archived` was successful. Results are saved."
+            ["1", "2", "5", "6"]
             >>> search_emails("MyCustomFolder", SearchCriteria(senders=['a@mail.com'])) # Search emails from 'a@mail.com'.
-            True, "Search in folder `MyCustomFolder` was successful. Results are saved."
+            ["1", "2", "3", "4"]
         """
 
-        def save_emails(uids: List[str], folder: str | Folder, search_query: str):
+        def save_search_result(uids: List[str], folder: str | Folder, search_query: str):
             """
             Save emails to a specified folder for later use.
 
@@ -1441,11 +1439,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}` and error is `{search_status}.`")
 
             if not uids or not uids[0]:
-                return False, "No emails found."
+                return uids
 
             uids = uids[0].decode().split()[::-1]
-            save_emails(uids, folder, search_criteria_query)
-            return True, "Search in folder `{}` was successful. Results are saved.".format(folder)
+            save_search_result(uids, folder, search_criteria_query)
+            return uids
         except Exception as e:
             raise IMAPManagerException(f"Error while getting email uids, search query was `{search_criteria_query}` and error is `{str(e)}.`")
 
