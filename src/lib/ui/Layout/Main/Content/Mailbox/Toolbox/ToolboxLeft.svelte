@@ -312,8 +312,9 @@
                 SharedStore.currentAccount === "home" &&
                 isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)
             )
-        )
+        ) {
             return moveTo(Folder.Archive);
+        }
 
         const results = await Promise.allSettled(
             groupedEmailSelection.map(async (group) => {
@@ -350,62 +351,33 @@
     };
 
     const deleteFrom = async (): Promise<void> => {
-        if (
-            !(
-                SharedStore.currentAccount === "home" &&
-                isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)
-            )
-        ) {
-            const emailAddressOfSelection = groupedEmailSelection[0][0];
-            const deletingEmailUids = sortSelection(
-                groupedEmailSelection[0][1],
-            );
+        const results = await Promise.allSettled(
+            groupedEmailSelection.map(async (group) => {
+                const emailAddress = group[0];
+                const uids = sortSelection(group[1]);
 
-            const response = await MailboxController.deleteEmails(
-                SharedStore.accounts.find(
-                    (acc) => acc.email_address === emailAddressOfSelection,
-                )!,
-                deletingEmailUids,
-                getCurrentMailbox().folder,
-                currentOffset,
-            );
+                const response = await MailboxController.deleteEmails(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === emailAddress,
+                    )!,
+                    uids,
+                    getCurrentMailbox().folder,
+                    currentOffset,
+                );
 
-            if (!response.success) {
-                showMessage({
-                    title: local.error_delete_email_s[DEFAULT_LANGUAGE],
-                });
-                console.error(response.message);
-                return;
-            }
-        } else {
-            const results = await Promise.allSettled(
-                groupedEmailSelection.map(async (group) => {
-                    const emailAddress = group[0];
-                    const uids = sortSelection(group[1]);
+                if (!response.success) {
+                    throw new Error(response.message);
+                }
+            }),
+        );
 
-                    const response = await MailboxController.deleteEmails(
-                        SharedStore.accounts.find(
-                            (acc) => acc.email_address === emailAddress,
-                        )!,
-                        uids,
-                        getCurrentMailbox().folder,
-                        currentOffset,
-                    );
+        const failed = results.filter((r) => r.status === "rejected");
 
-                    if (!response.success) {
-                        throw new Error(response.message);
-                    }
-                }),
-            );
-
-            const failed = results.filter((r) => r.status === "rejected");
-
-            if (failed.length > 0) {
-                showMessage({
-                    title: local.error_delete_email_s[DEFAULT_LANGUAGE],
-                });
-                failed.forEach((f) => console.error(f.reason));
-            }
+        if (failed.length > 0) {
+            showMessage({
+                title: local.error_delete_email_s[DEFAULT_LANGUAGE],
+            });
+            failed.forEach((f) => console.error(f.reason));
         }
     };
 
