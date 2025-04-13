@@ -41,13 +41,13 @@ export enum PostRoutes {
     UNSUBSCRIBE_EMAIL = "/unsubscribe-email"
 }
 
-interface QueryParams {
+interface GetQueryParams {
     [GetRoutes.HELLO]: {};
     [GetRoutes.GET_ACCOUNTS]: {};
     [GetRoutes.GET_HIERARCHY_DELIMITER]: {
         pathParams: {
-            account: string
-        }
+            account: string;
+        };
     };
     [GetRoutes.GET_MAILBOX]: {
         pathParams: {
@@ -88,20 +88,39 @@ interface QueryParams {
         };
         queryParams?: {
             cid?: string;
-        }
+        };
     };
     [GetRoutes.GET_PUBLIC_KEY]: {};
+}
+
+interface PostQueryParams {
+    [PostRoutes.ADD_ACCOUNT]: {},
+    [PostRoutes.EDIT_ACCOUNT]: {},
+    [PostRoutes.REMOVE_ACCOUNT]: {},
+    [PostRoutes.REMOVE_ACCOUNTS]: {},
+    [PostRoutes.SEND_EMAIL]: {},
     [PostRoutes.REPLY_EMAIL]: {
         pathParams: {
             original_message_id: string;
-        }
+        };
     };
     [PostRoutes.FORWARD_EMAIL]: {
         pathParams: {
             original_message_id: string;
-        }
-    }
-    [key: string]: any;
+        };
+    };
+    [PostRoutes.SAVE_EMAIL_AS_DRAFT]: {},
+    [PostRoutes.MARK_EMAIL]: {},
+    [PostRoutes.UNMARK_EMAIL]: {},
+    [PostRoutes.MOVE_EMAIL]: {},
+    [PostRoutes.COPY_EMAIL]: {},
+    [PostRoutes.DELETE_EMAIL]: {},
+    [PostRoutes.CREATE_FOLDER]: {},
+    [PostRoutes.RENAME_FOLDER]: {},
+    [PostRoutes.MOVE_FOLDER]: {},
+    [PostRoutes.DELETE_FOLDER]: {},
+    [PostRoutes.UNSUBSCRIBE_EMAIL]: {},
+
 }
 
 interface PostBody {
@@ -215,7 +234,7 @@ export interface PostResponse<T extends PostRoutes = PostRoutes> extends BaseRes
 }
 
 export class ApiService {
-    static createQueryString<T extends GetRoutes | PostRoutes>(params: QueryParams[T]): string {
+    static _createQueryString(params: any): string {
         let queryString = "";
 
         if (params && Object.hasOwn(params, "pathParams") && params.pathParams)
@@ -231,12 +250,20 @@ export class ApiService {
         return queryString;
     }
 
+    static createGetQueryString<T extends GetRoutes>(params: GetQueryParams[T]): string {
+        return ApiService._createQueryString(params);
+    }
+
+    static createPostQueryString<T extends PostRoutes>(params: PostQueryParams[T]): string {
+        return ApiService._createQueryString(params);
+    }
+
     static async get<T extends GetRoutes>(
         url: string,
         endpoint: T,
-        params?: QueryParams[T],
+        params?: GetQueryParams[T],
     ): Promise<GetResponse<T>> {
-        const queryString = params ? ApiService.createQueryString(params) : "";
+        const queryString = params ? ApiService.createGetQueryString(params) : "";
         const response = await fetch(url + endpoint + queryString);
         const data = await response.json();
         return data
@@ -246,9 +273,9 @@ export class ApiService {
         url: string,
         endpoint: T,
         body: PostBody[T],
-        params?: QueryParams[T]
+        params?: PostQueryParams[T]
     ): Promise<PostResponse<T>> {
-        const queryString = params ? ApiService.createQueryString(params) : "";
+        const queryString = params ? ApiService.createPostQueryString(params) : "";
         const response = await fetch(url + endpoint + queryString, {
             method: "POST",
             headers:
