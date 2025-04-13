@@ -13,7 +13,7 @@
         id?: string;
         placeholder?: string;
         value?: string;
-        onchange?: (selectedOption: string) => void;
+        onchange?: (((selectedOption: string) => void) | ((selectedOption: string) => Promise<void>));
         enableSearch?: boolean;
         resetAfterSelect?: boolean;
         disabled?: boolean;
@@ -79,12 +79,14 @@
         }
     }
 
-    function selectOption(value: string) {
+    async function selectOption(value: string) {
+        disabled = true;
         if(selectedOption) selectedOption.classList.remove("selected");
         selectedOption = options.find(option => option.dataset.value == value)!;
         selectedOption.classList.add("selected");
-        if(onchange) onchange(value.toString());
+        if(onchange) await onchange(value.toString());
         if(resetAfterSelect) selectedOption = null;
+        disabled = false;
         closeSelect();
     }
 
@@ -111,7 +113,7 @@
         if (enableSearch) searchInput!.focus();
     }
 
-    const handleSelection = (e: Event) => {
+    const handleSelection = async (e: Event) => {
         if (!e.target)
             return;
 
@@ -123,7 +125,7 @@
         if(!value)
             return;
 
-        selectOption(value);
+        await selectOption(value);
     };
 
     const handleSearch = (e: Event) => {
