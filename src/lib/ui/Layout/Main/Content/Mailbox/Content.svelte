@@ -22,6 +22,7 @@
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
@@ -124,23 +125,27 @@
     };
 
     const emptyTrash = async () => {
-        // If current account is home then current
-        // folder must be Inbox.
-        if (SharedStore.currentAccount === "home")
+        if (!isStandardFolder(getCurrentMailbox().folder, Folder.Trash))
             return;
 
-        const response = await MailboxController.deleteEmails(
-            SharedStore.currentAccount,
-            "1:*",
-            Folder.Trash
-        );
+        showConfirm({
+            title: local.are_you_certain_delete_email_s[DEFAULT_LANGUAGE],
+            onConfirmText: local.yes_delete[DEFAULT_LANGUAGE],
+            onConfirm: async () => {
+                const response = await MailboxController.deleteEmails(
+                    SharedStore.currentAccount as Account,
+                    "1:*",
+                    Folder.Trash
+                );
 
-        if (!response.success) {
-            showMessage({
-                title: local.error_empty_trash[DEFAULT_LANGUAGE],
-            });
-            console.error(response.message);
-        }
+                if (!response.success) {
+                    showMessage({
+                        title: local.error_empty_trash[DEFAULT_LANGUAGE],
+                    });
+                    console.error(response.message);
+                }
+            }
+        });
     }
 
     const showEmailContent = async (

@@ -524,8 +524,11 @@ export const local = {
     mark_as_unread: {
         en: "Mark as Unread"
     },
-    archive: {
-        en: "Archive"
+    move_to_inbox: {
+        en: "Move to Inbox"
+    },
+    move_to_archive: {
+        en: "Move to Archive"
     },
     reply: {
         en: "Reply"
@@ -592,5 +595,8 @@ export const local = {
     },
     manage_accounts: {
         en: "Manage Accounts"
+    },
+    delete_completely: {
+        en: "Delete Completely"
     }
 };

@@ -2,7 +2,13 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { getErrorCopyEmailsTemplate, getErrorMarkEmailsTemplate, getErrorMoveEmailsTemplate, getErrorUnmarkEmailsTemplate, getNotImplementedTemplate } from "$lib/templates";
+    import {
+        getErrorCopyEmailsTemplate,
+        getErrorMarkEmailsTemplate,
+        getErrorMoveEmailsTemplate,
+        getErrorUnmarkEmailsTemplate,
+        getNotImplementedTemplate,
+    } from "$lib/templates";
     import { type Email, Mark, Folder, type Mailbox } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import * as Input from "$lib/ui/Components/Input";
@@ -13,7 +19,11 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
-    import { isUidInSelection, sortSelection } from "$lib/utils";
+    import {
+        isStandardFolder,
+        isUidInSelection,
+        sortSelection,
+    } from "$lib/utils";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
@@ -257,7 +267,12 @@
         );
 
         if (!response.success) {
-            showMessage({ title: getErrorCopyEmailsTemplate(getCurrentMailbox().folder, destinationFolder) });
+            showMessage({
+                title: getErrorCopyEmailsTemplate(
+                    getCurrentMailbox().folder,
+                    destinationFolder,
+                ),
+            });
             console.error(response.message);
         }
     };
@@ -280,13 +295,26 @@
         );
 
         if (!response.success) {
-            showMessage({ title: getErrorMoveEmailsTemplate(getCurrentMailbox().folder, destinationFolder) });
+            showMessage({
+                title: getErrorMoveEmailsTemplate(
+                    getCurrentMailbox().folder,
+                    destinationFolder,
+                ),
+            });
             console.error(response.message);
             return;
         }
     };
 
     const moveToArchive = async (): Promise<void> => {
+        if (
+            !(
+                SharedStore.currentAccount === "home" &&
+                isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)
+            )
+        )
+            return moveTo(Folder.Archive);
+
         const results = await Promise.allSettled(
             groupedEmailSelection.map(async (group) => {
                 const emailAddress = group[0];
@@ -311,65 +339,95 @@
         const failed = results.filter((r) => r.status === "rejected");
 
         if (failed.length > 0) {
-            showMessage({ title: getErrorMoveEmailsTemplate(getCurrentMailbox().folder, Folder.Archive) });
+            showMessage({
+                title: getErrorMoveEmailsTemplate(
+                    getCurrentMailbox().folder,
+                    Folder.Archive,
+                ),
+            });
             failed.forEach((f) => console.error(f.reason));
         }
     };
 
     const deleteFrom = async (): Promise<void> => {
-        showConfirm({
-            title: local.are_you_certain_delete_email_s[DEFAULT_LANGUAGE],
-            onConfirmText: local.yes_delete[DEFAULT_LANGUAGE],
-            onConfirm: async () => {
-                const results = await Promise.allSettled(
-                    groupedEmailSelection.map(async (group) => {
-                        const emailAddress = group[0];
-                        const uids = sortSelection(group[1]);
+        if (
+            !(
+                SharedStore.currentAccount === "home" &&
+                isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)
+            )
+        ) {
+            const emailAddressOfSelection = groupedEmailSelection[0][0];
+            const deletingEmailUids = sortSelection(
+                groupedEmailSelection[0][1],
+            );
 
-                        const response = await MailboxController.deleteEmails(
-                            SharedStore.accounts.find(
-                                (acc) => acc.email_address === emailAddress,
-                            )!,
-                            uids,
-                            getCurrentMailbox().folder,
-                            currentOffset,
-                        );
+            const response = await MailboxController.deleteEmails(
+                SharedStore.accounts.find(
+                    (acc) => acc.email_address === emailAddressOfSelection,
+                )!,
+                deletingEmailUids,
+                getCurrentMailbox().folder,
+                currentOffset,
+            );
 
-                        if (!response.success) {
-                            throw new Error(response.message);
-                        }
-                    }),
-                );
-
-                const failed = results.filter((r) => r.status === "rejected");
-
-                if (failed.length > 0) {
-                    showMessage({
-                        title: local.error_delete_email_s[DEFAULT_LANGUAGE]
-                    });
-                    failed.forEach((f) => console.error(f.reason));
-                }
+            if (!response.success) {
+                showMessage({
+                    title: local.error_delete_email_s[DEFAULT_LANGUAGE],
+                });
+                console.error(response.message);
+                return;
             }
-        });
+        } else {
+            const results = await Promise.allSettled(
+                groupedEmailSelection.map(async (group) => {
+                    const emailAddress = group[0];
+                    const uids = sortSelection(group[1]);
+
+                    const response = await MailboxController.deleteEmails(
+                        SharedStore.accounts.find(
+                            (acc) => acc.email_address === emailAddress,
+                        )!,
+                        uids,
+                        getCurrentMailbox().folder,
+                        currentOffset,
+                    );
+
+                    if (!response.success) {
+                        throw new Error(response.message);
+                    }
+                }),
+            );
+
+            const failed = results.filter((r) => r.status === "rejected");
+
+            if (failed.length > 0) {
+                showMessage({
+                    title: local.error_delete_email_s[DEFAULT_LANGUAGE],
+                });
+                failed.forEach((f) => console.error(f.reason));
+            }
+        }
     };
 
     const unsubscribe = async () => {
-        if (emailSelection.length > 1)
-            return;
+        if (emailSelection.length > 1) return;
 
         // Same as `copyTo()` function.
         const emailAddressOfSelection = groupedEmailSelection[0][0];
         const unsubscribingEmailUid = groupedEmailSelection[0][1];
 
-        const email = SharedStore.mailboxes[emailAddressOfSelection].emails.current.find(
-            em => em.uid == unsubscribingEmailUid
-        )!;
-        if (!Object.hasOwn(email, "list_unsubscribe") || !email.list_unsubscribe)
+        const email = SharedStore.mailboxes[
+            emailAddressOfSelection
+        ].emails.current.find((em) => em.uid == unsubscribingEmailUid)!;
+        if (
+            !Object.hasOwn(email, "list_unsubscribe") ||
+            !email.list_unsubscribe
+        )
             return;
 
         const response = await MailboxController.unsubscribe(
             SharedStore.accounts.find(
-                account => account.email_address === emailAddressOfSelection
+                (account) => account.email_address === emailAddressOfSelection,
             )!,
             email.list_unsubscribe!,
             email.list_unsubscribe_post,
@@ -377,11 +435,11 @@
 
         if (!response.success) {
             showMessage({
-                title: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
+                title: local.error_unsubscribe_s[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
         }
-    }
+    };
 
     const unsubscribe_all = async () => {
         const results = await Promise.allSettled(
@@ -391,28 +449,35 @@
 
                 const account = SharedStore.accounts.find(
                     (acc) => acc.email_address === emailAddress,
-                )!
-                const emails = SharedStore.mailboxes[emailAddress].emails.current.filter(
-                    email => isUidInSelection(uids, email.uid) && email.list_unsubscribe
+                )!;
+                const emails = SharedStore.mailboxes[
+                    emailAddress
+                ].emails.current.filter(
+                    (email) =>
+                        isUidInSelection(uids, email.uid) &&
+                        email.list_unsubscribe,
                 );
 
                 // Is at least 1 email has list_unsubscribe?
                 if (emails[0].list_unsubscribe) {
                     const unsubscribeResultOfAccount = await Promise.allSettled(
                         emails.map(async (email) => {
-                            const response = await MailboxController.unsubscribe(
-                                account,
-                                email.list_unsubscribe!,
-                                email.list_unsubscribe_post,
-                            );
+                            const response =
+                                await MailboxController.unsubscribe(
+                                    account,
+                                    email.list_unsubscribe!,
+                                    email.list_unsubscribe_post,
+                                );
 
                             if (!response.success) {
                                 throw new Error(response.message);
                             }
-                        })
+                        }),
                     );
 
-                    const failed = unsubscribeResultOfAccount.filter((r) => r.status === "rejected");
+                    const failed = unsubscribeResultOfAccount.filter(
+                        (r) => r.status === "rejected",
+                    );
                     if (failed.length > 0) {
                         failed.forEach((f) => console.error(f.reason));
                         throw new Error();
@@ -425,11 +490,11 @@
 
         if (failed.length > 0) {
             showMessage({
-                title: local.error_unsubscribe_s[DEFAULT_LANGUAGE]
+                title: local.error_unsubscribe_s[DEFAULT_LANGUAGE],
             });
             failed.forEach((f) => console.error(f.reason));
         }
-    }
+    };
 
     const reply = async () => {
         // Same as `copyTo()` function.
@@ -494,7 +559,7 @@
 
         if (failed.length > 0) {
             showMessage({
-                title: local.error_refresh_mailbox_s[DEFAULT_LANGUAGE]
+                title: local.error_refresh_mailbox_s[DEFAULT_LANGUAGE],
             });
             failed.forEach((f) => console.error(f.reason));
         }
@@ -544,11 +609,23 @@
         </Context.Item>
     {/if}
     <Context.Separator />
-    <Context.Item onclick={moveToArchive}>
-        {local.archive[DEFAULT_LANGUAGE]}
-    </Context.Item>
+    {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
+        <Context.Item
+            onclick={() => {
+                moveTo(Folder.Inbox);
+            }}
+        >
+            {local.move_to_inbox[DEFAULT_LANGUAGE]}
+        </Context.Item>
+    {:else}
+        <Context.Item onclick={moveToArchive}>
+            {local.move_to_archive[DEFAULT_LANGUAGE]}
+        </Context.Item>
+    {/if}
     <Context.Item onclick={deleteFrom}>
-        {local.delete[DEFAULT_LANGUAGE]}
+        {isStandardFolder(getCurrentMailbox().folder, Folder.Trash)
+            ? local.delete_completely[DEFAULT_LANGUAGE]
+            : local.delete[DEFAULT_LANGUAGE]}
     </Context.Item>
 </Context.Root>
 
@@ -605,29 +682,48 @@
                 </Button.Action>
             </div>
         {/if}
-        <div class="tool">
-            <Button.Action
-                type="button"
-                class="btn-inline"
-                onclick={moveToArchive}
-            >
-                {local.archive[DEFAULT_LANGUAGE]}
-            </Button.Action>
-        </div>
+        {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
+            <div class="tool">
+                <Button.Action
+                    type="button"
+                    class="btn-inline"
+                    onclick={() => {
+                        moveTo(Folder.Inbox);
+                    }}
+                >
+                    {local.move_to_inbox[DEFAULT_LANGUAGE]}
+                </Button.Action>
+            </div>
+        {:else}
+            <div class="tool">
+                <Button.Action
+                    type="button"
+                    class="btn-inline"
+                    onclick={moveToArchive}
+                >
+                    {local.move_to_archive[DEFAULT_LANGUAGE]}
+                </Button.Action>
+            </div>
+        {/if}
         <div class="tool">
             <Button.Action
                 type="button"
                 class="btn-inline"
                 onclick={deleteFrom}
             >
-                {local.delete[DEFAULT_LANGUAGE]}
+                {isStandardFolder(getCurrentMailbox().folder, Folder.Trash)
+                    ? local.delete_completely[DEFAULT_LANGUAGE]
+                    : local.delete[DEFAULT_LANGUAGE]}
             </Button.Action>
         </div>
         {#if groupedEmailSelection.length == 1}
             {@const emailAddress = groupedEmailSelection[0][0]}
             <div class="tool-separator"></div>
             <div class="tool">
-                <Select.Root onchange={copyTo} placeholder={local.copy_to[DEFAULT_LANGUAGE]}>
+                <Select.Root
+                    onchange={copyTo}
+                    placeholder={local.copy_to[DEFAULT_LANGUAGE]}
+                >
                     {#if isMailboxOfCustomFolder}
                         <!-- Add inbox option if email is in custom folder -->
                         <Select.Option value={Folder.Inbox}>
@@ -644,7 +740,10 @@
                 </Select.Root>
             </div>
             <div class="tool">
-                <Select.Root onchange={moveTo} placeholder={local.move_to[DEFAULT_LANGUAGE]}>
+                <Select.Root
+                    onchange={moveTo}
+                    placeholder={local.move_to[DEFAULT_LANGUAGE]}
+                >
                     {#if isMailboxOfCustomFolder}
                         <!-- Add inbox option if email is in custom folder -->
                         <Select.Option value={Folder.Inbox}>

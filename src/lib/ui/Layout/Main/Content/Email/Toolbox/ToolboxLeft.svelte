@@ -16,6 +16,7 @@
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { isStandardFolder } from "$lib/utils";
 
     interface Props {
         account: Account;
@@ -117,27 +118,21 @@
     };
 
     const deleteFrom = async () => {
-        showConfirm({
-            title: local.are_you_certain_delete_email[DEFAULT_LANGUAGE],
-            onConfirmText: local.yes_delete[DEFAULT_LANGUAGE],
-            onConfirm: async (e: Event) => {
-                const response = await MailboxController.deleteEmails(
-                    account,
-                    email.uid,
-                    currentFolder,
-                    currentOffset
-                );
+        const response = await MailboxController.deleteEmails(
+            account,
+            email.uid,
+            currentFolder,
+            currentOffset
+        );
 
-                if (!response.success) {
-                    showMessage({
-                        title: local.error_delete_email_s[DEFAULT_LANGUAGE]
-                    });
-                    console.error(response.message);
-                }
+        if (!response.success) {
+            showMessage({
+                title: local.error_delete_email_s[DEFAULT_LANGUAGE]
+            });
+            console.error(response.message);
+        }
 
-                showContent(Mailbox);
-            },
-        });
+        showContent(Mailbox);
     };
 
     const unsubscribe = async () => {
@@ -234,14 +229,24 @@
             </Button.Action>
         {/if}
     </div>
-    <div class="tool">
-        <Button.Action type="button" class="btn-inline" onclick={moveToArchive}>
-            {local.archive[DEFAULT_LANGUAGE]}
-        </Button.Action>
-    </div>
+    {#if isStandardFolder(currentFolder, Folder.Archive)}
+        <div class="tool">
+            <Button.Action type="button" class="btn-inline" onclick={() => { moveTo(Folder.Inbox) }}>
+                {local.move_to_inbox[DEFAULT_LANGUAGE]}
+            </Button.Action>
+        </div>
+    {:else}
+        <div class="tool">
+            <Button.Action type="button" class="btn-inline" onclick={moveToArchive}>
+                {local.move_to_archive[DEFAULT_LANGUAGE]}
+            </Button.Action>
+        </div>
+    {/if}
     <div class="tool">
         <Button.Action type="button" class="btn-inline" onclick={deleteFrom}>
-            {local.delete[DEFAULT_LANGUAGE]}
+            {isStandardFolder(currentFolder, Folder.Trash)
+                ? local.delete_completely[DEFAULT_LANGUAGE]
+                : local.delete[DEFAULT_LANGUAGE]}
         </Button.Action>
     </div>
     <div class="tool-separator"></div>
