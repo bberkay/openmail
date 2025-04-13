@@ -25,6 +25,10 @@ export function debounce<T extends (...args: any[]) => any>(
     };
 }
 
+export function simpleDeepCopy<T>(source: T): T {
+    return JSON.parse(JSON.stringify(source));
+}
+
 export function findMatchingObject<T extends Record<string, any>>(
     objectList: T[],
     searchObject: Record<string, any>,
