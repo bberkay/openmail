@@ -3,7 +3,7 @@ import type {
     Attachment,
     Email,
     Draft,
-    PMailbox,
+    RawMailbox,
     OpenMailTaskResults,
 } from "$lib/types";
 import { removeFalsyParamsAndEmptyLists } from "$lib/utils";
@@ -194,8 +194,8 @@ export interface GetQueryResponse {
         failed: Account[];
     };
     [GetRoutes.GET_HIERARCHY_DELIMITER]: OpenMailTaskResults<string>,
-    [GetRoutes.GET_MAILBOX]: OpenMailTaskResults<PMailbox>;
-    [GetRoutes.PAGINATE_MAILBOX]: OpenMailTaskResults<PMailbox>;
+    [GetRoutes.GET_MAILBOX]: OpenMailTaskResults<RawMailbox>;
+    [GetRoutes.PAGINATE_MAILBOX]: OpenMailTaskResults<RawMailbox>;
     [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>;
     [GetRoutes.GET_EMAIL_CONTENT]: Email;
     [GetRoutes.DOWNLOAD_ATTACHMENT]: Attachment;

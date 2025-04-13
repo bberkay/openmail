@@ -70,7 +70,7 @@ export interface Draft {
     rcpt_options?: string[];
 }
 
-export interface PMailbox { // TODO: Find a new name for this.
+export interface RawMailbox {
     folder: string;
     emails: Email[];
     total: number;
