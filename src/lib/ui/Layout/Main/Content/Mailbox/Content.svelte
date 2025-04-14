@@ -23,6 +23,7 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
+    import { show as showToast } from "$lib/ui/Components/Toast";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
@@ -143,6 +144,8 @@
                         title: local.error_empty_trash[DEFAULT_LANGUAGE],
                     });
                     console.error(response.message);
+                } else {
+                    showToast({ content: "All emails deleted" });
                 }
             }
         });

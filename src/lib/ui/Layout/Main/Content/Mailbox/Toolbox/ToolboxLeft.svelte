@@ -174,7 +174,7 @@
     async function getNewUidsByMessageId(
         selection: GroupedMessageIdSelection,
         folder: string,
-    ): GroupedUidSelection {
+    ): Promise<GroupedUidSelection> {
         const foundSelection: GroupedUidSelection = [];
         const results = await Promise.allSettled(
             selection.map(async (group) => {
@@ -325,7 +325,7 @@
             getMessageIdsOfSelection(currentSelection);
 
         const undo = async () => {
-            const newUids = getNewUidsByMessageId(
+            const newUids = await getNewUidsByMessageId(
                 messageIdsOfSelection,
                 destinationFolder,
             );
@@ -365,7 +365,7 @@
             showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
         } else {
             showToast({
-                content: "asas",
+                content: "copy done",
                 onUndo: undo,
             });
         }
@@ -382,7 +382,7 @@
             getMessageIdsOfSelection(currentSelection);
 
         const undo = async () => {
-            const newUids = getNewUidsByMessageId(
+            const newUids = await getNewUidsByMessageId(
                 messageIdsOfSelection,
                 destinationFolder,
             );
@@ -423,7 +423,7 @@
             showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
         } else {
             showToast({
-                content: "asas",
+                content: "move done",
                 onUndo: undo,
             });
         }
@@ -439,7 +439,7 @@
             getMessageIdsOfSelection(currentSelection);
 
         const undo = async () => {
-            const newUids = getNewUidsByMessageId(
+            const newUids = await getNewUidsByMessageId(
                 messageIdsOfSelection,
                 Folder.Trash,
             );
@@ -479,7 +479,7 @@
             showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
         } else if (!isStandardFolder(folder, Folder.Trash)) {
             showToast({
-                content: "asas",
+                content: "delete done",
                 onUndo: undo,
             });
         }
@@ -513,6 +513,7 @@
                 title: local.error_unsubscribe_s[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
+            return;
         }
 
         showToast({ content: "Unsubscribe success" });
@@ -645,7 +646,10 @@
                 title: local.error_refresh_mailbox_s[DEFAULT_LANGUAGE],
             });
             failed.forEach((f) => console.error(f.reason));
+            if (failed.length === results.length) return;
         }
+
+        showToast({ content: "mailbox is refreshred" });
     };
 </script>
 

@@ -18,8 +18,7 @@
     import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import {
         backToDefault,
-        showThis as showContent,
-        showThis,
+        showThis as showContent
     } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
@@ -158,7 +157,7 @@
             showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
         } else {
             showToast({
-                content: "asas",
+                content: "copy done",
                 onUndo: undo,
             });
         }
@@ -206,7 +205,7 @@
         } else {
             showContent(Mailbox);
             showToast({
-                content: "asas",
+                content: "move done",
                 onUndo: undo,
             });
         }
@@ -244,7 +243,7 @@
         } else if (!isStandardFolder(folder, Folder.Trash)) {
             showContent(Mailbox);
             showToast({
-                content: "asas",
+                content: "delete done",
                 onUndo: undo,
             });
         }
@@ -264,9 +263,10 @@
                 title: local.error_unsubscribe_s[DEFAULT_LANGUAGE],
             });
             console.error(response.message);
-        } else {
-            showToast({ content: "Unsubscribed" });
+            return;
         }
+
+        showToast({ content: "Unsubscribed" });
     };
 
     const reply = async () => {

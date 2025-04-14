@@ -329,7 +329,7 @@
             return;
         }
 
-        sendEmails();
+        await sendEmails();
     };
 </script>
 
