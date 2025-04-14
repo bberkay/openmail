@@ -257,17 +257,17 @@
                 return;
             }
 
-            if (
-                SharedStore.currentAccount === "home" ||
-                !senderAccounts.includes(SharedStore.currentAccount)
-            ) {
+            const isAccountSender = SharedStore.currentAccount !== "home"
+                && senderAccounts.includes(SharedStore.currentAccount)
+
+            if (!isAccountSender) {
                 SharedStore.currentAccount = senderAccounts[0];
             }
 
             // Show first sender's Folder.Sent mailbox.
             if (!isStandardFolder(getCurrentMailbox().folder, Folder.Sent)) {
                 const response = await MailboxController.getMailbox(
-                    SharedStore.currentAccount,
+                    SharedStore.currentAccount as Account,
                     Folder.Sent,
                 );
 
