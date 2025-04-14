@@ -1546,9 +1546,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
             status, messages = self.uid(
                 'FETCH',
                 sequence_set,
-                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC ' \
-                'MESSAGE-ID IN-REPLY-TO REFERENCES LIST-UNSUBSCRIBE)] FLAGS ' \
-                'BODYSTRUCTURE)'
+                '(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID ' \
+                'IN-REPLY-TO REFERENCES LIST-UNSUBSCRIBE LIST-UNSUBSCRIBE-POST)] ' \
+                'FLAGS BODYSTRUCTURE)'
             )
 
             if status != 'OK':
