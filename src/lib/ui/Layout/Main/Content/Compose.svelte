@@ -4,7 +4,11 @@
     import { local } from "$lib/locales";
     import { extractEmailAddress, isStandardFolder } from "$lib/utils";
     import { getReplyTemplate, getForwardTemplate } from "$lib/templates";
-    import { AUTO_SAVE_DRAFT_INTERVAL_MS, DEFAULT_LANGUAGE, SEND_RECALL_DELAY_MS } from "$lib/constants";
+    import {
+        AUTO_SAVE_DRAFT_INTERVAL_MS,
+        DEFAULT_LANGUAGE,
+        SEND_RECALL_DELAY_MS,
+    } from "$lib/constants";
     import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { onDestroy, onMount } from "svelte";
@@ -82,17 +86,18 @@
             draftChangedAfterLastSave = true;
         };
         if (originalMessageContext) {
-            const getBodyTemplate = originalMessageContext.composeType == "reply" ? getReplyTemplate : getForwardTemplate;
+            const getBodyTemplate =
+                originalMessageContext.composeType == "reply"
+                    ? getReplyTemplate
+                    : getForwardTemplate;
             body.addFullHTMLPage(
                 getBodyTemplate(
                     escapeHTML(originalMessageContext.originalSender || ""),
-                    escapeHTML(
-                        originalMessageContext.originalReceivers || "",
-                    ),
+                    escapeHTML(originalMessageContext.originalReceivers || ""),
                     originalMessageContext.originalSubject || "",
                     originalMessageContext.originalBody || "",
-                    originalMessageContext.originalDate || ""
-                )
+                    originalMessageContext.originalDate || "",
+                ),
             );
         }
 
@@ -144,10 +149,6 @@
 
         // Remove saved draft before sending as email.
         if (Object.hasOwn(draftAppenduids, sender)) {
-            // Since we are going to redirect user to Sent folder
-            // we don't need to send `offset` argument(which there
-            // is no current connection between `Mailbox` and `Compose`
-            // components to get `offset` anyway.) to `deleteEmails()`.
             await MailboxController.deleteEmails(
                 SharedStore.accounts.find(
                     (acc) => acc.email_address === sender,
@@ -221,7 +222,9 @@
         const failed = results.filter((r) => r.status === "rejected");
 
         if (failed.length > 0) {
-            showMessage({ title:  local.error_save_email_s_as_draft[DEFAULT_LANGUAGE] });
+            showMessage({
+                title: local.error_save_email_s_as_draft[DEFAULT_LANGUAGE],
+            });
             failed.forEach((f) => console.error(f.reason));
         }
 
@@ -229,8 +232,10 @@
         draftChangedAfterLastSave = false;
     };
 
-    const sendEmails = async () => {
-        const confirmWrapper = async () => {
+    async function sendEmails() {
+        if (isSendingEmail || isSavingDraft) return;
+
+        const sendTimeout = setTimeout(async () => {
             isSendingEmail = true;
             const results = await Promise.allSettled(
                 senderAccounts.map(async (account) => {
@@ -250,15 +255,16 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    title: local.error_send_email_s[DEFAULT_LANGUAGE]
+                    title: local.error_send_email_s[DEFAULT_LANGUAGE],
                 });
                 failed.forEach((f) => console.error(f.reason));
                 isSendingEmail = false;
                 return;
             }
 
-            const isAccountSender = SharedStore.currentAccount !== "home"
-                && senderAccounts.includes(SharedStore.currentAccount)
+            const isAccountSender =
+                SharedStore.currentAccount !== "home" &&
+                senderAccounts.includes(SharedStore.currentAccount);
 
             if (!isAccountSender) {
                 SharedStore.currentAccount = senderAccounts[0];
@@ -273,7 +279,9 @@
 
                 if (!response.success) {
                     showMessage({
-                        title: local.error_sent_mailbox_after_sending_emails[DEFAULT_LANGUAGE]
+                        title: local.error_sent_mailbox_after_sending_emails[
+                            DEFAULT_LANGUAGE
+                        ],
                     });
                     console.error(response.message);
                     return;
@@ -282,12 +290,23 @@
 
             isSendingEmail = false;
             showContent(Mailbox);
-        };
+            showToast({ content: "Email sent" });
+        }, SEND_RECALL_DELAY_MS);
 
-        if (isSendingEmail || isSavingDraft) return;
+        showToast({
+            content: "Email sending...",
+            autoCloseDelay: SEND_RECALL_DELAY_MS,
+            onUndo: () => {
+                clearTimeout(sendTimeout);
+            },
+        });
+    }
 
+    const handleSendEmails = async () => {
         if (receivers.length == 0) {
-            showMessage({ title: local.at_least_one_receiver[DEFAULT_LANGUAGE] });
+            showMessage({
+                title: local.at_least_one_receiver[DEFAULT_LANGUAGE],
+            });
             console.error(local.at_least_one_receiver[DEFAULT_LANGUAGE]);
             return;
         }
@@ -296,7 +315,7 @@
             showConfirm({
                 title: local.are_you_certain_subject_is_empty[DEFAULT_LANGUAGE],
                 onConfirmText: local.yes_send[DEFAULT_LANGUAGE],
-                onConfirm: confirmWrapper,
+                onConfirm: sendEmails,
             });
             return;
         }
@@ -305,14 +324,17 @@
             showConfirm({
                 title: local.are_you_certain_body_is_empty[DEFAULT_LANGUAGE],
                 onConfirmText: local.yes_send[DEFAULT_LANGUAGE],
-                onConfirm: confirmWrapper,
+                onConfirm: sendEmails,
             });
+            return;
         }
+
+        sendEmails();
     };
 </script>
 
 <div class="compose" bind:this={composeWrapper}>
-    <Form onsubmit={sendEmails} id="compose-form">
+    <Form onsubmit={handleSendEmails} id="compose-form">
         <div>
             <FormGroup>
                 <Label for="senders">{local.sender_s[DEFAULT_LANGUAGE]}</Label>
@@ -347,12 +369,17 @@
                 </div>
             </FormGroup>
             <FormGroup>
-                <Label for="receivers">{local.receiver_s[DEFAULT_LANGUAGE]}</Label>
+                <Label for="receivers">
+                    {local.receiver_s[DEFAULT_LANGUAGE]}
+                </Label>
                 <Input.Group>
                     <Input.Basic
                         type="email"
                         id="receivers"
-                        placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
+                        placeholder={local
+                            .add_email_address_with_space_placeholder[
+                            DEFAULT_LANGUAGE
+                        ]}
                         onkeyup={addReceiver}
                         onblur={addReceiver}
                     />
@@ -399,7 +426,10 @@
                         <Input.Basic
                             type="email"
                             id="cc"
-                            placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
+                            placeholder={local
+                                .add_email_address_with_space_placeholder[
+                                DEFAULT_LANGUAGE
+                            ]}
                             onkeyup={addCc}
                             onblur={addCc}
                         />
@@ -426,7 +456,10 @@
                         <Input.Basic
                             type="email"
                             id="bcc"
-                            placeholder={local.add_email_address_with_space_placeholder[DEFAULT_LANGUAGE]}
+                            placeholder={local
+                                .add_email_address_with_space_placeholder[
+                                DEFAULT_LANGUAGE
+                            ]}
                             onkeyup={addBcc}
                             onblur={addBcc}
                         />
@@ -451,7 +484,9 @@
                 <div id="body"></div>
             </FormGroup>
             <FormGroup>
-                <Label for="attachments">{local.attachment_s[DEFAULT_LANGUAGE]}</Label>
+                <Label for="attachments">
+                    {local.attachment_s[DEFAULT_LANGUAGE]}
+                </Label>
                 <Input.File name="attachments" id="attachments" multiple />
             </FormGroup>
             <div style="margin-top:10px">
