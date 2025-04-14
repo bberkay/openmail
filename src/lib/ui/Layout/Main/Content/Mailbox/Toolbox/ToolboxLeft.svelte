@@ -3,6 +3,8 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import {
+        getEmailsMarkedTemplate,
+        getEmailsUnmarkedTemplate,
         getErrorCopyEmailsTemplate,
         getErrorMarkEmailsTemplate,
         getErrorMoveEmailsTemplate,
@@ -19,13 +21,18 @@
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
+    import { show as showToast } from "$lib/ui/Components/Toast";
     import {
         isStandardFolder,
         isUidInSelection,
+        simpleDeepCopy,
         sortSelection,
     } from "$lib/utils";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+
+    type GroupedUidSelection = [string, string][];
+    type GroupedMessageIdSelection = [string, string[]][];
 
     interface Props {
         emailSelection: "1:*" | string[];
@@ -35,7 +42,7 @@
     let { emailSelection = $bindable([]), currentOffset = $bindable() }: Props =
         $props();
 
-    let isMailboxOfCustomFolder = $derived.by(() => {
+    let inCustomFolder = $derived.by(() => {
         if (SharedStore.currentAccount == "home") return false;
 
         return SharedStore.folders[
@@ -43,9 +50,10 @@
         ].custom.includes(getCurrentMailbox().folder);
     });
 
-    let groupedEmailSelection: [string, string][] = $derived.by(() => {
+    let groupedEmailSelection: GroupedUidSelection = $derived.by(() => {
         if (!emailSelection) return [];
 
+        const accountUidMap: Record<string, string> = {};
         // When the `emailSelection` will be something like this:
         // ["account1@mail.com,123", "account1@mail.com,124", "account2@mail.com,123"]
         // so `groupedEmailSelection` will be something like this:
@@ -57,7 +65,6 @@
         // to this:
         // C: A101 +STORE FLAG account1@mail.com 123, 124
         // C: A102 +STORE FLAG account1@mail.com 125
-        const accountUidMap: Record<string, string> = {};
         if (emailSelection === "1:*") {
             if (SharedStore.currentAccount === "home") {
                 SharedStore.accounts.forEach((account) => {
@@ -69,14 +76,12 @@
         } else {
             emailSelection.forEach((selection) => {
                 const [emailAddr, uid] = selection.split(",");
-                if (!Object.hasOwn(accountUidMap, emailAddr)) {
-                    accountUidMap[emailAddr] = uid;
-                } else {
-                    accountUidMap[emailAddr] = accountUidMap[emailAddr].concat(
-                        ",",
-                        uid,
-                    );
-                }
+                accountUidMap[emailAddr] = Object.hasOwn(
+                    accountUidMap,
+                    emailAddr,
+                )
+                    ? accountUidMap[emailAddr].concat(",", uid)
+                    : uid;
             });
         }
         return Object.entries(accountUidMap);
@@ -145,7 +150,62 @@
         });
     }
 
-    async function markEmails(mark: string | Mark) {
+    function getMessageIdsOfSelection(
+        selection: GroupedUidSelection,
+    ): GroupedMessageIdSelection {
+        let foundSelection: Record<string, string[]> = {};
+        selection.map((group) => {
+            const emailAddress = group[0];
+            const uids = group[1].split(",");
+            foundSelection[emailAddress] = [];
+            uids.forEach((uid) => {
+                const email = SharedStore.mailboxes[
+                    emailAddress
+                ].emails.current.find((em) => em.uid === uid);
+                if (email) {
+                    foundSelection[emailAddress].push(email.message_id);
+                }
+            });
+            return;
+        });
+        return Object.entries(foundSelection);
+    }
+
+    async function getNewUidsByMessageId(
+        selection: GroupedMessageIdSelection,
+        folder: string,
+    ): GroupedUidSelection {
+        const foundSelection: GroupedUidSelection = [];
+        const results = await Promise.allSettled(
+            selection.map(async (group) => {
+                const emailAddress = group[0];
+                const messageIds = group[1];
+                const response = await MailboxController.searchEmails(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === emailAddress,
+                    )!,
+                    folder,
+                    { message_id: messageIds },
+                );
+                if (!response.success || !response.data) {
+                    throw new Error(response.message);
+                }
+                const foundUids = response.data[emailAddress].join(",");
+                foundSelection.push([emailAddress, foundUids]);
+            }),
+        );
+
+        const failed = results.filter((r) => r.status === "rejected");
+        if (failed.length > 0) {
+            showMessage({ title: "asdad" });
+            failed.forEach((f) => console.error(f.reason));
+        }
+
+        return foundSelection;
+    }
+
+    async function markEmails(mark: string | Mark, isUndo: boolean = false) {
+        const currentSelection = simpleDeepCopy(groupedEmailSelection);
         const results = await Promise.allSettled(
             groupedEmailSelection.map(async (group) => {
                 const emailAddress = group[0];
@@ -167,16 +227,28 @@
         );
 
         const failed = results.filter((r) => r.status === "rejected");
-
         if (failed.length > 0) {
             showMessage({
                 title: getErrorMarkEmailsTemplate(mark),
             });
             failed.forEach((f) => console.error(f.reason));
         }
+
+        if (isUndo) {
+            showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
+        } else {
+            showToast({
+                content: getEmailsMarkedTemplate(mark),
+                onUndo: () => {
+                    groupedEmailSelection = currentSelection;
+                    unmarkEmails(mark, true);
+                },
+            });
+        }
     }
 
-    async function unmarkEmails(mark: string | Mark) {
+    async function unmarkEmails(mark: string | Mark, isUndo: boolean = false) {
+        const currentSelection = simpleDeepCopy(groupedEmailSelection);
         const results = await Promise.allSettled(
             groupedEmailSelection.map(async (group) => {
                 const emailAddress = group[0];
@@ -198,12 +270,23 @@
         );
 
         const failed = results.filter((r) => r.status === "rejected");
-
         if (failed.length > 0) {
             showMessage({
                 title: getErrorUnmarkEmailsTemplate(mark),
             });
             failed.forEach((f) => console.error(f.reason));
+        }
+
+        if (isUndo) {
+            showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
+        } else {
+            showToast({
+                content: getEmailsUnmarkedTemplate(mark),
+                onUndo: () => {
+                    groupedEmailSelection = currentSelection;
+                    markEmails(mark, true);
+                },
+            });
         }
     }
 
@@ -231,104 +314,36 @@
         emailSelection = selectShownCheckbox.checked ? shownEmailUids : [];
     };
 
-    const markAsRead = async (): Promise<void> => {
-        await markEmails(Mark.Seen);
-    };
-
-    const markAsUnread = async (): Promise<void> => {
-        await unmarkEmails(Mark.Seen);
-    };
-
-    const markAsImportant = async (): Promise<void> => {
-        await markEmails(Mark.Flagged);
-    };
-
-    const markAsNotImportant = async (): Promise<void> => {
-        await unmarkEmails(Mark.Flagged);
-    };
-
     const copyTo = async (
+        selection: GroupedUidSelection,
+        sourceFolder: string | Folder,
         destinationFolder: string | Folder,
+        isUndo: boolean = false,
     ): Promise<void> => {
-        // Since "moveTo/copyTo/reply/forward" options are disabled when there
-        // is more than one current account(mostly "home"), groupedEmailSelection's
-        // length isn't going to be more than 1, so first index is enough to cover
-        // selection.
-        const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const movingEmailUids = sortSelection(groupedEmailSelection[0][1]);
+        const currentSelection = simpleDeepCopy(selection);
+        const messageIdsOfSelection =
+            getMessageIdsOfSelection(currentSelection);
 
-        const response = await MailboxController.copyEmails(
-            SharedStore.accounts.find(
-                (acc) => acc.email_address === emailAddressOfSelection,
-            )!,
-            movingEmailUids,
-            getCurrentMailbox().folder,
-            destinationFolder,
-        );
-
-        if (!response.success) {
-            showMessage({
-                title: getErrorCopyEmailsTemplate(
-                    getCurrentMailbox().folder,
-                    destinationFolder,
-                ),
-            });
-            console.error(response.message);
-        }
-    };
-
-    const moveTo = async (
-        destinationFolder: string | Folder,
-    ): Promise<void> => {
-        // Same as `copyTo()` function.
-        const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const movingEmailUids = sortSelection(groupedEmailSelection[0][1]);
-
-        const response = await MailboxController.moveEmails(
-            SharedStore.accounts.find(
-                (acc) => acc.email_address === emailAddressOfSelection,
-            )!,
-            movingEmailUids,
-            getCurrentMailbox().folder,
-            destinationFolder,
-            currentOffset,
-        );
-
-        if (!response.success) {
-            showMessage({
-                title: getErrorMoveEmailsTemplate(
-                    getCurrentMailbox().folder,
-                    destinationFolder,
-                ),
-            });
-            console.error(response.message);
-            return;
-        }
-    };
-
-    const moveToArchive = async (): Promise<void> => {
-        if (
-            !(
-                SharedStore.currentAccount === "home" &&
-                isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)
-            )
-        ) {
-            return moveTo(Folder.Archive);
-        }
+        const undo = async () => {
+            const newUids = getNewUidsByMessageId(
+                messageIdsOfSelection,
+                destinationFolder,
+            );
+            await deleteFrom(newUids, destinationFolder, true);
+        };
 
         const results = await Promise.allSettled(
-            groupedEmailSelection.map(async (group) => {
+            currentSelection.map(async (group) => {
                 const emailAddress = group[0];
-                const emailUids = sortSelection(group[1]);
+                const uids = sortSelection(group[1]);
 
-                const response = await MailboxController.moveEmails(
+                const response = await MailboxController.copyEmails(
                     SharedStore.accounts.find(
                         (acc) => acc.email_address === emailAddress,
                     )!,
-                    emailUids,
-                    getCurrentMailbox().folder,
-                    Folder.Archive,
-                    currentOffset,
+                    uids,
+                    sourceFolder,
+                    destinationFolder,
                 );
 
                 if (!response.success) {
@@ -338,21 +353,101 @@
         );
 
         const failed = results.filter((r) => r.status === "rejected");
-
         if (failed.length > 0) {
             showMessage({
-                title: getErrorMoveEmailsTemplate(
-                    getCurrentMailbox().folder,
-                    Folder.Archive,
-                ),
+                title: local.error_move_email_s[DEFAULT_LANGUAGE],
             });
             failed.forEach((f) => console.error(f.reason));
+            if (failed.length === results.length) return;
+        }
+
+        if (isUndo) {
+            showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
+        } else {
+            showToast({
+                content: "asas",
+                onUndo: undo,
+            });
         }
     };
 
-    const deleteFrom = async (): Promise<void> => {
+    const moveTo = async (
+        selection: GroupedUidSelection,
+        sourceFolder: string | Folder,
+        destinationFolder: string | Folder,
+        isUndo: boolean = false,
+    ): Promise<void> => {
+        const currentSelection = simpleDeepCopy(selection);
+        const messageIdsOfSelection =
+            getMessageIdsOfSelection(currentSelection);
+
+        const undo = async () => {
+            const newUids = getNewUidsByMessageId(
+                messageIdsOfSelection,
+                destinationFolder,
+            );
+            await moveTo(newUids, destinationFolder, sourceFolder, true);
+        };
+
         const results = await Promise.allSettled(
-            groupedEmailSelection.map(async (group) => {
+            currentSelection.map(async (group) => {
+                const emailAddress = group[0];
+                const uids = sortSelection(group[1]);
+
+                const response = await MailboxController.moveEmails(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === emailAddress,
+                    )!,
+                    uids,
+                    sourceFolder,
+                    destinationFolder,
+                    isUndo ? undefined : currentOffset,
+                );
+
+                if (!response.success) {
+                    throw new Error(response.message);
+                }
+            }),
+        );
+
+        const failed = results.filter((r) => r.status === "rejected");
+        if (failed.length > 0) {
+            showMessage({
+                title: local.error_move_email_s[DEFAULT_LANGUAGE],
+            });
+            failed.forEach((f) => console.error(f.reason));
+            if (failed.length === results.length) return;
+        }
+
+        if (isUndo) {
+            showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
+        } else {
+            showToast({
+                content: "asas",
+                onUndo: undo,
+            });
+        }
+    };
+
+    const deleteFrom = async (
+        selection: GroupedUidSelection,
+        folder: string | Folder,
+        isUndo: boolean = false,
+    ): Promise<void> => {
+        const currentSelection = simpleDeepCopy(selection);
+        const messageIdsOfSelection =
+            getMessageIdsOfSelection(currentSelection);
+
+        const undo = async () => {
+            const newUids = getNewUidsByMessageId(
+                messageIdsOfSelection,
+                Folder.Trash,
+            );
+            await moveTo(newUids, Folder.Trash, folder, true);
+        };
+
+        const results = await Promise.allSettled(
+            currentSelection.map(async (group) => {
                 const emailAddress = group[0];
                 const uids = sortSelection(group[1]);
 
@@ -361,8 +456,8 @@
                         (acc) => acc.email_address === emailAddress,
                     )!,
                     uids,
-                    getCurrentMailbox().folder,
-                    currentOffset,
+                    folder,
+                    isUndo ? undefined : currentOffset,
                 );
 
                 if (!response.success) {
@@ -372,36 +467,44 @@
         );
 
         const failed = results.filter((r) => r.status === "rejected");
-
         if (failed.length > 0) {
             showMessage({
                 title: local.error_delete_email_s[DEFAULT_LANGUAGE],
             });
             failed.forEach((f) => console.error(f.reason));
+            if (failed.length === results.length) return;
+        }
+
+        if (isUndo) {
+            showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
+        } else if (!isStandardFolder(folder, Folder.Trash)) {
+            showToast({
+                content: "asas",
+                onUndo: undo,
+            });
         }
     };
 
     const unsubscribe = async () => {
+        // Since "unsubscribe/reply/forward" options are disabled when there is
+        // more than one current account("home"), groupedEmailSelection's length
+        // isn't going to be more than 1, so first index is enough to cover
+        // selection.
         if (emailSelection.length > 1) return;
 
-        // Same as `copyTo()` function.
-        const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const unsubscribingEmailUid = groupedEmailSelection[0][1];
+        const emailAddress = groupedEmailSelection[0][0];
+        const uid = groupedEmailSelection[0][1];
+        const email = SharedStore.mailboxes[emailAddress].emails.current.find(
+            (em) => em.uid == uid,
+        )!;
 
-        const email = SharedStore.mailboxes[
-            emailAddressOfSelection
-        ].emails.current.find((em) => em.uid == unsubscribingEmailUid)!;
-        if (
-            !Object.hasOwn(email, "list_unsubscribe") ||
-            !email.list_unsubscribe
-        )
-            return;
+        if (!email.list_unsubscribe) return;
 
         const response = await MailboxController.unsubscribe(
             SharedStore.accounts.find(
-                (account) => account.email_address === emailAddressOfSelection,
+                (account) => account.email_address === emailAddress,
             )!,
-            email.list_unsubscribe!,
+            email.list_unsubscribe,
             email.list_unsubscribe_post,
         );
 
@@ -411,65 +514,71 @@
             });
             console.error(response.message);
         }
+
+        showToast({ content: "Unsubscribe success" });
     };
 
     const unsubscribe_all = async () => {
+        const currentSelection = simpleDeepCopy(groupedEmailSelection);
         const results = await Promise.allSettled(
-            groupedEmailSelection.map(async (group) => {
+            currentSelection.map(async (group) => {
                 const emailAddress = group[0];
                 const uids = group[1];
 
                 const account = SharedStore.accounts.find(
                     (acc) => acc.email_address === emailAddress,
                 )!;
+
                 const emails = SharedStore.mailboxes[
                     emailAddress
-                ].emails.current.filter(
-                    (email) =>
+                ].emails.current.filter((email) => {
+                    return (
                         isUidInSelection(uids, email.uid) &&
-                        email.list_unsubscribe,
+                        email.list_unsubscribe
+                    );
+                });
+
+                const unsubscribeResultOfAccount = await Promise.allSettled(
+                    emails.map(async (email) => {
+                        const response =
+                            await MailboxController.unsubscribe(
+                                account,
+                                email.list_unsubscribe!,
+                                email.list_unsubscribe_post,
+                            );
+
+                        if (!response.success) {
+                            throw new Error(response.message);
+                        }
+                    }),
                 );
 
-                // Is at least 1 email has list_unsubscribe?
-                if (emails[0].list_unsubscribe) {
-                    const unsubscribeResultOfAccount = await Promise.allSettled(
-                        emails.map(async (email) => {
-                            const response =
-                                await MailboxController.unsubscribe(
-                                    account,
-                                    email.list_unsubscribe!,
-                                    email.list_unsubscribe_post,
-                                );
-
-                            if (!response.success) {
-                                throw new Error(response.message);
-                            }
-                        }),
-                    );
-
-                    const failed = unsubscribeResultOfAccount.filter(
-                        (r) => r.status === "rejected",
-                    );
-                    if (failed.length > 0) {
-                        failed.forEach((f) => console.error(f.reason));
-                        throw new Error();
-                    }
+                const failed = unsubscribeResultOfAccount.filter(
+                    (r) => r.status === "rejected",
+                );
+                if (failed.length > 0) {
+                    failed.forEach((f) => console.error(f.reason));
+                    throw new Error("one or more unsubscribe operations have failed.");
                 }
             }),
         );
 
         const failed = results.filter((r) => r.status === "rejected");
-
         if (failed.length > 0) {
             showMessage({
                 title: local.error_unsubscribe_s[DEFAULT_LANGUAGE],
             });
             failed.forEach((f) => console.error(f.reason));
+            if (failed.length === results.length) return;
         }
+
+        showToast({ content: "success unsubscribe" });
     };
 
     const reply = async () => {
-        // Same as `copyTo()` function.
+        // Check out `unsubscribe()`
+        if (emailSelection.length > 1) return;
+
         const emailAddressOfSelection = groupedEmailSelection[0][0];
         const replyingEmailUid = groupedEmailSelection[0][1];
 
@@ -491,13 +600,15 @@
     };
 
     const forward = async () => {
-        // Same as `copyTo()` function.
+        // Check out `unsubscribe()`
+        if (emailSelection.length > 1) return;
+
         const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const replyingEmailUid = groupedEmailSelection[0][1];
+        const forwardingEmailUid = groupedEmailSelection[0][1];
 
         const email = SharedStore.mailboxes[
             emailAddressOfSelection
-        ].emails.current.find((email) => email.uid == replyingEmailUid)!;
+        ].emails.current.find((email) => email.uid == forwardingEmailUid)!;
 
         showContent(Compose, {
             originalMessageContext: {
@@ -544,22 +655,38 @@
     afterClose={deselectEmail}
 >
     {#if !isSelectedEmailsIncludesGivenMark(Mark.Flagged)}
-        <Context.Item onclick={markAsImportant}>
+        <Context.Item
+            onclick={async () => {
+                await markEmails(Mark.Flagged);
+            }}
+        >
             {local.star[DEFAULT_LANGUAGE]}
         </Context.Item>
     {/if}
     {#if !isSelectedEmailsExcludesGivenMark(Mark.Flagged)}
-        <Context.Item onclick={markAsNotImportant}>
+        <Context.Item
+            onclick={async () => {
+                await unmarkEmails(Mark.Flagged);
+            }}
+        >
             {local.remove_star[DEFAULT_LANGUAGE]}
         </Context.Item>
     {/if}
     {#if !isSelectedEmailsExcludesGivenMark(Mark.Seen)}
-        <Context.Item onclick={markAsRead}>
+        <Context.Item
+            onclick={async () => {
+                await markEmails(Mark.Seen);
+            }}
+        >
             {local.mark_as_read[DEFAULT_LANGUAGE]}
         </Context.Item>
     {/if}
     {#if !isSelectedEmailsExcludesGivenMark(Mark.Seen)}
-        <Context.Item onclick={markAsUnread}>
+        <Context.Item
+            onclick={async () => {
+                await unmarkEmails(Mark.Seen);
+            }}
+        >
             {local.mark_as_unread[DEFAULT_LANGUAGE]}
         </Context.Item>
     {/if}
@@ -583,18 +710,34 @@
     <Context.Separator />
     {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
         <Context.Item
-            onclick={() => {
-                moveTo(Folder.Inbox);
+            onclick={async () => {
+                await moveTo(
+                    groupedEmailSelection,
+                    Folder.Archive,
+                    Folder.Inbox,
+                );
             }}
         >
             {local.move_to_inbox[DEFAULT_LANGUAGE]}
         </Context.Item>
     {:else}
-        <Context.Item onclick={moveToArchive}>
+        <Context.Item
+            onclick={async () => {
+                await moveTo(
+                    groupedEmailSelection,
+                    getCurrentMailbox().folder,
+                    Folder.Archive,
+                );
+            }}
+        >
             {local.move_to_archive[DEFAULT_LANGUAGE]}
         </Context.Item>
     {/if}
-    <Context.Item onclick={deleteFrom}>
+    <Context.Item
+        onclick={async () => {
+            await deleteFrom(groupedEmailSelection, getCurrentMailbox().folder);
+        }}
+    >
         {isStandardFolder(getCurrentMailbox().folder, Folder.Trash)
             ? local.delete_completely[DEFAULT_LANGUAGE]
             : local.delete[DEFAULT_LANGUAGE]}
@@ -615,7 +758,9 @@
                 <Button.Action
                     type="button"
                     class="btn-inline"
-                    onclick={markAsImportant}
+                    onclick={async () => {
+                        await markEmails(Mark.Flagged);
+                    }}
                 >
                     {local.star[DEFAULT_LANGUAGE]}
                 </Button.Action>
@@ -626,7 +771,9 @@
                 <Button.Action
                     type="button"
                     class="btn-inline"
-                    onclick={markAsNotImportant}
+                    onclick={async () => {
+                        await unmarkEmails(Mark.Flagged);
+                    }}
                 >
                     {local.remove_star[DEFAULT_LANGUAGE]}
                 </Button.Action>
@@ -637,7 +784,9 @@
                 <Button.Action
                     type="button"
                     class="btn-inline"
-                    onclick={markAsRead}
+                    onclick={async () => {
+                        await markEmails(Mark.Seen);
+                    }}
                 >
                     {local.mark_as_read[DEFAULT_LANGUAGE]}
                 </Button.Action>
@@ -648,7 +797,9 @@
                 <Button.Action
                     type="button"
                     class="btn-inline"
-                    onclick={markAsUnread}
+                    onclick={async () => {
+                        await unmarkEmails(Mark.Seen);
+                    }}
                 >
                     {local.mark_as_unread[DEFAULT_LANGUAGE]}
                 </Button.Action>
@@ -659,8 +810,12 @@
                 <Button.Action
                     type="button"
                     class="btn-inline"
-                    onclick={() => {
-                        moveTo(Folder.Inbox);
+                    onclick={async () => {
+                        await moveTo(
+                            groupedEmailSelection,
+                            Folder.Archive,
+                            Folder.Inbox,
+                        );
                     }}
                 >
                     {local.move_to_inbox[DEFAULT_LANGUAGE]}
@@ -671,7 +826,13 @@
                 <Button.Action
                     type="button"
                     class="btn-inline"
-                    onclick={moveToArchive}
+                    onclick={async () => {
+                        await moveTo(
+                            groupedEmailSelection,
+                            getCurrentMailbox().folder,
+                            Folder.Archive,
+                        );
+                    }}
                 >
                     {local.move_to_archive[DEFAULT_LANGUAGE]}
                 </Button.Action>
@@ -681,7 +842,12 @@
             <Button.Action
                 type="button"
                 class="btn-inline"
-                onclick={deleteFrom}
+                onclick={async () => {
+                    await deleteFrom(
+                        groupedEmailSelection,
+                        getCurrentMailbox().folder,
+                    );
+                }}
             >
                 {isStandardFolder(getCurrentMailbox().folder, Folder.Trash)
                     ? local.delete_completely[DEFAULT_LANGUAGE]
@@ -693,10 +859,16 @@
             <div class="tool-separator"></div>
             <div class="tool">
                 <Select.Root
-                    onchange={copyTo}
+                    onchange={async (destinationFolder) => {
+                        await copyTo(
+                            groupedEmailSelection,
+                            getCurrentMailbox().folder,
+                            destinationFolder,
+                        );
+                    }}
                     placeholder={local.copy_to[DEFAULT_LANGUAGE]}
                 >
-                    {#if isMailboxOfCustomFolder}
+                    {#if inCustomFolder}
                         <!-- Add inbox option if email is in custom folder -->
                         <Select.Option value={Folder.Inbox}>
                             {Folder.Inbox}
@@ -713,10 +885,16 @@
             </div>
             <div class="tool">
                 <Select.Root
-                    onchange={moveTo}
+                    onchange={async (destinationFolder) => {
+                        await moveTo(
+                            groupedEmailSelection,
+                            getCurrentMailbox().folder,
+                            destinationFolder,
+                        );
+                    }}
                     placeholder={local.move_to[DEFAULT_LANGUAGE]}
                 >
-                    {#if isMailboxOfCustomFolder}
+                    {#if inCustomFolder}
                         <!-- Add inbox option if email is in custom folder -->
                         <Select.Option value={Folder.Inbox}>
                             {Folder.Inbox}

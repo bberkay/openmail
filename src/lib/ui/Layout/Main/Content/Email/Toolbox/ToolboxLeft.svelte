@@ -40,9 +40,27 @@
     const customFolders = SharedStore.folders[account.email_address].custom;
     const inCustomFolder = customFolders.includes(currentFolder);
 
+    async function getNewUidByMessageId(
+        folder: string | Folder,
+    ): Promise<string | undefined> {
+        const searchResult = await MailboxController.searchEmails(
+            account,
+            folder,
+            { message_id: [email.message_id] },
+        );
+
+        if (!searchResult.success || !searchResult.data) {
+            showMessage({ title: "123" });
+            console.error(searchResult.message);
+            return;
+        }
+
+        return searchResult.data[account.email_address][0];
+    }
+
     async function markAs(
         mark: string | Mark,
-        isUndo: boolean = false
+        isUndo: boolean = false,
     ): Promise<PostResponse> {
         const response = await MailboxController.markEmails(
             account,
@@ -74,7 +92,7 @@
 
     async function removeMark(
         mark: string | Mark,
-        isUndo: boolean = false
+        isUndo: boolean = false,
     ): Promise<PostResponse> {
         const response = await MailboxController.unmarkEmails(
             account,
@@ -108,25 +126,14 @@
         uid: string,
         sourceFolder: string | Folder,
         destinationFolder: string | Folder,
-        isUndo: boolean = false
+        isUndo: boolean = false,
     ) => {
         const undo = async () => {
-            const searchResult = await MailboxController.searchEmails(
-                account,
-                destinationFolder,
-                { message_id: email.message_id },
-            );
-
-            if (!searchResult.success || !searchResult.data) {
-                showMessage({
-                    title: getErrorSearhCopiedEmailTemplate(destinationFolder),
-                });
-                console.error(searchResult.message);
-                return;
+            const copiedEmailUid =
+                await getNewUidByMessageId(destinationFolder);
+            if (copiedEmailUid) {
+                await deleteFrom(copiedEmailUid, destinationFolder, true);
             }
-
-            const copiedEmailUid = searchResult.data[account.email_address][0];
-            await deleteFrom(copiedEmailUid, destinationFolder, true);
         };
 
         const response = await MailboxController.copyEmails(
@@ -161,25 +168,18 @@
         uid: string,
         sourceFolder: string | Folder,
         destinationFolder: string | Folder,
-        isUndo: boolean = false
+        isUndo: boolean = false,
     ) => {
         const undo = async () => {
-            const searchResult = await MailboxController.searchEmails(
-                account,
-                destinationFolder,
-                { message_id: email.message_id },
-            );
-
-            if (!searchResult.success || !searchResult.data) {
-                showMessage({
-                    title: getErrorSearhMovedEmailTemplate(destinationFolder),
-                });
-                console.error(searchResult.message);
-                return;
+            const movedEmailUid = await getNewUidByMessageId(destinationFolder);
+            if (movedEmailUid) {
+                await moveTo(
+                    movedEmailUid,
+                    destinationFolder,
+                    sourceFolder,
+                    true,
+                );
             }
-
-            const movedEmailUid = searchResult.data[account.email_address][0];
-            await moveTo(movedEmailUid, destinationFolder, sourceFolder, true);
         };
 
         const response = await MailboxController.moveEmails(
@@ -187,7 +187,7 @@
             uid,
             sourceFolder,
             destinationFolder,
-            isUndo ? undefined : currentOffset
+            isUndo ? undefined : currentOffset,
         );
 
         if (!response.success) {
@@ -215,26 +215,14 @@
     const deleteFrom = async (
         uid: string,
         folder: string | Folder,
-        isUndo: boolean = false
+        isUndo: boolean = false,
     ) => {
         const undo = async () => {
-            const searchResult = await MailboxController.searchEmails(
-                account,
-                Folder.Trash,
-                { message_id: email.message_id },
-            );
-
-            if (!searchResult.success || !searchResult.data) {
-                showMessage({
-                    title: "folder trash",
-                });
-                console.error(searchResult.message);
-                return;
+            const movedEmailUid = await getNewUidByMessageId(folder);
+            if (movedEmailUid) {
+                await moveTo(movedEmailUid, Folder.Trash, folder, true);
             }
-
-            const movedEmailUid = searchResult.data[account.email_address][0];
-            moveTo(movedEmailUid, Folder.Trash, currentFolder, true);
-        }
+        };
 
         const response = await MailboxController.deleteEmails(
             account,
@@ -253,7 +241,7 @@
 
         if (isUndo) {
             showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
-        } else if (!isStandardFolder(currentFolder, Folder.Trash)) {
+        } else if (!isStandardFolder(folder, Folder.Trash)) {
             showContent(Mailbox);
             showToast({
                 content: "asas",
@@ -263,11 +251,7 @@
     };
 
     const unsubscribe = async () => {
-        if (
-            !Object.hasOwn(email, "list_unsubscribe") ||
-            !email.list_unsubscribe
-        )
-            return;
+        if (!email.list_unsubscribe) return;
 
         const response = await MailboxController.unsubscribe(
             account,
@@ -378,11 +362,7 @@
                 type="button"
                 class="btn-inline"
                 onclick={async () => {
-                    await moveTo(
-                        email.uid,
-                        currentFolder,
-                        Folder.Inbox,
-                    );
+                    await moveTo(email.uid, Folder.Archive, Folder.Inbox);
                 }}
             >
                 {local.move_to_inbox[DEFAULT_LANGUAGE]}
@@ -394,11 +374,7 @@
                 type="button"
                 class="btn-inline"
                 onclick={async () => {
-                    await moveTo(
-                        email.uid,
-                        currentFolder,
-                        Folder.Archive,
-                    );
+                    await moveTo(email.uid, currentFolder, Folder.Archive);
                 }}
             >
                 {local.move_to_archive[DEFAULT_LANGUAGE]}
@@ -422,11 +398,7 @@
     <div class="tool">
         <Select.Root
             onchange={async (destinationFolder) => {
-                await copyTo(
-                    email.uid,
-                    currentFolder,
-                    destinationFolder
-                );
+                await copyTo(email.uid, currentFolder, destinationFolder);
             }}
             placeholder={local.copy_to[DEFAULT_LANGUAGE]}
         >
@@ -448,11 +420,7 @@
     <div class="tool">
         <Select.Root
             onchange={async (destinationFolder) => {
-                await moveTo(
-                    email.uid,
-                    currentFolder,
-                    destinationFolder,
-                );
+                await moveTo(email.uid, currentFolder, destinationFolder);
             }}
             placeholder={local.move_to[DEFAULT_LANGUAGE]}
         >
