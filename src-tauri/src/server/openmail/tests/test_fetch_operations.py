@@ -168,7 +168,7 @@ class TestFetchOperations(unittest.TestCase):
         self.assertEqual(
             self.__class__._openmail.imap.build_search_criteria_query(
                 SearchCriteria(
-                    message_id="123",
+                    message_id=["a123", "b456"],
                     senders=["sender@mail.com"],
                     receivers=["receiver1@mail.com", "receiver2@mail.com"],
                     cc=["cc1@mail.com", "cc2@mail.com"],
@@ -184,10 +184,11 @@ class TestFetchOperations(unittest.TestCase):
                     has_attachments=True
                 )
             ),
-            '(HEADER MESSAGE-ID "123") (FROM "sender@mail.com") (OR (TO "receiver1@mail.com") (TO "receiver2@mail.com")) ' \
-            '(OR (CC "cc1@mail.com") (CC "cc2@mail.com")) (SUBJECT "Hello") (SINCE "2023-01-01") ' \
-            '(BEFORE "2023-12-31") (BODY "word") (NOT BODY "good bye") FLAGGED SEEN KEYWORD CUSTOMFLAG ' \
-            'ANSWERED UNDRAFT UNKEYWORD CUSTOMFLAG2 (TEXT "ATTACHMENT") (LARGER 150) (SMALLER 300)'
+            '(OR (HEADER MESSAGE-ID "A123") (HEADER MESSAGE-ID "B456")) (FROM "sender@mail.com") ' \
+            '(OR (TO "receiver1@mail.com") (TO "receiver2@mail.com")) (OR (CC "cc1@mail.com") ' \
+            '(CC "cc2@mail.com")) (SUBJECT "Hello") (SINCE "2023-01-01") (BEFORE "2023-12-31") ' \
+            '(BODY "word") (NOT BODY "good bye") FLAGGED SEEN KEYWORD CUSTOMFLAG ANSWERED UNDRAFT ' \
+            'UNKEYWORD CUSTOMFLAG2 (TEXT "ATTACHMENT") (LARGER 150) (SMALLER 300)'
         )
 
     def test_basic_search_with_sender(self):
@@ -223,6 +224,21 @@ class TestFetchOperations(unittest.TestCase):
 
         email_content = self.__class__._openmail.imap.get_email_content(found_emails.folder, found_emails.emails[0].uid)
         self.assertIn(self.__class__._test_sent_basic_email.body, email_content.body)
+
+    def test_complex_search_with_message_id(self):
+        print("test_complex_search_with_message_id...")
+
+        self.__class__._openmail.imap.search_emails()
+        random_emails = self.__class__._openmail.imap.get_emails()
+        self.assertGreaterEqual(random_emails.total, 1)
+        existing_message_ids = [email.message_id for email in random_emails.emails][:2]
+
+        self.__class__._openmail.imap.search_emails(search=SearchCriteria(
+            message_id=existing_message_ids
+        ))
+
+        found_emails = self.__class__._openmail.imap.get_emails()
+        self.assertTrue(all(email.message_id in existing_message_ids for email in found_emails.emails))
 
     def test_complex_search_with_multiple_receivers(self):
         print("test_complex_search_with_multiple_receivers...")

@@ -1361,7 +1361,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 extract_email_addresses(search_criteria.cc or []),
                 len(search_criteria.cc or []) > 1
             )
-            search_criteria_query += add_criterion("HEADER MESSAGE-ID", search_criteria.message_id)
+            search_criteria_query += add_criterion(
+                "HEADER MESSAGE-ID",
+                search_criteria.message_id,
+                len(search_criteria.message_id or []) > 1
+            )
             search_criteria_query += add_criterion("SUBJECT", search_criteria.subject)
             search_criteria_query += add_criterion("SINCE", search_criteria.since)
             search_criteria_query += add_criterion("BEFORE", search_criteria.before)

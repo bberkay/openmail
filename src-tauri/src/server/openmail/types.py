@@ -15,7 +15,7 @@ class SearchCriteria():
     References:
         - https://datatracker.ietf.org/doc/html/rfc9051#name-search-command
     """
-    message_id: Optional[str] = ""
+    message_id: Optional[list[str]] = field(default_factory=list)
     senders: Optional[list[str]] = field(default_factory=list)
     receivers: Optional[list[str]] = field(default_factory=list)
     cc: Optional[list[str]] = field(default_factory=list)
