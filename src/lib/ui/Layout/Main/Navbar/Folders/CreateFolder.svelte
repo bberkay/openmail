@@ -11,6 +11,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { show as showToast } from "$lib/ui/Components/Toast";
 
     interface Props {
         parentFolderName?: string;
@@ -40,6 +41,8 @@
         if (!response.success) {
             showMessage({ title: local.error_create_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
+        } else {
+            showToast({ content: "create success" });
         }
 
         target.reset();
@@ -54,7 +57,9 @@
     <Form onsubmit={handleCreateFolderForm}>
         <div>
             <FormGroup>
-                <Label for="folder-name">{local.folder_name[DEFAULT_LANGUAGE]}</Label>
+                <Label for="folder-name">
+                    {local.folder_name[DEFAULT_LANGUAGE]}
+                </Label>
                 <Input.Basic
                     type="text"
                     name="folder_name"
@@ -64,7 +69,9 @@
                 />
             </FormGroup>
             <FormGroup>
-                <Label for="parent-folder">{local.parent_folder[DEFAULT_LANGUAGE]}</Label>
+                <Label for="parent-folder">
+                    {local.parent_folder[DEFAULT_LANGUAGE]}
+                </Label>
                 <Select.Root
                     id="parent-folder"
                     onchange={handleParentFolder}

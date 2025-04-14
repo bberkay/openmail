@@ -10,6 +10,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { show as showToast } from "$lib/ui/Components/Toast";
 
     interface Props {
         folderName: string;
@@ -34,6 +35,8 @@
         if (!response.success) {
             showMessage({ title: local.error_rename_folder[DEFAULT_LANGUAGE] });
             console.error(response.message);
+        } else {
+            showToast({ content: "rename success" });
         }
 
         target.reset();

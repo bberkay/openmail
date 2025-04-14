@@ -16,6 +16,7 @@
         getLogoutFromTemplate,
         getNotLoggedOutFromTemplate,
     } from "$lib/templates";
+    import { show as showToast } from "$lib/ui/Components/Toast";
 
     const AccountOperation = {
         Home: "create",
@@ -108,6 +109,7 @@
                     console.error(response.message);
                     return;
                 }
+                showToast({ content: "logout success" });
             },
         });
     };
