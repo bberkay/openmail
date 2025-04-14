@@ -60,6 +60,7 @@
     let draftAppenduids: { [account: string]: string } = {};
     let draftLoopTimeout: ReturnType<typeof setTimeout>;
     let isSavingDraft: boolean = $state(false);
+    let lastDraftSavedTime: string = $state("");
     let draftChangedAfterLastSave: boolean = true;
 
     let body: WYSIWYGEditor;
@@ -178,60 +179,6 @@
         return sentResponse;
     }
 
-    const addSenderAccount = (senderEmailAddr: string) => {
-        const senderAccount = SharedStore.accounts.find(
-            (acc) => acc.email_address === senderEmailAddr,
-        )!;
-        senderAccounts.push(senderAccount);
-    };
-
-    const addReceiver = (e: Event) => {
-        addEmailToAddressList(e, receiverInput, receivers);
-        draftChangedAfterLastSave = true;
-    };
-
-    const addCc = (e: Event) => {
-        addEmailToAddressList(e, ccInput, cc);
-        draftChangedAfterLastSave = true;
-    };
-
-    const addBcc = (e: Event) => {
-        addEmailToAddressList(e, bccInput, bcc);
-        draftChangedAfterLastSave = true;
-    };
-
-    const saveEmailsAsDrafts = async () => {
-        if (isSendingEmail || isSavingDraft || !draftChangedAfterLastSave)
-            return;
-        isSavingDraft = true;
-
-        const results = await Promise.allSettled(
-            senderAccounts.map(async (account) => {
-                const response = await saveEmailAsDraft(
-                    createSenderAddress(
-                        account.email_address,
-                        account.fullname,
-                    ),
-                );
-                if (!response.success) {
-                    throw new Error(response.message);
-                }
-            }),
-        );
-
-        const failed = results.filter((r) => r.status === "rejected");
-
-        if (failed.length > 0) {
-            showMessage({
-                title: local.error_save_email_s_as_draft[DEFAULT_LANGUAGE],
-            });
-            failed.forEach((f) => console.error(f.reason));
-        }
-
-        isSavingDraft = false;
-        draftChangedAfterLastSave = false;
-    };
-
     async function sendEmails() {
         if (isSendingEmail || isSavingDraft) return;
 
@@ -301,6 +248,61 @@
             },
         });
     }
+
+    const addSenderAccount = (senderEmailAddr: string) => {
+        const senderAccount = SharedStore.accounts.find(
+            (acc) => acc.email_address === senderEmailAddr,
+        )!;
+        senderAccounts.push(senderAccount);
+    };
+
+    const addReceiver = (e: Event) => {
+        addEmailToAddressList(e, receiverInput, receivers);
+        draftChangedAfterLastSave = true;
+    };
+
+    const addCc = (e: Event) => {
+        addEmailToAddressList(e, ccInput, cc);
+        draftChangedAfterLastSave = true;
+    };
+
+    const addBcc = (e: Event) => {
+        addEmailToAddressList(e, bccInput, bcc);
+        draftChangedAfterLastSave = true;
+    };
+
+    const saveEmailsAsDrafts = async () => {
+        if (isSendingEmail || isSavingDraft || !draftChangedAfterLastSave)
+            return;
+        isSavingDraft = true;
+
+        const results = await Promise.allSettled(
+            senderAccounts.map(async (account) => {
+                const response = await saveEmailAsDraft(
+                    createSenderAddress(
+                        account.email_address,
+                        account.fullname,
+                    ),
+                );
+                if (!response.success) {
+                    throw new Error(response.message);
+                }
+            }),
+        );
+
+        const failed = results.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+            showMessage({
+                title: local.error_save_email_s_as_draft[DEFAULT_LANGUAGE],
+            });
+            failed.forEach((f) => console.error(f.reason));
+        }
+
+        lastDraftSavedTime = new Date(Date.now()).toLocaleString();
+        isSavingDraft = false;
+        draftChangedAfterLastSave = false;
+    };
 
     const handleSendEmails = async () => {
         if (receivers.length == 0) {
@@ -507,6 +509,11 @@
                 >
                     {local.save_as_draft[DEFAULT_LANGUAGE]}
                 </Button.Action>
+                {#if lastDraftSavedTime}
+                    <span class="draft-saved-feedback">
+                        Draft saved at {lastDraftSavedTime}
+                    </span>
+                {/if}
             </div>
         </div>
     </Form>
