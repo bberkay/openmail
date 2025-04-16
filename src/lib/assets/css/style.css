@@ -28,6 +28,7 @@ body {
     --color-white: light-dark(#ffffff, #ffffff);
     --color-black: light-dark(#000000, #000000);
     --color-gray: light-dark(#3d3d3d, #3d3d3d);
+    --color-checked: light-dark(#2b80ef, #2b80ef);
     --color-bg-drop-area: light-dark(#4a90e20d, #4a90e20d);
     --color-border-drop-area: light-dark(#4a90e2, #4a90e2);
 
