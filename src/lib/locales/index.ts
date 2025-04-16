@@ -548,8 +548,8 @@ export const local = {
     spam: {
         en: "Spam"
     },
-    show_original: {
-        en: "Show Original"
+    view_source: {
+        en: "View Source"
     },
     unsubscribe: {
         en: "Unsubscribe"

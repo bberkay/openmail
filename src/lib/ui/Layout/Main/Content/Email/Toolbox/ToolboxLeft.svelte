@@ -481,12 +481,12 @@
                     onclick={() => {
                         showMessage({
                             title: getNotImplementedTemplate(
-                                local.show_original[DEFAULT_LANGUAGE],
+                                local.view_source[DEFAULT_LANGUAGE],
                             ),
                         });
                     }}
                 >
-                    {local.show_original[DEFAULT_LANGUAGE]}
+                    {local.view_source[DEFAULT_LANGUAGE]}
                 </Dropdown.Item>
                 <Dropdown.Item onclick={unsubscribe}>
                     {local.unsubscribe[DEFAULT_LANGUAGE]}
