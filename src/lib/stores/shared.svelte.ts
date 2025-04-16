@@ -2,7 +2,7 @@ import {
     type Email,
     type Account,
     type Mailbox,
-    type OpenMailTaskResults,
+    type OpenmailTaskResults,
 } from "../types";
 
 export enum SharedStoreKeys {
@@ -22,13 +22,13 @@ interface ISharedStore {
     [SharedStoreKeys.server]: string;
     [SharedStoreKeys.accounts]: Account[];
     [SharedStoreKeys.currentAccount]: "home" | Account;
-    [SharedStoreKeys.folders]: OpenMailTaskResults<{
+    [SharedStoreKeys.folders]: OpenmailTaskResults<{
         standard: string[],
         custom: string[]
     }>;
-    [SharedStoreKeys.hierarchyDelimiters]: OpenMailTaskResults<string>;
-    [SharedStoreKeys.recentEmails]: OpenMailTaskResults<Email[]>;
-    [SharedStoreKeys.mailboxes]: OpenMailTaskResults<Mailbox>;
+    [SharedStoreKeys.hierarchyDelimiters]: OpenmailTaskResults<string>;
+    [SharedStoreKeys.recentEmails]: OpenmailTaskResults<Email[]>;
+    [SharedStoreKeys.mailboxes]: OpenmailTaskResults<Mailbox>;
     [SharedStoreKeys.failedAccounts]: Account[];
     [SharedStoreKeys.accountsWithFailedFolders]: Account[];
     [SharedStoreKeys.accountsWithFailedMailboxes]: Account[];

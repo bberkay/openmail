@@ -143,6 +143,7 @@ BASE_STRUCTURE = DirObject(
     ROOT_DIR,
     [
         FileObject("uvicorn.info"),
+        FileObject("preferences.json"),
         DirObject(
             "logs",
             [

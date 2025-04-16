@@ -6,7 +6,7 @@ import json
 import copy
 from typing import cast
 
-from openmail import OpenMail
+from openmail import Openmail
 from openmail.types import Attachment, Draft, Email, Folder, SearchCriteria
 from openmail.parser import HTMLParser, MessageDecoder, MessageParser
 from openmail.encoder import FileBase64Encoder
@@ -22,7 +22,7 @@ class TestSendOperations(unittest.TestCase):
         print("Setting up test `TestSendOperations`...")
         cls.addClassCleanup(cls.cleanup)
 
-        cls._openmail = OpenMail()
+        cls._openmail = Openmail()
 
         with open("./credentials.json") as credentials:
             credentials = json.load(credentials)

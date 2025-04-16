@@ -4,7 +4,7 @@ import type {
     Email,
     Draft,
     RawMailbox,
-    OpenMailTaskResults,
+    OpenmailTaskResults,
 } from "$lib/types";
 import { removeFalsyParamsAndEmptyLists } from "$lib/utils";
 
@@ -222,11 +222,11 @@ export interface GetQueryResponse {
         connected: Account[];
         failed: Account[];
     };
-    [GetRoutes.GET_HIERARCHY_DELIMITER]: OpenMailTaskResults<string>,
-    [GetRoutes.SEARCH_EMAILS]: OpenMailTaskResults<string[]>; // uid list
-    [GetRoutes.GET_MAILBOX]: OpenMailTaskResults<RawMailbox>;
-    [GetRoutes.PAGINATE_MAILBOX]: OpenMailTaskResults<RawMailbox>;
-    [GetRoutes.GET_FOLDERS]: OpenMailTaskResults<string[]>;
+    [GetRoutes.GET_HIERARCHY_DELIMITER]: OpenmailTaskResults<string>,
+    [GetRoutes.SEARCH_EMAILS]: OpenmailTaskResults<string[]>; // uid list
+    [GetRoutes.GET_MAILBOX]: OpenmailTaskResults<RawMailbox>;
+    [GetRoutes.PAGINATE_MAILBOX]: OpenmailTaskResults<RawMailbox>;
+    [GetRoutes.GET_FOLDERS]: OpenmailTaskResults<string[]>;
     [GetRoutes.GET_EMAIL_CONTENT]: Email;
     [GetRoutes.DOWNLOAD_ATTACHMENT]: Attachment;
     [GetRoutes.GET_PUBLIC_KEY]: { public_key: string };

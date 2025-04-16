@@ -2,7 +2,7 @@ import json
 import unittest
 import bisect
 
-from openmail import OpenMail
+from openmail import Openmail
 from openmail.imap import FOLDER_LIST
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
@@ -14,7 +14,7 @@ class TestFolderOperations(unittest.TestCase):
         print("Setting up test `TestFolderOperations`...")
         cls.addClassCleanup(cls.cleanup)
 
-        cls._openmail = OpenMail()
+        cls._openmail = Openmail()
 
         with open("./credentials.json") as credentials:
             credentials = json.load(credentials)

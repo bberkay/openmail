@@ -2,7 +2,7 @@ export enum TauriCommand {
     GET_SERVER_URL = "get_server_url",
 }
 
-export type OpenMailTaskResults<T> = {
+export type OpenmailTaskResults<T> = {
     [email_address: string]: T;
 };
 

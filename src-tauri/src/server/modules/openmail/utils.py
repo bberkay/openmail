@@ -1,5 +1,5 @@
 """
-Utility functions to be used in other modules of OpenMail.
+Utility functions to be used in other modules of Openmail.
 
 These functions provide helper methods for email-related operations,
 including domain extraction, date conversion, and other utility tasks.

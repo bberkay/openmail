@@ -4,7 +4,7 @@ import unittest
 import json
 import threading
 
-from openmail import OpenMail
+from openmail import Openmail
 from openmail.imap import IDLE_ACTIVATION_INTERVAL, IDLE_TIMEOUT, Folder
 from openmail.types import Draft
 from .utils.dummy_operator import DummyOperator
@@ -16,7 +16,7 @@ class TestIdleOperations(unittest.TestCase):
         print("Setting up test `TestIdleOperations`...")
         cls.addClassCleanup(cls.cleanup)
 
-        cls._openmail = OpenMail()
+        cls._openmail = Openmail()
         with open("./credentials.json") as credentials:
             cls._credentials = json.load(credentials)
 
@@ -188,7 +188,7 @@ class TestIdleOperations(unittest.TestCase):
         wait_new_message_thread.start()
 
         # Sender
-        sender = OpenMail()
+        sender = Openmail()
         sender_email = self.__class__._credentials[2]["email"]
         sender.connect(sender_email, self.__class__._credentials[2]["password"])
         print(f"Connecting to {sender_email}")
@@ -374,7 +374,7 @@ class TestIdleOperations(unittest.TestCase):
         time.sleep(IDLE_ACTIVATION_INTERVAL + (IDLE_TIMEOUT / 2))
 
         # Sender
-        sender = OpenMail()
+        sender = Openmail()
         sender_email = self.__class__._credentials[2]["email"]
         sender.connect(sender_email, self.__class__._credentials[2]["password"])
         print(f"Connecting to {sender_email}")

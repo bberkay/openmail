@@ -3,7 +3,7 @@ import time
 import unittest
 from email.message import EmailMessage
 
-from openmail import OpenMail
+from openmail import Openmail
 from openmail.imap import Mark, Folder
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
@@ -15,7 +15,7 @@ class TestEmailOperations(unittest.TestCase):
         print("Setting up test `TestEmailOperations`...")
         cls.addClassCleanup(cls.cleanup)
 
-        cls._openmail = OpenMail()
+        cls._openmail = Openmail()
         with open("./credentials.json") as credentials:
             credentials = json.load(credentials)
         cls._email = credentials[0]["email"]

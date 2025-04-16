@@ -1,7 +1,7 @@
 import unittest
 import json
 
-from openmail import OpenMail
+from openmail import Openmail
 from openmail.utils import contains_non_ascii
 
 class TestConnectOperations(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestConnectOperations(unittest.TestCase):
         print("Setting up test `TestFolderOperations`...")
         cls.addClassCleanup(cls.cleanup)
 
-        cls._openmail = OpenMail()
+        cls._openmail = Openmail()
         with open("./credentials.json") as credentials:
             cls._credentials = json.load(credentials)
         if len(cls._credentials) < 3:

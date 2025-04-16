@@ -1,7 +1,7 @@
 import time
 from typing import cast
 
-from openmail import OpenMail
+from openmail import Openmail
 from openmail.utils import extract_email_address
 from openmail.smtp import SMTPManagerException
 from openmail.imap import IMAPManagerException
@@ -13,7 +13,7 @@ class DummyOperator:
 
     @staticmethod
     def create_test_folder_and_get_name(
-        openmail: OpenMail,
+        openmail: Openmail,
         folder_name_suffix: str | None = None,
         create_parent: bool = False,
         parent_folder_name_suffix: str | None = None,
@@ -22,7 +22,7 @@ class DummyOperator:
         Creates a test folder and returns its name.
 
         Args:
-            openmail (OpenMail): An instance of the OpenMail class.
+            openmail (Openmail): An instance of the Openmail class.
             folder_name_suffix (str, optional): The beginning of name of the folder to create.
             If not provided, a random name will be generated.
             create_parent (bool, optional): Whether to create a parent folder. Default is False.
@@ -33,11 +33,11 @@ class DummyOperator:
             tuple[str, str]: The name of the created folder and it's parent.
 
         Example:
-            >>> OpenMailDummyOperator.create_test_folder_and_get_name(openmail)
+            >>> OpenmailDummyOperator.create_test_folder_and_get_name(openmail)
             ('openmail-folder-test-uuid', '') # (Child folder, Parent folder)
-            >>> OpenMailDummyOperator.create_test_folder_and_get_name(openmail, create_parent=True)
+            >>> OpenmailDummyOperator.create_test_folder_and_get_name(openmail, create_parent=True)
             ('openmail-folder-test-uuid', 'openmail-folder-test-uuid') # (Child folder, Parent folder)
-            >>> OpenMailDummyOperator.create_test_folder_and_get_name(
+            >>> OpenmailDummyOperator.create_test_folder_and_get_name(
             ...     openmail,
             ...     create_parent=True,
             ...     parent_folder_name="already-exists-or-going-to-be-created"
@@ -61,14 +61,14 @@ class DummyOperator:
 
     @staticmethod
     def send_test_email_to_self_and_get_uid(
-        openmail: OpenMail,
+        openmail: Openmail,
         senderOrDraft: str | Draft,
     ) -> str:
         """
         Sends a test email to self and returns the UID of the sent email.
 
         Args:
-            openmail (OpenMail): An instance of the OpenMail class.
+            openmail (Openmail): An instance of the Openmail class.
             senderOrDraft (str | Draft): Sender email address like "Name Surname <name@domain.com>" or
             "name@domain.com" or Draft object to send the test email.
 
@@ -76,9 +76,9 @@ class DummyOperator:
             str: The UID of the sent email.
 
         Example:
-            >>> OpenMailDummyOperator.send_test_email_to_self_and_get_uid(openmail, "someone@domain.com")
+            >>> OpenmailDummyOperator.send_test_email_to_self_and_get_uid(openmail, "someone@domain.com")
             '1'
-            >>> OpenMailDummyOperator.send_test_email_to_self_and_get_uid(openmail, Draft(
+            >>> OpenmailDummyOperator.send_test_email_to_self_and_get_uid(openmail, Draft(
             ...     sender="someone@domain.com",
             ...     receivers="someone@domain.com",
             ...     subject="test subject",

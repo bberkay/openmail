@@ -10,7 +10,7 @@ Key features include:
 - New methods for replying to and forwarding emails.
 - Custom error handling.
 
-Primarily designed for use by the `OpenMail` class.
+Primarily designed for use by the `Openmail` class.
 
 Author: <berkaykayaforbusiness@outlook.com>
 License: MIT
@@ -77,7 +77,7 @@ class SMTPManager(smtplib.SMTP):
     Does not override any methods except `login`
     and `quit`. Converts `quit` to `logout` for
     consistency with `IMAPManager`. Mainly used
-    in `OpenMail` class.
+    in `Openmail` class.
     """
     def __init__(
         self,
@@ -547,7 +547,7 @@ class SMTPManager(smtplib.SMTP):
                         headers={
                             "Content-Type": "application/x-www-form-urlencoded",
                             "List-Unsubscribe": "One-Click",
-                            "User-Agent": "OpenMail/1.0" # TODO: change this later
+                            "User-Agent": "Openmail/1.0" # TODO: change this later
                         }
                     )
                 with urllib.request.urlopen(req_or_url) as response:

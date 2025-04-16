@@ -8,7 +8,7 @@ import time
 from typing import cast
 import unittest
 
-from openmail import OpenMail
+from openmail import Openmail
 from openmail.imap import Mark, Folder
 from openmail.types import Attachment, Draft, SearchCriteria
 from openmail.parser import HTMLParser, MessageParser
@@ -26,7 +26,7 @@ class TestFetchOperations(unittest.TestCase):
         print("Setting up test `TestFetchOperations`...")
         cls.addClassCleanup(cls.cleanup)
 
-        cls._openmail = OpenMail()
+        cls._openmail = Openmail()
 
         with open("./credentials.json") as credentials:
             credentials = json.load(credentials)

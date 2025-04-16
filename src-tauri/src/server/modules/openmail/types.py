@@ -1,5 +1,5 @@
 """
-This module contains the types used in the OpenMail module.
+This module contains the types used in the Openmail module.
 """
 from __future__ import annotations
 import json
