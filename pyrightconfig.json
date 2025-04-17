@@ -1,0 +1,4 @@
+{
+  "venvPath": "./src-tauri/src/server/",
+  "venv": ".venv"
+}
