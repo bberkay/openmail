@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 import os
 from typing import Any, cast
 
@@ -52,21 +53,21 @@ class FileObject:
         if not overwrite and os.path.exists(self.fullpath):
             return
 
-        with open(self.fullpath, "w", encoding="utf-8") as file:
-            file.write(self._initial_content)
+        with open(self.fullpath, "w", encoding="utf-8") as f:
+            f.write(self._initial_content)
 
     def read(self) -> str:
-        with open(self.fullpath, "r", encoding="utf-8") as file:
-            content = file.read()
+        with open(self.fullpath, "r", encoding="utf-8") as f:
+            content = f.read()
         return content
 
     def write(self, content: Any) -> None:
-        with open(self.fullpath, "w", encoding="utf-8") as file:
-            file.write(content)
+        with open(self.fullpath, "w", encoding="utf-8") as f:
+            f.write(content)
 
     def clear(self) -> None:
-        with open(self.fullpath, "w", encoding="utf-8") as file:
-            file.write("")
+        with open(self.fullpath, "w", encoding="utf-8") as f:
+            f.write("")
 
 class DirObject:
     def __init__(self, name: str, children: list[FileObject | DirObject] | None = None):
@@ -210,3 +211,6 @@ class FileSystem:
 
     def get_uvicorn_log(self) -> FileObject:
         return cast(FileObject, cast(DirObject, self._root["logs"])["uvicorn.log"])
+
+    def get_preferences(self) -> FileObject:
+        return cast(FileObject, self._root["preferences.json"])

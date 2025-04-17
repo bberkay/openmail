@@ -4,7 +4,7 @@ This module contains the types used in the Openmail module.
 from __future__ import annotations
 import json
 from enum import Enum
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence
 from dataclasses import dataclass, field, fields
 
 @dataclass
