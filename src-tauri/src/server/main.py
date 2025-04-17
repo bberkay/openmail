@@ -5,11 +5,9 @@ TODO: improve docstring
 
 from __future__ import annotations
 import os
-from typing import Generic, Optional, TypeVar
 from contextlib import asynccontextmanager
 
 import uvicorn
-from pydantic import BaseModel
 from fastapi import FastAPI, Request, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -21,12 +19,12 @@ from routers import app_tasks, account_tasks, email_tasks
 from helpers.uvicorn_logger import UvicornLogger
 from helpers.port_scanner import PortScanner
 
-from consts import HOST, TRUSTED_HOSTS, PORT_RANGE
-from utils import parse_err_msg
+from .types import Response
+from .consts import HOST, TRUSTED_HOSTS, PORT_RANGE
+from .utils import parse_err_msg
 
 
 #################### SET UP #######################
-T = TypeVar("T")
 
 client_handler = ClientHandler()
 account_manager = AccountManager()
@@ -54,12 +52,6 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
 app.include_router(app_tasks.router)
 app.include_router(account_tasks.router)
 app.include_router(email_tasks.router)
-
-
-class Response(BaseModel, Generic[T]):
-    success: bool
-    message: str
-    data: Optional[T] = None
 
 
 @app.middleware("http")

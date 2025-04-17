@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional, cast
 
-from ..main import Response
+from ..types import Response
 from ..utils import err_msg, is_email_valid
 from ..modules.openmail import Openmail
 from ..internal.account_manager import AccountManager, Account, AccountWithPassword

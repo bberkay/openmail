@@ -4,7 +4,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Form, UploadFile
 from pydantic import BaseModel
 from typing import Optional, Annotated, TypeVar
 
-from ..main import Response
+from ..types import Response
 from ..utils import err_msg
 from ..internal.account_manager import AccountManager
 from ..internal.client_handler import ClientHandler

@@ -1,4 +1,4 @@
-APP_NAME = "openmail"
+APP_NAME = "Openmail"
 #TRUSTED_HOSTS = ["127.0.0.1", "localhost"]
 HOST = "127.0.0.1"
 TRUSTED_HOSTS = ["*"]
