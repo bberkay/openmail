@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { exit, relaunch } from "@tauri-apps/plugin-process";
     import {
         isPermissionGranted,
         requestPermission,
@@ -17,6 +16,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import * as Table from "$lib/ui/Components/Table";
+    import Pagination from "$lib/ui/Components/Pagination";
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
@@ -31,6 +31,8 @@
 
     let { editAccount, onCancel }: Props = $props();
 
+    const allAccounts = SharedStore.failedAccounts.concat(SharedStore.accounts);
+    let accounts = $state(allAccounts);
     let accountSelection: string[] = $state([]);
 
     const selectAllAccounts = (event: Event) => {
@@ -78,12 +80,25 @@
         });
     };
 
+    const searchAccounts = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        if (target.value.length > 3) {
+            accounts = allAccounts.filter(
+                (account) =>
+                    account.email_address.includes(target.value) ||
+                    account.fullname?.includes(target.value),
+            );
+        } else {
+            accounts = allAccounts;
+        }
+    };
+
     async function initMailboxes(): Promise<void> {
         const response = await MailboxController.init();
         if (!response.success) {
             console.error(response.message);
             showMessage({
-                title: local.error_initialize_mailboxes[DEFAULT_LANGUAGE]
+                title: local.error_initialize_mailboxes[DEFAULT_LANGUAGE],
             });
         }
         // TODO: Open this later.
@@ -193,14 +208,19 @@
                     SharedStore.failedAccounts
                         .map((account) => {
                             return getFailedItemTemplate(
-                                createSenderAddress(account.email_address, account.fullname)
-                            )
+                                createSenderAddress(
+                                    account.email_address,
+                                    account.fullname,
+                                ),
+                            );
                         })
                         .join(""),
                 ),
                 onManageText: local.manage_accounts[DEFAULT_LANGUAGE],
-                onManage: () => { editAccount(SharedStore.failedAccounts[0]) },
-                closeable: false
+                onManage: () => {
+                    editAccount(SharedStore.failedAccounts[0]);
+                },
+                closeable: false,
             });
         }
     });
@@ -210,10 +230,18 @@
     <div class="alert-container" id="accounts-alert-container"></div>
     {#if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
         {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
+        <div>
+            <!-- TODO: Add select all accounts button after pagination implementation. -->
+            <Input.Basic type="text" onkeydown={searchAccounts} />
+            <Button.Basic type="button" class="btn-outline" onclick={onCancel}>
+                {local.add_another_account[DEFAULT_LANGUAGE]}
+            </Button.Basic>
+        </div>
         <Table.Root>
             <Table.Header>
                 <Table.Row>
                     <Table.Head class="checkbox-cell">
+                        <!-- TODO: Convert to select shown button after pagination implementation. -->
                         <Input.Basic
                             type="checkbox"
                             onclick={selectAllAccounts}
@@ -246,9 +274,11 @@
                 </Table.Row>
             </Table.Header>
             <Table.Body>
-                {#each SharedStore.failedAccounts.concat(SharedStore.accounts) as account, index}
+                {#each accounts as account, index}
                     <Table.Row
-                        class={index < failedAccountLength ? "failed" : ""}
+                        class={SharedStore.failedAccounts.includes(account)
+                            ? "failed"
+                            : ""}
                     >
                         <Table.Cell class="checkbox-cell">
                             <Input.Basic
@@ -287,6 +317,8 @@
             </Table.Body>
         </Table.Root>
 
+        <!-- TODO: Add pagination and display account count. -->
+
         <div class="landing-body-footer">
             <Button.Action
                 onclick={initMailboxes}
@@ -295,10 +327,6 @@
             >
                 {local.continue_to_mailbox[DEFAULT_LANGUAGE]}
             </Button.Action>
-
-            <Button.Basic type="button" class="btn-inline" onclick={onCancel}>
-                {local.add_another_account[DEFAULT_LANGUAGE]}
-            </Button.Basic>
         </div>
     {/if}
 </div>

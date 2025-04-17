@@ -3,11 +3,13 @@
 
     interface Props {
         group?: unknown;
+        value?: unknown;
         [attribute: string]: unknown;
     }
 
     let {
         group = $bindable(undefined),
+        value = $bindable(undefined),
         ...attributes
     }: Props  = $props();
 
@@ -19,6 +21,7 @@
 
 <input
     bind:group
+    bind:value
     class={combine("input", additionalClass)}
     {...restAttributes}
 />
