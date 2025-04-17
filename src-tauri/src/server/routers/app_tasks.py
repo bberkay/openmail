@@ -10,6 +10,7 @@ from ..utils import err_msg
 
 router = APIRouter(tags=["App"])
 
+
 @router.get("/get-preferences")
 def get_preferences() -> Response:
     try:
@@ -23,6 +24,7 @@ def get_preferences() -> Response:
             success=False,
             message=err_msg("There was an error while updating preferences.", str(e)),
         )
+
 
 @router.put("/save-preferences")
 def save_preferences(request: Preferences) -> Response:
