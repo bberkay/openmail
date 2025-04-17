@@ -7,7 +7,7 @@ from typing import Optional, Annotated, TypeVar
 from ..main import Response
 from ..utils import err_msg
 from ..internal.account_manager import AccountManager
-from ..handling import ClientHandler
+from ..internal.client_handler import ClientHandler
 from ..helpers.uvicorn_logger import UvicornLogger
 from ..modules.openmail.types import Email, Mailbox, Folder, Draft, Attachment
 from ..modules.openmail.utils import extract_email_address

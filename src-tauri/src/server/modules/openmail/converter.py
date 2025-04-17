@@ -1,6 +1,5 @@
 import os
 import hashlib
-from email.utils import make_msgid
 from openmail.types import Attachment
 from openmail.encoder import FileBase64Encoder
 

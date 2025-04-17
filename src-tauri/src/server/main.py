@@ -14,13 +14,12 @@ from fastapi import FastAPI, Request, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from handling import ClientHandler
+from internal.client_handler import ClientHandler
 from internal.account_manager import AccountManager
+from internal.file_system import FileSystem
 from routers import app_tasks, account_tasks, email_tasks
-
-from classes.file_system import FileSystem
-from classes.uvicorn_logger import UvicornLogger
-from classes.port_scanner import PortScanner
+from helpers.uvicorn_logger import UvicornLogger
+from helpers.port_scanner import PortScanner
 
 from consts import HOST, TRUSTED_HOSTS, PORT_RANGE
 from utils import parse_err_msg

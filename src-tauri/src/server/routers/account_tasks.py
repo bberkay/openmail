@@ -7,7 +7,7 @@ from ..utils import err_msg, is_email_valid
 from ..modules.openmail import Openmail
 from ..internal.account_manager import AccountManager, Account, AccountWithPassword
 from ..internal.secure_storage import SecureStorage, SecureStorageKey, RSACipher, SecureStorageKeyValue
-from ..handling import ClientHandler
+from ..internal.client_handler import ClientHandler
 
 client_handler = ClientHandler()
 secure_storage = SecureStorage()
