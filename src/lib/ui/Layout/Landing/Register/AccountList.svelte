@@ -230,18 +230,23 @@
     <div class="alert-container" id="accounts-alert-container"></div>
     {#if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
         {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
-        <div>
-            <!-- TODO: Add select all accounts button after pagination implementation. -->
-            <Input.Basic type="text" onkeydown={searchAccounts} />
-            <Button.Basic type="button" class="btn-outline" onclick={onCancel}>
-                {local.add_another_account[DEFAULT_LANGUAGE]}
-            </Button.Basic>
+        <div class="accounts-info">
+            <div class="account-count">
+                <h3>All accounts <span>{allAccounts.length}</span></h3>
+            </div>
+            <div class="account-list-operations">
+                <Input.Basic type="text" onkeydown={searchAccounts} />
+                <Button.Basic type="button" class="btn-outline" onclick={onCancel}>
+                    {local.add_another_account[DEFAULT_LANGUAGE]}
+                </Button.Basic>
+            </div>
         </div>
         <Table.Root>
             <Table.Header>
                 <Table.Row>
                     <Table.Head class="checkbox-cell">
                         <!-- TODO: Convert to select shown button after pagination implementation. -->
+                        <!-- TODO: Show select all button after select shown is checked. -->
                         <Input.Basic
                             type="checkbox"
                             onclick={selectAllAccounts}
@@ -317,7 +322,7 @@
             </Table.Body>
         </Table.Root>
 
-        <!-- TODO: Add pagination and display account count. -->
+        <!-- TODO: Add pagination. -->
 
         <div class="landing-body-footer">
             <Button.Action
@@ -333,6 +338,23 @@
 
 <style>
     :global {
+        .accounts-info {
+            display: flex;
+            justify-content: space-between;
+            flex-direction: row;
+
+            & .account-list-operations {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: var(--spacing-2xs);
+            }
+
+            & .account-count span {
+                color: var(--color-text-secondary);
+            }
+        }
+
         .checkbox-cell {
             width: var(--font-size-2xl);
             padding-left: var(--spacing-xs) !important;
