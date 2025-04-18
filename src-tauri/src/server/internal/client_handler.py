@@ -40,11 +40,12 @@ class ClientHandler:
 
     def create_openmail_clients(self):
         try:
-            print("Openmail clients are creating...")
+            uvicorn_logger.info("Openmail clients are creating...")
             accounts: list[AccountWithPassword] = cast(
                 list[AccountWithPassword], account_manager.get_all()
             )
             if not accounts:
+                uvicorn_logger.info("No client found to create.")
                 return
 
             with ThreadPoolExecutor(max_workers=MAX_TASK_WORKER) as executor:
@@ -107,7 +108,7 @@ class ClientHandler:
     def connect_to_account(
         self, account: AccountWithPassword, for_new_messages: bool = False
     ):
-        print(f"Connecting to {account.email_address}...")
+        uvicorn_logger.info(f"Connecting to {account.email_address}...")
         target_openmail_clients = (
             openmail_clients_for_new_messages if for_new_messages else openmail_clients
         )
@@ -129,7 +130,7 @@ class ClientHandler:
                 imap_listen_new_messages=for_new_messages,
             )
             if status:
-                print(f"Successfully connected to {account.email_address}")
+                uvicorn_logger.info(f"Successfully connected to {account.email_address}")
                 # TODO: Open this later.
                 # target_openmail_clients[account.email_address].imap.idle()
                 try:
@@ -138,7 +139,7 @@ class ClientHandler:
                 except ValueError:
                     pass
             else:
-                print(f"Could not successfully connected to {account.email_address}.")
+                uvicorn_logger.warning(f"Could not successfully connected to {account.email_address}.")
                 del target_openmail_clients[account.email_address]
                 if target_failed_openmail_clients:
                     target_failed_openmail_clients.append(account.email_address)
@@ -171,7 +172,7 @@ class ClientHandler:
             if account:
                 self.connect_to_account(account, for_new_messages)
             else:
-                print(f"{email_address} could not found while trying to reconnect.")
+                uvicorn_logger.warning(f"{email_address} could not found while trying to reconnect.")
         except Exception as e:
             del target_openmail_clients[email_address]
             if target_failed_openmail_clients:
@@ -203,6 +204,10 @@ class ClientHandler:
     def _shutdown_openmail_clients(self):
         try:
             uvicorn_logger.info("Shutting down openmail clients...")
+            if not openmail_clients and not openmail_clients_for_new_messages:
+                uvicorn_logger.info("No email client found to shutting down.")
+                return
+
             with ThreadPoolExecutor(max_workers=MAX_TASK_WORKER) as executor:
                 for clients in [openmail_clients, openmail_clients_for_new_messages]:
                     executor.map(lambda client: client[1].disconnect(), clients.items())
