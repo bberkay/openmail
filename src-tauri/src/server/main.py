@@ -19,9 +19,9 @@ from routers import app_tasks, account_tasks, email_tasks
 from helpers.uvicorn_logger import UvicornLogger
 from helpers.port_scanner import PortScanner
 
-from .ctypes import Response
-from .consts import HOST, TRUSTED_HOSTS, PORT_RANGE
-from .utils import parse_err_msg
+from _types import Response
+from consts import HOST, TRUSTED_HOSTS, PORT_RANGE
+from utils import parse_err_msg
 
 
 #################### SET UP #######################

@@ -1,5 +1,4 @@
 APP_NAME = "Openmail"
-#TRUSTED_HOSTS = ["127.0.0.1", "localhost"]
 HOST = "127.0.0.1"
-TRUSTED_HOSTS = ["*"]
+TRUSTED_HOSTS = ["*"] # TODO: Change to ["127.0.0.1", "localhost"]
 PORT_RANGE=[8000,9000]

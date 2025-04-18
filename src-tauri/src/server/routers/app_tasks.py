@@ -2,11 +2,9 @@ import json
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
-
-from ..internal.file_system import FileSystem
-
-from ..ctypes import Response, Preferences
-from ..utils import err_msg
+from internal.file_system import FileSystem
+from _types import Response, Preferences
+from utils import err_msg
 
 router = APIRouter(tags=["App"])
 

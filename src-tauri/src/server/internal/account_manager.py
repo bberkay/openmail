@@ -1,8 +1,6 @@
 import json
 from typing import Optional
-
 from pydantic import BaseModel
-
 from .secure_storage import SecureStorage, SecureStorageKey, SecureStorageKeyValueType
 
 """

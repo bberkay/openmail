@@ -4,4 +4,5 @@ echo "Starting server..."
 
 cd ../server
 source ".venv/bin/activate"
-python "main.py"
+
+PYTHONPATH=$(pwd) python main.py
