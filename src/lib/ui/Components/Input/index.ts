@@ -1,10 +1,9 @@
 import InputGroup from './InputGroup.svelte';
 import BasicInput from './BasicInput.svelte';
 import DatePicker from './DatePicker.svelte';
-import Password from './Password.svelte';
-import WithButton from './WithButton.svelte';
 import FileUploader from './FileUploader.svelte';
 import ToggleSwitch from './ToggleSwitch.svelte';
+import Password from './Password.svelte';
 
 export {
     InputGroup as Group,
@@ -12,6 +11,5 @@ export {
     DatePicker as Date,
     FileUploader as File,
     ToggleSwitch,
-    WithButton,
     Password,
 };
