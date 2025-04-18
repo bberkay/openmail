@@ -138,7 +138,7 @@ class DirObject:
 """
 Constants
 """
-ROOT_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME)
+ROOT_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME.lower())
 BASE_STRUCTURE = DirObject(
     ROOT_DIR,
     [
