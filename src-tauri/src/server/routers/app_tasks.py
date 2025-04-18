@@ -5,7 +5,7 @@ from typing import Optional
 
 from ..internal.file_system import FileSystem
 
-from ..types import Response, Preferences
+from ..ctypes import Response, Preferences
 from ..utils import err_msg
 
 router = APIRouter(tags=["App"])

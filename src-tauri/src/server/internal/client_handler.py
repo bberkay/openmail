@@ -2,8 +2,8 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import cast
 
-from account_manager import AccountManager, AccountWithPassword
-from secure_storage import (
+from .account_manager import AccountManager, AccountWithPassword
+from .secure_storage import (
     SecureStorage,
     SecureStorageKey,
     RSACipher,
@@ -130,6 +130,7 @@ class ClientHandler:
             )
             if status:
                 print(f"Successfully connected to {account.email_address}")
+                # TODO: Open this later.
                 # target_openmail_clients[account.email_address].imap.idle()
                 try:
                     if target_failed_openmail_clients:
