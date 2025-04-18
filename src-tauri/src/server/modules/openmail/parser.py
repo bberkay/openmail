@@ -12,7 +12,7 @@ header fields.
 import base64
 import re
 import quopri
-from typing import Iterator, Match, NotRequired, Optional, TypedDict
+from typing import NotRequired, TypedDict
 from email.header import decode_header
 from html.parser import HTMLParser as BuiltInHTMLParser
 

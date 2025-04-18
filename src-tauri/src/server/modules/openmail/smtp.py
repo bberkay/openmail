@@ -22,21 +22,16 @@ import re
 import urllib.request
 import urllib.parse
 import urllib.error
-from typing import Generator, Sequence, cast, override
+from typing import Sequence, override
 from types import MappingProxyType
 from email.message import EmailMessage, Message
 from email.headerregistry import Address
-from email.utils import make_msgid
-from email.mime.image import MIMEImage
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
 
 from .parser import HTMLParser, MessageParser
 from .encoder import FileBase64Encoder
 from .converter import AttachmentConverter
-from .utils import extract_domain, choose_positive, extract_email_address, extract_email_addresses, extract_fullname, extract_username, tuple_to_sender_string
-from .types import Draft, Attachment, Email
+from .utils import extract_domain, choose_positive, extract_email_addresses, extract_fullname, extract_username, tuple_to_sender_string
+from .types import Draft, Attachment
 
 """
 Exceptions
