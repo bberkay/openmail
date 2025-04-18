@@ -1,7 +1,7 @@
 import os
 import hashlib
-from openmail.types import Attachment
-from openmail.encoder import FileBase64Encoder
+from .types import Attachment
+from .encoder import FileBase64Encoder
 
 """
 Constants
