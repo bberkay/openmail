@@ -18,13 +18,14 @@ async function loadServerUrl(): Promise<void> {
     }
 
     const serverUrl = await invoke<string>(TauriCommand.GET_SERVER_URL);
+    SharedStore.server = serverUrl;
     const response = await ApiService.get(GetRoutes.HELLO);
-    if (response.success) {
-        SharedStore.server = serverUrl;
+    if (!response.success) {
+        SharedStore.server = "";
     }
 }
 
-export const init: ServerInit = async () => {
+export const init: ServerInit = () => {
     const connectToLocalServer = async () => {
         await loadServerUrl();
         if (SharedStore.server) {
@@ -36,7 +37,7 @@ export const init: ServerInit = async () => {
         }
     }
 
-    await connectToLocalServer();
+    connectToLocalServer();
 }
 
 export const handle: Handle = ({ event, resolve }) => {

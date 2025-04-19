@@ -45,6 +45,7 @@
       ]
     },
     "notification:default",
-    "process:default"
+    "process:default",
+    "fs:default"
   ]
 }

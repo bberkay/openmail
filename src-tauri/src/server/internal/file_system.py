@@ -1,11 +1,11 @@
 from __future__ import annotations
 import os
-from typing import Any, cast
+from typing import cast
 
 from consts import APP_NAME
 
 class FileObject:
-    def __init__(self, name: str, initial_content: Any = ""):
+    def __init__(self, name: str, initial_content: str = ""):
         if "." not in name:
             raise ValueError(f"Invalid file name: {name}. File names must have a file extension.")
         if not isinstance(name, str):
@@ -60,7 +60,7 @@ class FileObject:
             content = f.read()
         return content
 
-    def write(self, content: Any) -> None:
+    def write(self, content: str) -> None:
         with open(self.fullpath, "w", encoding="utf-8") as f:
             f.write(content)
 
@@ -167,18 +167,18 @@ class FileSystem:
     def _create_structure(self,
         obj: FileObject | DirObject,
         parent_path: str = "",
-        remove_exist: bool = False
+        remove_exists: bool = False
     ) -> None:
         fullpath = os.path.join(parent_path, obj.name)
 
         if isinstance(obj, DirObject):
-            obj.create(fullpath, overwrite=remove_exist)
+            obj.create(fullpath, overwrite=remove_exists)
 
             for child in obj.children:
                 self._create_structure(child, fullpath)
 
         elif isinstance(obj, FileObject):
-            obj.create(fullpath, overwrite=remove_exist)
+            obj.create(fullpath, overwrite=remove_exists)
 
     @property
     def root(self) -> DirObject:
@@ -199,7 +199,7 @@ class FileSystem:
         # as initial content.
         current_uvicorn_info = self.get_uvicorn_info().read()
         self._root = BASE_STRUCTURE
-        self._create_structure(self._root, remove_exist=True)
+        self._create_structure(self._root, remove_exists=True)
         cast(FileObject, self.root["uvicorn.info"]).write(current_uvicorn_info)
 
 
