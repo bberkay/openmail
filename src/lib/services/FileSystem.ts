@@ -4,7 +4,6 @@ import {
     readTextFile,
     exists,
     truncate,
-    BaseDirectory,
     mkdir,
 } from "@tauri-apps/plugin-fs";
 import * as path from '@tauri-apps/api/path';
@@ -92,7 +91,7 @@ export class DirObject {
     }
 
     get name(): string {
-        return this.name;
+        return this._name;
     }
 
     get fullpath(): string {
@@ -159,7 +158,7 @@ export class FileSystem {
     }
 
     public async initialize(
-        obj: FileObject | DirObject,
+        obj: FileObject | DirObject = this._root,
         parentPath: string = "",
         removeExists: boolean = false
     ): Promise<void> {
