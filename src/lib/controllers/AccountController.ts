@@ -26,7 +26,7 @@ export class AccountController {
     }
 
     public static async list(): Promise<GetResponse<GetRoutes.GET_ACCOUNTS>> {
-        return await ApiService.get(SharedStore.server, GetRoutes.GET_ACCOUNTS);
+        return await ApiService.get(GetRoutes.GET_ACCOUNTS);
     }
 
     public static async add(
@@ -38,7 +38,6 @@ export class AccountController {
         const encryptedPassword =
             await encryptor.encryptPassword(plain_password);
         const response = await ApiService.post(
-            SharedStore.server,
             PostRoutes.ADD_ACCOUNT,
             {
                 email_address: email_address,
@@ -66,7 +65,6 @@ export class AccountController {
         const encryptedPassword =
             await encryptor.encryptPassword(plain_password);
         const response = await ApiService.post(
-            SharedStore.server,
             PostRoutes.EDIT_ACCOUNT,
             {
                 email_address: email_address,
@@ -105,7 +103,6 @@ export class AccountController {
 
     public static async remove(email_address: string): Promise<PostResponse> {
         const response = await ApiService.post(
-            SharedStore.server,
             PostRoutes.REMOVE_ACCOUNT,
             {
                 account: email_address,
@@ -123,7 +120,6 @@ export class AccountController {
 
     public static async removeAll(): Promise<PostResponse> {
         const response: PostResponse = await ApiService.post(
-            SharedStore.server,
             PostRoutes.REMOVE_ACCOUNTS,
             {},
         );

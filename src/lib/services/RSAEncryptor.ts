@@ -19,7 +19,6 @@ export class RSAEncryptor {
 
     private async getPublicKey(): Promise<CryptoKey> {
         const response = await ApiService.get(
-            SharedStore.server,
             GetRoutes.GET_PUBLIC_KEY,
         );
         if (!response.success || !response.data)
