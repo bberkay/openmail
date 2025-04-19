@@ -41,35 +41,37 @@
 </section>
 
 <style>
-    .landing-container {
-        width: 100%;
-        max-width: var(--container-sm);
+    :global {
+        .landing-container {
+            width: 100%;
+            max-width: var(--container-sm);
 
-        & .landing-header {
-            text-align: center;
-
-            .landing-title {
-                margin-bottom: var(--spacing-xs);
-                font-size: var(--font-size-2xl);
-                font-weight: var(--font-weight-bold);
+            & .landing-header {
                 text-align: center;
-                color: var(--color-text-primary);
+
+                .landing-title {
+                    margin-bottom: var(--spacing-xs);
+                    font-size: var(--font-size-2xl);
+                    font-weight: var(--font-weight-bold);
+                    text-align: center;
+                    color: var(--color-text-primary);
+                }
+
+                .landing-subtitle {
+                    margin-bottom: var(--spacing-xl);
+                    font-size: var(--font-size-sm);
+                    text-align: center;
+                    color: var(--color-text-secondary);
+                }
             }
 
-            .landing-subtitle {
-                margin-bottom: var(--spacing-xl);
-                font-size: var(--font-size-sm);
+            & .landing-body-footer {
+                display: flex;
+                flex-direction: column;
+                gap: var(--spacing-lg);
                 text-align: center;
-                color: var(--color-text-secondary);
+                margin-top: var(--spacing-lg);
             }
-        }
-
-        & .landing-body-footer {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-lg);
-            text-align: center;
-            margin-top: var(--spacing-lg);
         }
     }
 </style>
