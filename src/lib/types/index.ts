@@ -79,7 +79,7 @@ export interface RawMailbox {
 
 export interface Mailbox {
     folder: string;
-    emails: { prev: Email[], current: Email[], next: Email[]};
+    emails: { prev: Email[]; current: Email[]; next: Email[] };
     total: number;
 }
 
@@ -98,7 +98,7 @@ export enum Mark {
     Unseen = "\\Unseen",
     Unanswered = "\\Unanswered",
     Undraft = "\\Undraft",
-    Undeleted = "\\Undeleted"
+    Undeleted = "\\Undeleted",
 }
 
 export enum Folder {
@@ -114,7 +114,32 @@ export enum Folder {
 }
 
 export enum Size {
-    "Bytes" = "Bytes",
-    "KB" = "KB",
-    "MB" = "MB"
+    Bytes = "Bytes",
+    KB = "KB",
+    MB = "MB",
+}
+
+/**
+ * The enum keys are derived from RFC 5646 language tags
+ * (e.g., "en", "en-US", "en-GB"),but are formatted using
+ * uppercase letters and underscores (e.g., EN_US).
+ * Reference: https://datatracker.ietf.org/doc/html/rfc5646
+ */
+export enum Language {
+    System = "System",
+    EN = "English",
+    EN_US = "English (US)",
+    EN_GB = "English (GB)"
+}
+
+export enum Theme {
+    System = "System",
+    Light = "Light",
+    Dark = "Dark",
+}
+
+export interface Preferences {
+    theme: Theme;
+    language: Language;
+    mailboxLength: number;
 }

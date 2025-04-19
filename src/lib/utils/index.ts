@@ -1,11 +1,31 @@
 import { DEFAULT_LANGUAGE } from "$lib/constants";
 import { local } from "$lib/locales";
-import { Folder, Size } from "$lib/types";
+import { Folder, Language, Size } from "$lib/types";
 
 export function createDomElement(html: string): HTMLElement {
     const template = document.createElement("template");
     template.innerHTML = html.trim();
     return template.content.firstElementChild as HTMLElement;
+}
+
+/**
+ * Converts a locale string (e.g., "en-US") following the RFC 5646 standard
+ * into a corresponding Language enum value (e.g., Language.EN_US).
+ *
+ * This function normalizes the input by converting it to uppercase and replacing
+ * hyphens with underscores to match the enum key format.
+ *
+ * @param locale - A language tag string in RFC 5646 format (e.g., "en", "en-US", "en-GB").
+ * @returns A matching Language enum value, or undefined if no match is found.
+ */
+export function convertToLanguageEnum(locale: string): Language | undefined {
+    const enumKey = locale.replace('-', '_').toUpperCase();
+
+    if (enumKey in Language) {
+        return (Language as any)[enumKey];
+    }
+
+    return undefined;
 }
 
 export function debounce<T extends (...args: any[]) => any>(

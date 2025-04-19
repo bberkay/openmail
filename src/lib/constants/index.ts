@@ -11,7 +11,7 @@ export const AUTO_SAVE_DRAFT_INTERVAL_MS = 5000;
 export const SERVER_CONNECTION_TRY_SLEEP_MS = 2000
 export const REALTIME_SEARCH_DELAY_MS = 300;
 
-export const TOGGLE_TEXT_SEPARATOR = "#separator#";
 export const ANIMATION_INIT_DELAY_MS = 10;
 export const SLIDE_TRANSITION_DURATION_MS = 300;
 export const AUTO_CLOSE_TOAST_DELAY_MS = 3000;
+export const TOGGLE_TEXT_SEPARATOR = "#separator#";
