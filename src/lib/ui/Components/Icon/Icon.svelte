@@ -14,7 +14,7 @@
 
     let placeholder: HTMLElement;
     onMount(async () => {
-        const svgContent = (await import(`$lib/assets/${name}.svg?raw`)).default;
+        const svgContent = (await import(`$lib/assets/icons/${name}.svg?raw`)).default;
         const svgElement = createDomElement(svgContent);
         svgElement.setAttribute("name", name);
         if (svgElement) {
