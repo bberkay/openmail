@@ -142,12 +142,17 @@ ROOT_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME.lower())
 BASE_STRUCTURE = DirObject(
     ROOT_DIR,
     [
-        FileObject("uvicorn.info"),
         DirObject(
-            "logs",
+            "server",
             [
-                FileObject("uvicorn.log"),
-            ],
+                FileObject("uvicorn.info"),
+                DirObject(
+                    "logs",
+                    [
+                        FileObject("uvicorn.log"),
+                    ],
+                )
+            ]
         )
     ],
 )

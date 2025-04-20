@@ -149,7 +149,12 @@ async function setupFileSystem(): Promise<DirObject> {
     return new DirObject(
         rootDir,
         [
-            new FileObject("preferences.json", "{}"),
+            new DirObject(
+                "client",
+                [
+                    new FileObject("preferences.json", "{}")
+                ]
+            )
         ]
     );
 }
