@@ -20,6 +20,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { FileSystem } from "$lib/services/FileSystem";
 
     interface Props {
         account: Account;
@@ -103,15 +104,8 @@
             return;
         }
 
-        const file = await create(response.data.name, {
-            baseDir: BaseDirectory.Download,
-        });
-        await file.write(
-            Uint8Array.from(atob(response.data.data), (char) =>
-                char.charCodeAt(0),
-            ),
-        );
-        await file.close();
+        const fileSystem = await FileSystem.getInstance();
+        await fileSystem.download(response.data.name, atob(response.data.data));
     };
 </script>
 

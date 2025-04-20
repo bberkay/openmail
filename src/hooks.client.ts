@@ -4,12 +4,13 @@ import { TauriCommand } from "$lib/types";
 import { SharedStore } from "$lib/stores/shared.svelte";
 import { ApiService, GetRoutes } from "$lib/services/ApiService";
 import { DEFAULT_PREFERENCES, SERVER_CONNECTION_TRY_SLEEP_MS } from "$lib/constants";
-import { fileSystem } from "$lib/services/FileSystem";
+import { FileSystem } from "$lib/services/FileSystem";
 
 async function initializeFileSystem(): Promise<void> {
+    const fileSystem = await FileSystem.getInstance();
     SharedStore.preferences = await fileSystem.readPreferences();
     if (!SharedStore.preferences) {
-        fileSystem.savePreferences(DEFAULT_PREFERENCES);
+        await fileSystem.savePreferences(DEFAULT_PREFERENCES);
     }
 }
 
@@ -34,8 +35,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     if (!SharedStore.preferences) {
         await initializeFileSystem();
     }
-
-    return resolve(event, {
+    return await resolve(event, {
         transformPageChunk: ({ html }) =>
             html
                 .replace("%lang%", SharedStore.preferences.language)

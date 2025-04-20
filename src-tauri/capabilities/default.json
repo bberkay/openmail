@@ -21,10 +21,45 @@
     "store:allow-load",
     "fs:default",
     {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
       "identifier": "fs:allow-create",
       "allow": [
         {
           "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read",
+      "allow": [
+        {
+          "path": "$HOME/.openmail/client/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        {
+          "path": "$HOME/.openmail/client/**"
         }
       ]
     },
@@ -33,19 +68,29 @@
       "allow": [
         {
           "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$HOME/.openmail/client/**"
         }
       ]
     },
     {
-      "identifier": "fs:allow-write-file",
+      "identifier": "fs:allow-write-text-file",
       "allow": [
         {
-          "path": "$DOWNLOAD/**"
+          "path": "$HOME/.openmail/client/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-truncate",
+      "allow": [
+        {
+          "path": "$HOME/.openmail/client/**"
         }
       ]
     },
     "notification:default",
-    "process:default",
-    "fs:default"
+    "process:default"
   ]
 }

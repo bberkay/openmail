@@ -5,10 +5,12 @@ import {
     exists,
     truncate,
     mkdir,
+    BaseDirectory
 } from "@tauri-apps/plugin-fs";
 import * as path from '@tauri-apps/api/path';
 import type { Preferences } from "$lib/types";
 import { SharedStore } from "$lib/stores/shared.svelte";
+import { PUBLIC_APP_NAME } from "$env/static/public";
 
 class FileNotFoundError extends Error {
     constructor(message: string = "File could not found.") {
@@ -110,7 +112,7 @@ export class DirObject {
     public async create(fullpath: string, overwrite: boolean = false): Promise<void> {
         this._fullpath = fullpath;
 
-        const isDirExists = await exists(this._fullpath);
+        const isDirExists = await exists(this.fullpath);
         if (!overwrite && isDirExists)
             return;
 
@@ -143,8 +145,10 @@ export class DirObject {
 }
 
 async function setupFileSystem(): Promise<DirObject> {
+    // Check out src-tauri/capabilities/default.json to set permissions of
+    // current structure.
     const home = await path.homeDir();
-    const rootDir = await path.join(home, '.' + import.meta.env.APP_NAME, "client");
+    const rootDir = await path.join(home, '.' + PUBLIC_APP_NAME.toLowerCase(), "client");
 
     return new DirObject(
         rootDir,
@@ -154,7 +158,7 @@ async function setupFileSystem(): Promise<DirObject> {
     );
 }
 
-class FileSystem {
+export class FileSystem {
     private static _instance: FileSystem | null = null;
     private static _initializing: Promise<FileSystem> | null = null;
     private _root: DirObject | null = null;
@@ -230,6 +234,18 @@ class FileSystem {
         await this._initialize(this._root, "", true);
     }
 
+    public async download(filename: string, data: string): Promise<void> {
+        const file = await create(filename, {
+            baseDir: BaseDirectory.Download,
+        });
+        await file.write(
+            Uint8Array.from(data, (char) =>
+                char.charCodeAt(0),
+            ),
+        );
+        await file.close();
+    }
+
     // Base FileObject/DirObject methods.
 
     public getPreferences(): FileObject {
@@ -260,5 +276,3 @@ class FileSystem {
         await prefsFile.write(JSON.stringify(data, null, 2));
     }
 }
-
-export const fileSystem = await FileSystem.getInstance();

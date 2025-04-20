@@ -7,7 +7,7 @@
     import Variables from "$lib/ui/Layout/Developer/Variables.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Language, Theme } from "$lib/types";
-    import { fileSystem } from "$lib/services/FileSystem";
+    import { FileSystem } from "$lib/services/FileSystem";
 
     let { children } = $props();
 
@@ -23,7 +23,9 @@
         updateLanguageBasedOnSystemPreference();
     });
 
-    function updateThemeBasedOnSystemPreference() {
+    async function updateThemeBasedOnSystemPreference() {
+        const fileSystem = await FileSystem.getInstance();
+
         const changeTheme = async (e: MediaQueryList | MediaQueryListEvent) => {
             if (SharedStore.preferences.theme === Theme.System) {
                 await fileSystem.savePreferences({ theme: e.matches ? Theme.Dark : Theme.Light });
@@ -36,6 +38,7 @@
     }
 
     async function updateLanguageBasedOnSystemPreference() {
+        const fileSystem = await FileSystem.getInstance();
         if (SharedStore.preferences.language === Language.System) {
             const newLang = convertToLanguageEnum(navigator.language);
             if (newLang) {
