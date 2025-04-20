@@ -19,7 +19,7 @@ export function createDomElement(html: string): HTMLElement {
  * @returns A matching Language enum value, or undefined if no match is found.
  */
 export function convertToLanguageEnum(locale: string): Language | undefined {
-    const enumKey = locale.replace('-', '_').toUpperCase();
+    const enumKey = locale.replace("-", "_").toUpperCase();
 
     if (enumKey in Language) {
         return (Language as any)[enumKey];
@@ -47,38 +47,6 @@ export function debounce<T extends (...args: any[]) => any>(
 
 export function simpleDeepCopy<T>(source: T): T {
     return JSON.parse(JSON.stringify(source));
-}
-
-export function findMatchingObject<T extends Record<string, any>>(
-    objectList: T[],
-    searchObject: Record<string, any>,
-    keyToMatch: string,
-): T | undefined {
-    if (!Object.hasOwn(searchObject, keyToMatch)) {
-        return undefined;
-    }
-
-    return objectList.find(
-        (obj) =>
-            Object.hasOwn(obj, keyToMatch) &&
-            obj[keyToMatch] === searchObject[keyToMatch],
-    );
-}
-
-export function findMatchingIndex<T extends Record<string, any>>(
-    objectList: T[],
-    searchObject: Record<string, any>,
-    keyToMatch: string,
-): number | undefined {
-    if (!Object.hasOwn(searchObject, keyToMatch)) {
-        return undefined;
-    }
-
-    return objectList.findIndex(
-        (obj) =>
-            Object.hasOwn(obj, keyToMatch) &&
-            obj[keyToMatch] === searchObject[keyToMatch],
-    );
 }
 
 export function combine(...strings: any[]): string {
@@ -471,4 +439,13 @@ export function addEmailToAddressList(
 
 export function getToggleTextSeparator(): string {
     return "#separator#";
+}
+
+export function getEnumKeyByValue<T extends Record<string, string>>(
+    enumObj: T,
+    value: string,
+): keyof T | undefined {
+    return (Object.keys(enumObj) as (keyof T)[]).find(
+        (k) => enumObj[k] === value,
+    );
 }
