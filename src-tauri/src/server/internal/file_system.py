@@ -143,7 +143,6 @@ BASE_STRUCTURE = DirObject(
     ROOT_DIR,
     [
         FileObject("uvicorn.info"),
-        FileObject("preferences.json"),
         DirObject(
             "logs",
             [
@@ -210,6 +209,3 @@ class FileSystem:
 
     def get_uvicorn_log(self) -> FileObject:
         return cast(FileObject, cast(DirObject, self._root["logs"])["uvicorn.log"])
-
-    def get_preferences(self) -> FileObject:
-        return cast(FileObject, self._root["preferences.json"])

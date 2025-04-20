@@ -12,7 +12,6 @@ import { removeFalsyParamsAndEmptyLists } from "$lib/utils";
 
 export enum GetRoutes {
     HELLO = "/hello",
-    GET_PREFERENCES = "/get-preferences",
     GET_ACCOUNTS = "/get-accounts",
     GET_HIERARCHY_DELIMITER = "/get-hierarchy-delimiter",
     SEARCH_EMAILS = "/search-emails",
@@ -25,7 +24,6 @@ export enum GetRoutes {
 }
 
 export enum PostRoutes {
-    SAVE_PREFERENCES = "/save-preferences",
     ADD_ACCOUNT = "/add-account",
     EDIT_ACCOUNT = "/edit-account",
     REMOVE_ACCOUNT = "/remove-account",
@@ -48,7 +46,6 @@ export enum PostRoutes {
 
 interface GetQueryParams {
     [GetRoutes.HELLO]: {};
-    [GetRoutes.GET_PREFERENCES]: {};
     [GetRoutes.GET_ACCOUNTS]: {};
     [GetRoutes.GET_HIERARCHY_DELIMITER]: {
         pathParams: {
@@ -109,7 +106,6 @@ interface GetQueryParams {
 }
 
 interface PostQueryParams {
-    [PostRoutes.SAVE_PREFERENCES]: {},
     [PostRoutes.ADD_ACCOUNT]: {},
     [PostRoutes.EDIT_ACCOUNT]: {},
     [PostRoutes.REMOVE_ACCOUNT]: {},
@@ -139,7 +135,6 @@ interface PostQueryParams {
 }
 
 interface PostBody {
-    [PostRoutes.SAVE_PREFERENCES]: Partial<Preferences>
     [PostRoutes.ADD_ACCOUNT]: {
         email_address: string;
         encrypted_password: string;
@@ -224,7 +219,6 @@ export interface BaseResponse {
 
 export interface GetQueryResponse {
     [GetRoutes.HELLO]: {};
-    [GetRoutes.GET_PREFERENCES]: Preferences;
     [GetRoutes.GET_ACCOUNTS]: {
         connected: Account[];
         failed: Account[];

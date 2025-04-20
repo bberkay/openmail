@@ -7,6 +7,8 @@ import {
     mkdir,
 } from "@tauri-apps/plugin-fs";
 import * as path from '@tauri-apps/api/path';
+import type { Preferences } from "$lib/types";
+import { SharedStore } from "$lib/stores/shared.svelte";
 
 class FileNotFoundError extends Error {
     constructor(message: string = "File could not found.") {
@@ -128,26 +130,61 @@ export class DirObject {
             }
         }
     }
+
+    public findChild(name: string): FileObject | DirObject | undefined {
+        if (!this._children) return;
+
+        const found = this._children.find(
+            child => child.name === name
+        );
+
+        return found;
+    }
 }
 
-const home = await path.homeDir();
-const ROOT_DIR = await path.join(home, '.' + import.meta.env.APP_NAME);
-const BASE_STRUCTURE = new DirObject(
-    ROOT_DIR,
-    [
-        new FileObject("preferences.json"),
-    ]
-);
+async function setupFileSystem(): Promise<DirObject> {
+    const home = await path.homeDir();
+    const rootDir = await path.join(home, '.' + import.meta.env.APP_NAME);
 
-export class FileSystem {
-    private static _instance: FileSystem;
-    private _root: DirObject = BASE_STRUCTURE;
+    return new DirObject(
+        rootDir,
+        [
+            new FileObject("preferences.json", "{}"),
+        ]
+    );
+}
 
-    private constructor() {
-    }
+class FileSystem {
+    private static _instance: FileSystem | null = null;
+    private static _initializing: Promise<FileSystem> | null = null;
+    private _root: DirObject | null = null;
 
-    public static get Instance() {
-        return this._instance || (this._instance = new this());
+    private constructor() {}
+
+    /**
+     * Get the singleton instance of FileSystem
+     * If not already initialized, it will initialize
+     */
+    public static async getInstance(): Promise<FileSystem> {
+        if (this._instance) {
+            return this._instance;
+        }
+
+        if (this._initializing) {
+            return this._initializing;
+        }
+
+        this._initializing = (async () => {
+            const instance = new FileSystem();
+            const rootStructure = await setupFileSystem();
+            instance._root = rootStructure;
+            await instance._initialize();
+            this._instance = instance;
+            this._initializing = null;
+            return instance;
+        })();
+
+        return this._initializing;
     }
 
     get root(): DirObject {
@@ -157,36 +194,71 @@ export class FileSystem {
         return this._root;
     }
 
-    public async initialize(
-        obj: FileObject | DirObject = this._root,
+    private async _initialize(
+        obj?: FileObject | DirObject,
         parentPath: string = "",
         removeExists: boolean = false
     ): Promise<void> {
-        const fullpath = await path.join(parentPath, obj.name);
+        const target = obj || this._root;
 
-        if (obj instanceof DirObject) {
-            obj.create(fullpath, removeExists);
-            for(const child of obj.children || []) {
-                this.initialize(child, fullpath);
+        if (!target) {
+            throw new Error("No object provided and root is not initialized");
+        }
+
+        const fullpath = parentPath ?
+            await path.join(parentPath, target.name) :
+            target.name;
+
+        if (target instanceof DirObject) {
+            await target.create(fullpath, removeExists);
+
+            if (target.children) {
+                for (const child of target.children) {
+                    await this._initialize(child, fullpath, removeExists);
+                }
             }
-        } else if (obj instanceof FileObject) {
-            obj.create(fullpath, removeExists);
+        } else if (target instanceof FileObject) {
+            await target.create(fullpath, removeExists);
         }
     }
 
     public async reset(): Promise<void> {
-        this._root = BASE_STRUCTURE;
-        this.initialize(this._root, "", true);
+        if (!this._root) {
+            throw new Error("FileSystem has not been initialized yet.");
+        }
+
+        await this._initialize(this._root, "", true);
     }
 
     // Base FileObject/DirObject methods.
 
-    public get_preferences(): FileObject {
+    public getPreferences(): FileObject {
+        if (!this._root)
+            throw new Error("Root has not been initialized yet.");
+
         if (!this._root.children)
             throw new Error("Root does not have any children.");
 
-        return this._root.children.find(
-            child => child instanceof FileObject && child.name === "preferences.json"
-        ) as FileObject;
+        const prefsFile = this._root.findChild("preferences.json") as FileObject;
+
+        if (!prefsFile)
+            throw new FileNotFoundError("preferences.json file not found in root directory.");
+
+        return prefsFile;
+    }
+
+    public async readPreferences(): Promise<Preferences> {
+        const prefsFile = this.getPreferences();
+        const content = await prefsFile.read();
+
+        return JSON.parse(content);
+    }
+
+    public async savePreferences(data: Partial<Preferences>): Promise<void> {
+        SharedStore.preferences = { ...SharedStore.preferences, ...data };
+        const prefsFile = this.getPreferences();
+        await prefsFile.write(JSON.stringify(data, null, 2));
     }
 }
+
+export const fileSystem = await FileSystem.getInstance();

@@ -11,6 +11,7 @@
     import Label from "$lib/ui/Components/Label";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showAlert } from "$lib/ui/Components/Alert";
+    import { fileSystem } from "$lib/services/FileSystem";
 
     let selectedLanguage: Language = $state(SharedStore.preferences.language);
     let selectedTheme: Theme = $state(SharedStore.preferences.theme);
@@ -23,17 +24,10 @@
     })
 
     const saveInitialPreferences = async (e: Event): Promise<void> => {
-        const response = await ApiService.post(PostRoutes.SAVE_PREFERENCES, {
+        await fileSystem.savePreferences({
             language: selectedLanguage,
             theme: selectedTheme,
         });
-
-        if (!response.success) {
-            showMessage({
-                title: "Initial preferences could not saved successfully.",
-            });
-            console.error(response.message);
-        }
     };
 </script>
 
