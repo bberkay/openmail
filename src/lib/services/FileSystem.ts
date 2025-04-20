@@ -144,17 +144,12 @@ export class DirObject {
 
 async function setupFileSystem(): Promise<DirObject> {
     const home = await path.homeDir();
-    const rootDir = await path.join(home, '.' + import.meta.env.APP_NAME);
+    const rootDir = await path.join(home, '.' + import.meta.env.APP_NAME, "client");
 
     return new DirObject(
         rootDir,
         [
-            new DirObject(
-                "client",
-                [
-                    new FileObject("preferences.json", "{}")
-                ]
-            )
+            new FileObject("preferences.json", "{}")
         ]
     );
 }

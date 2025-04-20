@@ -138,21 +138,16 @@ class DirObject:
 """
 Constants
 """
-ROOT_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME.lower())
+ROOT_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME.lower(), "server")
 BASE_STRUCTURE = DirObject(
     ROOT_DIR,
     [
+        FileObject("uvicorn.info"),
         DirObject(
-            "server",
+            "logs",
             [
-                FileObject("uvicorn.info"),
-                DirObject(
-                    "logs",
-                    [
-                        FileObject("uvicorn.log"),
-                    ],
-                )
-            ]
+                FileObject("uvicorn.log"),
+            ],
         )
     ],
 )
