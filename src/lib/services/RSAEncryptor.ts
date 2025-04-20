@@ -1,5 +1,4 @@
 import { ApiService, GetRoutes } from "./ApiService";
-import { SharedStore } from "$lib/stores/shared.svelte";
 
 const RSA_ALGORITHM_NAME = "RSA-OAEP";
 const RSA_HASH_ALGORITHM = "SHA-256";
