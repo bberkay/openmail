@@ -468,3 +468,7 @@ export function addEmailToAddressList(
     addressList.push(input.value.trim());
     input.value = "";
 }
+
+export function getToggleTextSeparator(): string {
+    return "#separator#";
+}

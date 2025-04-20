@@ -1,11 +1,11 @@
 <script lang="ts">
     import { onMount, type Snippet } from "svelte";
-    import { combine } from "$lib/utils";
+    import { combine, getToggleTextSeparator } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
     import { getNoMatchFoundTemplate } from "$lib/templates";
-    import { DEFAULT_LANGUAGE, TOGGLE_TEXT_SEPARATOR } from "$lib/constants";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
 
     interface Props {
@@ -163,7 +163,7 @@
             <div class="select-trigger-content">
                 {#if selectedOption}
                     <span data-value={selectedOption.getAttribute("data-value")!}>
-                        {selectedOption.textContent!.split(TOGGLE_TEXT_SEPARATOR)[0].trim()}
+                        {selectedOption.textContent!.split(getToggleTextSeparator())[0].trim()}
                     </span>
                     <Button.Basic
                         type="button"

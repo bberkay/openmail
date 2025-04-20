@@ -14,4 +14,3 @@ export const REALTIME_SEARCH_DELAY_MS = 300;
 export const ANIMATION_INIT_DELAY_MS = 10;
 export const SLIDE_TRANSITION_DURATION_MS = 300;
 export const AUTO_CLOSE_TOAST_DELAY_MS = 3000;
-export const TOGGLE_TEXT_SEPARATOR = "#separator#";
