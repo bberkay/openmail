@@ -8,13 +8,16 @@
     }
 
     let {
-        text = local.loading[DEFAULT_LANGUAGE],
+        text,
         ...attributes
     }: Props = $props();
 </script>
 
 <span {...attributes}>
-    <small class="loader"></small> {text}
+    <small class="loader"></small>
+    {#if text}
+        {text}
+    {/if}
 </span>
 
 <style>

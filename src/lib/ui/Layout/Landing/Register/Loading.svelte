@@ -5,6 +5,6 @@
 </script>
 
 <h3>
-    <Spinner />
+    <Spinner/>
     {local.connecting_to_accounts[DEFAULT_LANGUAGE]}
 </h3>
