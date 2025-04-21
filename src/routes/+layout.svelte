@@ -20,6 +20,16 @@
         applyInitialLanguage();
     });
 
+    $effect(() => {
+        if (SharedStore.preferences.theme) {
+            applyInitialTheme();
+        }
+
+        if (SharedStore.preferences.language) {
+            applyInitialLanguage();
+        }
+    })
+
     async function applyInitialTheme() {
         document.body.setAttribute("data-color-scheme", SharedStore.preferences.theme);
     }
