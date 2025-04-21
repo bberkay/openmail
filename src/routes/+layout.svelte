@@ -1,13 +1,10 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import "$lib/assets/css/style.css";
-    import { convertToLanguageEnum } from "$lib/utils";
     import * as Modal from "$lib/ui/Components/Modal";
     import Layout from "$lib/ui/Layout/Layout.svelte";
     import Variables from "$lib/ui/Layout/Developer/Variables.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { Language, Theme } from "$lib/types";
-    import { FileSystem } from "$lib/services/FileSystem";
 
     let { children } = $props();
 
@@ -19,32 +16,16 @@
     };
 
     onMount(() => {
-        updateThemeBasedOnSystemPreference();
-        updateLanguageBasedOnSystemPreference();
+        applyInitialTheme();
+        applyInitialLanguage();
     });
 
-    async function updateThemeBasedOnSystemPreference() {
-        const fileSystem = await FileSystem.getInstance();
-
-        const changeTheme = async (e: MediaQueryList | MediaQueryListEvent) => {
-            if (SharedStore.preferences.theme === Theme.System) {
-                await fileSystem.savePreferences({ theme: e.matches ? Theme.Dark : Theme.Light });
-            }
-        };
-
-        const darkModeMediaQuery = window?.matchMedia('(prefers-color-scheme: dark)');
-        changeTheme(darkModeMediaQuery);
-        darkModeMediaQuery.addEventListener('change', changeTheme);
+    async function applyInitialTheme() {
+        document.body.setAttribute("data-color-scheme", SharedStore.preferences.theme);
     }
 
-    async function updateLanguageBasedOnSystemPreference() {
-        const fileSystem = await FileSystem.getInstance();
-        if (SharedStore.preferences.language === Language.System) {
-            const newLang = convertToLanguageEnum(navigator.language);
-            if (newLang) {
-                await fileSystem.savePreferences({ language: newLang });
-            }
-        }
+    async function applyInitialLanguage() {
+        document.documentElement.setAttribute("lang", SharedStore.preferences.language);
     }
 </script>
 

@@ -126,14 +126,12 @@ export enum Size {
  * Reference: https://datatracker.ietf.org/doc/html/rfc5646
  */
 export enum Language {
-    System = "System",
     EN = "English",
     EN_US = "English (US)",
     EN_GB = "English (GB)"
 }
 
 export enum Theme {
-    System = "System",
     Light = "Light",
     Dark = "Dark",
 }

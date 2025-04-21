@@ -1,4 +1,18 @@
 :root {
+    & body {
+        color-scheme: light dark;
+    }
+
+    & body[data-color-scheme="light"] {
+        color-scheme: light;
+    }
+
+    & body[data-color-scheme="dark"] {
+        color-scheme: dark;
+    }
+}
+
+body {
     /* Theme */
     --color-bg-primary: light-dark(#ffffff, #000000);
     --color-text-primary: light-dark(#000000, #ffffff);
@@ -71,18 +85,6 @@
     --z-index-toast: 200;
     --z-index-overlay: 300;
     --z-index-modal: 400;
-
-    & body {
-        color-scheme: light dark;
-    }
-
-    & body[data-color-scheme="light"] {
-        color-scheme: light;
-    }
-
-    & body[data-color-scheme="dark"] {
-        color-scheme: dark;
-    }
 }
 
 * {
