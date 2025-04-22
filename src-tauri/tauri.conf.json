@@ -9,12 +9,14 @@
     "frontendDist": "../build"
   },
   "app": {
+      "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "open-mail",
         "width": 1200,
         "height": 700,
-        "center": true
+        "center": true,
+        "decorations": false,
+        "transparent": true
       }
     ],
     "security": {
@@ -36,5 +38,5 @@
       "fs": {
         "requireLiteralLeadingDot": false
       }
-    }
+  }
 }
