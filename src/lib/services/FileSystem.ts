@@ -273,6 +273,6 @@ export class FileSystem {
     public async savePreferences(data: Partial<Preferences>): Promise<void> {
         SharedStore.preferences = { ...SharedStore.preferences, ...data };
         const prefsFile = this.getPreferences();
-        await prefsFile.write(JSON.stringify(data, null, 2));
+        await prefsFile.write(JSON.stringify(SharedStore.preferences, null, 2));
     }
 }
