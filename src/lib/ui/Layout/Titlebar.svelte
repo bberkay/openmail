@@ -34,7 +34,7 @@
     :global {
         .titlebar {
             height: var(--titlebar-height);
-            background: var(--color-border-subtle);
+            background: transparent;
             user-select: none;
             display: flex;
             justify-content: flex-end;
@@ -43,7 +43,6 @@
             left: 0;
             right: 0;
             border: none;
-            border-bottom: 1px solid white;
             border-top-left-radius: var(--radius-md);
             border-top-right-radius: var(--radius-md);
 
