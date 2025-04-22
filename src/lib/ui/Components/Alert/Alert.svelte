@@ -55,17 +55,12 @@
     class={combine("alert", type, additionalClass)}
     {...restAttributes}
 >
-    <div class="alert-content">
+    <div class="alert-body">
         <div class="alert-icon">
             <Icon name={type} />
         </div>
-        <div class="alert-body">
-            <div class="alert-type">
-                <span>{type}</span>
-            </div>
-            <div class="alert-content">
-                {@html content}
-            </div>
+        <div>
+            {@html content}
         </div>
         <div>
             {#if onManage}
@@ -100,10 +95,10 @@
 <style>
     :global {
         .alert {
-            background-color: var(--color-bg-primary);
             color: var(--color-text-primary);
-            padding: var(--spacing-md) var(--spacing-lg);
-            border-radius: var(--radius-sm);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            border:1px solid #002e62;
             font-size: var(--font-size-sm);
             opacity: 0;
             transform: translateX(-100%);
@@ -113,23 +108,43 @@
             width: max-content;
 
             &.error {
-                border: 1px solid var(--color-error);
-                color: var(--color-error);
+                background-color: var(--color-error-bg);
+                border-left: 1px solid var(--color-error-text);
+                color: var(--color-error-text);
+
+                & svg {
+                    fill: var(--color-error-text);
+                }
             }
 
             &.warning {
-                border: 1px solid var(--color-warning);
-                color: var(--color-warning);
+                background-color: var(--color-warning-bg);
+                border-left: 1px solid var(--color-warning-text);
+                color: var(--color-warning-text);
+
+                & svg {
+                    fill: var(--color-warning-text);
+                }
             }
 
             &.info {
-                border: 1px solid var(--color-info);
-                color: var(--color-info);
+                background-color: var(--color-info-bg);
+                border-left: 1px solid var(--color-info-text);
+                color: var(--color-info-text);
+
+                & svg {
+                    fill: var(--color-info-text);
+                }
             }
 
             &.success {
-                border: 1px solid var(--color-success);
-                color: var(--color-success);
+                background-color: var(--color-success-bg);
+                border-left: 1px solid var(--color-success-text);
+                color: var(--color-success-text);
+
+                & svg {
+                    fill: var(--color-success-text);
+                }
             }
 
             &.show {
@@ -137,25 +152,15 @@
                 transform: translateX(0);
             }
 
-            & .alert-content {
+            & .alert-body {
                 display: flex;
                 align-items: center;
                 justify-content:space-between;
+                gap: var(--spacing-sm);
 
-                & .alert-icon svg {
-                    width: var(--font-size-lg)!important;
-                    height: var(--font-size-lg)!important;
-                }
-
-                & .alert-body{
-                    flex-grow:1;
-                    margin-left: var(--spacing-2xs);
-                    margin-right: var(--spacing-md);
-
-                    & .alert-type {
-                        text-transform: capitalize;
-                        font-weight: bold;
-                    }
+                & svg {
+                    width: var(--font-size-xl)!important;
+                    height: var(--font-size-xl)!important;
                 }
 
                 & .alert-close {
