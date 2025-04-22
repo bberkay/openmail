@@ -36,7 +36,7 @@
             font-size: var(--font-size-sm);
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
 
             &:hover {
                 opacity: 0.9;
@@ -44,6 +44,10 @@
 
             &:active {
                 opacity: 0.7;
+            }
+
+            &:has(svg) {
+                justify-content: space-between;
             }
 
             &.btn-cta {
