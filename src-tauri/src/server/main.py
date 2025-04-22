@@ -77,7 +77,6 @@ async def catch_request_for_logging(request: Request, call_next):
 async def hello() -> Response:
     return Response(success=True, message="Hello, Server is ready for you!")
 
-
 def main():
     port = PortScanner.find_free_port(PORT_RANGE[0], PORT_RANGE[1])
     pid = str(os.getpid())
