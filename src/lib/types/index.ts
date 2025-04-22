@@ -121,12 +121,11 @@ export enum Size {
 
 /**
  * The enum keys are derived from RFC 5646 language tags
- * (e.g., "en", "en-US", "en-GB"),but are formatted using
+ * (e.g., "en-US", "en-GB"),but are formatted using
  * uppercase letters and underscores (e.g., EN_US).
  * Reference: https://datatracker.ietf.org/doc/html/rfc5646
  */
 export enum Language {
-    EN = "English",
     EN_US = "English (US)",
     EN_GB = "English (GB)"
 }
