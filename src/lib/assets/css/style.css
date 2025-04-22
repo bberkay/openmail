@@ -144,17 +144,17 @@ body {
 }
 
 .hidden {
-    display: none;
+    display: none!important;
 }
 
 .invisible {
-    opacity: 0;
-    visibility: hidden;
+    opacity: 0!important;
+    visibility: hidden!important;
 }
 
 .visible {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1!important;
+    visibility: visible!important;
 }
 
 .alert-container {

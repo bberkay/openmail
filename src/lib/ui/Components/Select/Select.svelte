@@ -40,6 +40,7 @@
     let isOpen = $state(false);
     let options: HTMLElement[] = $state([]);
     let selectedOption: HTMLElement | null = $state(null);
+    const defaultValue = value;
 
     let selectWrapper: HTMLElement;
     let optionsList: HTMLElement;
@@ -137,9 +138,16 @@
     }
 
     const clearSelection = () => {
-        selectedOption = null;
-        optionsList.querySelector(".selected")?.classList.remove("selected");
-        filterOptions();
+        if (disabled)
+            return;
+
+        if (defaultValue) {
+            selectOption(defaultValue);
+        } else {
+            selectedOption = null;
+            optionsList.querySelector(".selected")?.classList.remove("selected");
+            filterOptions();
+        }
     }
 </script>
 
@@ -152,7 +160,7 @@
 >
     <div
         id={id}
-        class="custom-select {isOpen ? "open" : ""} {disabled ? "disabled" : ""}"
+        class="custom-select {isOpen ? "visible" : ""} {disabled ? "disabled" : ""}"
         onclick={!disabled ? toggleSelect : () => {}}
         onkeydown={(e) => !disabled && e.key === "Enter" && toggleSelect()}
         tabindex="0"
@@ -168,7 +176,7 @@
                     <Button.Basic
                         type="button"
                         class="clear-button {selectedOption ? "visible" : ""}"
-                        onclick={!disabled ? clearSelection : () => {}}
+                        onclick={clearSelection}
                     >×</Button.Basic>
                 {:else}
                     <span data-value="">{placeholder}</span>
@@ -224,7 +232,7 @@
                 cursor: pointer;
                 background-color: var(--color-bg-primary);
 
-                &.open {
+                &.visible {
                     border-color: var(--color-text-primary);
                 }
 
@@ -272,8 +280,8 @@
                 background: var(--color-bg-primary);
                 border: 1px solid var(--color-border);
                 border-radius: var(--radius-sm);
-                border-top-left-radius: none;
-                border-top-right-radius: none;
+                border-top-left-radius: 0!important;
+                border-top-right-radius: 0!important;
                 max-height: var(--container-sm);
                 overflow-y: auto;
                 z-index: var(--z-index-dropdown);

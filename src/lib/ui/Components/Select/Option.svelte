@@ -1,16 +1,18 @@
 <script lang="ts">
-    import type { Snippet } from "svelte";
     import { combine } from "$lib/utils";
+    import Icon from "$lib/ui/Components/Icon";
 
     interface Props {
         value: string;
-        children: Snippet;
+        content: string;
+        icon?: string;
         [attribute: string]: unknown;
     }
 
     let {
         value,
-        children,
+        content,
+        icon,
         ...attributes
     }: Props = $props();
 
@@ -25,7 +27,10 @@
     class={combine("option", additionalClass)}
     {...restAttributes}
 >
-    {@render children()}
+    {#if icon}
+        <Icon name={icon}/>
+    {/if}
+    {content}
 </div>
 
 <style>
@@ -33,15 +38,22 @@
         .option {
             padding: var(--spacing-xs) var(--spacing-sm);
             cursor: pointer;
-            transition: background-color var(--transition-fast) var(--ease-default);
+            transition: var(--transition-fast);
             color: var(--color-text-secondary);
+
+            &:has(svg) {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: var(--spacing-sm);
+            }
 
             &:hover{
                 background-color: var(--color-hover);
             }
 
             &.selected {
-                background-color: var(--color-border);
+                background-color: var(--color-border-subtle);
                 color: var(--color-text-primary);
             }
 
