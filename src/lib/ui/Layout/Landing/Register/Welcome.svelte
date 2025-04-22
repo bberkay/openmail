@@ -47,7 +47,7 @@
         >
             {#each Object.entries(Language) as langEntry}
                 {@const [langId, langName] = langEntry}
-                <Select.Option value={langId}>{langName}</Select.Option>
+                <Select.Option value={langId} content={langName} />
             {/each}
         </Select.Root>
     </FormGroup>
@@ -64,10 +64,7 @@
         >
             {#each Object.entries(Theme) as themeEntry}
                 {@const [themeId, themeName] = themeEntry}
-                <Select.Option value={themeId}>
-                    <Icon name={themeId.toLowerCase()} />
-                    {themeName}
-                </Select.Option>
+                <Select.Option value={themeId} content={themeName} icon={themeId.toLowerCase()} />
             {/each}
         </Select.Root>
     </FormGroup>
