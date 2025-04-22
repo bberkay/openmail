@@ -44,7 +44,11 @@
     :global {
         .landing-container {
             width: 100%;
-            max-width: var(--container-sm);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
 
             & .landing-header {
                 text-align: center;
@@ -70,7 +74,7 @@
                 flex-direction: column;
                 gap: var(--spacing-lg);
                 text-align: center;
-                margin-top: var(--spacing-lg);
+                margin-top: var(--spacing-2xs);
             }
         }
     }

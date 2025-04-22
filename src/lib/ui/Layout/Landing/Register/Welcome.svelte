@@ -34,51 +34,44 @@
 
 <div class="alert-container" id="info-change-alert-container"></div>
 <Form onsubmit={saveInitialPreferences}>
-    <div>
-        <FormGroup>
-            <Label for="language">Language</Label>
-            <Select.Root
-                id="language"
-                placeholder="Language"
-                value={getEnumKeyByValue(Language, SharedStore.preferences.language)}
-                onchange={(selectedOption) => {
-                    selectedLanguage = selectedOption as Language;
-                }}
-            >
-                {#each Object.entries(Language) as langEntry}
-                    {@const [langId, langName] = langEntry}
-                    <Select.Option value={langId}>{langName}</Select.Option>
-                {/each}
-            </Select.Root>
-        </FormGroup>
-        <FormGroup direction="horizontal">
+    <FormGroup>
+        <Label for="language">Language</Label>
+        <Select.Root
+            id="language"
+            placeholder="Language"
+            value={getEnumKeyByValue(Language, SharedStore.preferences.language)}
+            onchange={(selectedOption) => {
+                selectedLanguage = selectedOption as Language;
+            }}
+            style="width:100%"
+        >
+            {#each Object.entries(Language) as langEntry}
+                {@const [langId, langName] = langEntry}
+                <Select.Option value={langId}>{langName}</Select.Option>
+            {/each}
+        </Select.Root>
+    </FormGroup>
+    <FormGroup>
+        <Label for="theme">Theme</Label>
+        <Select.Root
+            id="theme"
+            placeholder="Theme"
+            value={getEnumKeyByValue(Theme, SharedStore.preferences.theme)}
+            onchange={(selectedOption) => {
+                selectedTheme = selectedOption as Theme;
+            }}
+            style="width:100%"
+        >
             {#each Object.entries(Theme) as themeEntry}
                 {@const [themeId, themeName] = themeEntry}
-
-                <Button.Basic
-                    class="btn-inline theme"
-                    onclick={() => {
-                        selectedTheme = themeId as Theme;
-                    }}
-                >
+                <Select.Option value={themeId}>
                     <Icon name={themeId.toLowerCase()} />
-                    <span>{themeName}</span>
-                </Button.Basic>
+                    {themeName}
+                </Select.Option>
             {/each}
-        </FormGroup>
-        <div class="landing-body-footer">
-            <Button.Basic type="submit">Continue</Button.Basic>
-        </div>
+        </Select.Root>
+    </FormGroup>
+    <div class="landing-body-footer">
+        <Button.Basic type="submit" class="btn-cta">Continue</Button.Basic>
     </div>
 </Form>
-
-<style>
-    :global {
-        .theme {
-            display: "flex";
-            flex-direction: column;
-            justify-content: center;
-            gap: var(--spacing-sm);
-        }
-    }
-</style>
