@@ -445,7 +445,7 @@ export function getEnumKeyByValue<T extends Record<string, string>>(
     enumObj: T,
     value: string,
 ): keyof T | undefined {
-    return (Object.keys(enumObj) as (keyof T)[]).find(
-        (k) => enumObj[k] === value,
-    );
+    return Object.entries(enumObj).find(
+        (k) => k[1] === value,
+    )?.[0];
 }
