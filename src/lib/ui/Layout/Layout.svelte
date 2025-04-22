@@ -16,12 +16,16 @@
 </script>
 
 <script lang="ts">
+    import Titlebar from "./Titlebar.svelte";
+
     interface Props {
         children: Snippet;
     }
 
     let { children }: Props = $props();
 </script>
+
+<Titlebar/>
 
 <div class="layout-container" bind:this={sectionContainer}>
     {#if !isMounted}
@@ -30,7 +34,10 @@
 </div>
 
 <style>
-    .layout-container{
-        height:100vh;
+    :global {
+        .layout-container{
+            margin-top: var(--titlebar-height);
+            height: calc(100vh - var(--titlebar-height));
+        }
     }
 </style>

@@ -34,7 +34,7 @@
     :global {
         .titlebar {
             height: var(--titlebar-height);
-            background: var(--color-text-secondary);
+            background: var(--color-border-subtle);
             user-select: none;
             display: flex;
             justify-content: flex-end;
@@ -42,9 +42,10 @@
             top: 0;
             left: 0;
             right: 0;
-            border:1px solid transparent;
-            border-top-left-radius: var(--radius-sm);
-            border-top-right-radius: var(--radius-sm);
+            border: none;
+            border-bottom: 1px solid white;
+            border-top-left-radius: var(--radius-md);
+            border-top-right-radius: var(--radius-md);
 
             & .titlebar-button {
                 display: inline-flex;
