@@ -58,7 +58,7 @@
         .form {
             display: flex;
             flex-direction: column;
-            gap: var(--spacing-xs);
+            gap: var(--spacing-2xs);
         }
     }
 </style>
