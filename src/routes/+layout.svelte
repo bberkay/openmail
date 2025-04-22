@@ -5,6 +5,8 @@
     import Layout from "$lib/ui/Layout/Layout.svelte";
     import Variables from "$lib/ui/Layout/Developer/Variables.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
+    import { Language } from "$lib/types";
+    import { getEnumKeyByValue } from "$lib/utils";
 
     let { children } = $props();
 
@@ -28,14 +30,23 @@
         if (SharedStore.preferences.language) {
             applyInitialLanguage();
         }
-    })
+    });
 
     async function applyInitialTheme() {
-        document.body.setAttribute("data-color-scheme", SharedStore.preferences.theme.toLowerCase());
+        document.body.setAttribute(
+            "data-color-scheme",
+            SharedStore.preferences.theme.toLowerCase(),
+        );
     }
 
     async function applyInitialLanguage() {
-        document.documentElement.setAttribute("lang", SharedStore.preferences.language.toLowerCase());
+        document.documentElement.setAttribute(
+            "lang",
+            getEnumKeyByValue(
+                Language,
+                SharedStore.preferences.language,
+            )!.toLowerCase(),
+        );
     }
 </script>
 
