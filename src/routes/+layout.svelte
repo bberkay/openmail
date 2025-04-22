@@ -31,11 +31,11 @@
     })
 
     async function applyInitialTheme() {
-        document.body.setAttribute("data-color-scheme", SharedStore.preferences.theme);
+        document.body.setAttribute("data-color-scheme", SharedStore.preferences.theme.toLowerCase());
     }
 
     async function applyInitialLanguage() {
-        document.documentElement.setAttribute("lang", SharedStore.preferences.language);
+        document.documentElement.setAttribute("lang", SharedStore.preferences.language.toLowerCase());
     }
 </script>
 
