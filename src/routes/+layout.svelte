@@ -6,7 +6,7 @@
     import Variables from "$lib/ui/Layout/Developer/Variables.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Language } from "$lib/types";
-    import { getEnumKeyByValue } from "$lib/utils";
+    import { convertToRFC5646Format, getEnumKeyByValue } from "$lib/utils";
 
     let { children } = $props();
 
@@ -42,10 +42,9 @@
     async function applyInitialLanguage() {
         document.documentElement.setAttribute(
             "lang",
-            getEnumKeyByValue(
-                Language,
-                SharedStore.preferences.language,
-            )!.toLowerCase(),
+            convertToRFC5646Format(
+                getEnumKeyByValue(Language, SharedStore.preferences.language)!,
+            ),
         );
     }
 </script>

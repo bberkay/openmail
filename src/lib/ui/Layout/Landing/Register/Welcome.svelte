@@ -2,32 +2,27 @@
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Language, Theme } from "$lib/types";
-    import { ApiService, PostRoutes } from "$lib/services/ApiService";
     import Form from "$lib/ui/Components/Form";
     import { FormGroup } from "$lib/ui/Components/Form";
     import * as Button from "$lib/ui/Components/Button";
     import * as Select from "$lib/ui/Components/Select";
-    import Icon from "$lib/ui/Components/Icon/Icon.svelte";
     import Label from "$lib/ui/Components/Label";
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { FileSystem } from "$lib/services/FileSystem";
-    import { getEnumKeyByValue } from "$lib/utils";
-
-    let selectedLanguage: Language = $state(SharedStore.preferences.language);
-    let selectedTheme: Theme = $state(SharedStore.preferences.theme);
+    import { getEnumKeyByValue, getEnumValueByKey } from "$lib/utils";
 
     onMount(() => {
         showAlert("info-change-alert-container", {
             content: "You can change these later.",
-            type: "info"
+            type: "info",
         });
-    })
+    });
 
     const saveInitialPreferences = async (e: Event): Promise<void> => {
         const fileSystem = await FileSystem.getInstance();
         await fileSystem.savePreferences({
-            language: selectedLanguage,
-            theme: selectedTheme,
+            language: SharedStore.preferences.language,
+            theme: SharedStore.preferences.theme,
         });
     };
 </script>
@@ -39,9 +34,15 @@
         <Select.Root
             id="language"
             placeholder="Language"
-            value={getEnumKeyByValue(Language, SharedStore.preferences.language)}
+            value={getEnumKeyByValue(
+                Language,
+                SharedStore.preferences.language,
+            )}
             onchange={(selectedOption) => {
-                selectedLanguage = selectedOption as Language;
+                SharedStore.preferences.language = getEnumValueByKey(
+                    Language,
+                    selectedOption as keyof typeof Language,
+                );
             }}
             style="width:100%"
         >
@@ -58,13 +59,20 @@
             placeholder="Theme"
             value={getEnumKeyByValue(Theme, SharedStore.preferences.theme)}
             onchange={(selectedOption) => {
-                selectedTheme = selectedOption as Theme;
+                SharedStore.preferences.theme = getEnumValueByKey(
+                    Theme,
+                    selectedOption as keyof typeof Theme,
+                );
             }}
             style="width:100%"
         >
             {#each Object.entries(Theme) as themeEntry}
                 {@const [themeId, themeName] = themeEntry}
-                <Select.Option value={themeId} content={themeName} icon={themeId.toLowerCase()} />
+                <Select.Option
+                    value={themeId}
+                    content={themeName}
+                    icon={themeId.toLowerCase()}
+                />
             {/each}
         </Select.Root>
     </FormGroup>

@@ -127,7 +127,6 @@ export enum Size {
  */
 export enum Language {
     EN_US = "English (US)",
-    EN_GB = "English (GB)"
 }
 
 export enum Theme {

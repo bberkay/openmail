@@ -441,11 +441,21 @@ export function getToggleTextSeparator(): string {
     return "#separator#";
 }
 
+export function convertToRFC5646Format(enumKey: string): string {
+    const [lang, region] = enumKey.split("_");
+    return `${lang.toLowerCase()}-${region.toUpperCase()}`;
+}
+
 export function getEnumKeyByValue<T extends Record<string, string>>(
     enumObj: T,
     value: string,
 ): keyof T | undefined {
-    return Object.entries(enumObj).find(
-        (k) => k[1] === value,
-    )?.[0];
+    return Object.entries(enumObj).find((k) => k[1] === value)?.[0];
+}
+
+export function getEnumValueByKey<T extends Record<string, string>>(
+    enumObj: T,
+    key: keyof T,
+): T[keyof T] {
+    return enumObj[key];
 }

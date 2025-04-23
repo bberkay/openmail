@@ -45,6 +45,7 @@
             border: none;
             border-top-left-radius: var(--radius-md);
             border-top-right-radius: var(--radius-md);
+            border-bottom: 1px solid var(--color-border-subtle);
 
             & .titlebar-button {
                 display: inline-flex;
