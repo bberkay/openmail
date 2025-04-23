@@ -1,11 +1,11 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
+    import { onDestroy } from "svelte";
     import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
     import Collapse from "$lib/ui/Components/Collapse";
     import { combine } from "$lib/utils";
-    import { ANIMATION_INIT_DELAY_MS, DEFAULT_LANGUAGE } from "$lib/constants";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
 
     interface PropsWithMountId extends Props {
@@ -29,19 +29,13 @@
     } = attributes;
 
     let alert: HTMLElement;
-    onMount(() => {
-        setTimeout(() => alert.classList.add("show"), ANIMATION_INIT_DELAY_MS);
-    });
-
     onDestroy(() => {
         dismiss();
     });
 
     function dismiss() {
         alert.classList.remove("show");
-        alert.addEventListener("transitionend", () => {
-            close(id);
-        });
+        close(id);
     }
 
     const onManageWrapper = async (e: Event) => {
@@ -52,7 +46,7 @@
 
 <div
     bind:this={alert}
-    class={combine("alert", type, additionalClass)}
+    class={combine("alert show", type, additionalClass)}
     {...restAttributes}
 >
     <div class="alert-body">

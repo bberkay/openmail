@@ -3,8 +3,11 @@
     import { combine } from "$lib/utils";
     import { close, type Props } from "./index";
     import * as Button from "$lib/ui/Components/Button";
-    import { AUTO_CLOSE_TOAST_DELAY_MS, ANIMATION_INIT_DELAY_MS, DEFAULT_LANGUAGE } from "$lib/constants";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
+
+    const TOAST_SHOW_DELAY_MS = 10;
+    const TOAST_AUTO_CLOSE_DELAY_MS = 3000;
 
     interface PropsWithMountId extends Props {
         id: string;
@@ -25,8 +28,8 @@
 
     let toast: HTMLElement;
     onMount(() => {
-        autoCloseDelay = autoCloseDelay || AUTO_CLOSE_TOAST_DELAY_MS;
-        setTimeout(() => toast.classList.add("show"), ANIMATION_INIT_DELAY_MS);
+        autoCloseDelay = autoCloseDelay || TOAST_AUTO_CLOSE_DELAY_MS;
+        setTimeout(() => toast.classList.add("show"), TOAST_SHOW_DELAY_MS);
 
         const timeout = setTimeout(() => {
             dismiss();

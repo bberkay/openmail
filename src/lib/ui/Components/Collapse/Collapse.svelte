@@ -3,7 +3,8 @@
     import { combine } from "$lib/utils";
     import { type Snippet } from "svelte";
     import Icon from "$lib/ui/Components/Icon";
-    import { SLIDE_TRANSITION_DURATION_MS } from "$lib/constants";
+
+    const COLLAPSE_SLIDE_TRANSITION_DELAY_MS = 300;
 
     interface Props {
         title: string;
@@ -51,7 +52,7 @@
     </div>
 
     {#if isOpen}
-        <div class="collapse-content" transition:slide={{ duration: SLIDE_TRANSITION_DURATION_MS }}>
+        <div class="collapse-content" transition:slide={{ duration: COLLAPSE_SLIDE_TRANSITION_DELAY_MS }}>
             {@render children()}
         </div>
     {/if}

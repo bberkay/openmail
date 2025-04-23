@@ -28,9 +28,11 @@
     import Badge from "$lib/ui/Components/Badge";
     import { FormGroup } from "$lib/ui/Components/Form";
     import { show as showMessage } from "$lib/ui/Components/Message";
-    import { DEFAULT_LANGUAGE, REALTIME_SEARCH_DELAY_MS } from "$lib/constants";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
     import { getSearchForAccountTemplate } from "$lib/templates";
+
+    const REALTIME_SEARCH_DELAY_MS = 300;
 
     let isSimpleSearchHidden = $state(true);
     let isExtraOptionsHidden = $state(true);
