@@ -100,8 +100,6 @@
             border-radius: var(--radius-md);
             font-size: var(--font-size-sm);
             opacity: 0;
-            transform: translateX(-100%);
-            transition: transform var(--transition-normal) var(--ease-default);
             box-shadow: var(--shadow-sm);
             gap: var(--spacing-sm);
             width: max-content;
