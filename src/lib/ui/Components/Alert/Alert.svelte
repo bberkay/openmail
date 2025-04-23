@@ -98,18 +98,18 @@
             color: var(--color-text-primary);
             padding: var(--spacing-md);
             border-radius: var(--radius-md);
-            border:1px solid #002e62;
             font-size: var(--font-size-sm);
             opacity: 0;
             transform: translateX(-100%);
-            transition: all var(--transition-normal) var(--ease-default);
+            transition: transform var(--transition-normal) var(--ease-default);
             box-shadow: var(--shadow-sm);
             gap: var(--spacing-sm);
             width: max-content;
 
             &.error {
                 background-color: var(--color-error-bg);
-                border-left: 1px solid var(--color-error-text);
+                border: 1px solid var(--color-error-border);
+                border-left: 2px solid var(--color-error-text);
                 color: var(--color-error-text);
 
                 & svg {
@@ -119,7 +119,8 @@
 
             &.warning {
                 background-color: var(--color-warning-bg);
-                border-left: 1px solid var(--color-warning-text);
+                border: 1px solid var(--color-warning-border);
+                border-left: 2px solid var(--color-warning-text);
                 color: var(--color-warning-text);
 
                 & svg {
@@ -129,7 +130,8 @@
 
             &.info {
                 background-color: var(--color-info-bg);
-                border-left: 1px solid var(--color-info-text);
+                border: 1px solid var(--color-info-border);
+                border-left: 2px solid var(--color-info-text);
                 color: var(--color-info-text);
 
                 & svg {
@@ -139,7 +141,8 @@
 
             &.success {
                 background-color: var(--color-success-bg);
-                border-left: 1px solid var(--color-success-text);
+                border: 1px solid var(--color-success-border);
+                border-left: 2px solid var(--color-success-text);
                 color: var(--color-success-text);
 
                 & svg {
