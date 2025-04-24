@@ -31,7 +31,6 @@
             text-align: left;
             color: var(--color-text-secondary);
             font-size: var(--font-size-sm);
-            margin-bottom: var(--spacing-2xs);
             margin-left: calc(var(--spacing-2xs) / 2);
 
             &.label-sm {

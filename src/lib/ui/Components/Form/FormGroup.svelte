@@ -38,7 +38,7 @@
             &.form-group-vertical {
                 flex-direction: column;
                 text-align: left;
-                margin-bottom: var(--spacing-xs);
+                margin-bottom: var(--spacing-md);
             }
 
             &.form-group-horizontal {
