@@ -23,13 +23,9 @@
     import { createSenderAddress, isStandardFolder } from "$lib/utils";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
-
-    interface Props {
-        editAccount: (account: Account) => void;
-        onCancel: () => void;
-    }
-
-    let { editAccount, onCancel }: Props = $props();
+    import EditAccountForm from "./EditAccountForm.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
+    import AddAccountForm from "./AddAccountForm.svelte";
 
     const allAccounts = SharedStore.failedAccounts.concat(SharedStore.accounts);
     let accounts = $state(allAccounts);
@@ -218,17 +214,36 @@
                 ),
                 onManageText: local.manage_accounts[DEFAULT_LANGUAGE],
                 onManage: () => {
-                    editAccount(SharedStore.failedAccounts[0]);
+                    showEditAccount(SharedStore.failedAccounts[0]);
                 },
                 closeable: false,
             });
+        } else if (SharedStore.accounts.length === 0) {
+            showAlert("accounts-alert-container", {
+                content: "You havent add any account.",
+                type: "warning",
+            })
         }
     });
+
+    const showEditAccount = (account: Account) => {
+        showContent(EditAccountForm, {
+            account
+        });
+    }
+
+    const showAddAccount = () => {
+        showContent(AddAccountForm);
+    }
 </script>
 
 <div>
     <div class="alert-container" id="accounts-alert-container"></div>
-    {#if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
+    {#if SharedStore.accounts.length === 0 && SharedStore.failedAccounts.length === 0}
+        <Button.Basic type="button" class="btn-cta" onclick={showAddAccount}>
+            Add an account
+        </Button.Basic>
+    {:else if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
         {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
         <div class="accounts-info">
             <div class="account-count">
@@ -236,7 +251,7 @@
             </div>
             <div class="account-list-operations">
                 <Input.Basic type="text" onkeydown={searchAccounts} />
-                <Button.Basic type="button" class="btn-outline" onclick={onCancel}>
+                <Button.Basic type="button" class="btn-outline" onclick={showAddAccount}>
                     {local.add_another_account[DEFAULT_LANGUAGE]}
                 </Button.Basic>
             </div>
@@ -245,7 +260,7 @@
             <Table.Header>
                 <Table.Row>
                     <Table.Head class="checkbox-cell">
-                        <!-- TODO: Convert to select shown button after pagination implementation. -->
+                        <!-- TODO: Convert onclick to select shown from select all after pagination implementation. -->
                         <!-- TODO: Show select all button after select shown is checked. -->
                         <Input.Basic
                             type="checkbox"
@@ -291,6 +306,7 @@
                                 bind:group={accountSelection}
                                 value={account.email_address}
                             />
+                            <span>C2</span>
                         </Table.Cell>
                         <Table.Cell class="body-cell">
                             {index < failedAccountLength
@@ -304,7 +320,7 @@
                                 class="btn-inline"
                                 style="margin-right: 5px;"
                                 onclick={() => {
-                                    editAccount(account);
+                                    showEditAccount(account);
                                 }}
                             >
                                 {local.edit[DEFAULT_LANGUAGE]}

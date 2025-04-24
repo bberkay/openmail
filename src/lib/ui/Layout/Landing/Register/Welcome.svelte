@@ -10,6 +10,9 @@
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { FileSystem } from "$lib/services/FileSystem";
     import { getEnumKeyByValue, getEnumValueByKey } from "$lib/utils";
+    import AddAccountForm from "$lib/ui/Layout/Landing/Register/AddAccountForm.svelte";
+    import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
 
     onMount(() => {
         showAlert("info-change-alert-container", {
@@ -24,6 +27,12 @@
             language: SharedStore.preferences.language,
             theme: SharedStore.preferences.theme,
         });
+        showContent(
+            SharedStore.accounts.length > 0 ||
+                SharedStore.failedAccounts.length > 0
+                ? AccountList
+                : AddAccountForm,
+        );
     };
 </script>
 

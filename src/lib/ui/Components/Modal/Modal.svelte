@@ -26,7 +26,7 @@
         let closeButton = modal.querySelector("button[data-modal-close]");
         if (!closeButton) {
             closeButton = createDomElement(
-                `<button type="button" data-modal-close>${local.close[DEFAULT_LANGUAGE]}</button>`,
+                `<button type="button" class="btn btn-outline" data-modal-close>${local.close[DEFAULT_LANGUAGE]}</button>`,
             );
             modal.appendChild(closeButton);
         }
@@ -43,38 +43,40 @@
 </div>
 
 <style>
-    .modal{
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: var(--container-md);
-        background-color: var(--color-bg-primary);
-        padding: var(--spacing-lg) var(--spacing-xl);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-md);
-        z-index: var(--z-index-modal);
+    :global {
+        .modal{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: var(--container-md);
+            background-color: var(--color-hover);
+            padding: var(--spacing-lg) var(--spacing-xl);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            z-index: var(--z-index-modal);
 
-        & .modal-header {
-            color: var(--color-text-primary);
-            margin-bottom: var(--spacing-2xs);
-            font-weight: var(--font-weight-bold);
-            font-size: var(--font-size-xl);
-        }
+            & .modal-header {
+                color: var(--color-text-primary);
+                margin-bottom: var(--spacing-2xs);
+                font-weight: var(--font-weight-bold);
+                font-size: var(--font-size-xl);
+            }
 
-        & .modal-body {
-            color: var(--color-text-secondary);
-            margin-bottom: var(--spacing-md);
-            font-size: var(--font-size-sm);
-        }
+            & .modal-body {
+                color: var(--color-text-secondary);
+                margin-bottom: var(--spacing-md);
+                font-size: var(--font-size-sm);
+            }
 
-        & .modal-footer {
-            display: flex;
-            flex-direction: row;
-            justify-content: flex-end;
-            gap: var(--spacing-xs);
-            color: var(--color-text-primary);
+            & .modal-footer {
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-end;
+                gap: var(--spacing-xs);
+                color: var(--color-text-primary);
+            }
         }
     }
 </style>

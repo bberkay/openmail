@@ -8,12 +8,8 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-
-    interface Props {
-        onCancel: () => void;
-    }
-
-    let { onCancel }: Props = $props();
+    import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
+    import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
 
     const addAccount = async (e: Event): Promise<void> => {
         const form = e.target as HTMLFormElement;
@@ -29,6 +25,10 @@
             console.error(response.message);
         }
     };
+
+    const showAccountList = () => {
+        showContent(AccountList);
+    }
 </script>
 
 <Form onsubmit={addAccount}>
@@ -61,13 +61,13 @@
             <span class="muted">{local.full_name_example[DEFAULT_LANGUAGE]}</span>
         </FormGroup>
         <div class="landing-body-footer">
-            <Button.Basic type="submit">
+            <Button.Basic type="submit" class="btn-cta">
                 {local.connect_to_account[DEFAULT_LANGUAGE]}
             </Button.Basic>
             <Button.Basic
                 type="button"
                 class="btn-inline"
-                onclick={onCancel}
+                onclick={showAccountList}
             >
                 {local.which_accounts_added[DEFAULT_LANGUAGE]}
             </Button.Basic>

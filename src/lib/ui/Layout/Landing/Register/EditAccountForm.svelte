@@ -10,13 +10,14 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
+    import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
 
     interface Props {
-        editingAccount: Account;
-        onCancel: () => void;
+        account: Account;
     }
 
-    let { editingAccount, onCancel }: Props = $props();
+    let { account }: Props = $props();
 
     const editAccount = async (e: Event): Promise<void> => {
         const form = e.target as HTMLFormElement;
@@ -32,6 +33,10 @@
             console.error(response.message);
         }
     };
+
+    const cancelEdit = () => {
+        showContent(AccountList);
+    }
 </script>
 
 <Form onsubmit={editAccount}>
@@ -42,7 +47,7 @@
                 type="email"
                 name="email_address"
                 id="email_address"
-                value={editingAccount.email_address}
+                value={account.email_address}
                 autocomplete="off"
                 readonly
                 required
@@ -59,7 +64,7 @@
                 name="fullname"
                 id="fullname"
                 placeholder={local.full_name_placeholder[DEFAULT_LANGUAGE]}
-                value={editingAccount.fullname}
+                value={account.fullname}
                 autocomplete="off"
             />
             <span class="muted">{local.full_name_example[DEFAULT_LANGUAGE]}</span>
@@ -71,7 +76,7 @@
             <Button.Basic
                 type="button"
                 class="btn-inline"
-                onclick={onCancel}
+                onclick={cancelEdit}
             >
                 {local.cancel[DEFAULT_LANGUAGE]}
             </Button.Basic>
