@@ -1,7 +1,4 @@
 <script lang="ts">
-    import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import { local } from "$lib/locales";
-
     interface Props {
         text?: string;
         [attribute: string]: unknown;

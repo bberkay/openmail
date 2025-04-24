@@ -38,6 +38,11 @@
             align-items: center;
             justify-content: center;
 
+            &[disabled], &.disabled {
+                cursor:not-allowed!important;
+                opacity: 0.7!important;
+            }
+
             &:hover {
                 opacity: 0.9;
             }
