@@ -49,7 +49,3 @@
 >
     {@render children()}
 </Button.Basic>
-
-<style>
-
-</style>

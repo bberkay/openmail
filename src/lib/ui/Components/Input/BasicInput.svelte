@@ -2,7 +2,7 @@
     import { combine } from "$lib/utils";
 
     interface Props {
-        group?: unknown;
+        group?: string[] | undefined;
         value?: unknown;
         [attribute: string]: unknown;
     }
@@ -17,14 +17,33 @@
         class: additionalClass,
         ...restAttributes
     } = attributes;
+
+    const handleChange = ({ target }: any) => {
+        /* Related issue about bind:group
+        with nested components: github.com/sveltejs/svelte/issues/2308 */
+        if (!group) return;
+		const { value, checked } = target;
+		if (checked) group.push(value);
+		else group = group.filter(v => v !== value);
+	}
 </script>
 
-<input
-    bind:group
-    bind:value
-    class={combine("input", additionalClass)}
-    {...restAttributes}
-/>
+{#if group}
+    <!-- input type will be (mostly) "checkbox" -->
+    <input
+        {value}
+        checked={group.includes(value as string)}
+        onchange={handleChange}
+        class={combine("input", additionalClass)}
+        {...restAttributes}
+    />
+{:else}
+    <input
+        bind:value
+        class={combine("input", additionalClass)}
+        {...restAttributes}
+    />
+{/if}
 
 <style>
     :global{
