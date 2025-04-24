@@ -26,8 +26,8 @@
     const togglePassword = (e: Event) => {
         const inputGroup = (e.target as HTMLInputElement).closest(".input-group")!;
         const input = inputGroup.querySelector("input") as HTMLInputElement;
-        const eyeOpen = input.querySelector('[name="eye-open"]') as HTMLElement;
-        const eyeClosed = input.querySelector('[name="eye-closed"]') as HTMLElement;
+        const eyeOpen = inputGroup.querySelector('svg[name="eye-open"]') as HTMLElement;
+        const eyeClosed = inputGroup.querySelector('svg[name="eye-closed"]') as HTMLElement;
         if (input.getAttribute("type") == "text") {
             input.setAttribute("type", "password");
             eyeOpen.classList.remove("hidden");
