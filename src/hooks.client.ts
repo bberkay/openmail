@@ -3,8 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { TauriCommand, type Preferences } from "$lib/types";
 import { SharedStore } from "$lib/stores/shared.svelte";
 import { ApiService, GetRoutes } from "$lib/services/ApiService";
-import { DEFAULT_PREFERENCES, SERVER_CONNECTION_TRY_SLEEP_MS } from "$lib/constants";
+import { DEFAULT_PREFERENCES } from "$lib/constants";
 import { FileSystem } from "$lib/services/FileSystem";
+
+const SERVER_CONNECTION_TRY_SLEEP_MS = 2000
 
 async function initializeFileSystem(): Promise<void> {
     const fileSystem = await FileSystem.getInstance();
