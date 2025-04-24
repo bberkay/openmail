@@ -311,7 +311,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """Enable UTF8 if the server supports it. Does not raise any error
         if not found. Typically used right after login."""
         is_success = False
-        if [b"UTF8=ACCEPT" in capabilities for capabilities in self.capability()[1]]:
+        capability_result = self.capability()
+        if capability_result[0] != "OK":
+            raise IMAPManagerException(
+                f"Could not receive capability list to enable utf8: {capability_result[1]}"
+            )
+
+        if [b"UTF8=ACCEPT" in capabilities for capabilities in capability_result[1]]:
             utf8_enable_result = self._simple_command("ENABLE", "UTF8=ACCEPT")
             is_success = utf8_enable_result[0] == "OK"
             if not is_success:
@@ -323,13 +329,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """Find the hierarchy delimiter from NAMESPACE and set it.
         Raises an error if not found. Typically used right after login."""
         # https://datatracker.ietf.org/doc/html/rfc9051#name-namespace-command
-        namespace_result = self.namespace()[1][0]
+        namespace_result = self.namespace()
         if namespace_result[0] != "OK":
             raise IMAPManagerException(
                 f"Could not receive namespace response to find hierarchy delimiter: {namespace_result[1]}"
             )
 
-        self._hierarchy_delimiter = MessageParser.get_hierarchy_delimiter(namespace_result[1])
+        self._hierarchy_delimiter = MessageParser.get_hierarchy_delimiter(
+            namespace_result[1][0]
+        )
         if not self._hierarchy_delimiter:
             raise IMAPManagerException(
                 f"Could not parse hierarchy delimiter: {namespace_result[1]}"
