@@ -307,6 +307,36 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 f"There was an error while parsing command `{result}` result: {str(e)}"
             ) from None
 
+    def _enable_utf8(self) -> bool:
+        """Enable UTF8 if the server supports it. Does not raise any error
+        if not found. Typically used right after login."""
+        is_success = False
+        if [b"UTF8=ACCEPT" in capabilities for capabilities in self.capability()[1]]:
+            utf8_enable_result = self._simple_command("ENABLE", "UTF8=ACCEPT")
+            is_success = utf8_enable_result[0] == "OK"
+            if not is_success:
+                print(f"Could not enable UTF-8: {utf8_enable_result[1]}")
+
+        return is_success
+
+    def _set_hierarchy_delimiter(self) -> bool:
+        """Find the hierarchy delimiter from NAMESPACE and set it.
+        Raises an error if not found. Typically used right after login."""
+        # https://datatracker.ietf.org/doc/html/rfc9051#name-namespace-command
+        namespace_result = self.namespace()[1][0]
+        if namespace_result[0] != "OK":
+            raise IMAPManagerException(
+                f"Could not receive namespace response to find hierarchy delimiter: {namespace_result[1]}"
+            )
+
+        self._hierarchy_delimiter = MessageParser.get_hierarchy_delimiter(namespace_result[1])
+        if not self._hierarchy_delimiter:
+            raise IMAPManagerException(
+                f"Could not parse hierarchy delimiter: {namespace_result[1]}"
+            )
+
+        return True
+
     # Overrides of IMAP4 Command functions to handling IDLING
 
     @staticmethod
@@ -491,35 +521,21 @@ class IMAPManager(imaplib.IMAP4_SSL):
             - Supports both ASCII and non-ASCII credentials.
             - 'password' will be quoted.
         """
+        login_result = None
         if contains_non_ascii(user) or contains_non_ascii(password):
-            self.authenticate(
+            login_result = self.authenticate(
                 "PLAIN", lambda x: bytes("\x00" + user + "\x00" + password, "utf-8")
             )
         else:
-            super().login(user, password)
+            login_result = super().login(user, password)
 
-        try:
-            result = self._simple_command("ENABLE", "UTF8=ACCEPT")
-            if result[0] != "OK":
-                print(f"Could not enable UTF-8: {result[1]}")
+        if login_result[0] != "OK":
+            raise IMAPManagerException(
+                f"Could not logged in to the target IMAP server: {login_result[1]}"
+            )
 
-            # Namespace command will send hierarchy delimiter:
-            # https://datatracker.ietf.org/doc/html/rfc9051#name-namespace-command
-            result = self.namespace()[1][0]
-            if result[0] != "OK":
-                raise IMAPManagerException(
-                    f"Could not receive namespace response to find hierarchy delimiter: {result[1]}"
-                )
-
-            self._hierarchy_delimiter = MessageParser.get_hierarchy_delimiter(result[1])
-            if not self._hierarchy_delimiter:
-                raise IMAPManagerException(
-                    f"Could not parse hierarchy delimiter: {result[1]}"
-                )
-
-        except Exception as e:
-            print(f"Unexpected error: Could not enable UTF-8: {str(e)}")
-            pass
+        self._enable_utf8()
+        self._set_hierarchy_delimiter()
 
         return (True, "Succesfully logged in to the target IMAP server")
 
