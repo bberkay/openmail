@@ -82,6 +82,11 @@
                     background-color: var(--color-border);
                 }
             }
+
+            &.btn-sm {
+                padding: var(--spacing-xs) var(--spacing-sm);
+                font-size: var(--font-size-xs);
+            }
         }
     }
 </style>
