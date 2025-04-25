@@ -78,51 +78,51 @@
     class={combine("pagination", additionalClass)}
     {...restAttributes}
 >
-    <Button.Basic
+    <Button.Action
         class="btn-outline btn-sm arrow-button"
         onclick={prev}
         disabled={current <= 1}
     >
         <Icon name="prev" />
-    </Button.Basic>
+    </Button.Action>
     {#if pages[0] > 1}
-        <Button.Basic
+        <Button.Action
             class="btn-outline btn-sm"
             onclick={prevAll}
         >
             {1}
-        </Button.Basic>
+        </Button.Action>
         {#if pages[0] > 2}
             <span>...</span>
         {/if}
     {/if}
     {#each pages as value}
-        <Button.Basic
+        <Button.Action
             class="btn-outline btn-sm"
             onclick={onChangeWrapper}
             data-value={value}
         >
             {value}
-        </Button.Basic>
+        </Button.Action>
     {/each}
     {#if pages[pages.length - 1] < total}
         {#if pages[pages.length - 1] < total - 1}
             <span>...</span>
         {/if}
-        <Button.Basic
+        <Button.Action
             class="btn-outline btn-sm"
             onclick={nextAll}
         >
             {total}
-        </Button.Basic>
+        </Button.Action>
     {/if}
-    <Button.Basic
+    <Button.Action
         class="btn-outline btn-sm arrow-button"
         onclick={next}
         disabled={current >= total}
     >
         <Icon name="next" />
-    </Button.Basic>
+    </Button.Action>
 </div>
 
 <style>

@@ -1,3 +1,8 @@
-import Pagination from "./Pagination.svelte";
+import Pages from './Pages.svelte';
+import Range from './Range.svelte';
 
-export default Pagination;
+
+export {
+    Pages,
+    Range,
+};
