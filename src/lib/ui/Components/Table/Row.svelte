@@ -31,7 +31,7 @@
             transition: background-color var(--transition-fast) var(--ease-default);
             cursor: pointer;
 
-            &:hover {
+            &:hover:not(:has(.th)) {
                 background-color: var(--color-hover);
             }
         }

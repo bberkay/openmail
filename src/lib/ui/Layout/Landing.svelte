@@ -69,12 +69,16 @@
                 }
             }
 
+            & .landing-body {
+                width: var(--container-sm);
+            }
+
             & .landing-body-footer {
                 display: flex;
                 flex-direction: column;
                 gap: var(--spacing-lg);
                 text-align: center;
-                margin-top: var(--spacing-2xs);
+                margin-top: var(--spacing-xl);
             }
         }
     }

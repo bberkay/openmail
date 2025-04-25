@@ -70,7 +70,10 @@
             <span class="muted">{local.full_name_example[DEFAULT_LANGUAGE]}</span>
         </FormGroup>
         <div class="landing-body-footer">
-            <Button.Basic type="submit">
+            <Button.Basic
+                type="submit"
+                class="btn-cta"
+            >
                 {local.connect_to_account[DEFAULT_LANGUAGE]}
             </Button.Basic>
             <Button.Basic

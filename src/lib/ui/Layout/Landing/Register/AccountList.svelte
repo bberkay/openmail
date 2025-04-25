@@ -16,7 +16,8 @@
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import * as Table from "$lib/ui/Components/Table";
-    import Pagination from "$lib/ui/Components/Pagination";
+    import * as Pagination from "$lib/ui/Components/Pagination";
+    import Icon from "$lib/ui/Components/Icon";
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
@@ -26,12 +27,23 @@
     import EditAccountForm from "./EditAccountForm.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import AddAccountForm from "./AddAccountForm.svelte";
+    import Expandable from "$lib/ui/Components/Input/Expandable.svelte";
 
     const allAccounts = SharedStore.failedAccounts.concat(SharedStore.accounts);
     let accounts = $state(allAccounts);
     let accountSelection: string[] = $state([]);
+    let isShownAccountsSelected = $state(false);
+
+    const selectShownCheckbox = (event: Event) => {
+        const selectShownCheckbox = event.target as HTMLInputElement;
+        accountSelection = selectShownCheckbox.checked
+            ? accounts.map((account) => account.email_address)
+            : [];
+        isShownAccountsSelected = !isShownAccountsSelected;
+    };
 
     const selectAllAccounts = (event: Event) => {
+        isShownAccountsSelected = false;
         const selectAllCheckbox = event.target as HTMLInputElement;
         accountSelection = selectAllCheckbox.checked
             ? SharedStore.failedAccounts
@@ -78,15 +90,22 @@
 
     const searchAccounts = (e: Event) => {
         const target = e.target as HTMLInputElement;
-        if (target.value.length > 3) {
-            accounts = allAccounts.filter(
-                (account) =>
-                    account.email_address.includes(target.value) ||
-                    account.fullname?.includes(target.value),
-            );
-        } else {
-            accounts = allAccounts;
-        }
+        accounts = allAccounts.filter(
+            (account) =>
+                account.email_address
+                    .toLowerCase()
+                    .includes(target.value.toLowerCase()) ||
+                account.fullname
+                    ?.toLowerCase()
+                    .includes(target.value.toLowerCase()),
+        );
+    };
+
+    const updateAccounts = (currentOffset: number) => {
+        accounts = allAccounts.slice(
+            allAccounts.findIndex((acc) => acc === accounts[0]),
+            currentOffset,
+        );
     };
 
     async function initMailboxes(): Promise<void> {
@@ -222,19 +241,19 @@
             showAlert("accounts-alert-container", {
                 content: "You havent add any account.",
                 type: "warning",
-            })
+            });
         }
     });
 
     const showEditAccount = (account: Account) => {
         showContent(EditAccountForm, {
-            account
+            account,
         });
-    }
+    };
 
     const showAddAccount = () => {
         showContent(AddAccountForm);
-    }
+    };
 </script>
 
 <div>
@@ -246,25 +265,29 @@
     {:else if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
         {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
         <div class="accounts-info">
-            <div class="account-count">
-                <h3>All accounts <span>{allAccounts.length}</span></h3>
-            </div>
-            <div class="account-list-operations">
-                <Input.Basic type="text" onkeydown={searchAccounts} />
-                <Button.Basic type="button" class="btn-outline" onclick={showAddAccount}>
-                    {local.add_another_account[DEFAULT_LANGUAGE]}
+            {#if isShownAccountsSelected}
+                <Button.Basic
+                    type="button"
+                    class="btn-outline"
+                    onclick={selectAllAccounts}
+                >
+                    Select All
                 </Button.Basic>
-            </div>
+            {:else}
+                <Input.Expandable
+                    type="text"
+                    placeholder="Search accounts..."
+                    onkeyup={searchAccounts}
+                />
+            {/if}
         </div>
         <Table.Root>
             <Table.Header>
                 <Table.Row>
                     <Table.Head class="checkbox-cell">
-                        <!-- TODO: Convert onclick to select shown from select all after pagination implementation. -->
-                        <!-- TODO: Show select all button after select shown is checked. -->
                         <Input.Basic
                             type="checkbox"
-                            onclick={selectAllAccounts}
+                            onclick={selectShownCheckbox}
                         />
                     </Table.Head>
                     <Table.Head class="body-cell">
@@ -275,21 +298,15 @@
                             : local.account[DEFAULT_LANGUAGE]}
                     </Table.Head>
                     <Table.Head>
-                        {#if accountSelection.length > 0}
-                            <Button.Action
-                                class="btn-inline"
-                                onclick={removeAllAccounts}
-                            >
-                                {local.remove_all[DEFAULT_LANGUAGE]}
-                            </Button.Action>
-                        {:else}
-                            <Button.Action
-                                class="btn-inline invisible"
-                                onclick={() => {}}
-                            >
-                                invisible
-                            </Button.Action>
-                        {/if}
+                        <Button.Action
+                            class={accountSelection.length > 0
+                                ? "btn-inline"
+                                : "btn-inline invisible"}
+                            disabled={accountSelection.length === 0}
+                            onclick={removeAllAccounts}
+                        >
+                            {local.remove_all[DEFAULT_LANGUAGE]}
+                        </Button.Action>
                     </Table.Head>
                 </Table.Row>
             </Table.Header>
@@ -306,48 +323,64 @@
                                 bind:group={accountSelection}
                                 value={account.email_address}
                             />
-                            <span>C2</span>
                         </Table.Cell>
                         <Table.Cell class="body-cell">
-                            {index < failedAccountLength
-                                ? local.warning[DEFAULT_LANGUAGE]
-                                : ""}
-                            {account.fullname} &lt;{account.email_address}&gt;
+                            {#if index < failedAccountLength}
+                                <Icon name="warning" />
+                            {/if}
+                            <span>{account.fullname}</span>
+                            <i class="muted">&lt;{account.email_address}&gt;</i>
                         </Table.Cell>
                         <Table.Cell class="action-cell">
-                            <Button.Basic
-                                type="button"
-                                class="btn-inline"
-                                style="margin-right: 5px;"
-                                onclick={() => {
-                                    showEditAccount(account);
-                                }}
-                            >
-                                {local.edit[DEFAULT_LANGUAGE]}
-                            </Button.Basic>
-                            <Button.Action
-                                class="btn-inline"
-                                onclick={removeAccount}
-                                data-email-address={account.email_address}
-                            >
-                                {local.remove[DEFAULT_LANGUAGE]}
-                            </Button.Action>
+                            <div class="action-buttons">
+                                <Button.Basic
+                                    type="button"
+                                    class="btn-inline"
+                                    onclick={() => {
+                                        showEditAccount(account);
+                                    }}
+                                >
+                                    <Icon name="edit" />
+                                </Button.Basic>
+                                <Button.Action
+                                    class="btn-inline"
+                                    onclick={removeAccount}
+                                    data-email-address={account.email_address}
+                                >
+                                    <Icon name="trash" />
+                                </Button.Action>
+                            </div>
                         </Table.Cell>
                     </Table.Row>
                 {/each}
             </Table.Body>
         </Table.Root>
 
-        <!-- TODO: Add pagination. -->
+        <div class="pagination-container">
+            <Pagination.Range
+                total={SharedStore.accounts.length +
+                    SharedStore.failedAccounts.length}
+                range={5}
+                onChange={updateAccounts}
+            />
+        </div>
 
         <div class="landing-body-footer">
             <Button.Action
+                class="btn-cta"
                 onclick={initMailboxes}
                 disabled={!SharedStore.accounts ||
                     SharedStore.accounts.length == 0}
             >
                 {local.continue_to_mailbox[DEFAULT_LANGUAGE]}
             </Button.Action>
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                onclick={showAddAccount}
+            >
+                {local.add_another_account[DEFAULT_LANGUAGE]}
+            </Button.Basic>
         </div>
     {/if}
 </div>
@@ -358,22 +391,13 @@
             display: flex;
             justify-content: space-between;
             flex-direction: row;
-
-            & .account-list-operations {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                gap: var(--spacing-2xs);
-            }
-
-            & .account-count span {
-                color: var(--color-text-secondary);
-            }
+            align-items: end;
+            margin-bottom: var(--spacing-sm);
         }
 
         .checkbox-cell {
             width: var(--font-size-2xl);
-            padding-left: var(--spacing-xs) !important;
+            padding-left: var(--spacing-sm);
             padding-bottom: 0 !important;
         }
 
@@ -381,13 +405,29 @@
             padding-left: var(--spacing-xs);
             padding-top: var(--spacing-md);
             text-align: left;
+
+            & span {
+                margin-right: var(--spacing-2xs);
+
+                &:not(:first-child) {
+                    margin-left: var(--spacing-2xs);
+                }
+            }
         }
 
         .action-cell {
-            padding-right: var(--spacing-2xs);
-            white-space: nowrap;
+            padding-right: var(--spacing-sm);
             width: calc(2 * var(--font-size-2xl));
-            text-align: right;
+
+            & .action-buttons {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+        }
+
+        .pagination-container {
+            margin-top: var(--spacing-md);
         }
     }
 </style>

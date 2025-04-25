@@ -273,7 +273,7 @@ export function getErrorSearhMovedEmailTemplate(destination_folder: string) {
  * Constants generally used in Main/Content/Mailbox.svelte
  * ----------------------------------------------------------------------------
  */
-export function getMailboxPaginationTemplate(
+export function getRangePaginationTemplate(
     offset_start: string | number,
     offset_end: string | number,
     total: string | number,
