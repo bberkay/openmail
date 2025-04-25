@@ -28,11 +28,11 @@
 	}
 </script>
 
-{#if group}
+{#if restAttributes["type"] === "checkbox"}
     <!-- input type will be (mostly) "checkbox" -->
     <input
         {value}
-        checked={group.includes(value as string)}
+        checked={group?.includes(value as string)}
         onchange={handleChange}
         class={combine("input", additionalClass)}
         {...restAttributes}

@@ -34,7 +34,6 @@ async function initializeFileSystem(): Promise<void> {
     const savedPreferences = await fileSystem.readPreferences();
     SharedStore.preferences = { ...SharedStore.preferences,  ...savedPreferences};
     await fileSystem.savePreferences(SharedStore.preferences);
-    console.log("save preference");
 }
 
 export const init: ClientInit = async () => {
@@ -42,6 +41,5 @@ export const init: ClientInit = async () => {
     const serverReady = connectToLocalServer().then(async () => await loadAccounts());
     Promise.all([fsReady, serverReady]).then(() => {
         SharedStore.isAppLoaded = true;
-        console.log("ready app loaded: ", SharedStore.isAppLoaded);
     });
 };

@@ -24,7 +24,6 @@
 
     $effect(() => {
         if (SharedStore.isAppLoaded) {
-            console.log("app loaded");
             if (SharedStore.preferences.theme)
                 applyInitialTheme();
             if (SharedStore.preferences.language)
