@@ -270,6 +270,12 @@ export class ApiService {
         return ApiService._createQueryString(params);
     }
 
+    static async hello(serverUrl: string): Promise<GetResponse<GetRoutes.HELLO>> {
+        const response = await fetch(serverUrl + GetRoutes.HELLO);
+        const data = await response.json();
+        return data
+    }
+
     static async get<T extends GetRoutes>(
         endpoint: T,
         params?: GetQueryParams[T],

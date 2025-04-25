@@ -1,36 +1,47 @@
 import type { ClientInit } from "@sveltejs/kit";
 import { invoke } from "@tauri-apps/api/core";
-import { TauriCommand, type Preferences } from "$lib/types";
+import { TauriCommand } from "$lib/types";
 import { SharedStore } from "$lib/stores/shared.svelte";
-import { ApiService, GetRoutes } from "$lib/services/ApiService";
-import { DEFAULT_PREFERENCES } from "$lib/constants";
+import { ApiService } from "$lib/services/ApiService";
 import { FileSystem } from "$lib/services/FileSystem";
+import { AccountController } from "$lib/controllers/AccountController";
 
-const SERVER_CONNECTION_TRY_SLEEP_MS = 2000
+const SERVER_CONNECTION_TRY_SLEEP_MS = 500;
 
-async function initializeFileSystem(): Promise<void> {
-    const fileSystem = await FileSystem.getInstance();
-    SharedStore.preferences = await fileSystem.readPreferences();
-    for (const preference of Object.keys(DEFAULT_PREFERENCES) as (keyof Preferences)[]) {
-        if (!Object.hasOwn(SharedStore.preferences, preference)) {
-            await fileSystem.savePreferences({ [preference]: DEFAULT_PREFERENCES[preference] });
-        }
-    }
+async function loadAccounts(): Promise<void> {
+    if (!SharedStore.server)
+        throw new Error("Server must be initialized before loading accounts.");
+
+    await AccountController.init();
 }
 
 async function connectToLocalServer(): Promise<void> {
-    const serverUrl = await invoke<string>(TauriCommand.GET_SERVER_URL);
-    SharedStore.server = serverUrl;
-    const response = await ApiService.get(GetRoutes.HELLO);
-    if (!response.success) {
-        SharedStore.server = "";
-        setTimeout(async () => {
-            await connectToLocalServer();
-        }, SERVER_CONNECTION_TRY_SLEEP_MS);
+    while (true) {
+        await new Promise(resolve => setTimeout(resolve, SERVER_CONNECTION_TRY_SLEEP_MS));
+        try {
+            const serverUrl = await invoke<string>(TauriCommand.GET_SERVER_URL);
+            const response = await ApiService.hello(serverUrl);
+            if (response.success) {
+                SharedStore.server = serverUrl;
+                return;
+            }
+        } catch {}
     }
 }
 
-export const init: ClientInit = async () => {
-    connectToLocalServer();
-    await initializeFileSystem();
+async function initializeFileSystem(): Promise<void> {
+    const fileSystem = await FileSystem.getInstance();
+    const savedPreferences = await fileSystem.readPreferences();
+    SharedStore.preferences = { ...SharedStore.preferences,  ...savedPreferences};
+    await fileSystem.savePreferences(SharedStore.preferences);
+    console.log("save preference");
 }
+
+export const init: ClientInit = async () => {
+    const fsReady = initializeFileSystem();
+    const serverReady = connectToLocalServer().then(async () => await loadAccounts());
+    Promise.all([fsReady, serverReady]).then(() => {
+        SharedStore.isAppLoaded = true;
+        console.log("ready app loaded: ", SharedStore.isAppLoaded);
+    });
+};

@@ -1,34 +1,34 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import "$lib/assets/css/style.css";
-    import * as Modal from "$lib/ui/Components/Modal";
     import Layout from "$lib/ui/Layout/Layout.svelte";
-    import Variables from "$lib/ui/Layout/Developer/Variables.svelte";
+    import Loading from "$lib/ui/Layout/Loading.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Language } from "$lib/types";
+    import { show as showMessage } from "$lib/ui/Components/Message";
     import { convertToRFC5646Format, getEnumKeyByValue } from "$lib/utils";
 
     let { children } = $props();
 
+    let isAppLoaded = $derived(SharedStore.isAppLoaded);
+
+    /* TODO: Remove this later */
     const handleShortcuts = (e: KeyboardEvent) => {
         if (e.ctrlKey && e.code === "Space") {
             e.preventDefault();
-            Modal.show(Variables);
+            showMessage({
+                title: "Variables",
+                details: `<pre>${JSON.stringify(SharedStore, null, 4)}</pre>`
+            });
         }
     };
 
-    onMount(() => {
-        applyInitialTheme();
-        applyInitialLanguage();
-    });
-
     $effect(() => {
-        if (SharedStore.preferences.theme) {
-            applyInitialTheme();
-        }
-
-        if (SharedStore.preferences.language) {
-            applyInitialLanguage();
+        if (SharedStore.isAppLoaded) {
+            console.log("app loaded");
+            if (SharedStore.preferences.theme)
+                applyInitialTheme();
+            if (SharedStore.preferences.language)
+                applyInitialLanguage();
         }
     });
 
@@ -52,7 +52,11 @@
 <svelte:window onkeydown={handleShortcuts} />
 
 <Layout>
-    {@render children()}
+    {#if !isAppLoaded}
+        <Loading />
+    {:else}
+        {@render children()}
+    {/if}
 </Layout>
 
 <div class="modal-container" id="modal-container"></div>
