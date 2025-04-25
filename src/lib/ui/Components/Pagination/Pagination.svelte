@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { range } from "$lib/utils";
+    import { range, combine } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
 
@@ -8,12 +8,27 @@
         onChange: (((selectedPage: number) => void) | ((selectedPage: number) => Promise<void>));
         startAt?: number;
         showMax?: number;
+        [attribute: string]: unknown;
     }
 
-    let { total, onChange, startAt = 1, showMax = 5 }: Props = $props();
+    let {
+        total,
+        onChange,
+        startAt = 1,
+        showMax = 5,
+        ...attributes
+    }: Props = $props();
+
+    const {
+        class: additionalClass,
+        ...restAttributes
+    } = attributes;
 
     let current = $state(Math.max(1, startAt));
     let pages = $derived.by(() => {
+        if (total < showMax)
+            return range(1, total + 1, 1);
+
         const middle = Math.floor(showMax / 2)
         const rangeStart = Math.max(
             1,
@@ -59,18 +74,34 @@
     };
 </script>
 
-<div class="pagination">
-    <Button.Basic onclick={prev} disabled={current <= 1}>
+<div
+    class={combine("pagination", additionalClass)}
+    {...restAttributes}
+>
+    <Button.Basic
+        class="btn-outline btn-sm arrow-button"
+        onclick={prev}
+        disabled={current <= 1}
+    >
         <Icon name="prev" />
     </Button.Basic>
     {#if pages[0] > 1}
-        <button onclick={prevAll}>{1}</button>
+        <Button.Basic
+            class="btn-outline btn-sm"
+            onclick={prevAll}
+        >
+            {1}
+        </Button.Basic>
         {#if pages[0] > 2}
             <span>...</span>
         {/if}
     {/if}
-    {#each pages as value, index}
-        <Button.Basic onclick={onChangeWrapper} data-value={value}>
+    {#each pages as value}
+        <Button.Basic
+            class="btn-outline btn-sm"
+            onclick={onChangeWrapper}
+            data-value={value}
+        >
             {value}
         </Button.Basic>
     {/each}
@@ -78,9 +109,18 @@
         {#if pages[pages.length - 1] < total - 1}
             <span>...</span>
         {/if}
-        <Button.Basic onclick={nextAll}>{total}</Button.Basic>
+        <Button.Basic
+            class="btn-outline btn-sm"
+            onclick={nextAll}
+        >
+            {total}
+        </Button.Basic>
     {/if}
-    <Button.Basic onclick={next} disabled={current >= total}>
+    <Button.Basic
+        class="btn-outline btn-sm arrow-button"
+        onclick={next}
+        disabled={current >= total}
+    >
         <Icon name="next" />
     </Button.Basic>
 </div>
@@ -92,6 +132,11 @@
             flex-direction: row;
             gap: var(--spacing-2xs);
             align-items: end;
+            justify-content: center;
+
+            & .arrow-button {
+                padding: var(--spacing-xs) var(--spacing-2xs);
+            }
         }
     }
 </style>
