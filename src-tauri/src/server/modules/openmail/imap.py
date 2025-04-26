@@ -732,7 +732,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
     def is_logged_out(self) -> bool:
         """Check if imap connection is terminated"""
         try:
-            if self._is_idle() or self.is_idle_activation_countdown_continue():
+            if self.is_idle() or self.is_idle_activation_countdown_continue():
                 return False
             return super().noop()[0] != "OK"
         except Exception:
