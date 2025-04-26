@@ -4,51 +4,71 @@
     import BasicInput from "./BasicInput.svelte";
     import BasicButton from '$lib/ui/Components/Button/BasicButton.svelte';
     import Icon from '$lib/ui/Components/Icon';
+    import InputGroup from './InputGroup.svelte';
 
     interface Props {
+        direction?: "left" | "right";
+        onClose?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
         toggleButtonIconName?: string;
         [attribute: string]: unknown;
     }
 
     let {
+        direction = "left",
+        onClose,
         toggleButtonIconName,
         ...attributes
     }: Props = $props();
+
+    let expandableContainer: HTMLElement;
+    let isOpen = $state(false);
+    let inputValue = $state("");
 
     const {
         class: additionalClass,
         ...restAttributes
     } = attributes;
 
-    let isOpen = $state(false);
-    let inputValue = $state("");
-
-    const tween = new Tween(60, {
+    const tween = new Tween(20, {
         duration: 300,
         easing: cubicOut,
     });
 
-    const toggleInput = () => {
+    const toggleInput = async (e: Event) => {
         isOpen = !isOpen;
 
         if (isOpen) {
-            tween.set(300);
+            tween.set(200);
         } else {
-            tween.set(60);
+            tween.set(20);
             inputValue = "";
+            if(onClose) await onClose(e);
         }
     }
 
-    const closeInput = () => {
-        if(isOpen) toggleInput();
+    const handleClickOutside = (e: MouseEvent) => {
+        setTimeout(() => {
+          if (isOpen &&
+              !expandableContainer.contains(document.activeElement)) {
+            toggleInput(e);
+          }
+        }, 100);
     }
 </script>
 
-<svelte:window onkeydown={closeInput} />
 
-<div class="expandable-container" style="width:{tween.current}px">
+<div
+    bind:this={expandableContainer}
+    class="expandable-container"
+    style="
+        width:{tween.current}px;
+        transform-origin:{direction};
+        {direction == "left" ? "margin-left:auto" : ""}
+    "
+>
     {#if isOpen}
-        <div class="input-container">
+        <InputGroup>
+            <!--onblur={handleClickOutside}-->
             <BasicInput
                 type="text"
                 bind:value={inputValue}
@@ -57,16 +77,15 @@
             />
             <BasicButton
                 type="button"
-                class="close-button"
                 onclick={toggleInput}
             >
                 <Icon name="close" />
             </BasicButton>
-        </div>
+        </InputGroup>
     {:else}
         <BasicButton
             type="button"
-            class="toggle-button"
+            class="btn-inline"
             onclick={toggleInput}
         >
             <Icon name={toggleButtonIconName || "search"} />
@@ -78,65 +97,10 @@
     :global {
         .expandable-container {
             position: relative;
-            height: 40px;
             overflow: hidden;
-            border-radius: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             display: flex;
+            height: calc(var(--font-size-2xl) + 10px);
             align-items: center;
-
-            & .input-container {
-                display: flex;
-                width: 100%;
-                height: 100%;
-                align-items: center;
-                background-color: white;
-                border-radius: 20px;
-            }
-
-            & input {
-                flex: 1;
-                height: 100%;
-                border: none;
-                padding: 0 15px;
-                font-size: 16px;
-                outline: none;
-                background: transparent;
-            }
-
-            & .toggle-button {
-                width: 100%;
-                height: 100%;
-                border: none;
-                background-color: #4285f4;
-                color: white;
-                cursor: pointer;
-                border-radius: 20px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                transition: background-color 0.2s;
-
-                &:hover {
-                    background-color: #3b78e7;
-                }
-            }
-
-            & .close-button {
-                width: 40px;
-                height: 40px;
-                border: none;
-                background: none;
-                cursor: pointer;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                color: #666;
-
-                &:hover {
-                    color: #333;
-                }
-            }
         }
     }
 </style>
