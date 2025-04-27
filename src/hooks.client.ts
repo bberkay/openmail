@@ -1,7 +1,7 @@
 import type { ClientInit } from "@sveltejs/kit";
 import { invoke } from "@tauri-apps/api/core";
 import { TauriCommand } from "$lib/types";
-import { SharedStore } from "$lib/stores/shared.svelte";
+import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
 import { ApiService } from "$lib/services/ApiService";
 import { FileSystem } from "$lib/services/FileSystem";
 import { AccountController } from "$lib/controllers/AccountController";
@@ -34,6 +34,7 @@ async function initializeFileSystem(): Promise<void> {
     const savedPreferences = await fileSystem.readPreferences();
     SharedStore.preferences = { ...SharedStore.preferences,  ...savedPreferences};
     await fileSystem.savePreferences(SharedStore.preferences);
+    localStorage.setItem(SharedStoreKeys.preferences, JSON.stringify(SharedStore.preferences));
 }
 
 export const init: ClientInit = async () => {

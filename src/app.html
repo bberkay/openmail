@@ -1,12 +1,18 @@
 <!doctype html>
-<html lang="%lang%">
+<html lang="%lang%" data-color-scheme="%theme%">
 <head>
+    <title>Open Mail</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Open Mail</title>
+    <link rel="stylesheet" href="%sveltekit.assets%/css/style.css" />
     %sveltekit.head%
+    <script>
+        /* for preventing FOUC: https://en.m.wikipedia.org/wiki/Flash_of_unstyled_content */
+        const preference = JSON.parse(localStorage.getItem("preferences"));
+        document.documentElement.setAttribute("data-color-scheme", preference.theme.toLowerCase());
+    </script>
 </head>
-<body data-sveltekit-preload-data="hover" data-color-scheme="%theme%">
+<body data-sveltekit-preload-data="hover">
     <div style="display: contents">%sveltekit.body%</div>
 </body>
 </html>

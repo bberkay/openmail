@@ -82,18 +82,18 @@
     --z-index-toast: 200;
     --z-index-overlay: 300;
     --z-index-modal: 400;
+}
 
-    & body {
-        color-scheme: light dark;
-    }
+body {
+    color-scheme: light dark;
+}
 
-    & body[data-color-scheme="light"] {
-        color-scheme: light;
-    }
+html[data-color-scheme="light"] body {
+    color-scheme: light;
+}
 
-    & body[data-color-scheme="dark"] {
-        color-scheme: dark;
-    }
+html[data-color-scheme="dark"] body {
+    color-scheme: dark;
 }
 
 :root {

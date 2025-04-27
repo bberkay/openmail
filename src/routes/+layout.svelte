@@ -1,5 +1,4 @@
 <script lang="ts">
-    import "$lib/assets/css/style.css";
     import Layout from "$lib/ui/Layout/Layout.svelte";
     import Loading from "$lib/ui/Layout/Loading.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
@@ -24,19 +23,10 @@
 
     $effect(() => {
         if (SharedStore.isAppLoaded) {
-            if (SharedStore.preferences.theme)
-                applyInitialTheme();
             if (SharedStore.preferences.language)
                 applyInitialLanguage();
         }
     });
-
-    async function applyInitialTheme() {
-        document.body.setAttribute(
-            "data-color-scheme",
-            SharedStore.preferences.theme.toLowerCase(),
-        );
-    }
 
     async function applyInitialLanguage() {
         document.documentElement.setAttribute(
