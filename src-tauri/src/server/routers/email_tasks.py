@@ -381,8 +381,8 @@ async def save_email_as_draft(
 
 class MarkEmailRequest(BaseModel):
     account: str
-    mark: str
     sequence_set: str
+    mark: str
     folder: str = Folder.Inbox
 
 
@@ -395,8 +395,8 @@ async def mark_email(request_body: MarkEmailRequest) -> Response:
             return response
 
         status, msg = client_handler.get_client(account).imap.mark_email(
-            request_body.mark,
             request_body.sequence_set,
+            request_body.mark,
             request_body.folder,
         )
         return Response(success=status, message=msg)
@@ -406,8 +406,8 @@ async def mark_email(request_body: MarkEmailRequest) -> Response:
 
 class UnmarkEmailRequest(BaseModel):
     account: str
-    mark: str
     sequence_set: str
+    mark: str
     folder: str = Folder.Inbox
 
 
@@ -420,8 +420,8 @@ async def unmark_email(request_body: UnmarkEmailRequest) -> Response:
             return response
 
         status, msg = client_handler.get_client(account).imap.unmark_email(
-            request_body.mark,
             request_body.sequence_set,
+            request_body.mark,
             request_body.folder,
         )
         return Response(success=status, message=msg)
