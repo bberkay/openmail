@@ -42,14 +42,15 @@ export class MailboxController {
         };
 
         const folderResults = await Promise.allSettled(
-            (failedOnly ? SharedStore.accountsWithFailedFolders : SharedStore.accounts).map(
-                async (account) => {
-                    return {
-                        account: account,
-                        response: await MailboxController.getFolders(account),
-                    };
-                },
-            ),
+            (failedOnly
+                ? SharedStore.accountsWithFailedFolders
+                : SharedStore.accounts
+            ).map(async (account) => {
+                return {
+                    account: account,
+                    response: await MailboxController.getFolders(account),
+                };
+            })
         );
 
         folderResults.forEach((result) => {
@@ -65,18 +66,18 @@ export class MailboxController {
             }
         });
 
-        if (SharedStore.accounts.length > SharedStore.accountsWithFailedFolders.length) {
-            await Promise.allSettled(
-                (failedOnly ? SharedStore.accountsWithFailedFolders : SharedStore.accounts).map(
-                    async (account) => {
-                        return {
-                            account: account,
-                            response: await MailboxController.getFolders(account),
-                        };
-                    },
-                ),
-            );
-        }
+        //if (SharedStore.accounts.length > SharedStore.accountsWithFailedFolders.length) {
+        //    await Promise.allSettled(
+        //        (failedOnly ? SharedStore.accountsWithFailedFolders : SharedStore.accounts).map(
+        //            async (account) => {
+        //                return {
+        //                    account: account,
+        //                    response: await MailboxController.getFolders(account),
+        //                };
+        //            },
+        //        ),
+        //    );
+        //}
 
         const mailboxResults = await Promise.allSettled(
             (failedOnly
