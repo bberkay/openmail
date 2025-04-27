@@ -158,14 +158,14 @@ interface PostBody {
     };
     [PostRoutes.MARK_EMAIL]: {
         account: string;
-        mark: string;
         sequence_set: string;
+        mark: string;
         folder?: string;
     };
     [PostRoutes.UNMARK_EMAIL]: {
         account: string;
-        mark: string;
         sequence_set: string;
+        mark: string;
         folder?: string;
     };
     [PostRoutes.MOVE_EMAIL]: {
