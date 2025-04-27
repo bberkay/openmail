@@ -5,11 +5,11 @@ from pydantic import BaseModel
 from typing import Optional, Annotated, TypeVar
 
 from _types import Response
-from utils import err_msg
+from utils import err_msg, safe_json_loads
 from internal.account_manager import AccountManager
 from internal.client_handler import ClientHandler
 from helpers.uvicorn_logger import UvicornLogger
-from modules.openmail.types import Email, Mailbox, Folder, Draft, Attachment
+from modules.openmail.types import Email, Mailbox, Folder, Draft, Attachment, SearchCriteria
 from modules.openmail.utils import extract_email_address
 
 client_handler = ClientHandler()
@@ -29,7 +29,8 @@ def check_openmail_connection_availability(
     account: str,
     for_new_messages: bool = False
 ) -> Response | bool:
-    if client_handler.is_connection_available(account, for_new_messages):
+    connection_result = client_handler.is_connection_available(account, for_new_messages)
+    if isinstance(connection_result, bool) and connection_result:
         return True
 
     return Response(
@@ -109,10 +110,16 @@ async def search_emails(
         if isinstance(response, Response):
             return response
 
+        search_criteria = search or ""
+        if search_criteria:
+            search_loaded = safe_json_loads(search_criteria)
+            if isinstance(search_loaded, dict):
+                search_criteria = SearchCriteria(**search_loaded)
+
         return Response(
             success=True,
             message="Emails searched successfully.",
-            data={account: client_handler.get_client(account).imap.search_emails(folder, search or "")}
+            data={account: client_handler.get_client(account).imap.search_emails(folder, search_criteria)}
         )
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while searching emails.", str(e)))
@@ -131,7 +138,13 @@ async def get_mailbox(
         if isinstance(response, Response):
             return response
 
-        client_handler.get_client(account).imap.search_emails(folder, search or "")
+        search_criteria = search or ""
+        if search_criteria:
+            search_loaded = safe_json_loads(search_criteria)
+            if isinstance(search_loaded, dict):
+                search_criteria = SearchCriteria(**search_loaded)
+
+        client_handler.get_client(account).imap.search_emails(folder, search_criteria)
 
         return Response(
             success=True,
