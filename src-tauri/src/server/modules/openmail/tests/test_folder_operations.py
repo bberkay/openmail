@@ -2,8 +2,8 @@ import json
 import unittest
 import bisect
 
-from openmail import Openmail
-from openmail.imap import FOLDER_LIST
+from modules.openmail import Openmail
+from modules.openmail.imap import FOLDER_LIST
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
 

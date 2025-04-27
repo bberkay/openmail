@@ -1,5 +1,4 @@
 import uuid
-from typing import overload
 
 class NameGenerator:
     """Utility class for generating random names"""

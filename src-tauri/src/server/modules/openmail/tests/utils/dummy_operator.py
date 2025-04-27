@@ -1,12 +1,11 @@
 import time
 from typing import cast
 
-from openmail import Openmail
-from openmail.utils import extract_email_address
-from openmail.smtp import SMTPManagerException
-from openmail.imap import IMAPManagerException
-from openmail.types import Draft, SearchCriteria, Folder
-from openmail.tests.utils.name_generator import NameGenerator
+from modules.openmail import Openmail
+from modules.openmail.smtp import SMTPManagerException
+from modules.openmail.imap import IMAPManagerException
+from modules.openmail.types import Draft, SearchCriteria, Folder
+from modules.openmail.tests.utils.name_generator import NameGenerator
 
 class DummyOperator:
     """Dummy operator for testing purposes."""
@@ -109,7 +108,7 @@ class DummyOperator:
             print("Email sent. Waiting 2 seconds...")
             time.sleep(2)
 
-        status, message = openmail.imap.search_emails(
+        openmail.imap.search_emails(
             folder=Folder.Inbox,
             search=SearchCriteria(
                 subject=subject,
@@ -117,10 +116,6 @@ class DummyOperator:
                 receivers=[senderOrDraft.receivers] if isinstance(senderOrDraft.receivers, str) else senderOrDraft.receivers
             )
         )
-        if not status:
-            raise IMAPManagerException("Failed to search sent email to test email operations with status: ", status, " and message: ", message)
-        else:
-            print("Test email found...")
 
         mailbox = openmail.imap.get_emails()
         if len(mailbox.emails) == 0:

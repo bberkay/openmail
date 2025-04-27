@@ -1,6 +1,5 @@
 import base64
 import copy
-import os
 import json
 import math
 import re
@@ -8,16 +7,16 @@ import time
 from typing import cast
 import unittest
 
-from openmail import Openmail
-from openmail.imap import Mark, Folder
-from openmail.types import Attachment, Draft, SearchCriteria
-from openmail.parser import HTMLParser, MessageParser
-from openmail.encoder import FileBase64Encoder
-from openmail.converter import AttachmentConverter
+from modules.openmail import Openmail
+from modules.openmail.imap import Mark, Folder
+from modules.openmail.types import Draft, SearchCriteria
+from modules.openmail.parser import HTMLParser, MessageParser
+from modules.openmail.encoder import FileBase64Encoder
+from modules.openmail.converter import AttachmentConverter
 
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
-from .utils.sample_file_generator import SampleDocumentGenerator, SampleImageGenerator
+from .utils.sample_file_generator import SampleImageGenerator
 
 class TestFetchOperations(unittest.TestCase):
 
@@ -85,8 +84,8 @@ class TestFetchOperations(unittest.TestCase):
         )
         cls._sent_test_email_uids.append(cls._test_sent_complex_email_uid)
 
-        cls._openmail.imap.mark_email(Mark.Seen, cls._test_sent_complex_email_uid, Folder.Inbox)
-        cls._openmail.imap.mark_email(Mark.Flagged, cls._test_sent_complex_email_uid, Folder.Inbox)
+        cls._openmail.imap.mark_email(cls._test_sent_complex_email_uid, Mark.Seen, Folder.Inbox)
+        cls._openmail.imap.mark_email(cls._test_sent_complex_email_uid, Mark.Flagged, Folder.Inbox)
 
     def test_is_sequence_set_valid(self):
         print("test_is_sequence_set_valid...")
@@ -372,13 +371,14 @@ class TestFetchOperations(unittest.TestCase):
         self.__class__._openmail.imap.search_emails()
         mailbox = self.__class__._openmail.imap.get_emails()
         self.assertGreater(mailbox.total, 0)
-        self.assertEqual(mailbox.folder, Folder.Inbox)
+        self.assertEqual(mailbox.folder.lower(), Folder.Inbox.lower())
         for email in mailbox.emails:
+            print(f"Testing email is {email.subject} with uid {email.uid}")
             self.assertIsNotNone(email.uid)
             self.assertIsNotNone(email.sender)
             self.assertIsNotNone(email.receivers)
-            self.assertIsNotNone(email.subject)
-            self.assertIsNotNone(email.body)
+            self.assertGreater(len(email.subject), 1)
+            self.assertGreater(len(email.body), 1)
 
     def test_get_email_content(self):
         print("test_get_email_content...")

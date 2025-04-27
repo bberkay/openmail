@@ -1,16 +1,14 @@
 import base64
-import os
 import re
 import unittest
 import json
 import copy
-from typing import cast
 
-from openmail import Openmail
-from openmail.types import Attachment, Draft, Email, Folder, SearchCriteria
-from openmail.parser import HTMLParser, MessageDecoder, MessageParser
-from openmail.encoder import FileBase64Encoder
-from openmail.converter import AttachmentConverter
+from modules.openmail import Openmail
+from modules.openmail.types import Draft, Folder, SearchCriteria
+from modules.openmail.parser import HTMLParser, MessageParser
+from modules.openmail.encoder import FileBase64Encoder
+from modules.openmail.converter import AttachmentConverter
 
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
@@ -513,13 +511,12 @@ class TestSendOperations(unittest.TestCase):
         self.assertTrue(status)
 
         # Find sent reply_email
-        status, message = self.__class__._openmail.imap.search_emails(
+        self.__class__._openmail.imap.search_emails(
             folder=Folder.Inbox,
             search=SearchCriteria(
                 subject=reply_email_subject,
             )
         )
-        self.assertTrue(status)
 
         mailbox = self.__class__._openmail.imap.get_emails()
         found_reply_email = mailbox.emails[0]

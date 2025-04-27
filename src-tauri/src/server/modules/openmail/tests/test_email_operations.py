@@ -3,8 +3,8 @@ import time
 import unittest
 from email.message import EmailMessage
 
-from openmail import Openmail
-from openmail.imap import Mark, Folder
+from modules.openmail import Openmail
+from modules.openmail.imap import Mark, Folder
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
 
@@ -63,7 +63,7 @@ class TestEmailOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
         self.__class__._sent_test_email_uids.append(uid)
 
-        status, _ = self.__class__._openmail.imap.mark_email(Mark.Seen, uid)
+        status, _ = self.__class__._openmail.imap.mark_email(uid, Mark.Seen)
         self.assertTrue(status)
         self.assertIn(
             Mark.Seen,
@@ -81,7 +81,7 @@ class TestEmailOperations(unittest.TestCase):
             self.__class__._sent_test_email_uids.append(uid)
 
         sequence_set = ",".join(uids)
-        status, _ = self.__class__._openmail.imap.mark_email(Mark.Seen, sequence_set)
+        status, _ = self.__class__._openmail.imap.mark_email(sequence_set, Mark.Seen)
         self.assertTrue(status)
 
         email_flags = self.__class__._openmail.imap.get_email_flags(sequence_set)
@@ -95,10 +95,10 @@ class TestEmailOperations(unittest.TestCase):
         uid = DummyOperator.send_test_email_to_self_and_get_uid(self.__class__._openmail, self.__class__._email)
         self.__class__._sent_test_email_uids.append(uid)
 
-        status, _ = self.__class__._openmail.imap.mark_email(Mark.Flagged, uid)
+        status, _ = self.__class__._openmail.imap.mark_email(uid, Mark.Flagged)
         self.assertTrue(status)
 
-        status, _ = self.__class__._openmail.imap.unmark_email(Mark.Flagged, uid)
+        status, _ = self.__class__._openmail.imap.unmark_email(uid, Mark.Flagged)
         self.assertTrue(status)
         self.assertNotIn(
             Mark.Flagged,
@@ -116,10 +116,10 @@ class TestEmailOperations(unittest.TestCase):
             self.__class__._sent_test_email_uids.append(uid)
 
         sequence_set = ",".join(uids)
-        status, _ = self.__class__._openmail.imap.mark_email(Mark.Flagged, sequence_set)
+        status, _ = self.__class__._openmail.imap.mark_email(sequence_set, Mark.Flagged)
         self.assertTrue(status)
 
-        status, _ = self.__class__._openmail.imap.unmark_email(Mark.Flagged, sequence_set)
+        status, _ = self.__class__._openmail.imap.unmark_email(sequence_set, Mark.Flagged)
         self.assertTrue(status)
 
         email_flags = self.__class__._openmail.imap.get_email_flags(sequence_set)
