@@ -278,6 +278,9 @@
                     type="text"
                     placeholder="Search accounts..."
                     onkeyup={searchAccounts}
+                    onClose={() => {
+                        accounts = allAccounts;
+                    }}
                 />
             {/if}
         </div>
@@ -357,10 +360,9 @@
         </Table.Root>
 
         <div class="pagination-container">
-            <Pagination.Range
+            <Pagination.Pages
                 total={SharedStore.accounts.length +
                     SharedStore.failedAccounts.length}
-                range={5}
                 onChange={updateAccounts}
             />
         </div>
@@ -392,7 +394,6 @@
             justify-content: space-between;
             flex-direction: row;
             align-items: end;
-            margin-bottom: var(--spacing-sm);
         }
 
         .checkbox-cell {
