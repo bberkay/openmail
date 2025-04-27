@@ -76,12 +76,7 @@ class ClientHandler:
             return True
 
         self.reconnect_to_account(account, for_new_messages)
-
-        if not target_openmail_clients[account].imap.is_logged_out():
-            print(f"No need to reconnect for {account}")
-            return True
-
-        return False
+        return not target_openmail_clients[account].imap.is_logged_out()
 
     def add_client(self, account: str, client: Openmail):
         openmail_clients[account] = client
