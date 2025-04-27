@@ -185,14 +185,14 @@ class SMTPManager(smtplib.SMTP):
         """
         try:
             all_emails = []
-            receivers = set(draft.receivers if isinstance(draft.receivers, str) else draft.receivers)
+            receivers = set([draft.receivers] if isinstance(draft.receivers, str) else draft.receivers)
             receivers = extract_email_addresses(receivers or [])
             all_emails.extend(receivers)
             receivers = ", ".join(receivers)
 
             cc = None
             if draft.cc:
-                cc = set(draft.cc if isinstance(draft.cc, str) else draft.cc)
+                cc = set([draft.cc] if isinstance(draft.cc, str) else draft.cc)
                 cc = extract_email_addresses(cc or [])
                 cc = [address for address in cc if address not in all_emails]
                 all_emails.extend(cc)
@@ -200,7 +200,7 @@ class SMTPManager(smtplib.SMTP):
 
             bcc = None
             if draft.bcc:
-                bcc = set(draft.bcc if isinstance(draft.bcc, str) else draft.bcc)
+                bcc = set([draft.bcc] if isinstance(draft.bcc, str) else draft.bcc)
                 bcc = extract_email_addresses(bcc or [])
                 bcc = [address for address in bcc if address not in all_emails]
                 del all_emails
