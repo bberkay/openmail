@@ -1762,21 +1762,19 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 body_part = MessageParser.get_part(message[0], ["TEXT", "PLAIN"])
                 if not body_part:
                     body_part = MessageParser.get_part(message[0], ["TEXT", "HTML"])
-                if not body_part:
-                    body_part = "1"
+                    if not body_part: body_part = "1"
 
                 if body_part in fetchs:
                     fetchs[body_part].append(uid)
                 else:
-                    fetchs[body_part] = []
+                    fetchs[body_part] = [uid]
 
             messages.clear()
-
             for body_part, uids in fetchs.items():
-                uids = ",".join(uids)
+                uids = sorted(uids, key=int)
                 _, bodies = self.uid(
                     "FETCH",
-                    uids,
+                    ",".join(uids),
                     f"(BODY.PEEK[{body_part}] BODY.PEEK[{body_part}.MIME])",
                 )
                 bodies = MessageParser.group_messages(bodies)
