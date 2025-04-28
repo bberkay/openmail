@@ -27,29 +27,33 @@
     import EditAccountForm from "./EditAccountForm.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import AddAccountForm from "./AddAccountForm.svelte";
-    import Expandable from "$lib/ui/Components/Input/Expandable.svelte";
+    import { onMount } from "svelte";
 
     const allAccounts = SharedStore.failedAccounts.concat(SharedStore.accounts);
     let accounts = $state(allAccounts);
     let accountSelection: string[] = $state([]);
-    let isShownAccountsSelected = $state(false);
+    let accountSelectionType: "shown" | "all" | false = $state(false);
+    let selectShownCheckbox: HTMLInputElement;
 
-    const selectShownCheckbox = (event: Event) => {
-        const selectShownCheckbox = event.target as HTMLInputElement;
-        accountSelection = selectShownCheckbox.checked
+    onMount(() => selectShownCheckbox = document.getElementById("select-shown-checkbox") as HTMLInputElement);
+
+    const selectShownAccounts = () => {
+        accountSelectionType = accountSelectionType === "all"
+            ? "shown"
+            : accountSelectionType === "shown" ? false : "shown";
+        accountSelection = accountSelectionType === "shown"
             ? accounts.map((account) => account.email_address)
             : [];
-        isShownAccountsSelected = !isShownAccountsSelected;
     };
 
     const selectAllAccounts = (event: Event) => {
-        isShownAccountsSelected = false;
-        const selectAllCheckbox = event.target as HTMLInputElement;
-        accountSelection = selectAllCheckbox.checked
-            ? SharedStore.failedAccounts
-                  .concat(SharedStore.accounts)
-                  .map((account) => account.email_address)
+        accountSelectionType = accountSelectionType === "shown" ? "all" : false;
+        const selectAllCheckbox = event.target as HTMLButtonElement;
+        selectAllCheckbox.innerText = accountSelectionType === "all" ? "Clear Selection" : "Select All";
+        accountSelection = accountSelectionType === "all"
+            ? allAccounts.map((account) => account.email_address)
             : [];
+        selectShownCheckbox.checked = !!accountSelectionType;
     };
 
     const removeAccount = async (e: Event): Promise<void> => {
@@ -215,6 +219,15 @@
     }
 
     $effect(() => {
+        if (accountSelectionType === "all") {
+            selectShownCheckbox.checked = accountSelection.length !== allAccounts.length;
+        }
+        else if (accountSelectionType === "shown"){
+            selectShownCheckbox.checked = accounts.every(acc => accountSelection.includes(acc.email_address));
+        }
+    });
+
+    $effect(() => {
         if (SharedStore.failedAccounts.length > 0) {
             showAlert("accounts-alert-container", {
                 content: local.accounts_failed_to_connect[DEFAULT_LANGUAGE],
@@ -265,7 +278,7 @@
     {:else if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
         {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
         <div class="accounts-info">
-            {#if isShownAccountsSelected}
+            {#if accountSelectionType}
                 <Button.Basic
                     type="button"
                     class="btn-outline"
@@ -284,13 +297,14 @@
                 />
             {/if}
         </div>
-        <Table.Root>
+        <Table.Root class="accounts-list">
             <Table.Header>
                 <Table.Row>
                     <Table.Head class="checkbox-cell">
                         <Input.Basic
+                            id="select-shown-checkbox"
                             type="checkbox"
-                            onclick={selectShownCheckbox}
+                            onclick={selectShownAccounts}
                         />
                     </Table.Head>
                     <Table.Head class="body-cell">
@@ -389,11 +403,17 @@
 
 <style>
     :global {
+        .accounts-list .tr:has(.checkbox-cell input[type="checkbox"]:checked) {
+            background-color: var(--color-hover)!important;
+        }
+
         .accounts-info {
             display: flex;
             justify-content: space-between;
             flex-direction: row;
             align-items: end;
+            height: calc(var(--font-size-2xl) * 2);
+            margin-bottom: var(--spacing-xs);
         }
 
         .checkbox-cell {

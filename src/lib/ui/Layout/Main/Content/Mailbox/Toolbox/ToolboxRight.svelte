@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getMailboxPaginationTemplate } from "$lib/templates";
+    import { getRangePaginationTemplate } from "$lib/templates";
     import {
         getCurrentMailbox,
         paginateMailboxBackward,
@@ -46,7 +46,7 @@
             {local.prev[DEFAULT_LANGUAGE]}
         </Button.Action>
         <small>
-            {getMailboxPaginationTemplate(
+            {getRangePaginationTemplate(
                 currentOffset.toString(),
                 (currentOffset - 1 + MAILBOX_LENGTH).toString(),
                 getCurrentMailbox().total.toString(),
