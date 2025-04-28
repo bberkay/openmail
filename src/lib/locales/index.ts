@@ -1,3 +1,6 @@
+import { Language } from "$lib/types";
+import { SharedStore } from "$lib/stores/shared.svelte";
+
 export const local = {
     feature_not_implemented: {
         en: "{feature} feature does not implemented yet",
@@ -615,3 +618,34 @@ export const local = {
         en: "Operation undone."
     }
 };
+
+/*
+const locales = {
+    welcome: {
+        [Language.EN_US]: "welcome",
+    },
+    hello: {
+        [Language.EN_US]: (name: string) => `${local.welcome} {name}`.replace("{name}", name),
+    }
+} as const;
+
+type Locales = typeof locales;
+
+type Localized<T, L extends Language> = {
+    [K in keyof T]: T[K] extends Record<L, infer R> ? R : never;
+};
+
+export const local = new Proxy({} as Localized<Locales, Language>, {
+    get(_target, prop: string | symbol) {
+        if (typeof prop === "string" && locales[prop as keyof Locales]) {
+            const value = locales[prop as keyof Locales][SharedStore.preferences.language];
+            return value;
+        }
+        return undefined;
+    }
+});
+
+// Usage
+console.log(local.welcome); // "welcome"
+console.log(local.hello("alex")); // "welcome alex"
+*/
