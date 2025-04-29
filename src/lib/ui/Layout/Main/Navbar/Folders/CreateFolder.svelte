@@ -80,9 +80,10 @@
                     disabled={!!parentFolderName}
                 >
                     {#each customFolders as customFolder}
-                        <Select.Option value={customFolder}>
-                            {customFolder}
-                        </Select.Option>
+                        <Select.Option
+                            value={customFolder}
+                            content={customFolder}
+                        />
                     {/each}
                 </Select.Root>
             </FormGroup>

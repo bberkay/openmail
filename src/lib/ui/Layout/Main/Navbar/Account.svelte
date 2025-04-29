@@ -153,31 +153,37 @@
     placeholder={local.account[DEFAULT_LANGUAGE]}
     enableSearch={true}
 >
-    <Select.Option value={AccountOperation.Home}>
-        {local.home[DEFAULT_LANGUAGE]}
-    </Select.Option>
+    <Select.Option
+        value={AccountOperation.Home}
+        content={local.home[DEFAULT_LANGUAGE]}
+    />
     <Select.Separator />
     {#each SharedStore.accounts as account}
-        <Select.Option value={account.email_address}>
-            {createSenderAddress(account.email_address, account.fullname)}
-        </Select.Option>
+        <Select.Option
+            value={account.email_address}
+            content={createSenderAddress(account.email_address, account.fullname)}
+        />
     {/each}
     <Select.Separator />
-    <Select.Option value={AccountOperation.Minimize}>
-        {local.minimize_to_tray[DEFAULT_LANGUAGE]}
-    </Select.Option>
-    <Select.Option value={AccountOperation.Settings}>
-        {local.settings[DEFAULT_LANGUAGE]}
-    </Select.Option>
+    <Select.Option
+        value={AccountOperation.Minimize}
+        content={local.minimize_to_tray[DEFAULT_LANGUAGE]}
+    />
+    <Select.Option
+        value={AccountOperation.Settings}
+        content={local.settings[DEFAULT_LANGUAGE]}
+    />
     {#if SharedStore.currentAccount !== "home"}
-        <Select.Option value={AccountOperation.Logout}>
-            {getLogoutFromTemplate(
+        <Select.Option
+            value={AccountOperation.Logout}
+            content={getLogoutFromTemplate(
                 SharedStore.currentAccount.fullname ||
                     SharedStore.currentAccount.email_address,
             )}
-        </Select.Option>
+        />
     {/if}
-    <Select.Option value={AccountOperation.Quit}>
-        {local.quit[DEFAULT_LANGUAGE]}
-    </Select.Option>
+    <Select.Option
+        value={AccountOperation.Quit}
+        content={local.quit[DEFAULT_LANGUAGE]}
+    />
 </Select.Root>

@@ -77,13 +77,14 @@
                     placeholder={local.folder_name[DEFAULT_LANGUAGE]}
                 >
                     {#if !isTopLevel(folderName, SharedStore.hierarchyDelimiters[(SharedStore.currentAccount as Account).email_address])}
-                        <Select.Option value="">/</Select.Option>
+                        <Select.Option value="" content="/" />
                     {/if}
                     {#each customFolders as customFolder}
                         {#if customFolder !== folderName}
-                            <Select.Option value={customFolder}>
-                                {customFolder}
-                            </Select.Option>
+                            <Select.Option
+                                value={customFolder}
+                                content={customFolder}
+                            />
                         {/if}
                     {/each}
                 </Select.Root>

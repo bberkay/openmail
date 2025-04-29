@@ -28,7 +28,7 @@
             ? SharedStore.folders[
                   (SharedStore.currentAccount as Account).email_address
               ].standard
-            : [],
+            : [Folder.Inbox],
     );
     let customFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
@@ -103,18 +103,28 @@
 >
     {#each standardFolders as standardFolder}
         {@const [folderTag, folderName] = standardFolder.split(":")}
-        <Select.Option value={folderTag}>{folderName}</Select.Option>
+        <Select.Option
+            value={folderTag}
+            content={folderName}
+        />
     {/each}
     <Select.Separator />
-    <Select.Option value={FolderOperation.Refresh}>
-        {local.refresh_folders[DEFAULT_LANGUAGE]}
-    </Select.Option>
-    <Select.Option value={FolderOperation.Create}>
-        {local.create_folder[DEFAULT_LANGUAGE]}
-    </Select.Option>
+    <Select.Option
+        value={FolderOperation.Refresh}
+        content={local.refresh_folders[DEFAULT_LANGUAGE]}
+    />
+    <Select.Option
+        value={FolderOperation.Create}
+        content={local.create_folder[DEFAULT_LANGUAGE]}
+    />
     <Select.Separator />
     {#each customFolders as customFolder}
-        <Select.Option value={customFolder}>
+        <Select.Option
+            value={customFolder}
+            content={customFolder}
+        />
+        <!-- FIXME -->
+        <!--<Select.Option value={customFolder}>
             <span>{customFolder}</span>
             <Dropdown.Root>
                 <Dropdown.Toggle>⋮</Dropdown.Toggle>
@@ -153,6 +163,6 @@
                     </Dropdown.Item>
                 </Dropdown.Content>
             </Dropdown.Root>
-        </Select.Option>
+        </Select.Option>-->
     {/each}
 </Select.Root>
