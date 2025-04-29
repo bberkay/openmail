@@ -114,7 +114,7 @@
                 const receiverAccount = SharedStore.accounts.find(
                     (acc) => acc.email_address === receiverEmailAddress,
                 )!;
-                const receivedEmail = SharedStore.recentEmails[
+                const receivedEmail = SharedStore.recentEmailsChannel[
                     receiverAccount.email_address
                 ].find((email) => email.uid === recentEmailUid)!;
                 senderEmail.addEventListener("click", async () => {
@@ -192,13 +192,13 @@
         recentEmailReceiverAddress?: string,
         recentEmailUid?: string,
     ) => {
-        for (const emailAddress in SharedStore.recentEmails) {
+        for (const emailAddress in SharedStore.recentEmailsChannel) {
             if (
                 !recentEmailReceiverAddress ||
                 emailAddress === recentEmailReceiverAddress
             ) {
-                SharedStore.recentEmails[emailAddress] =
-                    SharedStore.recentEmails[emailAddress].filter(
+                SharedStore.recentEmailsChannel[emailAddress] =
+                    SharedStore.recentEmailsChannel[emailAddress].filter(
                         (email) => email.uid !== recentEmailUid,
                     );
             }
@@ -229,7 +229,7 @@
                 </div>
             </div>
             <div class="notifications-body">
-                {#each Object.entries(SharedStore.recentEmails) as entry}
+                {#each Object.entries(SharedStore.recentEmailsChannel) as entry}
                     {@const emailAddress = entry[0]}
                     {@const recentEmails = entry[1]}
                     {#each recentEmails as recentEmail}
@@ -278,7 +278,7 @@
                                         );
                                     }}
                                 >
-                                    <Icon name="clear" />
+                                    <Icon name="trash" />
                                 </Button.Basic>
                             </div>
                         </div>

@@ -144,7 +144,7 @@
                     permissionGranted = permission === "granted";
                 }
 
-                SharedStore.recentEmails[account.email_address] = [];
+                SharedStore.recentEmailsChannel[account.email_address] = [];
             };
 
             ws.onmessage = (e: MessageEvent) => {
@@ -157,10 +157,10 @@
                 }
 
                 Object.entries(
-                    e.data as typeof SharedStore.recentEmails,
+                    e.data as typeof SharedStore.recentEmailsChannel,
                 ).forEach((entry) => {
                     const emailAddr = entry[0];
-                    const recentEmails = entry[1];
+                    const recentEmailsChannel = entry[1];
 
                     // Add email summary of recent email to the top of the
                     // current and shift emails that are overflowed from current
@@ -172,25 +172,25 @@
                             Folder.Inbox,
                         )
                     ) {
-                        const recentEmailsLength = recentEmails.length;
+                        const recentEmailsChannelLength = recentEmailsChannel.length;
                         SharedStore.mailboxes[emailAddr].emails.current.unshift(
-                            ...recentEmails,
+                            ...recentEmailsChannel,
                         );
                         const overflowEmails = SharedStore.mailboxes[
                             emailAddr
-                        ].emails.current.splice(-1 * recentEmailsLength);
+                        ].emails.current.splice(-1 * recentEmailsChannelLength);
                         SharedStore.mailboxes[emailAddr].emails.next.unshift(
                             ...overflowEmails,
                         );
                         SharedStore.mailboxes[emailAddr].emails.next.splice(
-                            -1 * recentEmailsLength,
-                            recentEmailsLength,
+                            -1 * recentEmailsChannelLength,
+                            recentEmailsChannelLength,
                         );
                     }
 
-                    // Fetch email content of recent email and add it into recentEmails.
-                    if (Object.hasOwn(SharedStore.recentEmails, emailAddr)) {
-                        for (const recentEmail of recentEmails) {
+                    // Fetch email content of recent email and add it into recentEmailsChannel.
+                    if (Object.hasOwn(SharedStore.recentEmailsChannel, emailAddr)) {
+                        for (const recentEmail of recentEmailsChannel) {
                             MailboxController.getEmailContent(
                                 SharedStore.accounts.find(
                                     (account) =>
@@ -200,7 +200,7 @@
                                 recentEmail.uid,
                             ).then((response) => {
                                 if (response.success && response.data) {
-                                    SharedStore.recentEmails[emailAddr].push(
+                                    SharedStore.recentEmailsChannel[emailAddr].push(
                                         response.data,
                                     );
                                 }

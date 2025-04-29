@@ -104,7 +104,10 @@
     }
 
     function isRecentEmail(account: Account, email: TEmail): boolean {
-        return !!SharedStore.recentEmails[account.email_address].find(
+        if (!Object.hasOwn(SharedStore.recentEmailsChannel, account.email_address))
+            return false;
+
+        return !!SharedStore.recentEmailsChannel[account.email_address].find(
             (em) => em.uid === email.uid,
         );
     }
