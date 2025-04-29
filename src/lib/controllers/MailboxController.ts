@@ -149,6 +149,11 @@ export class MailboxController {
         );
 
         if (response.success && response.data) {
+            SharedStore.folders[account.email_address] = {
+                standard: [],
+                custom: []
+            };
+
             for (const email_address in response.data) {
                 let targetFolders = SharedStore.folders[email_address];
                 targetFolders.standard = [];
