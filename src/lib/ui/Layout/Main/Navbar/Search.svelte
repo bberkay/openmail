@@ -309,15 +309,19 @@
                     : SharedStore.currentAccount.email_address}
                 onchange={selectSearchingAccount}
             >
-                <Select.Option value="home">{local.home[DEFAULT_LANGUAGE]}</Select.Option>
+                <Select.Option
+                    value="home"
+                    content={local.home[DEFAULT_LANGUAGE]}
+                />
                 <Select.Separator />
                 {#each SharedStore.accounts as account}
-                    <Select.Option value={account.email_address}>
-                        {createSenderAddress(
+                    <Select.Option
+                        value={account.email_address}
+                        content={createSenderAddress(
                             account.email_address,
                             account.fullname,
                         )}
-                    </Select.Option>
+                    />
                 {/each}
             </Select.Root>
         </FormGroup>
@@ -332,15 +336,17 @@
                     {#each standardFolders as standardFolder}
                         {@const [folderTag, folderName] =
                             standardFolder.split(":")}
-                        <Select.Option value={folderTag}>
-                            {folderName}
-                        </Select.Option>
+                        <Select.Option
+                            value={folderTag}
+                            content={folderName}
+                        />
                     {/each}
                     <Select.Separator />
                     {#each customFolders as customFolder}
-                        <Select.Option value={customFolder}>
-                            {customFolder}
-                        </Select.Option>
+                        <Select.Option
+                            value={customFolder}
+                            content={customFolder}
+                        />
                     {/each}
                 </Select.Root>
             </FormGroup>
@@ -491,9 +497,10 @@
                             resetAfterSelect={true}
                         >
                             {#each Object.entries(Mark) as mark}
-                                <Select.Option value={mark[1]}>
-                                    {mark[0]}
-                                </Select.Option>
+                                <Select.Option
+                                    value={mark[1]}
+                                    content={mark[0]}
+                                />
                             {/each}
                         </Select.Root>
                         <Button.Basic
@@ -520,9 +527,10 @@
                             resetAfterSelect={true}
                         >
                             {#each Object.entries(Mark) as mark}
-                                <Select.Option value={mark[1]}>
-                                    {mark[0]}
-                                </Select.Option>
+                                <Select.Option
+                                    value={mark[1]}
+                                    content={mark[0]}
+                                />
                             {/each}
                         </Select.Root>
                         <Button.Basic
@@ -559,9 +567,10 @@
                     onchange={setLargerThanUnit}
                 >
                     {#each Object.entries(Size) as size}
-                        <Select.Option value={size[0]}>
-                            {size[1]}
-                        </Select.Option>
+                        <Select.Option
+                            value={size[0]}
+                            content={size[1]}
+                        />
                     {/each}
                 </Select.Root>
             </FormGroup>
@@ -579,9 +588,10 @@
                     onchange={setSmallerThanUnit}
                 >
                     {#each Object.entries(Size) as size}
-                        <Select.Option value={size[0]}>
-                            {size[1]}
-                        </Select.Option>
+                        <Select.Option
+                            value={size[0]}
+                            content={size[1]}
+                        />
                     {/each}
                 </Select.Root>
             </FormGroup>
@@ -596,7 +606,7 @@
         </FormGroup>
         <div>
             <Button.Basic type="button" class="btn-outline" onclick={clear}>
-                <Icon name="clear" />
+                <Icon name="trash" />
                 {local.clear[DEFAULT_LANGUAGE]}
             </Button.Basic>
             <Button.Action type="button" onclick={search}>
