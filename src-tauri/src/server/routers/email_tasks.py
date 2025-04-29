@@ -154,11 +154,11 @@ async def get_mailbox(
     except Exception as e:
         return Response(success=False, message=err_msg("There was an error while fetching emails.", str(e)))
 
-@router.get("/paginate-mailbox/{account}")
+@router.get("/paginate-mailbox/{account}/{offset_start}/{offset_end}")
 async def paginate_mailbox(
     account: str,
-    offset_start: int | None = None,
-    offset_end: int | None = None
+    offset_start: int,
+    offset_end: int
 ) -> Response[OpenmailTaskResults[Mailbox]]:
     try:
         account = extract_email_address(account)

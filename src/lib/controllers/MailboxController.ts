@@ -261,19 +261,13 @@ export class MailboxController {
 
     public static async paginateEmails(
         account: Account,
-        offsetStart?: number,
-        offsetEnd?: number,
+        offsetStart: number,
+        offsetEnd: number,
     ): Promise<BaseResponse> {
         const currentMailbox = SharedStore.mailboxes[account.email_address];
 
-        offsetStart = Math.min(
-            currentMailbox.total,
-            Math.max(1, offsetStart ?? 1),
-        );
-        offsetEnd = Math.min(
-            currentMailbox.total,
-            Math.max(1, offsetEnd ?? offsetStart - 1 + MAILBOX_LENGTH),
-        );
+        offsetStart = Math.min(currentMailbox.total, Math.max(1, offsetStart));
+        offsetEnd = Math.min(currentMailbox.total, Math.max(1, offsetEnd));
 
         if (offsetStart > offsetEnd) {
             throw Error("`offsetStart` can not be larger than `offsetEnd`");
