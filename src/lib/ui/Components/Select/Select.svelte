@@ -49,7 +49,7 @@
     onMount(() => {
         searchInput = selectWrapper.querySelector(".search-input")!;
         options = Array.from(selectWrapper.querySelectorAll(".option")) as HTMLElement[];
-        if (value) selectOption(value)
+        if (value) selectOption(value, true)
         filterOptions();
     });
 
@@ -80,12 +80,12 @@
         }
     }
 
-    async function selectOption(value: string) {
+    async function selectOption(value: string, onStart: boolean = false) {
         disabled = true;
         if(selectedOption) selectedOption.classList.remove("selected");
         selectedOption = options.find(option => option.dataset.value == value)!;
         selectedOption.classList.add("selected");
-        if(onchange) await onchange(value.toString());
+        if(onchange && !onStart) await onchange(value.toString());
         if(resetAfterSelect) selectedOption = null;
         disabled = false;
         closeSelect();
