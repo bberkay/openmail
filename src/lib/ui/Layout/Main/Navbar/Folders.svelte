@@ -173,3 +173,13 @@
         </Select.Option>-->
     {/each}
 </Select.Root>
+
+<style>
+    :global {
+        nav {
+            & .folders {
+                width: 120px;
+            }
+        }
+    }
+</style>

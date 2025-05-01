@@ -194,3 +194,13 @@
         content={local.quit[DEFAULT_LANGUAGE]}
     />
 </Select.Root>
+
+<style>
+    :global {
+        nav {
+            & .account {
+                width: 200px;
+            }
+        }
+    }
+</style>
