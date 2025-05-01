@@ -428,12 +428,16 @@ export function addEmailToAddressList(
         return;
     }
 
-    if (!isEmailValid(extractEmailAddress(input.value.trim()))) {
+    const trimmedValue = input.value.trim();
+    if (trimmedValue.length <= 0)
+        return;
+
+    if (!isEmailValid(extractEmailAddress(trimmedValue))) {
         pulseTarget(input);
         return;
     }
 
-    addressList.push(input.value.trim());
+    addressList.push(trimmedValue);
     input.value = "";
 }
 

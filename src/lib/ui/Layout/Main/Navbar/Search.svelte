@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import { fade } from "svelte/transition";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
@@ -30,7 +29,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
-    import { getSearchForAccountTemplate } from "$lib/templates";
+    import { getSearchForAccountTemplate, getSenderAddressTemplate } from "$lib/templates";
 
     const REALTIME_SEARCH_DELAY_MS = 300;
 
@@ -40,7 +39,8 @@
     let searchingFolder: string | Folder = $state(Folder.All);
     let searchCriteria: SearchCriteria = $state({});
 
-    let extraOptionsWrapper: HTMLElement;
+    let searchMenu: HTMLElement | null = $state(null);
+    let extraOptionsWrapper: HTMLElement | null = $state(null);
     let simpleSearchInput: HTMLInputElement;
 
     let selectedSince: Date | undefined = $state();
@@ -51,16 +51,21 @@
     let smallerThanInput: HTMLInputElement;
     let smallerThanUnit: Size | undefined = $state();
 
-    onMount(() => {
-        simpleSearchInput = extraOptionsWrapper.querySelector(
-            'input[id="simple-search"]',
-        )!;
-        largerThanInput = extraOptionsWrapper.querySelector(
-            'input[id="larger-than"]',
-        )!;
-        smallerThanInput = extraOptionsWrapper.querySelector(
-            'input[id="smaller-than"]',
-        )!;
+    $effect(() => {
+        if (!isSimpleSearchHidden && searchMenu) {
+            simpleSearchInput = searchMenu.querySelector(
+                'input[id="simple-search"]',
+            )!;
+        }
+
+        if (!isExtraOptionsHidden && extraOptionsWrapper) {
+            largerThanInput = extraOptionsWrapper.querySelector(
+                'input[id="larger-than"]',
+            )!;
+            smallerThanInput = extraOptionsWrapper.querySelector(
+                'input[id="smaller-than"]',
+            )!;
+        }
     });
 
     let standardFolders: string[] = $derived(
@@ -83,6 +88,9 @@
     );
 
     const search = async (): Promise<void> => {
+        if (!isSimpleSearchHidden && isExtraOptionsHidden && simpleSearchInput.value.length < 3)
+            return;
+
         const accounts =
             searchingAccount === "home"
                 ? SharedStore.accounts
@@ -264,14 +272,16 @@
 
 <Button.Basic
     type="button"
-    class="btn-cta nav-button"
+    class="btn-outline nav-button"
     onclick={toggleSimpleSearch}
 >
     <Icon name="search" />
 </Button.Basic>
 
-<div class="search-menu {isSimpleSearchHidden ? 'hidden' : ''}" transition:fade>
-    <Input.Group>
+{#if !isSimpleSearchHidden}
+<div class="modal" style="display:none"></div> <!-- to trigger modal overlay -->
+<div class="search-menu modal-like" bind:this={searchMenu} transition:fade={{duration: 100}}>
+    <Input.Group class="simple-search-input-group">
         <Button.Action type="button" onclick={search}>
             <Icon name="search" />
         </Button.Action>
@@ -301,9 +311,11 @@
         bind:this={extraOptionsWrapper}
     >
         <FormGroup>
+            <!-- Account -->
             <Label for="searching-account">{local.searching_account[DEFAULT_LANGUAGE]}</Label>
             <Select.Root
                 id="searching-account"
+                class="searching-account"
                 value={SharedStore.currentAccount === "home"
                     ? "home"
                     : SharedStore.currentAccount.email_address}
@@ -317,16 +329,18 @@
                 {#each SharedStore.accounts as account}
                     <Select.Option
                         value={account.email_address}
-                        content={createSenderAddress(
+                        content={getSenderAddressTemplate(
                             account.email_address,
                             account.fullname,
                         )}
                     />
                 {/each}
             </Select.Root>
+            <!-- Account end -->
         </FormGroup>
         {#if SharedStore.currentAccount !== "home"}
             <FormGroup>
+                <!-- Folder -->
                 <Label for="searching-folder">{local.folder[DEFAULT_LANGUAGE]}</Label>
                 <Select.Root
                     id="searching-folder"
@@ -349,9 +363,11 @@
                         />
                     {/each}
                 </Select.Root>
+                <!-- Folder end -->
             </FormGroup>
         {/if}
         <FormGroup>
+            <!-- Senders -->
             <Label for="searching-senders">{local.sender_s[DEFAULT_LANGUAGE]}</Label>
             <Input.Group>
                 <Input.Basic
@@ -380,9 +396,11 @@
                     {/each}
                 {/if}
             </div>
+            <!-- Senders end -->
         </FormGroup>
         <FormGroup>
-            <Label for="searching-receivers">{local.receiver_s[DEFAULT_LANGUAGE]})</Label>
+            <!-- Receivers -->
+            <Label for="searching-receivers">{local.receiver_s[DEFAULT_LANGUAGE]}</Label>
             <Input.Group>
                 <Input.Basic
                     type="email"
@@ -410,8 +428,10 @@
                     {/each}
                 {/if}
             </div>
+            <!-- Receivers end -->
         </FormGroup>
         <FormGroup>
+            <!-- Cc -->
             <Label for="searching-cc">{local.cc[DEFAULT_LANGUAGE]}</Label>
             <Input.Group>
                 <Input.Basic
@@ -439,8 +459,10 @@
                     {/each}
                 {/if}
             </div>
+            <!-- Cc end -->
         </FormGroup>
         <FormGroup>
+            <!-- Subject -->
             <Label for="searching-subject">{local.subject[DEFAULT_LANGUAGE]}</Label>
             <Input.Basic
                 type="text"
@@ -448,27 +470,37 @@
                 placeholder={local.subject_placeholder[DEFAULT_LANGUAGE]}
                 onkeydown={setSubject}
             />
+            <!-- Subject end -->
         </FormGroup>
         <FormGroup>
+            <!-- Range -->
             <Label>{local.date_range[DEFAULT_LANGUAGE]}</Label>
             <FormGroup direction="horizontal">
-                <Label for="since">{local.since[DEFAULT_LANGUAGE]}</Label>
-                <Input.Date
-                    id="since"
-                    value={selectedSince}
-                    onchange={setSince}
-                />
+                <FormGroup style="width:100%">
+                    <!-- Since -->
+                    <Label for="since">{local.since[DEFAULT_LANGUAGE]}</Label>
+                    <Input.Date
+                        id="since"
+                        value={selectedSince}
+                        onchange={setSince}
+                    />
+                    <!-- Since end -->
+                </FormGroup>
+                <FormGroup style="width:100%">
+                    <!-- Before -->
+                    <Label for="before">{local.before[DEFAULT_LANGUAGE]}</Label>
+                    <Input.Date
+                        id="before"
+                        value={selectedBefore}
+                        onchange={setBefore}
+                    />
+                    <!-- Before end -->
+                </FormGroup>
             </FormGroup>
-            <FormGroup direction="horizontal">
-                <Label for="before">{local.before[DEFAULT_LANGUAGE]}</Label>
-                <Input.Date
-                    id="before"
-                    value={selectedBefore}
-                    onchange={setBefore}
-                />
-            </FormGroup>
+            <!-- Range end -->
         </FormGroup>
         <FormGroup>
+            <!-- Include -->
             <Label for="searching-include">{local.includes[DEFAULT_LANGUAGE]}</Label>
             <Input.Basic
                 type="text"
@@ -476,8 +508,10 @@
                 placeholder={local.includes_placeholder[DEFAULT_LANGUAGE]}
                 onkeydown={setInclude}
             />
+            <!-- Include end -->
         </FormGroup>
         <FormGroup>
+            <!-- Exclude -->
             <Label for="searching-exclude">{local.excludes[DEFAULT_LANGUAGE]}</Label>
             <Input.Basic
                 type="text"
@@ -485,15 +519,20 @@
                 placeholder={local.excludes_placeholder[DEFAULT_LANGUAGE]}
                 onkeydown={setExclude}
             />
+            <!-- Exclude end -->
         </FormGroup>
         <FormGroup>
+            <!-- Flags -->
             <Label>{local.flags[DEFAULT_LANGUAGE]}</Label>
             <FormGroup direction="horizontal">
-                <div>
+                <FormGroup class="flag-group">
+                    <!-- Included Flags -->
                     <Label for="included-flags">{local.included_flags[DEFAULT_LANGUAGE]}</Label>
                     <FormGroup direction="horizontal">
                         <Select.Root
                             id="included-flags"
+                            placeholder="Include Flag"
+                            style="width:100%"
                             resetAfterSelect={true}
                         >
                             {#each Object.entries(Mark) as mark}
@@ -518,12 +557,16 @@
                             {/each}
                         {/if}
                     </div>
-                </div>
-                <div>
+                    <!-- Included Flags end -->
+                </FormGroup>
+                <FormGroup class="flag-group">
+                    <!-- Excluded Flags -->
                     <Label for="excluded-flags">{local.excluded_flags[DEFAULT_LANGUAGE]}</Label>
                     <FormGroup direction="horizontal">
                         <Select.Root
                             id="excluded-flags"
+                            placeholder="Exclude Flag"
+                            style="width:100%"
                             resetAfterSelect={true}
                         >
                             {#each Object.entries(Mark) as mark}
@@ -548,74 +591,90 @@
                             {/each}
                         {/if}
                     </div>
-                </div>
+                    <!-- Excluded Flags end -->
+                </FormGroup>
             </FormGroup>
+            <!-- Flags end -->
         </FormGroup>
         <FormGroup>
+            <!-- Size -->
             <Label>{local.size[DEFAULT_LANGUAGE]}</Label>
             <FormGroup direction="horizontal">
-                <Label for="larger-than">{local.larger_than[DEFAULT_LANGUAGE]}</Label>
-                <Input.Basic
-                    type="number"
-                    id="larger-than"
-                    placeholder={local.larger_than_placeholder[DEFAULT_LANGUAGE]}
-                    onkeydown={setEnteredSize}
-                />
-                <Select.Root
-                    placeholder={Size.KB}
-                    value={largerThanUnit}
-                    onchange={setLargerThanUnit}
-                >
-                    {#each Object.entries(Size) as size}
-                        <Select.Option
-                            value={size[0]}
-                            content={size[1]}
+                <FormGroup>
+                    <!-- Larger than -->
+                    <Label for="larger-than">{local.larger_than[DEFAULT_LANGUAGE]}</Label>
+                    <FormGroup direction="horizontal" class="size-group">
+                        <Input.Basic
+                            type="number"
+                            id="larger-than"
+                            placeholder={local.larger_than_placeholder[DEFAULT_LANGUAGE]}
+                            onkeydown={setEnteredSize}
+                            />
+                        <Select.Root
+                            placeholder={Size.KB}
+                            value={largerThanUnit}
+                            onchange={setLargerThanUnit}
+                        >
+                            {#each Object.entries(Size) as size}
+                                <Select.Option
+                                    value={size[0]}
+                                    content={size[1]}
+                                />
+                            {/each}
+                        </Select.Root>
+                    </FormGroup>
+                    <!-- Larger than end -->
+                </FormGroup>
+                <FormGroup>
+                    <!-- Smaller than -->
+                    <Label for="smaller-than">{local.smaller_than[DEFAULT_LANGUAGE]}</Label>
+                    <FormGroup direction="horizontal" class="size-group">
+                        <Input.Basic
+                            type="number"
+                            id="smaller-than"
+                            placeholder={local.smaller_than_placeholder[DEFAULT_LANGUAGE]}
+                            onkeydown={setEnteredSize}
                         />
-                    {/each}
-                </Select.Root>
+                        <Select.Root
+                            placeholder={Size.MB}
+                            value={smallerThanUnit}
+                            onchange={setSmallerThanUnit}
+                        >
+                            {#each Object.entries(Size) as size}
+                                <Select.Option
+                                    value={size[0]}
+                                    content={size[1]}
+                                />
+                            {/each}
+                        </Select.Root>
+                    </FormGroup>
+                    <!-- Smaller than end -->
+                </FormGroup>
             </FormGroup>
-            <FormGroup direction="horizontal">
-                <Label for="smaller-than">{local.smaller_than[DEFAULT_LANGUAGE]}</Label>
-                <Input.Basic
-                    type="number"
-                    id="smaller-than"
-                    placeholder={local.smaller_than_placeholder[DEFAULT_LANGUAGE]}
-                    onkeydown={setEnteredSize}
-                />
-                <Select.Root
-                    placeholder={Size.MB}
-                    value={smallerThanUnit}
-                    onchange={setSmallerThanUnit}
-                >
-                    {#each Object.entries(Size) as size}
-                        <Select.Option
-                            value={size[0]}
-                            content={size[1]}
-                        />
-                    {/each}
-                </Select.Root>
-            </FormGroup>
+            <!-- Size end -->
         </FormGroup>
         <FormGroup direction="horizontal">
+            <!-- Has attachments -->
             <Input.Basic
                 type="checkbox"
                 id="has-attachments"
                 onchange={setHasAttachments}
             />
             <Label for="has-attachments">{local.has_attachments[DEFAULT_LANGUAGE]}</Label>
+            <!-- Has attachments end -->
         </FormGroup>
-        <div>
-            <Button.Basic type="button" class="btn-outline" onclick={clear}>
+        <FormGroup direction="horizontal" class="search-button-group">
+            <Button.Basic type="button" class="btn-inline" onclick={clear}>
                 <Icon name="trash" />
-                {local.clear[DEFAULT_LANGUAGE]}
             </Button.Basic>
-            <Button.Action type="button" onclick={search}>
+            <Button.Action type="button" class="btn-outline" onclick={search}>
                 <Icon name="search" />
-                {local.search[DEFAULT_LANGUAGE]}
+                <span>{local.search[DEFAULT_LANGUAGE]}</span>
             </Button.Action>
-        </div>
+        </FormGroup>
     </div>
 </div>
+{/if}
 
 <style>
     :global {
@@ -626,19 +685,54 @@
             transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
-            width: var(--container-lg);
-            z-index: var(--z-index-dropdown);
+            width: var(--container-md);
+            z-index: var(--z-index-modal);
+            background-color: var(--color-bg-primary);
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-lg);
+
+            & .simple-search-input-group{
+                padding: 0 var(--spacing-sm);
+                border-color: transparent!important;
+            }
 
             & .search-extra-options {
                 display: flex;
                 flex-direction: column;
-                width: var(--container-lg);
-                z-index: var(--z-index-dropdown);
-                border: 1px solid var(--color-border);
-                border-top: none;
+                height: var(--container-md);
+                overflow-y: scroll!important;
+                overflow-x: hidden;
+                z-index: var(--z-index-modal);
+                padding: var(--spacing-md);
+                padding-right: calc(var(--spacing-md) + 5px); /* because of scrollbar */
+                background-color: var(--color-bg-primary);
                 border-bottom-left-radius: var(--radius-lg);
                 border-bottom-right-radius: var(--radius-lg);
-                padding: var(--spacing-xs) var(--spacing-md);
+                border-top: 1px solid var(--color-border-subtle);
+
+                & .size-group {
+                    align-items: end;
+                    font-size: var(--font-size-xs);
+                    gap: var(--spacing-sm);
+                }
+
+                & .flag-group {
+                    width: 100%;
+
+                    & label + .form-group-horizontal {
+                        gap: var(--spacing-md);
+                    }
+                }
+
+                & .searching-account {
+                   width: 100%;
+                   margin-top: var(--spacing-2xs);
+                }
+
+                & .search-button-group {
+                    justify-content: end;
+                    gap: var(--spacing-md);
+                }
             }
         }
     }

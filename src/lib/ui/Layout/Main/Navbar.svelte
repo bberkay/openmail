@@ -21,13 +21,14 @@
     <div class="nav-section">
         <Button.Basic
             type="button"
-            class="btn-cta nav-button"
+            class="btn-cta nav-button compose-button"
+            style="width:auto"
             onclick={showCompose}
         >
-            <Icon name="compose" />
+            <Icon name="compose" style="fill:var(--color-bg-primary)"/>
+            Compose
         </Button.Basic>
         <Account />
-        <Notifications />
     </div>
 </nav>
 
@@ -39,20 +40,27 @@
             justify-content: space-between;
             width: 100%;
             padding: var(--spacing-lg);
+            font-size: var(--font-size-xs);
 
             & .nav-section {
                 display: flex;
                 flex-direction: row;
-                gap: var(--spacing-lg);
-                align-items: center;
+                gap: var(--spacing-xs);
 
                 & .nav-button {
-                    height: var(--font-size-2xl);
-                    width: var(--font-size-2xl);
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    padding: 0;
+                    gap: var(--spacing-2xs);
+                    padding-left: var(--spacing-sm);
+                }
+
+                & .folders {
+                    width: 120px;
+                }
+
+                & .account {
+                    width: 200px;
                 }
             }
         }

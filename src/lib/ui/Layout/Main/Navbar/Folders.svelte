@@ -96,16 +96,20 @@
 </script>
 
 <Select.Root
+    class="folders"
     onchange={handleOperation}
     value={getCurrentMailbox().folder}
     enableSearch={true}
+    searchAlgorithm={(option: HTMLElement) => option.hasAttribute("data-option-searchable")}
     disabled={SharedStore.currentAccount === "home"}
+    disableClearButton={true}
 >
     {#each standardFolders as standardFolder}
         {@const [folderTag, folderName] = standardFolder.split(":")}
         <Select.Option
             value={folderTag}
-            content={folderName}
+            content={folderName || folderTag}
+            data-option-searchable
         />
     {/each}
     <Select.Separator />
@@ -117,11 +121,14 @@
         value={FolderOperation.Create}
         content={local.create_folder[DEFAULT_LANGUAGE]}
     />
-    <Select.Separator />
+    {#if customFolders.length > 0}
+        <Select.Separator />
+    {/if}
     {#each customFolders as customFolder}
         <Select.Option
             value={customFolder}
             content={customFolder}
+            data-option-searchable
         />
         <!-- FIXME -->
         <!--<Select.Option value={customFolder}>

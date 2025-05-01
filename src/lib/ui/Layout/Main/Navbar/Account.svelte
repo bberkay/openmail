@@ -15,6 +15,7 @@
     import {
         getLogoutFromTemplate,
         getNotLoggedOutFromTemplate,
+        getSenderAddressTemplate,
     } from "$lib/templates";
     import { show as showToast } from "$lib/ui/Components/Toast";
 
@@ -146,12 +147,14 @@
 </script>
 
 <Select.Root
+    class="account"
     onchange={handleOperation}
     value={SharedStore.currentAccount === "home"
-        ? local.home[DEFAULT_LANGUAGE]
+        ? AccountOperation.Home
         : SharedStore.currentAccount.email_address}
     placeholder={local.account[DEFAULT_LANGUAGE]}
     enableSearch={true}
+    disableClearButton={true}
 >
     <Select.Option
         value={AccountOperation.Home}
@@ -161,7 +164,11 @@
     {#each SharedStore.accounts as account}
         <Select.Option
             value={account.email_address}
-            content={createSenderAddress(account.email_address, account.fullname)}
+            content={getSenderAddressTemplate(
+                account.email_address,
+                account.fullname,
+                true
+            )}
         />
     {/each}
     <Select.Separator />

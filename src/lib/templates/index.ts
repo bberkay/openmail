@@ -3,7 +3,7 @@ import { DEFAULT_LANGUAGE } from "$lib/constants";
 
 /**
  * ----------------------------------------------------------------------------
- * Generally used constants
+ * Generally used templates
  * ----------------------------------------------------------------------------
  */
 export function getNotImplementedTemplate(feature: string) {
@@ -13,9 +13,28 @@ export function getNotImplementedTemplate(feature: string) {
     );
 }
 
+export function getSenderAddressTemplate(email_address: string, fullname?: string, separator: boolean = false) {
+    if (!fullname) {
+        return `
+            <span>&lt;${email_address}&gt;</span>
+        `
+    } else {
+        return `
+            <span>
+                ${fullname}
+                ${separator ? "<br/>" : ""}
+                <small 'style="margin-left:${separator ? '0' : '5'}px"'>
+                    &lt;${email_address}&gt;
+                </small>
+            </span>
+        `
+    }
+}
+
+
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Components/Select/Select.svelte
+ * Templates generally used in Components/Select/Select.svelte
  * ----------------------------------------------------------------------------
  */
 export function getNoMatchFoundTemplate() {
@@ -26,16 +45,16 @@ export function getNoMatchFoundTemplate() {
 
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Landing/Register/AccountList.svelte
+ * Templates generally used in Landing/Register/AccountList.svelte
  * ----------------------------------------------------------------------------
  */
 export function getFailedAccountsTemplate(failed_account_list_items: string) {
     return `
     <p>${local.failed_accounts_are[DEFAULT_LANGUAGE]}</p>
     <ul>
-        {failed_account_list_items}
+        ${failed_account_list_items}
     </ul>
-    `.replace("{failed_account_list_items}", failed_account_list_items);
+    `;
 }
 
 export function getSelectedAccountTemplate(count: string) {
@@ -44,7 +63,7 @@ export function getSelectedAccountTemplate(count: string) {
 
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Main/Navbar/Search.svelte
+ * Templates generally used in Main/Navbar/Search.svelte
  * ----------------------------------------------------------------------------
  */
 export function getSearchForAccountTemplate(account: string) {
@@ -56,7 +75,7 @@ export function getSearchForAccountTemplate(account: string) {
 
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Main/Navbar/Notifications.svelte
+ * Templates generally used in Main/Navbar/Notifications.svelte
  * ----------------------------------------------------------------------------
  */
 export function getNewMessageTemplate(
@@ -76,7 +95,7 @@ export function getNewMessageTemplate(
 
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Main/Navbar/Account.svelte
+ * Templates generally used in Main/Navbar/Account.svelte
  * ----------------------------------------------------------------------------
  */
 export function getLogoutFromTemplate(account: string) {
@@ -95,7 +114,7 @@ export function getNotLoggedOutFromTemplate(account: string) {
 
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Main/Content.svelte
+ * Templates generally used in Main/Content.svelte
  * ----------------------------------------------------------------------------
  */
 export function getFailedMailboxOrFoldersTemplate(
@@ -122,7 +141,7 @@ export function getFailedItemTemplate(email_address: string) {
 
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Main/Content/Compose.svelte
+ * Templates generally used in Main/Content/Compose.svelte
  * ----------------------------------------------------------------------------
  */
 export function getReplyTemplate(
@@ -213,7 +232,7 @@ export function getAttachmentTemplate(
 
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Main/Content/Email.svelte
+ * Templates generally used in Main/Content/Email.svelte
  * ----------------------------------------------------------------------------
  */
 export function getEmailPaginationTemplate(
@@ -270,7 +289,7 @@ export function getErrorSearhMovedEmailTemplate(destination_folder: string) {
 
 /**
  * ----------------------------------------------------------------------------
- * Constants generally used in Main/Content/Mailbox.svelte
+ * Templates generally used in Main/Content/Mailbox.svelte
  * ----------------------------------------------------------------------------
  */
 export function getRangePaginationTemplate(
