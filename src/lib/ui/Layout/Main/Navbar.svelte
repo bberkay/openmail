@@ -3,14 +3,8 @@
     import Account from "$lib/ui/Layout/Main/Navbar/Account.svelte";
     import Search from "$lib/ui/Layout/Main/Navbar/Search.svelte";
     import Notifications from "$lib/ui/Layout/Main/Navbar/Notifications.svelte";
-    import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
-    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
-    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
-
-    const showCompose = () => {
-        showContent(Compose);
-    }
+    import Compose from "$lib/ui/Layout/Main/Navbar/Compose.svelte";
 </script>
 
 <nav>
@@ -19,15 +13,7 @@
         <Search />
     </div>
     <div class="nav-section">
-        <Button.Basic
-            type="button"
-            class="btn-cta nav-button compose-button"
-            style="width:auto"
-            onclick={showCompose}
-        >
-            <Icon name="compose" style="fill:var(--color-bg-primary)"/>
-            Compose
-        </Button.Basic>
+        <Compose />
         <Account />
     </div>
 </nav>
@@ -53,14 +39,6 @@
                     align-items: center;
                     gap: var(--spacing-2xs);
                     padding-left: var(--spacing-sm);
-                }
-
-                & .folders {
-                    width: 120px;
-                }
-
-                & .account {
-                    width: 200px;
                 }
             }
         }
