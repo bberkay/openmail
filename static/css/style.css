@@ -82,6 +82,7 @@
     --z-index-toast: 200;
     --z-index-overlay: 300;
     --z-index-modal: 400;
+    --z-index-titlebar: 9999;
 }
 
 body {
@@ -126,6 +127,10 @@ body {
 
         & .layout-container {
             pointer-events: none!important;
+
+            & .modal-like {
+                pointer-events: all!important;
+            }
         }
 
         & .modal-container{
