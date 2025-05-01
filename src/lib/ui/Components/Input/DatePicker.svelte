@@ -227,10 +227,6 @@
         .date-input-wrapper{
             position: relative;
 
-            & .date-input {
-                width: max-content;
-            }
-
             & .datepicker-container {
                 position: absolute;
                 top: 100%;

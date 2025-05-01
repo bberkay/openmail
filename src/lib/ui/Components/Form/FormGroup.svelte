@@ -35,10 +35,17 @@
         .form-group {
             display: flex;
 
+            &:not(:has(.form-group)) {
+                margin-bottom: var(--spacing-lg);
+            }
+
+            & .form-group {
+                margin-top:var(--spacing-2xs);
+            }
+
             &.form-group-vertical {
                 flex-direction: column;
                 text-align: left;
-                margin-bottom: var(--spacing-md);
             }
 
             &.form-group-horizontal {
@@ -46,8 +53,12 @@
                 align-items: center;
                 gap: var(--spacing-lg);
 
+                &:has(input[type="checkbox"] + label) {
+                    gap: var(--spacing-xs);
+                }
+
                 & input[type="checkbox"] + label {
-                    margin-top: 7px;
+                    margin-top: 3px;
                 }
             }
         }

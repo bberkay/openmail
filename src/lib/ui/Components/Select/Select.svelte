@@ -15,7 +15,9 @@
         value?: string;
         onchange?: (((selectedOption: string) => void) | ((selectedOption: string) => Promise<void>));
         enableSearch?: boolean;
+        searchAlgorithm?: ((option: HTMLElement) => boolean);
         resetAfterSelect?: boolean;
+        disableClearButton?: boolean;
         disabled?: boolean;
         [attribute: string]: unknown;
     }
@@ -27,7 +29,9 @@
         value,
         onchange,
         enableSearch,
+        searchAlgorithm,
         resetAfterSelect,
+        disableClearButton,
         disabled,
         ...attributes
     }: Props = $props();
@@ -60,11 +64,12 @@
         optionsList.querySelector(".no-results")?.remove();
 
         options.forEach((option: HTMLElement) => {
+            const optionValue = option.getAttribute("data-value")!.toString().toLowerCase();
+            const optionContent = option.innerText!.toString().toLowerCase()
             if (searchTerm) {
-                if (
-                    option.getAttribute("data-value")!.toString().toLowerCase().includes(searchTerm)
-                    || option.innerText!.toString().toLowerCase().includes(searchTerm)
-                ) {
+                const isOptionIncludesSearchTerm = optionValue.includes(searchTerm) || optionContent.includes(searchTerm);
+                const isOptionConfirmSearchAlgorithm = (!searchAlgorithm || searchAlgorithm(option))
+                if (isOptionIncludesSearchTerm && isOptionConfirmSearchAlgorithm) {
                     option.classList.remove("invisible");
                     isAnyOptionFound = true;
                 } else {
@@ -173,11 +178,15 @@
                     <span data-value={selectedOption.getAttribute("data-value")!}>
                         {selectedOption.textContent!.split(getToggleTextSeparator())[0].trim()}
                     </span>
-                    <Button.Basic
-                        type="button"
-                        class="clear-button {selectedOption ? "visible" : ""}"
-                        onclick={clearSelection}
-                    >×</Button.Basic>
+                    {#if !disableClearButton}
+                        <Button.Basic
+                            type="button"
+                            class="clear-button {selectedOption ? "visible" : ""}"
+                            onclick={clearSelection}
+                        >
+                            <Icon name="close" />
+                        </Button.Basic>
+                    {/if}
                 {:else}
                     <span data-value="">{placeholder}</span>
                 {/if}
@@ -193,6 +202,7 @@
                     <Input.Basic
                         type="text"
                         class="search-input"
+                        style="font-size: var(--font-size-sm)"
                         placeholder={local.search[DEFAULT_LANGUAGE]}
                         onclick={(e: Event) => { e.stopPropagation() }}
                         oninput={handleSearch}
@@ -251,6 +261,7 @@
                         display: flex;
                         align-items: center;
                         gap: var(--spacing-xs);
+                        margin-right: var(--spacing-xs);
                         flex: 1;
 
                         & .clear-button {
@@ -289,11 +300,17 @@
                 visibility: hidden;
                 transition: all var(--transform-fast) var(--ease-default);
                 box-shadow: var(--shadow-sm);
+                font-size: var(--font-size-sm);
 
                 & .search-box {
                     position: sticky;
                     top: 0;
                     border-bottom: 1px solid var(--color-border-subtle);
+
+                    & .input-group {
+                        padding-left: var(--spacing-xs);
+                        font-size: var(--font-size-sm);
+                    }
                 }
 
                 & .no-results {

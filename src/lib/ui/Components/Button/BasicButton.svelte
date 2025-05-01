@@ -51,10 +51,6 @@
                 opacity: 0.7;
             }
 
-            &:has(svg) {
-                justify-content: space-between;
-            }
-
             &.btn-cta {
                 width: 100%;
                 font-weight: var(--font-weight-bold);
@@ -80,6 +76,20 @@
 
                 &:active {
                     background-color: var(--color-border);
+                }
+
+                &:has(svg) {
+                    justify-content: space-between;
+
+                    & svg {
+                        margin-right: var(--spacing-xs);
+                        margin-left: calc(-0.5 * var(--spacing-xs));
+                    }
+
+                    &:not(:has(span)) svg {
+                        margin-right: calc(-0.5 * var(--spacing-xs));
+                        margin-left: 0;
+                    }
                 }
             }
 

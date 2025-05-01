@@ -30,7 +30,7 @@
     {#if icon}
         <Icon name={icon}/>
     {/if}
-    {content}
+    {@html content}
 </div>
 
 <style>

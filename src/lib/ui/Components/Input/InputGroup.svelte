@@ -95,8 +95,8 @@
                 }
             }
 
-            & .pre-input + input,
-            & input + .post-input {
+            & .pre-input:has(svg) + input,
+            & input + .post-input:has(svg) {
                 margin-left: var(--spacing-2xs);
             }
         }
