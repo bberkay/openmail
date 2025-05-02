@@ -4,31 +4,23 @@
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import * as Table from "$lib/ui/Components/Table";
+    import Icon from "$lib/ui/Components/Icon";
 
     interface Props {
-        id?: string,
-        placeholder?: string,
-        value?: Date,
-        onchange?: (selectedDay: Date) => void,
+        id?: string;
+        placeholder?: string;
+        value?: Date;
+        onchange?: (selectedDay: Date) => void;
         [attribute: string]: unknown;
     }
 
-    let {
-        id,
-        placeholder,
-        value,
-        onchange,
-        ...attributes
-    }: Props = $props();
+    let { id, placeholder, value, onchange, ...attributes }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    const { class: additionalClass, ...restAttributes } = attributes;
 
-    let currentDate = new Date();
-    let currentYear = currentDate.getFullYear();
-    let currentMonth = currentDate.getMonth();
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
     let displayedYear: number = $state(currentYear);
     let displayedMonth: number = $state(currentMonth);
     let selectedDate: Date | "" = $state(value || "");
@@ -47,14 +39,18 @@
         }
     });
 
+    const close = () => {
+        isDatePickerOpen = false;
+    }
+
     const closeWhenClickedOutside = (e: Event) => {
         if (
             !datePickerWrapper.contains(e.target as HTMLElement) &&
             e.target !== dateInput
         ) {
-            isDatePickerOpen = false;
+            close();
         }
-    }
+    };
 
     function selectDate(selectedDayNumber: string) {
         selectedDate = new Date(
@@ -63,10 +59,13 @@
             parseInt(selectedDayNumber),
         );
         const prevSelectedDate = calendarBody.querySelector(`.selected-date`);
-        if (prevSelectedDate) prevSelectedDate.classList.remove("selected-date");
-        calendarBody.querySelector(`td[data-date="${selectedDayNumber}"]`)!.classList.add("selected-date");
+        if (prevSelectedDate)
+            prevSelectedDate.classList.remove("selected-date");
+        calendarBody
+            .querySelector(`td[data-date="${selectedDayNumber}"]`)!
+            .classList.add("selected-date");
         isDatePickerOpen = false;
-        if(onchange) onchange(selectedDate);
+        if (onchange) onchange(selectedDate);
     }
 
     const goPrevMonth = () => {
@@ -91,7 +90,7 @@
         selectedDate = "";
         dateInput.value = "";
         renderCalendar();
-    }
+    };
 
     function renderCalendar() {
         const firstDay = new Date(displayedYear, displayedMonth, 1);
@@ -159,12 +158,12 @@
             .querySelectorAll<HTMLElement>("td[data-date]")
             .forEach((cell: HTMLElement) => {
                 cell.addEventListener("click", () => {
-                  if (cell.classList.contains("next-month")) {
-                      goNextMonth();
-                  } else if (cell.classList.contains("prev-month")) {
-                      goPrevMonth();
-                  }
-                  selectDate(cell.dataset.date!);
+                    if (cell.classList.contains("next-month")) {
+                        goNextMonth();
+                    } else if (cell.classList.contains("prev-month")) {
+                        goPrevMonth();
+                    }
+                    selectDate(cell.dataset.date!);
                 });
             });
     }
@@ -178,45 +177,60 @@
     {...restAttributes}
 >
     <Input.Basic
-        id={id}
+        {id}
         type="text"
         class="date-input"
         placeholder={convertToIMAPDate(placeholder)}
         value={selectedDate ? convertToIMAPDate(selectedDate) : ""}
-        onclick={() => { isDatePickerOpen = !isDatePickerOpen }}
+        onclick={() => {
+            isDatePickerOpen = !isDatePickerOpen;
+        }}
         readonly
     />
     <div class="datepicker-container {isDatePickerOpen ? 'visible' : ''}">
         <div class="datepicker-header">
+            <Button.Basic
+                class="btn-inline"
+                onclick={clearSelection}
+            >
+                <Icon name="backward" />
+            </Button.Basic>
             <div class="month-year-selector">
                 <Button.Basic
-                    class="btn-outline"
+                    class="btn-inline"
                     id="prev-month"
                     onclick={goPrevMonth}
-                >←</Button.Basic>
-                {getMonths()[displayedMonth]}
-                {displayedYear}
+                >
+                    <Icon name="prev" />
+                </Button.Basic>
+                <span class="month-year-text">
+                    {getMonths()[displayedMonth]} {displayedYear}
+                </span>
                 <Button.Basic
-                    class="btn-outline"
+                    class="btn-inline"
                     id="next-month"
                     onclick={goNextMonth}
-                >→</Button.Basic>
+                >
+                    <Icon name="next" />
+                </Button.Basic>
             </div>
             <Button.Basic
-                class="btn-outline"
-                onclick={clearSelection}
-            >X</Button.Basic>
+                class="btn-inline"
+                onclick={close}
+            >
+                <Icon name="close" />
+            </Button.Basic>
         </div>
         <Table.Root class="calendar">
             <Table.Header>
                 <Table.Row>
                     {#each getDays() as day}
-                      <Table.Head>{day}</Table.Head>
+                        <Table.Head>{day}</Table.Head>
                     {/each}
                 </Table.Row>
             </Table.Header>
             <Table.Body class="calendar-body">
-                <br/>
+                <br />
             </Table.Body>
         </Table.Root>
     </div>
@@ -224,7 +238,7 @@
 
 <style>
     :global {
-        .date-input-wrapper{
+        .date-input-wrapper {
             position: relative;
 
             & .datepicker-container {
@@ -238,7 +252,7 @@
                 border-top-right-radius: none;
                 padding: var(--spacing-sm);
                 background: var(--color-bg-primary);
-                z-index: var(--z-index-dropdown)!important;
+                z-index: var(--z-index-dropdown) !important;
                 opacity: 0;
                 visibility: hidden;
                 transition: all var(--transform-fast) var(--ease-default);
@@ -252,8 +266,18 @@
 
                     & .month-year-selector {
                         display: flex;
-                        gap: var(--spacing-sm);
+                        gap: var(--spacing-xs);
                         align-items: center;
+                    }
+
+                    & .month-year-text {
+                        font-size: var(--font-size-md);
+                        margin-top: 5px;
+                    }
+
+                    & svg {
+                        width: var(--font-size-md);
+                        height: var(--font-size-md);
                     }
                 }
             }
@@ -266,6 +290,7 @@
                     padding: var(--spacing-xs);
                     background: none;
                     color: var(--color-text-secondary);
+                    border-bottom: none;
                 }
 
                 & td {
