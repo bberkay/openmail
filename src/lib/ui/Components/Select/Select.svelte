@@ -85,14 +85,18 @@
         }
     }
 
-    async function selectOption(value: string, onStart: boolean = false) {
+    async function selectOption(
+        value: string,
+        disableCallback: boolean = false,
+        resetToDefault: boolean = false
+    ) {
         disabled = true;
         if(selectedOption) selectedOption.classList.remove("selected");
         selectedOption = options.find(option => option.dataset.value == value)!;
         selectedOption.classList.add("selected");
-        if(onchange && !onStart) await onchange(value.toString());
-        if(resetAfterSelect) selectedOption = null;
+        if(onchange && !disableCallback) await onchange(value.toString());
         disabled = false;
+        if(resetAfterSelect && !resetToDefault) clearSelection();
         closeSelect();
     }
 
@@ -147,7 +151,7 @@
             return;
 
         if (defaultValue) {
-            selectOption(defaultValue);
+            selectOption(defaultValue, false, true);
         } else {
             selectedOption = null;
             optionsList.querySelector(".selected")?.classList.remove("selected");
