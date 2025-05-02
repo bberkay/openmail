@@ -7,17 +7,17 @@
         type SearchCriteria,
         type Account as TAccount,
     } from "$lib/types";
-    import {
-        debounce,
-        isObjEmpty,
-        createSenderAddress,
-    } from "$lib/utils";
+    import { debounce, isObjEmpty, createSenderAddress } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
     import { FormGroup } from "$lib/ui/Components/Form";
     import { show as showMessage } from "$lib/ui/Components/Message";
-    import { DEFAULT_LANGUAGE, GENERAL_FADE_DURATION_MS, REALTIME_SEARCH_DELAY_MS } from "$lib/constants";
+    import {
+        DEFAULT_LANGUAGE,
+        GENERAL_FADE_DURATION_MS,
+        REALTIME_SEARCH_DELAY_MS,
+    } from "$lib/constants";
     import { local } from "$lib/locales";
     import { getSearchForAccountTemplate } from "$lib/templates";
     import Cc from "./SearchMenu/Cc.svelte";
@@ -38,9 +38,7 @@
         isSimpleSearchHidden: boolean;
     }
 
-    let {
-        isSimpleSearchHidden = $bindable()
-    }: Props = $props();
+    let { isSimpleSearchHidden = $bindable() }: Props = $props();
 
     let isExtraOptionsHidden = $state(true);
 
@@ -52,9 +50,11 @@
     let simpleSearchInput: HTMLInputElement | undefined = $state(undefined);
 
     const search = async (): Promise<void> => {
+        const isSearchCriteriaEmpty = isObjEmpty(searchCriteria);
         if (
             !simpleSearchInput ||
-            (!isSimpleSearchHidden && isExtraOptionsHidden && simpleSearchInput.value.length < 3)
+            (isExtraOptionsHidden && simpleSearchInput.value.length < 3) ||
+            (!isExtraOptionsHidden && isSearchCriteriaEmpty)
         )
             return;
 
@@ -70,9 +70,7 @@
                     searchingFolder,
                     isExtraOptionsHidden
                         ? simpleSearchInput!.value
-                        : isObjEmpty(searchCriteria)
-                          ? searchCriteria
-                          : undefined,
+                        : searchCriteria,
                 );
                 if (!response.success) {
                     throw new Error(response.message);
@@ -104,8 +102,12 @@
 </script>
 
 {#if !isSimpleSearchHidden}
-    <div class="modal" style="display:none"></div> <!-- to trigger modal overlay -->
-    <div class="search-menu modal-like" transition:fade={{duration: GENERAL_FADE_DURATION_MS}}>
+    <!-- to trigger modal overlay -->
+    <div class="modal" style="display:none"></div>
+    <div
+        class="search-menu modal-like"
+        transition:fade={{ duration: GENERAL_FADE_DURATION_MS }}
+    >
         <Input.Group class="modal-like-header">
             <Button.Action type="button" onclick={search}>
                 <Icon name="search" />
@@ -117,9 +119,9 @@
                 placeholder={getSearchForAccountTemplate(
                     searchingAccount !== "home"
                         ? createSenderAddress(
-                            searchingAccount.email_address,
-                            searchingAccount.fullname
-                        )
+                              searchingAccount.email_address,
+                              searchingAccount.fullname,
+                          )
                         : searchingAccount,
                 )}
                 onkeyup={debouncedSearch}
@@ -157,8 +159,8 @@
         .search-menu {
             & .modal-like-body {
                 & .searching-account {
-                   width: 100%;
-                   margin-top: var(--spacing-2xs);
+                    width: 100%;
+                    margin-top: var(--spacing-2xs);
                 }
 
                 & .search-button-group {
