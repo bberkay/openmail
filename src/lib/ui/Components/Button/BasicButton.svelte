@@ -59,10 +59,18 @@
             }
 
             &.btn-inline {
-                padding: 0;
+                padding: var(--spacing-2xs) var(--spacing-2xs);
                 margin: 0;
                 background-color: transparent;
                 color: var(--color-text-primary);
+
+                &:hover {
+                    background-color: var(--color-border);
+
+                    & svg {
+                        fill: var(--color-text-primary);
+                    }
+                }
             }
 
             &.btn-outline {
@@ -77,7 +85,10 @@
                 &:active {
                     background-color: var(--color-border);
                 }
+            }
 
+            &.btn-outline,
+            &.btn-cta {
                 &:has(svg) {
                     justify-content: space-between;
 
@@ -88,7 +99,6 @@
 
                     &:not(:has(span)) svg {
                         margin-right: calc(-0.5 * var(--spacing-xs));
-                        margin-left: 0;
                     }
                 }
             }

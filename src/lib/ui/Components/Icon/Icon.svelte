@@ -31,8 +31,8 @@
 <style>
     :global {
         svg {
-            width: var(--font-size-md);
-            height: var(--font-size-md);
+            width: var(--font-size-lg);
+            height: var(--font-size-lg);
             stroke: currentColor;
             stroke-width: 2;
             transition: all var(--transition-fast) var(--ease-default);

@@ -97,7 +97,6 @@
     :global {
         .expandable-container {
             position: relative;
-            overflow: hidden;
             display: flex;
             height: calc(var(--font-size-2xl) + 10px);
             align-items: center;

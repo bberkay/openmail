@@ -131,11 +131,15 @@
             display: flex;
             flex-direction: row;
             gap: var(--spacing-2xs);
-            align-items: end;
             justify-content: center;
 
             & .arrow-button {
-                padding: var(--spacing-xs) var(--spacing-2xs);
+                padding: var(--spacing-xs);
+
+                & svg {
+                    width: var(--font-size-md);
+                    height: var(--font-size-md);
+                }
             }
         }
     }

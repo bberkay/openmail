@@ -444,6 +444,11 @@
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+
+                & svg {
+                    width: var(--font-size-md);
+                    height: var(--font-size-md);
+                }
             }
         }
 
