@@ -55,7 +55,6 @@
     :global {
         .dropdown-container {
             position: relative;
-            z-index: var(--z-index-dropdown);
             width: max-content;
         }
     }

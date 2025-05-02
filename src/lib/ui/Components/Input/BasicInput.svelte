@@ -3,13 +3,15 @@
 
     interface Props {
         group?: string[] | undefined;
-        value?: unknown;
+        value?: string;
+        element?: HTMLInputElement;
         [attribute: string]: unknown;
     }
 
     let {
         group = $bindable(undefined),
         value = $bindable(undefined),
+        element = $bindable(undefined),
         ...attributes
     }: Props  = $props();
 
@@ -31,6 +33,7 @@
 {#if restAttributes["type"] === "checkbox"}
     <!-- input type will be (mostly) "checkbox" -->
     <input
+        bind:this={element}
         {value}
         checked={group?.includes(value as string)}
         onchange={handleChange}
@@ -39,6 +42,7 @@
     />
 {:else}
     <input
+        bind:this={element}
         bind:value
         class={combine("input", additionalClass)}
         {...restAttributes}

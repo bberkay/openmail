@@ -33,6 +33,7 @@
             padding: 1px;
             border: 1px solid var(--color-border);
             border-radius: var(--radius-sm);
+            z-index: var(--z-index-dropdown);
             right: -80px;
             top: 30px;
             width: 100px;

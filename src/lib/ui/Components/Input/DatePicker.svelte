@@ -238,7 +238,7 @@
                 border-top-right-radius: none;
                 padding: var(--spacing-sm);
                 background: var(--color-bg-primary);
-                z-index: var(--z-index-dropdown);
+                z-index: var(--z-index-dropdown)!important;
                 opacity: 0;
                 visibility: hidden;
                 transition: all var(--transform-fast) var(--ease-default);

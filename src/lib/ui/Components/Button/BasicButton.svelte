@@ -28,7 +28,7 @@
 <style>
     :global {
         .btn{
-            padding: var(--spacing-xs) var(--spacing-md);
+            padding: var(--spacing-xs) var(--spacing-sm);
             border: none;
             border-radius: var(--radius-sm);
             cursor: pointer;
