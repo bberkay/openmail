@@ -1,0 +1,107 @@
+<script lang="ts">
+    import * as Dropdown from "$lib/ui/Components/Dropdown";
+    import Label from "$lib/ui/Components/Label";
+    import Badge from "$lib/ui/Components/Badge";
+    import { FormGroup } from "$lib/ui/Components/Form";
+    import { Mark, type SearchCriteria } from "$lib/types";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { local } from "$lib/locales";
+
+    interface Props {
+        searchCriteria: SearchCriteria
+    }
+
+    let {
+        searchCriteria = $bindable()
+    }: Props = $props();
+
+    const addIncludedFlag = (flag: Mark) => {
+        if (!searchCriteria.included_flags) searchCriteria.included_flags = [];
+        if (searchCriteria.excluded_flags?.includes(flag))
+            searchCriteria.excluded_flags =
+                searchCriteria.excluded_flags.filter(
+                    (excluded_flag) => excluded_flag !== flag,
+                );
+        searchCriteria.included_flags.push(flag);
+    };
+
+    const addExcludedFlag = (flag: Mark) => {
+        if (!searchCriteria.excluded_flags) searchCriteria.excluded_flags = [];
+        if (searchCriteria.included_flags?.includes(flag))
+            searchCriteria.included_flags =
+                searchCriteria.included_flags.filter(
+                    (included_flag) => included_flag !== flag,
+                );
+        searchCriteria.excluded_flags.push(flag);
+    };
+</script>
+
+<FormGroup>
+    <Label>{local.flags[DEFAULT_LANGUAGE]}</Label>
+    <FormGroup direction="horizontal">
+        <FormGroup class="flag-group">
+            <FormGroup>
+                <Label for="included-flags">{local.included_flags[DEFAULT_LANGUAGE]}</Label>
+                <Dropdown.Root
+                    id="included-flags"
+                    style="width:100%"
+                >
+                    <Dropdown.Toggle>Flag</Dropdown.Toggle>
+                    <Dropdown.Content>
+                        {#each Object.entries(Mark) as mark}
+                            <Dropdown.Item onclick={() => { addIncludedFlag(mark[1]) }}>
+                                {mark[0]}
+                            </Dropdown.Item>
+                        {/each}
+                    </Dropdown.Content>
+                </Dropdown.Root>
+            </FormGroup>
+            <div class="tags">
+                {#if searchCriteria.included_flags}
+                    {#each searchCriteria.included_flags as included_flag}
+                        <Badge content={included_flag} />
+                    {/each}
+                {/if}
+            </div>
+        </FormGroup>
+        <FormGroup class="flag-group">
+            <FormGroup>
+                <Label for="excluded-flags">{local.excluded_flags[DEFAULT_LANGUAGE]}</Label>
+                <Dropdown.Root
+                    id="excluded-flags"
+                    style="width:100%"
+                >
+                    <Dropdown.Toggle>Flag</Dropdown.Toggle>
+                    <Dropdown.Content>
+                        {#each Object.entries(Mark) as mark}
+                            <Dropdown.Item onclick={() => { addExcludedFlag(mark[1]) }}>
+                                {mark[0]}
+                            </Dropdown.Item>
+                        {/each}
+                    </Dropdown.Content>
+                </Dropdown.Root>
+            </FormGroup>
+            <div class="tags">
+                {#if searchCriteria.excluded_flags}
+                    {#each searchCriteria.excluded_flags as excluded_flag}
+                        <Badge content={excluded_flag} />
+                    {/each}
+                {/if}
+            </div>
+        </FormGroup>
+    </FormGroup>
+</FormGroup>
+
+<style>
+    :global {
+        .modal-like-body{
+            & .flag-group {
+                width: 100%;
+
+                & label + .form-group-horizontal {
+                    gap: var(--spacing-md);
+                }
+            }
+        }
+    }
+</style>
