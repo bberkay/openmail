@@ -13,17 +13,14 @@ export function getNotImplementedTemplate(feature: string) {
     );
 }
 
-export function getSenderAddressTemplate(email_address: string, fullname?: string, separator: boolean = false) {
+export function getSenderAddressTemplate(email_address: string, fullname?: string) {
     if (!fullname) {
-        return `
-            <span>&lt;${email_address}&gt;</span>
-        `
+        return `<span>&lt;${email_address}&gt;</span>`
     } else {
         return `
             <span>
                 ${fullname}
-                ${separator ? "<br/>" : ""}
-                <small 'style="margin-left:${separator ? '0' : '5'}px"'>
+                <small style="margin-left:5px">
                     &lt;${email_address}&gt;
                 </small>
             </span>

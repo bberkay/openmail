@@ -11,10 +11,9 @@
 
 <Button.Basic
     type="button"
-    class="btn-cta nav-button compose-button"
+    class="btn-cta"
     style="width:auto"
     onclick={showCompose}
 >
     <Icon name="compose" style="fill:var(--color-bg-primary)"/>
-    Compose
 </Button.Basic>

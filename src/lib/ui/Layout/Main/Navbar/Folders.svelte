@@ -178,7 +178,7 @@
     :global {
         nav {
             & .folders {
-                width: 120px;
+                width: 150px;
             }
         }
     }

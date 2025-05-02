@@ -57,6 +57,11 @@
                 user-select: none;
                 -webkit-user-select: none;
 
+                & svg {
+                    width: var(--font-size-md);
+                    height: var(--font-size-md);
+                }
+
                 &:hover {
                     background: var(--color-hover);
                 }
