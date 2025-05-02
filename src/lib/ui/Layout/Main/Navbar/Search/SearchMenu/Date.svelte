@@ -35,7 +35,6 @@
     };
 </script>
 
-<!-- TODO: Datepicker should be smaller -->
 <FormGroup>
     <Label>{local.date_range[DEFAULT_LANGUAGE]}</Label>
     <FormGroup direction="horizontal">
