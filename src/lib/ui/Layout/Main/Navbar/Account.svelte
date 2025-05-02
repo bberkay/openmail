@@ -1,12 +1,8 @@
 <script lang="ts">
-    import { exit, relaunch } from "@tauri-apps/plugin-process";
+    import { exit } from "@tauri-apps/plugin-process";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
-    import { Folder, type Account } from "$lib/types";
+    import { type Account } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
-    import { createSenderAddress, isStandardFolder } from "$lib/utils";
-    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
-    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { AccountController } from "$lib/controllers/AccountController";
@@ -15,78 +11,28 @@
     import {
         getLogoutFromTemplate,
         getNotLoggedOutFromTemplate,
-        getSenderAddressTemplate,
     } from "$lib/templates";
     import { show as showToast } from "$lib/ui/Components/Toast";
+    import AccountSelection, { setCurrentAccount } from "./Account/AccountSelection.svelte";
 
     const AccountOperation = {
-        Home: "create",
-        Minimize: "refresh",
+        ShowHome: "showHome",
+        ShowAccountSelection: "showAccountSelection",
+        Minimize: "minimize",
         Settings: "settings",
         Logout: "logout",
         Quit: "quit",
     } as const;
 
-    const setCurrentAccount = async (
-        emailAddressOrHome: "home" | string,
-    ): Promise<void> => {
-        const newAccount =
-            emailAddressOrHome === "home"
-                ? emailAddressOrHome
-                : SharedStore.accounts.find(
-                      (account: Account) =>
-                          account.email_address === emailAddressOrHome,
-                  )!;
+    let isAccountSelectionHidden = $state(true);
 
-        if (SharedStore.currentAccount === newAccount) return;
-        SharedStore.currentAccount = newAccount;
+    const setCurrentAccountToHome = () => {
+        setCurrentAccount("home");
+    }
 
-        const nonInboxAccounts: Account[] = [];
-        const mailboxesToCheck =
-            SharedStore.currentAccount === "home"
-                ? Object.keys(SharedStore.mailboxes)
-                : [SharedStore.currentAccount.email_address];
-        for (const emailAddr in mailboxesToCheck) {
-            if (
-                !isStandardFolder(
-                    SharedStore.mailboxes[emailAddr].folder,
-                    Folder.Inbox,
-                )
-            ) {
-                nonInboxAccounts.push(
-                    SharedStore.accounts.find(
-                        (acc) => acc.email_address === emailAddr,
-                    )!,
-                );
-            }
-        }
-
-        if (nonInboxAccounts.length >= 1) {
-            const results = await Promise.allSettled(
-                nonInboxAccounts.map(async (account) => {
-                    const response = await MailboxController.getMailbox(
-                        account,
-                        Folder.Inbox,
-                    );
-                    if (!response.success) {
-                        throw new Error(response.message);
-                    }
-                }),
-            );
-
-            const failed = results.filter((r) => r.status === "rejected");
-
-            if (failed.length > 0) {
-                showMessage({
-                    title: local.error_show_home[DEFAULT_LANGUAGE],
-                });
-                failed.forEach((f) => console.error(f.reason));
-                return;
-            }
-        }
-
-        showContent(Mailbox);
-    };
+    const showAccountSelection = () => {
+        isAccountSelectionHidden = false;
+    }
 
     const minimize = () => {};
 
@@ -127,6 +73,12 @@
 
     const handleOperation = (selectedOperation: string) => {
         switch (selectedOperation) {
+            case AccountOperation.ShowHome:
+                setCurrentAccountToHome();
+                break;
+            case AccountOperation.ShowAccountSelection:
+                showAccountSelection();
+                break;
             case AccountOperation.Minimize:
                 minimize();
                 break;
@@ -140,37 +92,38 @@
                 quit();
                 break;
             default:
-                setCurrentAccount(selectedOperation);
                 break;
         }
     };
+
+    const handleShortcuts = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+            e.preventDefault();
+            isAccountSelectionHidden = true;
+        }
+    };
 </script>
+
+<svelte:window onkeydown={handleShortcuts} />
 
 <Select.Root
     class="account"
     onchange={handleOperation}
     value={SharedStore.currentAccount === "home"
-        ? AccountOperation.Home
+        ? AccountOperation.ShowHome
         : SharedStore.currentAccount.email_address}
     placeholder={local.account[DEFAULT_LANGUAGE]}
-    enableSearch={true}
     disableClearButton={true}
+    resetAfterSelect={true}
 >
     <Select.Option
-        value={AccountOperation.Home}
+        value={AccountOperation.ShowHome}
         content={local.home[DEFAULT_LANGUAGE]}
     />
-    <Select.Separator />
-    {#each SharedStore.accounts as account}
-        <Select.Option
-            value={account.email_address}
-            content={getSenderAddressTemplate(
-                account.email_address,
-                account.fullname,
-                true
-            )}
-        />
-    {/each}
+    <Select.Option
+        value={AccountOperation.ShowAccountSelection}
+        content="Change account"
+    />
     <Select.Separator />
     <Select.Option
         value={AccountOperation.Minimize}
@@ -195,11 +148,13 @@
     />
 </Select.Root>
 
+<AccountSelection bind:isAccountSelectionHidden />
+
 <style>
     :global {
         nav {
             & .account {
-                width: 200px;
+                width: 150px;
             }
         }
     }
