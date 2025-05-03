@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as Dropdown from "$lib/ui/Components/Dropdown";
+    import * as Select from "$lib/ui/Components/Select";
     import Label from "$lib/ui/Components/Label";
     import Badge from "$lib/ui/Components/Badge";
     import { FormGroup } from "$lib/ui/Components/Form";
@@ -15,7 +15,7 @@
         searchCriteria = $bindable()
     }: Props = $props();
 
-    const addIncludedFlag = (flag: Mark) => {
+    const addIncludedFlag = (flag: string) => {
         if (!searchCriteria.included_flags) searchCriteria.included_flags = [];
         if (searchCriteria.excluded_flags?.includes(flag))
             searchCriteria.excluded_flags =
@@ -25,7 +25,7 @@
         searchCriteria.included_flags.push(flag);
     };
 
-    const addExcludedFlag = (flag: Mark) => {
+    const addExcludedFlag = (flag: string) => {
         if (!searchCriteria.excluded_flags) searchCriteria.excluded_flags = [];
         if (searchCriteria.included_flags?.includes(flag))
             searchCriteria.included_flags =
@@ -42,19 +42,17 @@
         <FormGroup class="flag-group">
             <FormGroup>
                 <Label for="included-flags">{local.included_flags[DEFAULT_LANGUAGE]}</Label>
-                <Dropdown.Root
+                <Select.Root
                     id="included-flags"
-                    style="width:100%"
+                    class="flag-select"
+                    onchange={addIncludedFlag}
+                    resetAfterSelect={true}
+                    placeholder="Flag"
                 >
-                    <Dropdown.Toggle>Flag</Dropdown.Toggle>
-                    <Dropdown.Content>
-                        {#each Object.entries(Mark) as mark}
-                            <Dropdown.Item onclick={() => { addIncludedFlag(mark[1]) }}>
-                                {mark[0]}
-                            </Dropdown.Item>
-                        {/each}
-                    </Dropdown.Content>
-                </Dropdown.Root>
+                    {#each Object.entries(Mark) as mark}
+                        <Select.Option value={mark[1]} content={mark[0]} />
+                    {/each}
+                </Select.Root>
             </FormGroup>
             <div class="tags">
                 {#if searchCriteria.included_flags}
@@ -67,19 +65,17 @@
         <FormGroup class="flag-group">
             <FormGroup>
                 <Label for="excluded-flags">{local.excluded_flags[DEFAULT_LANGUAGE]}</Label>
-                <Dropdown.Root
+                <Select.Root
                     id="excluded-flags"
-                    style="width:100%"
+                    class="flag-select"
+                    onchange={addExcludedFlag}
+                    resetAfterSelect={true}
+                    placeholder="Flag"
                 >
-                    <Dropdown.Toggle>Flag</Dropdown.Toggle>
-                    <Dropdown.Content>
-                        {#each Object.entries(Mark) as mark}
-                            <Dropdown.Item onclick={() => { addExcludedFlag(mark[1]) }}>
-                                {mark[0]}
-                            </Dropdown.Item>
-                        {/each}
-                    </Dropdown.Content>
-                </Dropdown.Root>
+                    {#each Object.entries(Mark) as mark}
+                        <Select.Option value={mark[1]} content={mark[0]} />
+                    {/each}
+                </Select.Root>
             </FormGroup>
             <div class="tags">
                 {#if searchCriteria.excluded_flags}
@@ -100,6 +96,14 @@
 
                 & label + .form-group-horizontal {
                     gap: var(--spacing-md);
+                }
+
+                & .flag-select {
+                    width: 100%;
+
+                    & .options-container {
+                        height: 150px;
+                    }
                 }
             }
         }
