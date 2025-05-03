@@ -24,7 +24,7 @@
 
 <style>
     :global {
-        .dropdown-content {
+        .popover-content {
             position: absolute;
             display: flex;
             background-color: var(--color-border-subtle);
