@@ -45,6 +45,7 @@
     let options: HTMLElement[] = $state([]);
     let selectedOption: HTMLElement | null = $state(null);
     const defaultValue = value;
+    const isInitializedAsDisabled = disabled;
 
     let selectWrapper: HTMLElement;
     let optionsList: HTMLElement;
@@ -95,7 +96,7 @@
         selectedOption = options.find(option => option.dataset.value == value)!;
         selectedOption.classList.add("selected");
         if(onchange && !disableCallback) await onchange(value.toString());
-        disabled = false;
+        if (!isInitializedAsDisabled) disabled = false;
         if(resetAfterSelect && !resetToDefault) clearSelection();
         closeSelect();
     }
@@ -252,7 +253,7 @@
 
                 &.disabled {
                     cursor: auto;
-                    opacity: 0.9;
+                    filter: brightness(0.7);
                 }
 
                 & .select-trigger {
