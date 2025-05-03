@@ -165,17 +165,16 @@
                     </List.Item>
                 {/each}
             </List.Root>
+            <div class="account-selection-pagination-container">
+                <Pagination.Pages
+                    total={SharedStore.accounts.length}
+                    offsetStep={ACCOUNT_COUNT_FOR_EACH_PAGE}
+                    onChange={updateAccountPage}
+                />
+            </div>
         </div>
     </div>
 {/if}
-
-<div class="account-selection-pagination-container">
-    <Pagination.Pages
-        total={SharedStore.accounts.length}
-        offsetStep={ACCOUNT_COUNT_FOR_EACH_PAGE}
-        onChange={updateAccountPage}
-    />
-</div>
 
 <style>
     :global {
