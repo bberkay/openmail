@@ -278,10 +278,17 @@ export function escapeHTML(str: string): string {
 }
 
 export function pulseTarget(target: HTMLElement): void {
-    target.style.transform = "scale(1.02)";
-    setTimeout(() => {
-        target.style.transform = "scale(1)";
-    }, 100);
+    target.classList.add("pulse");
+    target.addEventListener("animationend", () => {
+        target.classList.remove("pulse");
+    }, { once: true });
+}
+
+export function shakeTarget(target: HTMLElement): void {
+    target.classList.add("shake");
+    target.addEventListener("animationend", () => {
+        target.classList.remove("shake");
+    }, { once: true });
 }
 
 export function adjustSizes(

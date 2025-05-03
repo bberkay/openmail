@@ -82,6 +82,7 @@
     --z-index-toast: 200;
     --z-index-overlay: 300;
     --z-index-modal: 400;
+    --z-index-modal-over: 500;
     --z-index-titlebar: 9999;
 }
 
@@ -201,6 +202,29 @@ body {
     display: flex;
     flex-direction: column reverse;
     margin-bottom: var(--spacing-md);
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+.pulse {
+    animation: pulse var(--transition-fast);
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+
+.shake {
+    animation: shake var(--transition-fast);
 }
 
 /* Dev */

@@ -68,33 +68,37 @@
             &:disabled {
                 border-bottom: none;
             }
-        }
 
-        .input[type="checkbox"]{
-            padding: 0;
-            appearance: none;
-            -webkit-appearance: none;
-            width: var(--font-size-md);
-            height: var(--font-size-md);
-            border-radius: var(--radius-sm);
-            background-color: transparent;
-            border: 1px solid var(--color-border);
-            cursor: pointer;
-            position: relative;
+            &[type="email"] {
+                will-change: transform;
+            }
 
-            &:checked {
-                background-color: var(--color-text-primary);
+            &[type="checkbox"] {
+                padding: 0;
+                appearance: none;
+                -webkit-appearance: none;
+                width: var(--font-size-md);
+                height: var(--font-size-md);
+                border-radius: var(--radius-sm);
+                background-color: transparent;
+                border: 1px solid var(--color-border);
+                cursor: pointer;
+                position: relative;
 
-                &::after {
-                    content: "";
-                    position: absolute;
-                    top: calc(var(--font-size-md) / 8);
-                    left: calc(var(--font-size-md) / 3);
-                    width: calc(var(--font-size-md) / 5);
-                    height: calc(var(--font-size-md) / 2);
-                    border: solid var(--color-bg-primary);
-                    border-width: 0 calc(var(--font-size-md) / 8) calc(var(--font-size-md) / 8) 0;
-                    transform: rotate(45deg);
+                &:checked {
+                    background-color: var(--color-text-primary);
+
+                    &::after {
+                        content: "";
+                        position: absolute;
+                        top: calc(var(--font-size-md) / 8);
+                        left: calc(var(--font-size-md) / 3);
+                        width: calc(var(--font-size-md) / 5);
+                        height: calc(var(--font-size-md) / 2);
+                        border: solid var(--color-bg-primary);
+                        border-width: 0 calc(var(--font-size-md) / 8) calc(var(--font-size-md) / 8) 0;
+                        transform: rotate(45deg);
+                    }
                 }
             }
         }
