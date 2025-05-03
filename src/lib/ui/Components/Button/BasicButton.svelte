@@ -38,16 +38,19 @@
             align-items: center;
             justify-content: center;
 
-            &[disabled], &.disabled {
+            &[disabled],
+            &.disabled {
                 cursor:not-allowed!important;
                 opacity: 0.7!important;
             }
 
-            &:hover {
+            &:hover,
+            &.hover {
                 opacity: 0.9;
             }
 
-            &:active {
+            &:active,
+            &.active {
                 opacity: 0.7;
             }
 
@@ -64,7 +67,8 @@
                 background-color: transparent;
                 color: var(--color-text-primary);
 
-                &:hover {
+                &:hover,
+                &.hover {
                     background-color: var(--color-border);
 
                     & svg {
@@ -78,11 +82,13 @@
                 color: var(--color-text-primary);
                 border: 1px solid var(--color-border);
 
-                &:hover {
+                &:hover,
+                &.hover {
                     background-color: var(--color-hover);
                 }
 
-                &:active {
+                &:active,
+                &.active {
                     background-color: var(--color-border);
                 }
             }

@@ -3,19 +3,23 @@
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
 
+    const DEFAULT_PAGINATION_PAGE_LENGTH = 5;
+
     interface Props {
         total: number;
-        onChange: (((selectedPage: number) => void) | ((selectedPage: number) => Promise<void>));
-        startAt?: number;
+        onChange: (((newOffset: number) => void) | ((newOffset: number) => Promise<void>));
+        offsetStep: number;
         showMax?: number;
+        startAt?: number;
         [attribute: string]: unknown;
     }
 
     let {
         total,
         onChange,
+        offsetStep,
+        showMax = DEFAULT_PAGINATION_PAGE_LENGTH,
         startAt = 1,
-        showMax = 5,
         ...attributes
     }: Props = $props();
 
@@ -24,6 +28,7 @@
         ...restAttributes
     } = attributes;
 
+    total = Math.ceil(total / offsetStep);
     let current = $state(Math.max(1, startAt));
     let pages = $derived.by(() => {
         if (total < showMax)
@@ -49,27 +54,27 @@
     const onChangeWrapper = async (e: Event) => {
         const target = e.target as HTMLElement;
         const value = Number(target.getAttribute("data-value"));
-        await onChange(value);
+        await onChange(value * offsetStep);
         current = value;
     };
 
     const prev = async () => {
-        await onChange(current - 1);
+        await onChange((current - 1) * offsetStep);
         current -= 1;
     };
 
     const next = async () => {
-        await onChange(current + 1);
+        await onChange((current + 1) * offsetStep);
         current += 1;
     };
 
     const prevAll = async () => {
-        await onChange(1);
+        await onChange(1 * offsetStep);
         current = 1;
     };
 
     const nextAll = async () => {
-        await onChange(total);
+        await onChange(total * offsetStep);
         current = total;
     };
 </script>
@@ -98,7 +103,7 @@
     {/if}
     {#each pages as value}
         <Button.Action
-            class="btn-outline btn-sm"
+            class="btn-outline btn-sm {value === current ? "active" : ""}"
             onclick={onChangeWrapper}
             data-value={value}
         >

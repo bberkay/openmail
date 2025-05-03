@@ -29,8 +29,10 @@
     import AddAccountForm from "./AddAccountForm.svelte";
     import { onMount } from "svelte";
 
+    const ACCOUNT_COUNT_FOR_EACH_PAGE = 5;
+
     const allAccounts = SharedStore.failedAccounts.concat(SharedStore.accounts);
-    let accounts = $state(allAccounts);
+    let accounts = $state(allAccounts.slice(0, ACCOUNT_COUNT_FOR_EACH_PAGE));
     let accountSelection: string[] = $state([]);
     let accountSelectionType: "shown" | "all" | false = $state(false);
     let selectShownCheckbox: HTMLInputElement;
@@ -105,10 +107,10 @@
         );
     };
 
-    const updateAccounts = (currentOffset: number) => {
+    const updateAccountPage = (newOffset: number) => {
         accounts = allAccounts.slice(
-            allAccounts.findIndex((acc) => acc === accounts[0]),
-            currentOffset,
+            newOffset - ACCOUNT_COUNT_FOR_EACH_PAGE,
+            newOffset,
         );
     };
 
@@ -373,11 +375,12 @@
             </Table.Body>
         </Table.Root>
 
-        <div class="pagination-container">
+        <div class="account-list-pagination-container">
             <Pagination.Pages
                 total={SharedStore.accounts.length +
                     SharedStore.failedAccounts.length}
-                onChange={updateAccounts}
+                onChange={updateAccountPage}
+                offsetStep={ACCOUNT_COUNT_FOR_EACH_PAGE}
             />
         </div>
 
@@ -452,7 +455,7 @@
             }
         }
 
-        .pagination-container {
+        .account-list-pagination-container {
             margin-top: var(--spacing-md);
         }
     }
