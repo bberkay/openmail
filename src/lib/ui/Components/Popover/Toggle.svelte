@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { combine, getToggleTextSeparator } from "$lib/utils";
+    import { combine } from "$lib/utils";
     import type { Snippet } from "svelte";
 
     interface Props {
@@ -15,9 +15,8 @@
 <div
     role="button"
     tabindex="0"
-    class={combine("popover-toggle-container", additionalClass)}
+    class={combine("popover-toggle", additionalClass)}
     {...restAttributes}
 >
-    <span style="display:none;">{getToggleTextSeparator()}</span>
     {@render children()}
 </div>

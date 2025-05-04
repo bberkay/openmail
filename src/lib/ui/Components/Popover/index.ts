@@ -1,9 +1,9 @@
 import Popover from "./Popover.svelte";
-import PopoverContent from "./PopoverContent.svelte";
-import PopoverToggle from "./PopoverToggle.svelte";
+import Content from "./Content.svelte";
+import Toggle from "./Toggle.svelte";
 
 export {
     Popover as Root,
-    PopoverContent as Content,
-    PopoverToggle as Toggle,
+    Content,
+    Toggle
 };
