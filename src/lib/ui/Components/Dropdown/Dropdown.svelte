@@ -5,47 +5,73 @@
 
     interface Props {
         children: Snippet;
+        disabled?: boolean;
+        inline?: boolean;
         [attribute: string]: unknown;
     }
 
-    let { children, ...attributes }: Props = $props();
+    let {
+        children,
+        disabled = false,
+        inline = false,
+        ...attributes
+    }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    const { class: additionalClass, ...restAttributes } = attributes;
 
-    let dropdownContainer: HTMLElement;
-    let toggleContainer: HTMLElement;
-    let contentContainer: HTMLElement;
+    let container: HTMLElement;
+    let toggle: HTMLElement;
+    let content: HTMLElement;
+    let isOpen: boolean = false;
+
+    const closeSiblingDropdowns = (e: Event) => {
+        const parentDropdown = container.parentElement!.closest(".dropdown-container");
+        if (parentDropdown) {
+            const siblingContent = parentDropdown
+                .querySelector<HTMLElement>(".dropdown-container.inline .dropdown-content:not(.hidden)")
+            if (siblingContent !== content) {
+                siblingContent?.classList.add("hidden");
+            }
+        }
+    }
 
     const closeWhenClickedOutside = (e: Event) => {
-        if (!dropdownContainer.contains(e.target as HTMLElement)) {
-            contentContainer.classList.add("hidden");
+        if (isOpen && !container.contains(e.target as HTMLElement)) {
+            content.classList.add("hidden");
         }
     };
 
     const toggleDropdown = (e: Event) => {
-        e.stopPropagation();
-        contentContainer.classList.toggle("hidden");
+        if (inline) {
+            e.stopPropagation();
+            closeSiblingDropdowns(e);
+        }
+        if (!disabled) {
+            content.classList.toggle("hidden");
+            isOpen = !content.classList.contains("hidden");
+        }
     };
 
     onMount(() => {
-        toggleContainer = dropdownContainer.querySelector(
-            ".dropdown-toggle-container",
-        )!;
-        toggleContainer.addEventListener("click", toggleDropdown);
-        toggleContainer.addEventListener("keydown", toggleDropdown);
-        contentContainer =
-            dropdownContainer.querySelector(".dropdown-content")!;
+        toggle = container.querySelector(".dropdown-toggle")!;
+        toggle.addEventListener("click", toggleDropdown);
+        toggle.addEventListener("keydown", toggleDropdown);
+        content = container.querySelector(".dropdown-content")!;
     });
 </script>
 
 <svelte:body onclick={closeWhenClickedOutside} />
 
 <div
-    bind:this={dropdownContainer}
-    class={combine("dropdown-container", additionalClass)}
+    bind:this={container}
+    class={combine(
+        `
+            dropdown-container
+            ${disabled ? "disabled" : ""}
+            ${inline ? "inline" : ""}
+        `,
+        additionalClass,
+    )}
     {...restAttributes}
 >
     {@render children()}
@@ -56,6 +82,20 @@
         .dropdown-container {
             position: relative;
             width: max-content;
+
+            &:not(:has(> .dropdown-content.hidden)) .dropdown-toggle {
+                border-color: var(--color-text-primary);
+            }
+
+            .dropdown-item:first-child {
+                border-top: none;
+            }
+        }
+
+        .dropdown-container.disabled {
+            pointer-events: none !important;
+            cursor: auto;
+            filter: brightness(0.7) !important;
         }
     }
 </style>
