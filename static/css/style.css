@@ -55,6 +55,7 @@
     --radius-sm: 4px;
     --radius-md: 7px;
     --radius-lg: 10px;
+    --titlebar-radius: 7px;
 
     /* Animation */
     --transition-fast: 150ms;
@@ -99,7 +100,7 @@ html[data-color-scheme="dark"] body {
 }
 
 :root {
-    border-radius: var(--radius-md);
+    border-radius: var(--titlebar-radius);
 }
 
 * {
@@ -115,7 +116,7 @@ body {
     line-height: var(--line-height-normal);
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
-    border-radius: var(--radius-md);
+    border-radius: var(--titlebar-radius);
 
     &.centered {
         display: flex;
