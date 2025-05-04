@@ -21,14 +21,7 @@
           .getElementById('titlebar-close')!
           .addEventListener('click', () => appWindow.close());
 
-        appWindow.onResized(async ({payload: size}) => {
-            const isFullscreen = await appWindow.isMaximized();
-            if (isFullscreen) {
-                removeTitlebarRadius();
-            } else {
-                resetTitlebarRadius();
-            }
-        })
+        appWindow.onResized(handleAppRadiusOnResize);
     });
 
     function resetTitlebarRadius() {
@@ -48,6 +41,15 @@
     function getTitlebarRadius() {
         return getComputedStyle(document.documentElement)
             .getPropertyValue(TITLEBAR_RADIUS_VAR_NAME)
+    }
+
+    async function handleAppRadiusOnResize() {
+        const isFullscreen = await appWindow.isMaximized();
+        if (isFullscreen) {
+            removeTitlebarRadius();
+        } else {
+            resetTitlebarRadius();
+        }
     }
 </script>
 
