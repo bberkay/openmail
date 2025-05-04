@@ -31,8 +31,8 @@
 
     const ACCOUNT_COUNT_FOR_EACH_PAGE = 5;
 
-    const allAccounts = SharedStore.failedAccounts.concat(SharedStore.accounts);
-    let accounts = $state(allAccounts.slice(0, ACCOUNT_COUNT_FOR_EACH_PAGE));
+    const allAccounts = $derived(SharedStore.failedAccounts.concat(SharedStore.accounts));
+    let accounts = $derived(allAccounts.slice(0, ACCOUNT_COUNT_FOR_EACH_PAGE));
     let accountSelection: string[] = $state([]);
     let accountSelectionType: "shown" | "all" | false = $state(false);
     let selectShownCheckbox: HTMLInputElement;
@@ -375,14 +375,15 @@
             </Table.Body>
         </Table.Root>
 
-        <div class="account-list-pagination-container">
-            <Pagination.Pages
-                total={SharedStore.accounts.length +
-                    SharedStore.failedAccounts.length}
-                onChange={updateAccountPage}
-                offsetStep={ACCOUNT_COUNT_FOR_EACH_PAGE}
-            />
-        </div>
+        {#if allAccounts.length > ACCOUNT_COUNT_FOR_EACH_PAGE}
+            <div class="account-list-pagination-container">
+                <Pagination.Pages
+                    total={allAccounts.length}
+                    onChange={updateAccountPage}
+                    offsetStep={ACCOUNT_COUNT_FOR_EACH_PAGE}
+                />
+            </div>
+        {/if}
 
         <div class="landing-body-footer">
             <Button.Action

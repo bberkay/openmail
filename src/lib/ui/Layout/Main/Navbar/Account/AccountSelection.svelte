@@ -78,10 +78,8 @@
     import * as Input from "$lib/ui/Components/Input";
     import * as List from "$lib/ui/Components/List";
     import Icon from "$lib/ui/Components/Icon";
-    import { debounce } from "$lib/utils";
     import {
         GENERAL_FADE_DURATION_MS,
-        REALTIME_SEARCH_DELAY_MS,
     } from "$lib/constants";
     import { getSenderAddressTemplate } from "$lib/templates";
 
@@ -92,30 +90,29 @@
     }
 
     let { isAccountSelectionHidden = $bindable() }: Props = $props();
+    let simpleSearchInput: HTMLInputElement | undefined = $state();
 
-    let accountList: Account[] = $state(
+    let accounts: Account[] = $state(
         SharedStore.accounts.slice(0, ACCOUNT_COUNT_FOR_EACH_PAGE),
     );
-    let searchingAccountEmailAddrOrFullname: string = $state("");
 
     const toggleAccountSelection = () => {
         isAccountSelectionHidden = !isAccountSelectionHidden;
     };
 
     const search = () => {
-        accountList = SharedStore.accounts.filter((acc) => {
-            acc.email_address.includes(searchingAccountEmailAddrOrFullname) ||
+        if(!simpleSearchInput || simpleSearchInput.value.length < 3)
+            return;
+
+        accounts = SharedStore.accounts.filter((acc) => {
+            acc.email_address.includes(simpleSearchInput!.value) ||
                 (acc.fullname &&
-                    acc.fullname.includes(searchingAccountEmailAddrOrFullname));
+                    acc.fullname.includes(simpleSearchInput!.value));
         });
     };
 
-    const debouncedSearch = debounce((e: Event) => {
-        search();
-    }, REALTIME_SEARCH_DELAY_MS);
-
     const updateAccountPage = (newOffset: number) => {
-        accountList = SharedStore.accounts.slice(
+        accounts = SharedStore.accounts.slice(
             newOffset - ACCOUNT_COUNT_FOR_EACH_PAGE,
             newOffset,
         );
@@ -134,11 +131,12 @@
                 <Icon name="search" />
             </Button.Action>
             <Input.Basic
+                bind:element={simpleSearchInput}
                 type="text"
                 id="simple-search"
                 placeholder="Search an account by email address or fullname..."
-                onkeyup={debouncedSearch}
-                onblur={debouncedSearch}
+                onkeyup={search}
+                onblur={search}
             />
             <Button.Basic type="button" onclick={toggleAccountSelection}>
                 <Icon name="close" />
@@ -146,7 +144,7 @@
         </Input.Group>
         <div class="modal-like-body">
             <List.Root>
-                {#each accountList as account}
+                {#each accounts as account}
                     {@const isCurrentAccount =
                         account === SharedStore.currentAccount}
                     <List.Item
@@ -165,13 +163,15 @@
                     </List.Item>
                 {/each}
             </List.Root>
-            <div class="account-selection-pagination-container">
-                <Pagination.Pages
-                    total={SharedStore.accounts.length}
-                    offsetStep={ACCOUNT_COUNT_FOR_EACH_PAGE}
-                    onChange={updateAccountPage}
-                />
-            </div>
+            {#if accounts.length > ACCOUNT_COUNT_FOR_EACH_PAGE}
+                <div class="account-selection-pagination-container">
+                    <Pagination.Pages
+                        total={SharedStore.accounts.length}
+                        offsetStep={ACCOUNT_COUNT_FOR_EACH_PAGE}
+                        onChange={updateAccountPage}
+                    />
+                </div>
+            {/if}
         </div>
     </div>
 {/if}
