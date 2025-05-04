@@ -21,7 +21,7 @@
         ...restAttributes
     } = attributes;
 
-    const makeAnApiRequest = async (e: Event): Promise<void> => {
+    const makeAnAction = async (e: Event): Promise<void> => {
         e.preventDefault();
 
         const eventTrigger = e.target as HTMLButtonElement;
@@ -43,7 +43,7 @@
 
 <Button.Basic
     type="button"
-    onclick={makeAnApiRequest}
+    onclick={makeAnAction}
     class={combine("btn", additionalClass)}
     {...restAttributes}
 >

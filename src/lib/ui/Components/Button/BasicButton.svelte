@@ -41,17 +41,18 @@
             &[disabled],
             &.disabled {
                 cursor:not-allowed!important;
-                opacity: 0.7!important;
+                pointer-events: none!important;
+                filter: brightness(0.7)!important;
             }
 
             &:hover,
             &.hover {
-                opacity: 0.9;
+                background-color: var(--color-hover);
             }
 
             &:active,
             &.active {
-                opacity: 0.7;
+                background-color: var(--color-border);
             }
 
             &.btn-cta {
@@ -74,6 +75,11 @@
                     & svg {
                         fill: var(--color-text-primary);
                     }
+                }
+
+                &:active,
+                &.active {
+                    background-color: var(--color-border-subtle);
                 }
             }
 

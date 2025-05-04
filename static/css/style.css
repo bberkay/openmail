@@ -1,6 +1,7 @@
 :root {
     /* Theme */
     --color-bg-primary: light-dark(#ffffff, #000000);
+    --color-bg-secondary: light-dark(#fafafa, #111111);
     --color-text-primary: light-dark(#000000, #ffffff);
     --color-text-secondary: light-dark(#666666, #a0a0a0);
     --color-border: light-dark(#e0e0e0, #303030);
@@ -9,16 +10,16 @@
     --color-link: light-dark(#0084d1, #0084d1);
     --color-error-text: light-dark(#c20e4d, #f54180);
     --color-error-bg: light-dark(#fee7ef, #61072640);
-    --color-error-border: light-dark(#D7AFBD, #610726);
+    --color-error-border: light-dark(#d7afbd, #610726);
     --color-warning-text: light-dark(#936316, #f5a524);
     --color-warning-bg: light-dark(#fefce8, #62420e40);
-    --color-warning-border: light-dark(#D7CEB2, #62420e);
+    --color-warning-border: light-dark(#d7ceb2, #62420e);
     --color-success-text: light-dark(#0e793c, #17c964);
     --color-success-bg: light-dark(#e8faf0, #09502840);
-    --color-success-border: light-dark(#B1D0BE, #095028);
+    --color-success-border: light-dark(#b1d0be, #095028);
     --color-info-text: light-dark(#005bc4, #66aaf9);
     --color-info-bg: light-dark(#e6f1fe, #002e6240);
-    --color-info-border: light-dark(#ADCCF0, #002e62);
+    --color-info-border: light-dark(#adccf0, #002e62);
     --color-white: light-dark(#ffffff, #ffffff);
     --color-black: light-dark(#000000, #000000);
     --color-gray: light-dark(#3d3d3d, #3d3d3d);

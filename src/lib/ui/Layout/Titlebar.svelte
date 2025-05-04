@@ -78,7 +78,6 @@
             border: none;
             border-top-left-radius: var(--titlebar-radius);
             border-top-right-radius: var(--titlebar-radius);
-            border-bottom: 1px solid var(--color-border-subtle);
             z-index: var(--z-index-titlebar);
 
             & .titlebar-button {

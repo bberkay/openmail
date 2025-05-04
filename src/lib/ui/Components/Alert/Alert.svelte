@@ -50,13 +50,15 @@
     {...restAttributes}
 >
     <div class="alert-body">
-        <div class="alert-icon">
-            <Icon name={type} />
+        <div class="alert-body-text">
+            <div class="alert-icon">
+                <Icon name={type} />
+            </div>
+            <div>
+                {@html content}
+            </div>
         </div>
-        <div>
-            {@html content}
-        </div>
-        <div>
+        <div class="alert-body-action">
             {#if onManage}
                 <Button.Action
                     type="button"
@@ -96,7 +98,7 @@
             opacity: 0;
             box-shadow: var(--shadow-sm);
             gap: var(--spacing-sm);
-            width: max-content;
+            width: 100%;
 
             &.error {
                 background-color: var(--color-error-bg);
@@ -151,11 +153,20 @@
                 display: flex;
                 align-items: center;
                 justify-content:space-between;
-                gap: var(--spacing-sm);
 
-                & svg {
-                    width: var(--font-size-xl)!important;
-                    height: var(--font-size-xl)!important;
+                & .alert-body-text {
+                    display: flex;
+                    align-items: center;
+                    gap: var(--spacing-sm);
+                }
+
+                & .alert-icon {
+                    margin-bottom: -4px;
+
+                    & svg {
+                        width: var(--font-size-xl)!important;
+                        height: var(--font-size-xl)!important;
+                    }
                 }
 
                 & .alert-close {
