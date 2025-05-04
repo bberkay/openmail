@@ -1,14 +1,29 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import Layout from "$lib/ui/Layout/Layout.svelte";
     import Loading from "$lib/ui/Layout/Loading.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { Language } from "$lib/types";
+    import { Theme } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
-    import { convertToRFC5646Format, getEnumKeyByValue } from "$lib/utils";
-
+    import { getCurrentWindow } from '@tauri-apps/api/window';
     let { children } = $props();
 
     let isAppLoaded = $derived(SharedStore.isAppLoaded);
+    const appWindow = getCurrentWindow();
+
+    onMount(() => {
+        appWindow.onThemeChanged(async ({ payload: theme }) => {
+            await handleThemeOnSystemThemeChanged(theme);
+        });
+    });
+
+    async function handleThemeOnSystemThemeChanged(theme: "light" | "dark") {
+        if (SharedStore.preferences.theme === Theme.System) {
+            const newTheme = theme.toLowerCase();
+            document.documentElement.setAttribute("data-color-scheme", theme);
+            localStorage.setItem("theme", theme);
+        }
+    }
 
     /* TODO: Remove this later */
     const handleShortcuts = (e: KeyboardEvent) => {
@@ -20,22 +35,6 @@
             });
         }
     };
-
-    $effect(() => {
-        if (SharedStore.isAppLoaded) {
-            if (SharedStore.preferences.language)
-                applyInitialLanguage();
-        }
-    });
-
-    async function applyInitialLanguage() {
-        document.documentElement.setAttribute(
-            "lang",
-            convertToRFC5646Format(
-                getEnumKeyByValue(Language, SharedStore.preferences.language)!,
-            ),
-        );
-    }
 </script>
 
 <svelte:window onkeydown={handleShortcuts} />

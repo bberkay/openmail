@@ -1,10 +1,14 @@
 import type { ClientInit } from "@sveltejs/kit";
 import { invoke } from "@tauri-apps/api/core";
-import { TauriCommand } from "$lib/types";
+import { locale } from '@tauri-apps/plugin-os';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { Language, TauriCommand, Theme } from "$lib/types";
 import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
 import { ApiService } from "$lib/services/ApiService";
 import { FileSystem } from "$lib/services/FileSystem";
 import { AccountController } from "$lib/controllers/AccountController";
+import { convertToLanguageEnum, convertToThemeEnum } from "$lib/utils";
+import { convertToRFC5646Format, getEnumKeyByValue } from "./lib/utils";
 
 const SERVER_CONNECTION_TRY_SLEEP_MS = 500;
 
@@ -29,12 +33,43 @@ async function connectToLocalServer(): Promise<void> {
     }
 }
 
+async function loadSystemDefaultsIfNecessary() {
+    let foundLocale = "";
+    if (SharedStore.preferences.language === Language.System) {
+        const preferredLocale = await locale();
+        foundLocale = preferredLocale
+            ? convertToLanguageEnum(preferredLocale) || Language.EN_US
+            : Language.EN_US;
+    } else {
+        foundLocale = SharedStore.preferences.language;
+    }
+
+    localStorage.setItem(
+        "language",
+        convertToRFC5646Format(
+            getEnumKeyByValue(Language, foundLocale)!,
+        )
+    );
+
+    let foundTheme = "";
+    if(SharedStore.preferences.theme === Theme.System) {
+        const preferredTheme = await getCurrentWindow().theme();
+        foundTheme = preferredTheme
+            ? convertToThemeEnum(preferredTheme) || Theme.Dark
+            : Theme.Dark;
+    } else {
+        foundTheme = SharedStore.preferences.theme;
+    }
+
+    localStorage.setItem("theme", foundTheme.toLowerCase());
+}
+
 async function initializeFileSystem(): Promise<void> {
     const fileSystem = await FileSystem.getInstance();
     const savedPreferences = await fileSystem.readPreferences();
     SharedStore.preferences = { ...SharedStore.preferences,  ...savedPreferences};
     await fileSystem.savePreferences(SharedStore.preferences);
-    localStorage.setItem(SharedStoreKeys.preferences, JSON.stringify(SharedStore.preferences));
+    await loadSystemDefaultsIfNecessary();
 }
 
 export const init: ClientInit = async () => {

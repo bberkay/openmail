@@ -1,6 +1,6 @@
 import { DEFAULT_LANGUAGE } from "$lib/constants";
 import { local } from "$lib/locales";
-import { Folder, Language, Size } from "$lib/types";
+import { Folder, Language, Size, Theme } from "$lib/types";
 
 export function createDomElement(html: string): HTMLElement {
     const template = document.createElement("template");
@@ -23,6 +23,16 @@ export function convertToLanguageEnum(locale: string): Language | undefined {
 
     if (enumKey in Language) {
         return (Language as any)[enumKey];
+    }
+
+    return undefined;
+}
+
+export function convertToThemeEnum(theme: string): Theme | undefined {
+    const enumKey = capitalize(theme);
+
+    if (enumKey in Theme) {
+        return (Theme as any)[enumKey];
     }
 
     return undefined;
@@ -446,10 +456,6 @@ export function addEmailToAddressList(
 
     addressList.push(trimmedValue);
     input.value = "";
-}
-
-export function getToggleTextSeparator(): string {
-    return "#separator#";
 }
 
 export function convertToRFC5646Format(enumKey: string): string {

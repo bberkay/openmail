@@ -15,9 +15,9 @@
 {#if Object.keys(SharedStore.mailboxes).length > 0}
     <Main>
         <Navbar />
-        <Content>
+        <!--<Content>
             <Mailbox />
-        </Content>
+            </Content>-->
     </Main>
 {:else}
     <Landing>

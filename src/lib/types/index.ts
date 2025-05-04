@@ -126,6 +126,7 @@ export enum Size {
  * Reference: https://datatracker.ietf.org/doc/html/rfc5646
  */
 export enum Language {
+    System = "System",
     EN_US = "English (US)",
 }
 
