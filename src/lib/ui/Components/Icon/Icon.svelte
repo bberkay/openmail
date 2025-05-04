@@ -37,6 +37,11 @@
             stroke-width: 2;
             transition: all var(--transition-fast) var(--ease-default);
             fill: var(--color-text-secondary);
+
+            &[name="ellipsis"] {
+                stroke-width: 1;
+                fill: var(--color-text-secondary)!important;
+            }
         }
     }
 </style>
