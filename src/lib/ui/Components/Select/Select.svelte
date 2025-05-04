@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, type Snippet } from "svelte";
-    import { combine, getToggleTextSeparator } from "$lib/utils";
+    import { combine } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
@@ -111,7 +111,7 @@
     }
 
     const closeWhenClickedOutside = (e: Event) => {
-        if (!selectWrapper.contains(e.target as HTMLElement)) {
+        if (isOpen && !selectWrapper.contains(e.target as HTMLElement)) {
             closeSelect();
         }
     }
@@ -181,7 +181,7 @@
             <div class="select-trigger-content">
                 {#if selectedOption}
                     <span data-value={selectedOption.getAttribute("data-value")!}>
-                        {selectedOption.textContent!.split(getToggleTextSeparator())[0].trim()}
+                        {selectedOption.textContent!.trim()}
                     </span>
                     {#if !disableClearButton}
                         <Button.Basic

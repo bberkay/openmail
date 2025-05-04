@@ -45,6 +45,7 @@
 
     const closeWhenClickedOutside = (e: Event) => {
         if (
+            isDatePickerOpen &&
             !datePickerWrapper.contains(e.target as HTMLElement) &&
             e.target !== dateInput
         ) {
@@ -252,7 +253,7 @@
                 border-top-right-radius: none;
                 padding: var(--spacing-sm);
                 background: var(--color-bg-primary);
-                z-index: var(--z-index-dropdown) !important;
+                z-index: var(--z-index-modal-over) !important;
                 opacity: 0;
                 visibility: hidden;
                 transition: all var(--transform-fast) var(--ease-default);
