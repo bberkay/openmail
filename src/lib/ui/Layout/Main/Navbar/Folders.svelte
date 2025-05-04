@@ -2,7 +2,6 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder, type Account } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import * as Select from "$lib/ui/Components/Select";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import CreateFolder from "$lib/ui/Layout/Main/Navbar/Folders/CreateFolder.svelte";
     import RenameFolder from "$lib/ui/Layout/Main/Navbar/Folders/RenameFolder.svelte";
@@ -17,11 +16,7 @@
     import { show as showToast } from "$lib/ui/Components/Toast";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-
-    const FolderOperation = {
-        Create: "create",
-        Refresh: "refresh",
-    } as const;
+    import Icon from "$lib/ui/Components/Icon";
 
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
@@ -77,108 +72,84 @@
 
         showToast({ content: "folders are refreshred" });
     };
-
-    const handleOperation = (selectedOperation: string) => {
-        switch (selectedOperation) {
-            case FolderOperation.Create:
-                showCreateFolder();
-                break;
-            case FolderOperation.Refresh:
-                refreshFolders();
-                break;
-            default:
-                // if selectedOperation is none of the above, then it
-                // must be a folder name.
-                setCurrentFolder(selectedOperation);
-                break;
-        }
-    };
 </script>
 
-<Select.Root
+<Dropdown.Root
     class="folders"
-    onchange={handleOperation}
-    value={getCurrentMailbox().folder}
-    enableSearch={true}
-    searchAlgorithm={(option: HTMLElement) => option.hasAttribute("data-option-searchable")}
     disabled={SharedStore.currentAccount === "home"}
-    disableClearButton={true}
 >
-    {#each standardFolders as standardFolder}
-        {@const [folderTag, folderName] = standardFolder.split(":")}
-        <Select.Option
-            value={folderTag}
-            content={folderName || folderTag}
-            data-option-searchable
-        />
-    {/each}
-    <Select.Separator />
-    <Select.Option
-        value={FolderOperation.Refresh}
-        content={local.refresh_folders[DEFAULT_LANGUAGE]}
-    />
-    <Select.Option
-        value={FolderOperation.Create}
-        content={local.create_folder[DEFAULT_LANGUAGE]}
-    />
-    {#if customFolders.length > 0}
-        <Select.Separator />
-    {/if}
-    {#each customFolders as customFolder}
-        <Select.Option
-            value={customFolder}
-            content={customFolder}
-            data-option-searchable
-        />
-        <!-- FIXME -->
-        <!--<Select.Option value={customFolder}>
-            <span>{customFolder}</span>
-            <Dropdown.Root>
-                <Dropdown.Toggle>⋮</Dropdown.Toggle>
-                <Dropdown.Content>
-                    <Dropdown.Item
-                        onclick={() =>
-                            showModal(CreateFolder, {
-                                parentFolderName: customFolder,
-                            })}
-                    >
-                        {local.create_subfolder[DEFAULT_LANGUAGE]}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                        onclick={() =>
-                            showModal(RenameFolder, {
-                                folderName: customFolder,
-                            })}
-                    >
-                        {local.rename_folder[DEFAULT_LANGUAGE]}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                        onclick={() =>
-                            showModal(MoveFolder, {
-                                folderName: customFolder,
-                            })}
-                    >
-                        {local.move_folder[DEFAULT_LANGUAGE]}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                        onclick={() =>
-                            showModal(DeleteFolder, {
-                                folderName: customFolder,
-                            })}
-                    >
-                        {local.delete_folder[DEFAULT_LANGUAGE]}
-                    </Dropdown.Item>
-                </Dropdown.Content>
-            </Dropdown.Root>
-        </Select.Option>-->
-    {/each}
-</Select.Root>
+    <Dropdown.Toggle>
+        {getCurrentMailbox().folder}
+    </Dropdown.Toggle>
+    <Dropdown.Content>
+        <Dropdown.Item onclick={showCreateFolder}>
+            {local.create_folder[DEFAULT_LANGUAGE]}
+        </Dropdown.Item>
+        <Dropdown.Item onclick={refreshFolders}>
+            {local.refresh_folders[DEFAULT_LANGUAGE]}
+        </Dropdown.Item>
+        <Dropdown.Separator />
+        {#each standardFolders as standardFolder}
+            {@const [folderTag, folderName] = standardFolder.split(":")}
+            <Dropdown.Item onclick={() => setCurrentFolder(folderTag)}>
+                {folderName || folderTag}
+            </Dropdown.Item>
+        {/each}
+        {#if customFolders.length > 0}
+            <Dropdown.Separator />
+        {/if}
+        {#each customFolders as customFolder}
+            <Dropdown.Item onclick={() => setCurrentFolder(customFolder)}>
+                {customFolder}
+                <Dropdown.Root inline={true}>
+                    <Dropdown.Toggle class="custom-folder-operations-toggle">
+                        <Icon name="ellipsis" />
+                    </Dropdown.Toggle>
+                    <Dropdown.Content>
+                        <Dropdown.Item
+                            onclick={() =>
+                                showModal(CreateFolder, {
+                                    parentFolderName: customFolder,
+                                })}
+                        >
+                            {local.create_subfolder[DEFAULT_LANGUAGE]}
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                            onclick={() =>
+                                showModal(RenameFolder, {
+                                    folderName: customFolder,
+                                })}
+                        >
+                            {local.rename_folder[DEFAULT_LANGUAGE]}
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                            onclick={() =>
+                                showModal(MoveFolder, {
+                                    folderName: customFolder,
+                                })}
+                        >
+                            {local.move_folder[DEFAULT_LANGUAGE]}
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                            onclick={() =>
+                                showModal(DeleteFolder, {
+                                    folderName: customFolder,
+                                })}
+                        >
+                            {local.delete_folder[DEFAULT_LANGUAGE]}
+                        </Dropdown.Item>
+                    </Dropdown.Content>
+                </Dropdown.Root>
+            </Dropdown.Item>
+        {/each}
+    </Dropdown.Content>
+</Dropdown.Root>
 
 <style>
     :global {
         nav {
-            & .folders {
-                width: 150px;
+            & .custom-folder-operations-toggle {
+                color: var(--color-text-secondary);
             }
         }
     }

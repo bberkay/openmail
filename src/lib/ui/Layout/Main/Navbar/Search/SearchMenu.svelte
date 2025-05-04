@@ -11,7 +11,6 @@
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
-    import { FormGroup } from "$lib/ui/Components/Form";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import {
         DEFAULT_LANGUAGE,
