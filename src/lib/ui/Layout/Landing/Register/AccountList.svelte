@@ -416,7 +416,6 @@
             justify-content: space-between;
             flex-direction: row;
             align-items: end;
-            height: calc(var(--font-size-2xl) * 2);
             margin-bottom: var(--spacing-xs);
         }
 
