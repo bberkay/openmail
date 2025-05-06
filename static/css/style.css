@@ -1,7 +1,40 @@
+/* Fonts */
+
+/* Inter */
+@font-face {
+    font-family: 'Inter';
+    src: url('../fonts/Inter/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+    font-weight: 100 900;  /* Değişken aralık */
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('../fonts/Inter/Inter-Italic-VariableFont_opsz,wght.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: italic;
+}
+
+/* Open Sans */
+@font-face {
+    font-family: 'OpenSans';
+    src: url('../fonts/OpenSans/OpenSans-VariableFont_wdth,wght.ttf') format('truetype');
+    font-weight: 100 900;  /* Değişken aralık */
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'OpenSans';
+    src: url('../fonts/OpenSans/OpenSans-Italic-VariableFont_wdth,wght.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: italic;
+}
+
+/* Varibles */
 :root {
     /* Theme */
     --color-bg-primary: light-dark(#ffffff, #000000);
-    --color-bg-secondary: light-dark(#fafafa, #111111);
+    --color-bg-secondary: light-dark(#fafafa, #09090b);
     --color-text-primary: light-dark(#000000, #ffffff);
     --color-text-secondary: light-dark(#666666, #a0a0a0);
     --color-border: light-dark(#e0e0e0, #303030);
@@ -28,7 +61,8 @@
     --color-border-drop-area: light-dark(#4a90e2, #4a90e2);
 
     /* Typography */
-    --font-family-primary: 'Roboto', sans-serif;
+    --font-family-primary: 'OpenSans', sans-serif;
+    --font-family-secondary: 'Inter', sans-serif;
     --font-size-xs: 0.75rem; /* 12px */
     --font-size-sm: 0.875rem; /* 14px */
     --font-size-md: 1rem; /* 16px */
@@ -88,6 +122,7 @@
     --z-index-titlebar: 9999;
 }
 
+/* General */
 body {
     color-scheme: light dark;
 }
@@ -169,11 +204,25 @@ body {
 
         & .modal-container{
             display: flex;
+            justify-content: center;
+            align-items: center;
         }
     }
 }
 
+/* Elements */
+h1, h2, h3, h4, h5 {
+    font-family: 'Inter', sans-serif;
+}
+
 /* Utilities */
+.logo {
+    font-family: 'Inter', sans-serif;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+}
+
 .tags {
     margin-top: var(--spacing-2xs);
     font-size: var(--font-size-sm);
@@ -200,10 +249,23 @@ body {
     visibility: visible!important;
 }
 
+.disabled, [disabled] {
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: brightness(0.7);
+}
+
+/* Containers */
 .alert-container {
     display: flex;
     flex-direction: column reverse;
     margin-bottom: var(--spacing-md);
+
+    &:not(:has(div.alert)) {
+        visibility: hidden;
+        height: 0;
+        margin: 0;
+    }
 }
 
 /* Animations */
