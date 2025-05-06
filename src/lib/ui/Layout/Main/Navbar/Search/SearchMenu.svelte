@@ -7,7 +7,12 @@
         type SearchCriteria,
         type Account as TAccount,
     } from "$lib/types";
-    import { debounce, isObjEmpty, createSenderAddress } from "$lib/utils";
+    import {
+        debounce,
+        isObjEmpty,
+        createSenderAddress,
+        createSenderAddressFromAccount,
+    } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
@@ -43,33 +48,23 @@
 
     let searchCriteria: SearchCriteria = $state({});
     let searchingFolder: string | Folder = $state(Folder.All);
-    let searchingAccount: typeof SharedStore.currentAccount = $state(
-        SharedStore.currentAccount,
+    let searchingAccounts: "home" | TAccount[] = $state(
+        SharedStore.currentAccount == "home"
+            ? "home"
+            : [SharedStore.currentAccount],
     );
     let simpleSearchInput: HTMLInputElement | undefined = $state(undefined);
 
-    const search = async (): Promise<void> => {
-        const isSearchCriteriaEmpty = isObjEmpty(searchCriteria);
-        if (
-            !simpleSearchInput ||
-            (isExtraOptionsHidden && simpleSearchInput.value.length < 3) ||
-            (!isExtraOptionsHidden && isSearchCriteriaEmpty)
-        )
-            return;
-
-        const accounts =
-            searchingAccount === "home"
-                ? SharedStore.accounts
-                : [SharedStore.currentAccount as TAccount];
-
+    const search = async (
+        accounts: TAccount[],
+        searchCriteriaOrKeywords: SearchCriteria | string,
+    ): Promise<void> => {
         const results = await Promise.allSettled(
             accounts.map(async (account) => {
                 const response = await MailboxController.getMailbox(
                     account,
                     searchingFolder,
-                    isExtraOptionsHidden
-                        ? simpleSearchInput!.value
-                        : searchCriteria,
+                    searchCriteriaOrKeywords,
                 );
                 if (!response.success) {
                     throw new Error(response.message);
@@ -87,9 +82,31 @@
         }
     };
 
-    const debouncedSearch = debounce((e: KeyboardEvent) => {
-        search();
+    const debouncedSearch = debounce(async (e: KeyboardEvent) => {
+        await simpleSearch();
     }, REALTIME_SEARCH_DELAY_MS);
+
+    const simpleSearch = async () => {
+        if (simpleSearchInput!.value.length >= 3) {
+            await search(
+                SharedStore.currentAccount === "home"
+                    ? SharedStore.accounts
+                    : [SharedStore.currentAccount],
+                simpleSearchInput!.value
+            );
+        }
+    };
+
+    const advancedSearch = async () => {
+        if (!isExtraOptionsHidden && !isObjEmpty(searchCriteria)) {
+            await search(
+                searchingAccounts === "home"
+                    ? SharedStore.accounts
+                    : searchingAccounts,
+                searchCriteria
+            );
+        }
+    };
 
     const toggleSimpleSearch = () => {
         isSimpleSearchHidden = !isSimpleSearchHidden;
@@ -108,7 +125,7 @@
         transition:fade={{ duration: GENERAL_FADE_DURATION_MS }}
     >
         <Input.Group class="modal-like-header">
-            <Button.Action type="button" onclick={search}>
+            <Button.Action type="button" onclick={simpleSearch}>
                 <Icon name="search" />
             </Button.Action>
             <Input.Basic
@@ -116,12 +133,12 @@
                 type="text"
                 id="simple-search"
                 placeholder={getSearchForAccountTemplate(
-                    searchingAccount !== "home"
-                        ? createSenderAddress(
-                              searchingAccount.email_address,
-                              searchingAccount.fullname,
-                          )
-                        : searchingAccount,
+                    (SharedStore.currentAccount !== "home"
+                        ? [SharedStore.currentAccount]
+                        : SharedStore.accounts
+                    )
+                        .map((acc) => createSenderAddressFromAccount(acc))
+                        .join(","),
                 )}
                 onkeyup={debouncedSearch}
                 onblur={debouncedSearch}
@@ -134,7 +151,7 @@
             </Button.Basic>
         </Input.Group>
         <div class="modal-like-body {isExtraOptionsHidden ? 'hidden' : ''}">
-            <Account bind:searchingAccount />
+            <Account bind:searchingAccounts />
             {#if SharedStore.currentAccount !== "home"}
                 <Folders bind:searchingFolder />
             {/if}
@@ -148,7 +165,7 @@
             <Flags bind:searchCriteria />
             <Size bind:searchCriteria />
             <Attachments bind:searchCriteria />
-            <Action bind:searchCriteria {search} />
+            <Action bind:searchCriteria onSearch={advancedSearch} />
         </div>
     </div>
 {/if}

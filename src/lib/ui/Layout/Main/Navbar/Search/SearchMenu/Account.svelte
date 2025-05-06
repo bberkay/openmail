@@ -1,25 +1,32 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
+    import type { Account } from "$lib/types";
     import Label from "$lib/ui/Components/Label";
-    import * as Select from "$lib/ui/Components/Select";
+    import * as Button from "$lib/ui/Components/Button";
+    import Badge from "$lib/ui/Components/Badge";
     import { FormGroup } from "$lib/ui/Components/Form";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
-    import { getSenderAddressTemplate } from "$lib/templates";
+    import {
+        getSearchForAccountTemplate,
+    } from "$lib/templates";
+    import AccountSelection from "$lib/ui/Layout/Main/Portable/AccountSelection.svelte";
+    import { createSenderAddressFromAccount } from "$lib/utils";
 
     interface Props {
-        searchingAccount: typeof SharedStore.currentAccount;
+        searchingAccounts: "home" | Account[];
     }
 
-    let { searchingAccount = $bindable() }: Props = $props();
+    let { searchingAccounts = $bindable() }: Props = $props();
 
-    const selectSearchingAccount = (selectedAccount: string) => {
-        searchingAccount =
-            selectedAccount === "home"
-                ? selectedAccount
-                : SharedStore.accounts.find(
-                      (acc) => acc.email_address === selectedAccount,
-                  )!;
+    let isAccountSelectionHidden = $state(true);
+
+    const selectSearchingAccount = (selectedAccounts: "home" | Account[]) => {
+        searchingAccounts = selectedAccounts;
+    };
+
+    const showAccountSelection = () => {
+        isAccountSelectionHidden = false;
     };
 </script>
 
@@ -27,24 +34,41 @@
     <Label for="searching-account">
         {local.searching_account[DEFAULT_LANGUAGE]}
     </Label>
-    <Select.Root
-        id="searching-account"
-        class="searching-account"
-        value={SharedStore.currentAccount === "home"
-            ? "home"
-            : SharedStore.currentAccount.email_address}
-        onchange={selectSearchingAccount}
-    >
-        <Select.Option value="home" content={local.home[DEFAULT_LANGUAGE]} />
-        <Select.Separator />
-        {#each SharedStore.accounts as account}
-            <Select.Option
-                value={account.email_address}
-                content={getSenderAddressTemplate(
-                    account.email_address,
-                    account.fullname,
-                )}
-            />
-        {/each}
-    </Select.Root>
+    <Button.Basic onclick={showAccountSelection}>
+        {getSearchForAccountTemplate(
+            (searchingAccounts === "home"
+                ? SharedStore.accounts
+                : searchingAccounts
+            )
+                .map((acc) => createSenderAddressFromAccount(acc))
+                .join(","),
+        )}
+    </Button.Basic>
+    <div class="tags">
+        {#if searchingAccounts}
+            {@const searchingAccountList =
+                searchingAccounts === "home"
+                    ? SharedStore.accounts
+                    : searchingAccounts}
+            {#each searchingAccountList as account}
+                <Badge
+                    content={createSenderAddressFromAccount(account)}
+                    onclick={() => {
+                        if (searchingAccounts === "home") return;
+                        searchingAccounts = searchingAccounts.filter(
+                            (acc) =>
+                                account.email_address !== acc.email_address,
+                        );
+                    }}
+                />
+            {/each}
+        {/if}
+    </div>
 </FormGroup>
+
+<AccountSelection
+    bind:isAccountSelectionHidden
+    allowMultipleSelection={true}
+    actionOnSelect={selectSearchingAccount}
+    initialSelectedAccounts={searchingAccounts}
+/>

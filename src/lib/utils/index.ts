@@ -1,6 +1,6 @@
 import { DEFAULT_LANGUAGE } from "$lib/constants";
 import { local } from "$lib/locales";
-import { Folder, Language, Size, Theme } from "$lib/types";
+import { Folder, Language, Size, Theme, type Account } from "$lib/types";
 
 export function createDomElement(html: string): HTMLElement {
     const template = document.createElement("template");
@@ -389,6 +389,12 @@ export function createSenderAddress(
 ): string {
     if (fullname && fullname.length > 0) return `${fullname} <${emailAddress}>`;
     return emailAddress;
+}
+
+export function createSenderAddressFromAccount(
+    account: Account
+): string {
+    return createSenderAddress(account.email_address, account.fullname);
 }
 
 export function extractFullname(sender: string): string {

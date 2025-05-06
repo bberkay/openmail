@@ -8,7 +8,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import * as Pagination from "$lib/ui/Components/Pagination";
 
     export const setCurrentAccount = async (
         homeOrAccount: "home" | Account,
@@ -78,33 +77,69 @@
     import * as Input from "$lib/ui/Components/Input";
     import * as List from "$lib/ui/Components/List";
     import Icon from "$lib/ui/Components/Icon";
-    import {
-        GENERAL_FADE_DURATION_MS,
-    } from "$lib/constants";
+    import { GENERAL_FADE_DURATION_MS } from "$lib/constants";
+    import * as Pagination from "$lib/ui/Components/Pagination";
     import { getSenderAddressTemplate } from "$lib/templates";
 
     const ACCOUNT_COUNT_FOR_EACH_PAGE = 10;
 
-    interface Props {
+    type ActionOnSelect<T extends boolean> = T extends true
+        ? (selectedAccounts: "home" | Account[]) => void | Promise<void>
+        : (selectedAccounts: "home" | Account) => void | Promise<void>;
+
+    interface Props<T extends boolean> {
         isAccountSelectionHidden: boolean;
+        allowMultipleSelection: T;
+        actionOnSelect: ActionOnSelect<T>;
+        initialSelectedAccounts?: T extends true
+            ? "home" | Account[]
+            : "home" | Account;
     }
 
-    let { isAccountSelectionHidden = $bindable() }: Props = $props();
-    let simpleSearchInput: HTMLInputElement | undefined = $state();
+    let {
+        isAccountSelectionHidden = $bindable(),
+        allowMultipleSelection,
+        actionOnSelect,
+        initialSelectedAccounts,
+    }: Props<boolean> = $props();
 
-    let accounts: Account[] = $state(
+    let simpleSearchInput: HTMLInputElement | undefined = $state();
+    let allAccounts: Account[] = $state(
         SharedStore.accounts.slice(0, ACCOUNT_COUNT_FOR_EACH_PAGE),
     );
+    let selectedAccounts = $state(
+        initialSelectedAccounts || (allowMultipleSelection ? [] : undefined),
+    );
 
-    const toggleAccountSelection = () => {
-        isAccountSelectionHidden = !isAccountSelectionHidden;
+    const selectAccount = async (account: "home" | Account) => {
+        if (!allowMultipleSelection || account === "home") {
+            selectedAccounts = account;
+            await (actionOnSelect as ActionOnSelect<false>)(selectedAccounts);
+            return;
+        }
+
+        const typedSelectedAccounts = selectedAccounts as Account[];
+        const typedActionOnSelect = actionOnSelect as ActionOnSelect<true>;
+
+        if (selectedAccounts === "home" || typedSelectedAccounts.includes(account)) {
+            selectedAccounts = typedSelectedAccounts.filter(
+                (acc) => acc !== account,
+            );
+            await typedActionOnSelect(selectedAccounts);
+            return;
+        }
+
+        if (!typedSelectedAccounts.includes(account)) {
+            typedSelectedAccounts.push(account);
+            await typedActionOnSelect(typedSelectedAccounts);
+            return;
+        }
     };
 
     const search = () => {
-        if(!simpleSearchInput || simpleSearchInput.value.length < 3)
-            return;
+        if (!simpleSearchInput || simpleSearchInput.value.length < 3) return;
 
-        accounts = SharedStore.accounts.filter((acc) => {
+        allAccounts = SharedStore.accounts.filter((acc) => {
             acc.email_address.includes(simpleSearchInput!.value) ||
                 (acc.fullname &&
                     acc.fullname.includes(simpleSearchInput!.value));
@@ -112,10 +147,14 @@
     };
 
     const updateAccountPage = (newOffset: number) => {
-        accounts = SharedStore.accounts.slice(
+        allAccounts = SharedStore.accounts.slice(
             newOffset - ACCOUNT_COUNT_FOR_EACH_PAGE,
             newOffset,
         );
+    };
+
+    const toggleAccountSelection = () => {
+        isAccountSelectionHidden = !isAccountSelectionHidden;
     };
 </script>
 
@@ -144,16 +183,31 @@
         </Input.Group>
         <div class="modal-like-body">
             <List.Root>
-                {#each accounts as account}
-                    {@const isCurrentAccount =
-                        account === SharedStore.currentAccount}
+                <List.Item
+                    onclick={async () => {
+                        await selectAccount("home");
+                    }}
+                    type={selectedAccounts === "home" ? "active" : undefined}
+                >
+                    Home
+                </List.Item>
+            </List.Root>
+            <hr />
+            <List.Root>
+                {#each allAccounts as account}
+                    {@const isSelectedAccount =
+                        selectedAccounts === "home" ||
+                        (!allowMultipleSelection &&
+                            selectedAccounts === account) ||
+                        (allowMultipleSelection &&
+                            (selectedAccounts as Account[]).includes(account))}
                     <List.Item
-                        onclick={() => {
-                            setCurrentAccount(account);
+                        onclick={async () => {
+                            await selectAccount(account);
                         }}
-                        type={isCurrentAccount ? "active" : undefined}
+                        type={isSelectedAccount ? "active" : undefined}
                     >
-                        {#if isCurrentAccount}
+                        {#if isSelectedAccount}
                             <Icon name="success" />
                         {/if}
                         {@html getSenderAddressTemplate(
@@ -163,7 +217,7 @@
                     </List.Item>
                 {/each}
             </List.Root>
-            {#if accounts.length > ACCOUNT_COUNT_FOR_EACH_PAGE}
+            {#if allAccounts.length > ACCOUNT_COUNT_FOR_EACH_PAGE}
                 <div class="account-selection-pagination-container">
                     <Pagination.Pages
                         total={SharedStore.accounts.length}

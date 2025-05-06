@@ -13,7 +13,7 @@
         getNotLoggedOutFromTemplate,
     } from "$lib/templates";
     import { show as showToast } from "$lib/ui/Components/Toast";
-    import AccountSelection, { setCurrentAccount } from "./Account/AccountSelection.svelte";
+    import AccountSelection, { setCurrentAccount } from "$lib/ui/Layout/Main/Portable/AccountSelection.svelte";
 
     let isAccountSelectionHidden = $state(true);
 
@@ -106,4 +106,9 @@
     </Dropdown.Content>
 </Dropdown.Root>
 
-<AccountSelection bind:isAccountSelectionHidden />
+<AccountSelection
+    bind:isAccountSelectionHidden
+    allowMultipleSelection={false}
+    actionOnSelect={setCurrentAccount}
+    initialSelectedAccounts={SharedStore.currentAccount}
+/>

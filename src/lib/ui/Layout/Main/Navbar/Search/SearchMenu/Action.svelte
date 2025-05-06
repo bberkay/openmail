@@ -8,12 +8,12 @@
 
     interface Props {
         searchCriteria: SearchCriteria,
-        search: (((e: Event) => void) | ((e: Event) => Promise<void>)),
+        onSearch: (((e: Event) => void) | ((e: Event) => Promise<void>)),
     }
 
     let {
         searchCriteria = $bindable(),
-        search
+        onSearch
     }: Props = $props();
 
     const clear = () => {
@@ -25,7 +25,7 @@
     <Button.Basic type="button" class="btn-inline" onclick={clear}>
         <Icon name="trash" />
     </Button.Basic>
-    <Button.Action type="button" class="btn-outline" onclick={search}>
+    <Button.Action type="button" class="btn-outline" onclick={onSearch}>
         <Icon name="search" />
         <span>{local.search[DEFAULT_LANGUAGE]}</span>
     </Button.Action>
