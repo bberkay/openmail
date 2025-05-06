@@ -55,39 +55,51 @@
 
 <Modal>
     <Form onsubmit={handleCreateFolderForm}>
-        <div>
-            <FormGroup>
-                <Label for="folder-name">
-                    {local.folder_name[DEFAULT_LANGUAGE]}
-                </Label>
-                <Input.Basic
-                    type="text"
-                    name="folder_name"
-                    id="folder-name"
-                    placeholder={local.new_folder_placeholde[DEFAULT_LANGUAGE]}
-                    required
-                />
-            </FormGroup>
-            <FormGroup>
-                <Label for="parent-folder">
-                    {local.parent_folder[DEFAULT_LANGUAGE]}
-                </Label>
-                <Select.Root
-                    id="parent-folder"
-                    onchange={handleParentFolder}
-                    placeholder={local.select_parent_folder[DEFAULT_LANGUAGE]}
-                    value={parentFolderName || undefined}
-                    disabled={!!parentFolderName}
-                >
-                    {#each customFolders as customFolder}
-                        <Select.Option
-                            value={customFolder}
-                            content={customFolder}
-                        />
-                    {/each}
-                </Select.Root>
-            </FormGroup>
-            <Button.Basic type="submit">
+        <FormGroup>
+            <Label for="folder-name">
+                {local.folder_name[DEFAULT_LANGUAGE]}
+            </Label>
+            <Input.Basic
+                type="text"
+                name="folder_name"
+                id="folder-name"
+                placeholder={local.new_folder_placeholde[DEFAULT_LANGUAGE]}
+                required
+            />
+        </FormGroup>
+        <FormGroup>
+            <Label for="parent-folder">
+                {local.parent_folder[DEFAULT_LANGUAGE]}
+            </Label>
+            <Select.Root
+                id="parent-folder"
+                onchange={handleParentFolder}
+                placeholder={local.select_parent_folder[DEFAULT_LANGUAGE]}
+                value={parentFolderName || undefined}
+                disabled={!!parentFolderName}
+                style="width:100%"
+            >
+                {#each customFolders as customFolder}
+                    <Select.Option
+                        value={customFolder}
+                        content={customFolder}
+                    />
+                {/each}
+            </Select.Root>
+        </FormGroup>
+        <div class="modal-footer">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                data-modal-close=""
+            >
+                <span>{local.cancel[DEFAULT_LANGUAGE]}</span>
+            </Button.Basic>
+            <Button.Basic
+                type="submit"
+                style="width:auto"
+                class="btn-cta"
+            >
                 {local.create[DEFAULT_LANGUAGE]}
             </Button.Basic>
         </div>

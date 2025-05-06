@@ -45,32 +45,43 @@
 
 <Modal>
     <Form onsubmit={handleDeleteFolderForm}>
-        <div>
-            <FormGroup>
-                <Label for="folder-name">
-                    {local.folder_name[DEFAULT_LANGUAGE]}
-                </Label>
-                <Input.Basic
-                    type="text"
-                    name="folder_name"
-                    id="folder-name"
-                    value={folderName}
-                    disabled
-                    required
-                />
-            </FormGroup>
-            <FormGroup>
-                <label for="subfolders">
-                    {local.delete_subfolders[DEFAULT_LANGUAGE]}
-                </label>
-                <Input.Basic
-                    type="checkbox"
-                    name="delete_subfolders"
-                    id="subfolders"
-                    required
-                />
-            </FormGroup>
-            <Button.Basic type="submit">
+        <FormGroup>
+            <Label for="folder-name">
+                {local.folder_name[DEFAULT_LANGUAGE]}
+            </Label>
+            <Input.Basic
+                type="text"
+                name="folder_name"
+                id="folder-name"
+                value={folderName}
+                disabled
+                required
+            />
+        </FormGroup>
+        <FormGroup direction="horizontal">
+            <Input.Basic
+                type="checkbox"
+                name="delete_subfolders"
+                id="subfolders"
+                required
+            />
+            <label for="subfolders">
+                {local.delete_subfolders[DEFAULT_LANGUAGE]}
+            </label>
+        </FormGroup>
+        <div class="modal-footer">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                data-modal-close=""
+            >
+                <span>{local.cancel[DEFAULT_LANGUAGE]}</span>
+            </Button.Basic>
+            <Button.Basic
+                type="submit"
+                style="width:auto"
+                class="btn-cta"
+            >
                 {local.delete[DEFAULT_LANGUAGE]}
             </Button.Basic>
         </div>

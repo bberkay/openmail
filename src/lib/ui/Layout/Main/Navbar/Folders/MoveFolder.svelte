@@ -57,39 +57,53 @@
 
 <Modal>
     <Form onsubmit={handleMoveFolderForm}>
-        <div>
-            <FormGroup>
-                <Label for="folder-name">{local.select_folder[DEFAULT_LANGUAGE]}</Label>
-                <Input.Basic
-                    type="text"
-                    name="folder_name"
-                    id="folder-name"
-                    value={folderName}
-                    disabled
-                    required
-                />
-            </FormGroup>
-            <FormGroup>
-                <Label for="destination-folder">{local.destination_folder[DEFAULT_LANGUAGE]}</Label>
-                <Select.Root
-                    id="destination-folder"
-                    onchange={handleDestinationFolder}
-                    placeholder={local.folder_name[DEFAULT_LANGUAGE]}
-                >
-                    {#if !isTopLevel(folderName, SharedStore.hierarchyDelimiters[(SharedStore.currentAccount as Account).email_address])}
-                        <Select.Option value="" content="/" />
+        <FormGroup>
+            <Label for="folder-name">{local.select_folder[DEFAULT_LANGUAGE]}</Label>
+            <Input.Basic
+                type="text"
+                name="folder_name"
+                id="folder-name"
+                value={folderName}
+                disabled
+                required
+            />
+        </FormGroup>
+        <FormGroup>
+            <Label for="destination-folder">{local.destination_folder[DEFAULT_LANGUAGE]}</Label>
+            <Select.Root
+                id="destination-folder"
+                onchange={handleDestinationFolder}
+                placeholder={local.folder_name[DEFAULT_LANGUAGE]}
+                style="width:100%"
+            >
+                {#if !isTopLevel(folderName, SharedStore.hierarchyDelimiters[(SharedStore.currentAccount as Account).email_address])}
+                    <Select.Option value="" content="/" />
+                {/if}
+                {#each customFolders as customFolder}
+                    {#if customFolder !== folderName}
+                        <Select.Option
+                            value={customFolder}
+                            content={customFolder}
+                        />
                     {/if}
-                    {#each customFolders as customFolder}
-                        {#if customFolder !== folderName}
-                            <Select.Option
-                                value={customFolder}
-                                content={customFolder}
-                            />
-                        {/if}
-                    {/each}
-                </Select.Root>
-            </FormGroup>
-            <Button.Basic type="submit">{local.move[DEFAULT_LANGUAGE]}</Button.Basic>
+                {/each}
+            </Select.Root>
+        </FormGroup>
+        <div class="modal-footer">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                data-modal-close=""
+            >
+                <span>{local.cancel[DEFAULT_LANGUAGE]}</span>
+            </Button.Basic>
+            <Button.Basic
+                type="submit"
+                style="width:auto"
+                class="btn-cta"
+            >
+                {local.move[DEFAULT_LANGUAGE]}
+            </Button.Basic>
         </div>
     </Form>
 </Modal>

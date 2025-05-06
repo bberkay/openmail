@@ -45,29 +45,42 @@
 
 <Modal>
     <Form onsubmit={handleRenameFolderForm}>
-        <div>
-            <FormGroup>
-                <Label for="folder-name">{local.folder_name[DEFAULT_LANGUAGE]}</Label>
-                <Input.Basic
-                    type="text"
-                    name="folder_name"
-                    id="folder-name"
-                    value={folderName}
-                    disabled
-                    required
-                />
-            </FormGroup>
-            <FormGroup>
-                <Label for="new-folder-name">{local.new_folder_name[DEFAULT_LANGUAGE]}</Label>
-                <Input.Basic
-                    type="text"
-                    name="new_folder_name"
-                    id="new-folder-name"
-                    placeholder={local.new_folder_placeholde[DEFAULT_LANGUAGE]}
-                    required
-                />
-            </FormGroup>
-            <Button.Basic type="submit">{local.rename[DEFAULT_LANGUAGE]}</Button.Basic>
+        <FormGroup>
+            <Label for="folder-name">{local.folder_name[DEFAULT_LANGUAGE]}</Label>
+            <Input.Basic
+                type="text"
+                name="folder_name"
+                id="folder-name"
+                value={folderName}
+                disabled
+                required
+            />
+        </FormGroup>
+        <FormGroup>
+            <Label for="new-folder-name">{local.new_folder_name[DEFAULT_LANGUAGE]}</Label>
+            <Input.Basic
+                type="text"
+                name="new_folder_name"
+                id="new-folder-name"
+                placeholder={local.new_folder_placeholde[DEFAULT_LANGUAGE]}
+                required
+            />
+        </FormGroup>
+        <div class="modal-footer">
+            <Button.Basic
+                type="button"
+                class="btn-inline"
+                data-modal-close=""
+            >
+                <span>{local.cancel[DEFAULT_LANGUAGE]}</span>
+            </Button.Basic>
+            <Button.Basic
+                type="submit"
+                style="width:auto"
+                class="btn-cta"
+            >
+                {local.rename[DEFAULT_LANGUAGE]}
+            </Button.Basic>
         </div>
     </Form>
 </Modal>
