@@ -153,6 +153,8 @@ body {
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
     border-radius: var(--titlebar-radius);
+    user-select: none;
+    -webkit-user-select: none;
 
     &.centered {
         display: flex;
