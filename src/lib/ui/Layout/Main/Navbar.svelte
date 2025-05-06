@@ -40,13 +40,9 @@
                     padding: var(--spacing-2xs) var(--spacing-sm)!important;
                 }
 
-                & .logo {
-                    font-size: var(--font-size-2xl);
-                }
-
                 & .folders,
                 & .accounts {
-                    width: 120px;
+                    width: 140px;
 
                     & .dropdown-toggle {
                         padding: var(--spacing-2xs) var(--spacing-xs);

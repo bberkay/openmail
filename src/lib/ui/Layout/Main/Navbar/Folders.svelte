@@ -17,6 +17,7 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Icon from "$lib/ui/Components/Icon";
+    import { isStandardFolder } from "$lib/utils";
 
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
@@ -79,7 +80,9 @@
     disabled={SharedStore.currentAccount === "home"}
 >
     <Dropdown.Toggle>
-        {getCurrentMailbox().folder}
+        {isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)
+            ? Folder.Inbox
+            : getCurrentMailbox().folder}
     </Dropdown.Toggle>
     <Dropdown.Content>
         <Dropdown.Item onclick={showCreateFolder}>
@@ -90,9 +93,9 @@
         </Dropdown.Item>
         <Dropdown.Separator />
         {#each standardFolders as standardFolder}
-            {@const [folderTag, folderName] = standardFolder.split(":")}
+            {@const [folderTag, ] = standardFolder.split(":")}
             <Dropdown.Item onclick={() => setCurrentFolder(folderTag)}>
-                {folderName || folderTag}
+                {folderTag}
             </Dropdown.Item>
         {/each}
         {#if customFolders.length > 0}
@@ -148,6 +151,23 @@
 <style>
     :global {
         nav {
+            & .folders {
+                & > .dropdown-content {
+                    height: 350px!important;
+                    overflow-y: scroll;
+                    overflow-x: hidden;
+                }
+
+                & .dropdown-container.inline .dropdown-toggle {
+                    padding: var(--spacing-2xs)!important;
+
+                    & svg {
+                        width: var(--font-size-sm);
+                        height: var(--font-size-sm);
+                    }
+                }
+            }
+
             & .custom-folder-operations-toggle {
                 color: var(--color-text-secondary);
             }

@@ -41,6 +41,7 @@
     <Select.Root
         id="searching-folder"
         value={Folder.All}
+        style="width:100%;"
         onchange={selectFolder}
     >
         {#each standardFolders as standardFolder}
