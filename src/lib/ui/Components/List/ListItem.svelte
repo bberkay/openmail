@@ -1,5 +1,6 @@
 <script lang="ts">
-    import type { Snippet } from "svelte";
+    import { mount, unmount, type Snippet } from "svelte";
+    import { Spinner } from "$lib/ui/Components/Loader";
 
     interface Props {
         children: Snippet;
@@ -16,7 +17,22 @@
     }: Props = $props();
 
     const onClickWrapper = async (e: Event) => {
+        e.preventDefault();
+
+        const eventTrigger = e.target as HTMLButtonElement;
+        if (!eventTrigger)
+            return;
+
+        eventTrigger.disabled = true;
+        const temp = eventTrigger.innerText;
+        eventTrigger.innerText = "";
+        const loader = mount(Spinner, { target: eventTrigger });
+
         if(onclick && type !== "disabled") await onclick(e);
+
+        eventTrigger.disabled = false;
+        eventTrigger.innerText = temp;
+        unmount(loader);
     }
 </script>
 
