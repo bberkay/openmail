@@ -18,6 +18,7 @@
     let dropdownItem: HTMLElement;
 
     const makeAnAction = async (e: Event) => {
+        e.stopPropagation();
         e.preventDefault();
 
         dropdownItem.classList.add("disabled");
@@ -89,13 +90,6 @@
             &:has(.dropdown-container) {
                 padding: var(--spacing-2xs) var(--spacing-sm)!important;
                 padding-right: var(--spacing-xs)!important;
-            }
-
-            &[disabled],
-            &.disabled {
-                cursor:not-allowed!important;
-                pointer-events: none;
-                filter: brightness(0.7);
             }
 
             &:hover,

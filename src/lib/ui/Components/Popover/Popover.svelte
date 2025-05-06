@@ -65,11 +65,5 @@
             z-index: var(--z-index-popover);
             width: max-content;
         }
-
-        .popover-container.disabled {
-            pointer-events: none!important;
-            cursor: auto;
-            filter: brightness(0.7)!important;
-        }
     }
 </style>

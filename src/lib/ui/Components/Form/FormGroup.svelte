@@ -56,10 +56,6 @@
                 &:has(input[type="checkbox"] + label) {
                     gap: var(--spacing-xs);
                 }
-
-                & input[type="checkbox"] + label {
-                    margin-top: 3px;
-                }
             }
         }
     }

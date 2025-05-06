@@ -65,10 +65,6 @@
                 border-color: var(--color-text-primary);
             }
 
-            &:disabled {
-                border-bottom: none;
-            }
-
             &[type="email"] {
                 will-change: transform;
             }

@@ -63,11 +63,6 @@
                     background-color: var(--color-hover);
                     border-color: var(--color-text-primary);
                 }
-
-                &.disabled {
-                    pointer-events: none;
-                    opacity: 0.5;
-                }
             }
         }
     }

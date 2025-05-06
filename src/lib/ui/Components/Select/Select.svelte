@@ -46,6 +46,7 @@
     let selectedOption: HTMLElement | null = $state(null);
     const defaultValue = value;
     const isInitializedAsDisabled = disabled;
+    disableClearButton = isInitializedAsDisabled;
 
     let selectWrapper: HTMLElement;
     let optionsList: HTMLElement;
@@ -231,11 +232,16 @@
 
 <style>
     :global {
+        .label + .custom-select-wrapper {
+            margin-top: var(--spacing-2xs);
+        }
+
         .custom-select-wrapper {
             position: relative;
             width: max-content;
             user-select: none;
             text-align: left;
+            font-size: var(--font-size-sm);
 
             & .custom-select {
                 position: relative;
@@ -249,11 +255,6 @@
 
                 &.visible {
                     border-color: var(--color-text-primary);
-                }
-
-                &.disabled {
-                    cursor: auto;
-                    filter: brightness(0.7);
                 }
 
                 & .select-trigger {

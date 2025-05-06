@@ -29,13 +29,9 @@
     :global {
         .label{
             text-align: left;
-            color: var(--color-text-secondary);
             font-size: var(--font-size-sm);
+            color: var(--color-text-primary);
             margin-left: calc(var(--spacing-2xs) / 2);
-
-            &.label-sm {
-                font-size: var(--font-size-xs);
-            }
         }
     }
 </style>

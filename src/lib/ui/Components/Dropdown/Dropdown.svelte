@@ -91,11 +91,5 @@
                 border-top: none;
             }
         }
-
-        .dropdown-container.disabled {
-            pointer-events: none !important;
-            cursor: auto;
-            filter: brightness(0.7) !important;
-        }
     }
 </style>

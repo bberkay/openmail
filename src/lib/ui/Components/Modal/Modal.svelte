@@ -45,12 +45,8 @@
 <style>
     :global {
         .modal{
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: var(--container-md);
-            background-color: var(--color-hover);
+            width: var(--container-sm);
+            background-color: var(--color-bg-primary);
             padding: var(--spacing-lg) var(--spacing-xl);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
@@ -64,17 +60,12 @@
                 font-size: var(--font-size-xl);
             }
 
-            & .modal-body {
-                color: var(--color-text-secondary);
-                margin-bottom: var(--spacing-md);
-                font-size: var(--font-size-sm);
-            }
-
             & .modal-footer {
                 display: flex;
                 flex-direction: row;
                 justify-content: flex-end;
-                gap: var(--spacing-xs);
+                margin-top: var(--spacing-md);
+                gap: var(--spacing-md);
                 color: var(--color-text-primary);
             }
         }

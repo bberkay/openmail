@@ -38,13 +38,6 @@
             align-items: center;
             justify-content: center;
 
-            &[disabled],
-            &.disabled {
-                cursor:not-allowed!important;
-                pointer-events: none!important;
-                filter: brightness(0.7)!important;
-            }
-
             &:hover,
             &.hover {
                 background-color: var(--color-hover);
@@ -63,10 +56,14 @@
             }
 
             &.btn-inline {
-                padding: var(--spacing-2xs) var(--spacing-2xs);
+                padding: var(--spacing-2xs);
                 margin: 0;
                 background-color: transparent;
                 color: var(--color-text-primary);
+
+                &:has(span) {
+                    padding: var(--spacing-2xs) var(--spacing-sm);
+                }
 
                 &:hover,
                 &.hover {
