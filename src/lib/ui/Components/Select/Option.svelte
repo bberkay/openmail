@@ -6,6 +6,7 @@
         value: string;
         content: string;
         icon?: string;
+        pinned?: boolean;
         [attribute: string]: unknown;
     }
 
@@ -13,6 +14,7 @@
         value,
         content,
         icon,
+        pinned = false,
         ...attributes
     }: Props = $props();
 
@@ -24,6 +26,7 @@
 
 <div
     data-value={value}
+    data-pinned={pinned}
     class={combine("option", additionalClass)}
     {...restAttributes}
 >

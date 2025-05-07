@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, type Snippet } from "svelte";
-    import { combine } from "$lib/utils";
+    import { combine, createDomElement } from "$lib/utils";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
@@ -13,9 +13,10 @@
         id?: string;
         placeholder?: string;
         value?: string;
-        onchange?: (((selectedOption: string) => void) | ((selectedOption: string) => Promise<void>));
+        onchange?:
+            | ((selectedOption: string) => void)
+            | ((selectedOption: string) => Promise<void>);
         enableSearch?: boolean;
-        searchAlgorithm?: ((option: HTMLElement) => boolean);
         resetAfterSelect?: boolean;
         disableClearButton?: boolean;
         disabled?: boolean;
@@ -29,17 +30,13 @@
         value,
         onchange,
         enableSearch,
-        searchAlgorithm,
         resetAfterSelect,
         disableClearButton,
         disabled,
         ...attributes
     }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    const { class: additionalClass, ...restAttributes } = attributes;
 
     let isOpen = $state(false);
     let options: HTMLElement[] = $state([]);
@@ -54,8 +51,10 @@
 
     onMount(() => {
         searchInput = selectWrapper.querySelector(".search-input")!;
-        options = Array.from(selectWrapper.querySelectorAll(".option")) as HTMLElement[];
-        if (value) selectOption(value, true)
+        options = Array.from(
+            selectWrapper.querySelectorAll(".option"),
+        ) as HTMLElement[];
+        if (value) selectOption(value, true);
         filterOptions();
     });
 
@@ -66,48 +65,55 @@
         optionsList.querySelector(".no-results")?.remove();
 
         options.forEach((option: HTMLElement) => {
-            const optionValue = option.getAttribute("data-value")!.toString().toLowerCase();
-            const optionContent = option.innerText!.toString().toLowerCase()
+            const isPinned = option.getAttribute("data-pinned") == "true";
+            if (isPinned) return;
             if (searchTerm) {
-                const isOptionIncludesSearchTerm = optionValue.includes(searchTerm) || optionContent.includes(searchTerm);
-                const isOptionConfirmSearchAlgorithm = (!searchAlgorithm || searchAlgorithm(option))
-                if (isOptionIncludesSearchTerm && isOptionConfirmSearchAlgorithm) {
-                    option.classList.remove("invisible");
+                const optionValue = option
+                    .getAttribute("data-value")!
+                    .toString()
+                    .toLowerCase();
+                const optionContent = option.innerText!.toString().toLowerCase();
+                const isOptionIncludesSearchTerm =
+                    optionValue.includes(searchTerm) ||
+                    optionContent.includes(searchTerm);
+                if (isOptionIncludesSearchTerm) {
+                    option.classList.remove("hidden");
                     isAnyOptionFound = true;
                 } else {
-                    option.classList.add("invisible");
+                    option.classList.add("hidden");
                 }
             } else {
-                option.classList.remove("invisible");
+                option.classList.remove("hidden");
             }
-        })
+        });
 
-        if(searchTerm && !isAnyOptionFound) {
-            optionsList.innerHTML += getNoMatchFoundTemplate();
+        if (searchTerm && !isAnyOptionFound) {
+            optionsList.appendChild(createDomElement(getNoMatchFoundTemplate()));
         }
     }
 
     async function selectOption(
         value: string,
         disableCallback: boolean = false,
-        resetToDefault: boolean = false
+        resetToDefault: boolean = false,
     ) {
         disabled = true;
-        if(selectedOption) selectedOption.classList.remove("selected");
-        selectedOption = options.find(option => option.dataset.value == value)!;
+        if (selectedOption) selectedOption.classList.remove("selected");
+        selectedOption = options.find(
+            (option) => option.dataset.value == value,
+        )!;
         selectedOption.classList.add("selected");
-        if(onchange && !disableCallback) await onchange(value.toString());
+        if (onchange && !disableCallback) await onchange(value.toString());
         if (!isInitializedAsDisabled) disabled = false;
-        if(resetAfterSelect && !resetToDefault) clearSelection();
+        if (resetAfterSelect && !resetToDefault) clearSelection();
         closeSelect();
     }
 
     function closeSelect() {
-        if (!isOpen)
-            return;
+        if (!isOpen) return;
 
         isOpen = false;
-        if(enableSearch) searchInput!.value = "";
+        if (enableSearch) searchInput!.value = "";
         filterOptions();
     }
 
@@ -115,51 +121,47 @@
         if (isOpen && !selectWrapper.contains(e.target as HTMLElement)) {
             closeSelect();
         }
-    }
+    };
 
     const toggleSelect = () => {
-        if (isOpen)
-            return closeSelect();
+        if (isOpen) return closeSelect();
 
         isOpen = true;
         if (enableSearch) searchInput!.focus();
-    }
+    };
 
     const handleSelection = async (e: Event) => {
-        if (!e.target)
-            return;
+        if (!e.target) return;
 
-        const option = (e.target as HTMLDivElement).closest<HTMLElement>(".option")!
-        if (!option)
-            return;
+        const option = (e.target as HTMLDivElement).closest<HTMLElement>(
+            ".option",
+        )!;
+        if (!option) return;
 
         const value = option.dataset.value;
-        if(!value)
-            return;
+        if (!value) return;
 
         await selectOption(value);
     };
 
     const handleSearch = (e: Event) => {
-        if(!e.target)
-            return;
-
         const target = e.target as HTMLInputElement;
         filterOptions(target.value);
-    }
+    };
 
     const clearSelection = () => {
-        if (disabled)
-            return;
+        if (disabled) return;
 
         if (defaultValue) {
             selectOption(defaultValue, false, true);
         } else {
             selectedOption = null;
-            optionsList.querySelector(".selected")?.classList.remove("selected");
+            optionsList
+                .querySelector(".selected")
+                ?.classList.remove("selected");
             filterOptions();
         }
-    }
+    };
 </script>
 
 <svelte:body onclick={closeWhenClickedOutside} />
@@ -170,8 +172,10 @@
     {...restAttributes}
 >
     <div
-        id={id}
-        class="custom-select {isOpen ? "visible" : ""} {disabled ? "disabled" : ""}"
+        {id}
+        class="custom-select {isOpen ? 'visible' : ''} {disabled
+            ? 'disabled'
+            : ''}"
         onclick={!disabled ? toggleSelect : () => {}}
         onkeydown={(e) => !disabled && e.key === "Enter" && toggleSelect()}
         tabindex="0"
@@ -181,13 +185,15 @@
         <div class="select-trigger">
             <div class="select-trigger-content">
                 {#if selectedOption}
-                    <span data-value={selectedOption.getAttribute("data-value")!}>
-                        {selectedOption.textContent!.trim()}
+                    <span data-value={selectedOption.getAttribute("data-value")}>
+                        {selectedOption.textContent?.trim()}
                     </span>
                     {#if !disableClearButton}
                         <Button.Basic
                             type="button"
-                            class="btn-inline clear-button {selectedOption ? "visible" : ""}"
+                            class="btn-inline clear-button {selectedOption
+                                ? 'visible'
+                                : ''}"
                             onclick={clearSelection}
                         >
                             <Icon name="close" />
@@ -200,7 +206,7 @@
             <Icon name="dropdown" />
         </div>
     </div>
-    <div class="options-container {isOpen ? "visible" : ""}">
+    <div class="options-container {isOpen ? 'visible' : ''}">
         {#if enableSearch}
             <div class="search-box">
                 <Input.Group>
@@ -210,7 +216,9 @@
                         class="search-input"
                         style="font-size: var(--font-size-sm)"
                         placeholder={local.search[DEFAULT_LANGUAGE]}
-                        onclick={(e: Event) => { e.stopPropagation() }}
+                        onclick={(e: Event) => {
+                            e.stopPropagation();
+                        }}
                         oninput={handleSearch}
                     />
                 </Input.Group>
@@ -288,8 +296,8 @@
                 background: var(--color-bg-primary);
                 border: 1px solid var(--color-border);
                 border-radius: var(--radius-sm);
-                border-top-left-radius: 0!important;
-                border-top-right-radius: 0!important;
+                border-top-left-radius: 0 !important;
+                border-top-right-radius: 0 !important;
                 max-height: var(--container-sm);
                 overflow-y: auto;
                 z-index: var(--z-index-dropdown);
