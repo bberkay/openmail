@@ -27,7 +27,7 @@
             display: flex;
             flex-direction: row;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             width: 100%;
             padding: var(--spacing-lg);
             font-size: var(--font-size-xs);

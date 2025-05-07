@@ -51,9 +51,15 @@
             &.form-group-horizontal {
                 flex-direction: row;
                 align-items: center;
-                gap: var(--spacing-lg);
+                justify-content: space-between;
+                gap: var(--spacing-xl);
+
+                & .form-group {
+                    width: 100%;
+                }
 
                 &:has(input[type="checkbox"] + label) {
+                    justify-content: left;
                     gap: var(--spacing-xs);
                 }
             }

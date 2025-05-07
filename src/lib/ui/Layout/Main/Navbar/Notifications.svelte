@@ -340,7 +340,7 @@
                     padding: var(--spacing-xs) var(--spacing-sm);
 
                     & .title {
-                        font-size: var(--font-size-md);
+                        font-size: var(--font-size-sm);
                     }
                 }
 

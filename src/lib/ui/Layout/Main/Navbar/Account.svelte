@@ -1,28 +1,27 @@
 <script lang="ts">
     import { exit } from "@tauri-apps/plugin-process";
-    import { SharedStore } from "$lib/stores/shared.svelte";
-    import { type Account } from "$lib/types";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
-    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showModal } from "$lib/ui/Components/Modal";
     import { AccountController } from "$lib/controllers/AccountController";
-    import { local } from "$lib/locales";
-    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import {
         getLogoutFromTemplate,
         getNotLoggedOutFromTemplate,
     } from "$lib/templates";
     import { show as showToast } from "$lib/ui/Components/Toast";
-    import AccountSelection, { setCurrentAccount } from "$lib/ui/Layout/Main/Portable/AccountSelection.svelte";
+    import AccountSelection, { setCurrentAccount } from "./Account/AccountSelection.svelte";
+    import { type Account } from "$lib/types";
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
 
-    let isAccountSelectionHidden = $state(true);
-
-    const setCurrentAccountToHome = () => {
-        setCurrentAccount("home");
+    const setCurrentAccountAsHome = async () => {
+        await setCurrentAccount("home");
     }
 
     const showAccountSelection = () => {
-        isAccountSelectionHidden = false;
+        showModal(AccountSelection);
     }
 
     const minimize = () => {};
@@ -61,16 +60,7 @@
             },
         });
     };
-
-    const handleShortcuts = (e: KeyboardEvent) => {
-        if (e.key === "Escape") {
-            e.preventDefault();
-            isAccountSelectionHidden = true;
-        }
-    };
 </script>
-
-<svelte:window onkeydown={handleShortcuts} />
 
 <Dropdown.Root class="accounts">
     <Dropdown.Toggle>
@@ -79,7 +69,7 @@
             : SharedStore.currentAccount.email_address}
     </Dropdown.Toggle>
     <Dropdown.Content>
-        <Dropdown.Item onclick={setCurrentAccountToHome}>
+        <Dropdown.Item onclick={setCurrentAccountAsHome}>
             {local.home[DEFAULT_LANGUAGE]}
         </Dropdown.Item>
         <Dropdown.Item onclick={showAccountSelection}>
@@ -105,10 +95,3 @@
         </Dropdown.Item>
     </Dropdown.Content>
 </Dropdown.Root>
-
-<AccountSelection
-    bind:isAccountSelectionHidden
-    allowMultipleSelection={false}
-    actionOnSelect={setCurrentAccount}
-    initialSelectedAccounts={SharedStore.currentAccount}
-/>

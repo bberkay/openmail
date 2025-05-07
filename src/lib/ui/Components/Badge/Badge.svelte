@@ -56,6 +56,16 @@
             background-color: transparent;
             color: var(--color-text-primary);
             margin-top: var(--spacing-2xs);
+            font-size: var(--font-size-xs);
+
+            & svg {
+                width: var(--font-size-sm);
+                height: var(--font-size-sm);
+            }
+
+            &.clickable {
+                cursor: pointer;
+            }
 
             &.clickable:hover {
                 background-color: var(--color-hover);

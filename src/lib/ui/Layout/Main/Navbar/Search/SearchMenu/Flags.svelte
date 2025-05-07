@@ -108,7 +108,7 @@
 
 <style>
     :global {
-        .modal-like-body{
+        .search-menu{
             & .flag-group {
                 width: 100%;
 

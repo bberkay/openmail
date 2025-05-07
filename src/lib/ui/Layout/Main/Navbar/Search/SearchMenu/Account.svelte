@@ -12,31 +12,35 @@
     } from "$lib/templates";
     import AccountSelection from "$lib/ui/Layout/Main/Portable/AccountSelection.svelte";
     import { createSenderAddressFromAccount, escapeHTML } from "$lib/utils";
+    import { show as showModal } from "$lib/ui/Components/Modal";
 
     interface Props {
         searchingAccounts: "home" | Account[];
     }
 
-    let { searchingAccounts = $bindable() }: Props = $props();
-
-    let isAccountSelectionHidden = $state(true);
+    let {
+        searchingAccounts = $bindable()
+    }: Props = $props();
 
     const selectSearchingAccount = (selectedAccounts: "home" | Account[]) => {
         searchingAccounts = selectedAccounts;
     };
 
     const showAccountSelection = () => {
-        isAccountSelectionHidden = false;
+        showModal(AccountSelection, {
+            allowMultipleSelection: true,
+            actionOnSelect: selectSearchingAccount,
+            initialSelectedAccounts: searchingAccounts
+        });
     };
 </script>
 
-<!-- TODO: fix Modal like -->
 <FormGroup>
-    <Label for="searching-account">
+    <Label>
         {local.searching_account[DEFAULT_LANGUAGE]}
     </Label>
     <Button.Basic
-        class="btn-outline select-account-btn"
+        class="btn-outline account-selection-toggle"
         onclick={showAccountSelection}
     >
         {getSearchForAccountTemplate(
@@ -71,18 +75,14 @@
     </div>
 </FormGroup>
 
-<AccountSelection
-    bind:isAccountSelectionHidden
-    allowMultipleSelection={true}
-    actionOnSelect={selectSearchingAccount}
-    initialSelectedAccounts={searchingAccounts}
-/>
-
 <style>
     :global {
-        .select-account-btn {
-            text-align: left;
-            margin-top: var(--spacing-2xs);
+        .search-menu {
+            & .account-selection-toggle {
+                text-align: left;
+                margin-top: var(--spacing-2xs);
+                font-size: var(--font-size-xs);
+            }
         }
     }
 </style>

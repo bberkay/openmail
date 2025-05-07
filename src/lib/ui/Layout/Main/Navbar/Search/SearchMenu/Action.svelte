@@ -21,7 +21,7 @@
     };
 </script>
 
-<FormGroup direction="horizontal" class="search-button-group">
+<FormGroup direction="horizontal" class="action-group">
     <Button.Basic type="button" class="btn-inline" onclick={clear}>
         <Icon name="trash" />
     </Button.Basic>
@@ -30,3 +30,14 @@
         <span>{local.search[DEFAULT_LANGUAGE]}</span>
     </Button.Action>
 </FormGroup>
+
+<style>
+    :global {
+        .search-menu {
+            .action-group {
+                justify-content: end;
+                gap: var(--spacing-md);
+            }
+        }
+    }
+</style>

@@ -123,7 +123,7 @@
 
 <style>
     :global {
-        .modal-like-body{
+        .search-menu{
             & .size-group {
                 align-items: end;
                 font-size: var(--font-size-xs);

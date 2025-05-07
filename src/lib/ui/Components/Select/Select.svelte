@@ -187,7 +187,7 @@
                     {#if !disableClearButton}
                         <Button.Basic
                             type="button"
-                            class="clear-button {selectedOption ? "visible" : ""}"
+                            class="btn-inline clear-button {selectedOption ? "visible" : ""}"
                             onclick={clearSelection}
                         >
                             <Icon name="close" />
@@ -271,18 +271,9 @@
                         flex: 1;
 
                         & .clear-button {
-                            background: none;
-                            border: none;
-                            color: var(--color-text-secondary);
-                            cursor: pointer;
-                            padding: calc(var(--spacing-2xs) / 2) calc(var(--spacing-xs) / 2);
-                            line-height: 1;
-                            visibility: hidden;
-                            opacity: 0;
-                            transition: all var(--transform-fast) var(--ease-default);
-
-                            &:hover{
-                                opacity: 0.7;
+                            & svg {
+                                width: var(--font-size-sm);
+                                height: var(--font-size-sm);
                             }
                         }
                     }
