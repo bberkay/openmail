@@ -17,6 +17,7 @@
     <div class="nav-section">
         <Compose />
         <Account />
+        <Notifications />
     </div>
 </nav>
 

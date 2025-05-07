@@ -21,11 +21,43 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
+    let notificationsContainer: HTMLElement;
     let isNotificationsHidden = $state(true);
 
-    const toggleNotifications = () => {
-        isNotificationsHidden = !isNotificationsHidden;
-    };
+    onMount(() => {
+        notificationsContainer
+            .querySelectorAll<HTMLElement>(".sender-to-receiver")
+            .forEach((senderToReceiver) => {
+                // Set current account to clicked receiver email then
+                // show its inbox.
+                const receiverEmail = senderToReceiver.querySelector(
+                    ".receiver-email",
+                ) as HTMLElement;
+                const receiverEmailAddress = extractEmailAddress(
+                    receiverEmail.innerText,
+                );
+                receiverEmail.addEventListener("click", () => {
+                    showMailboxOfReceiver(receiverEmailAddress);
+                });
+
+                // Show compose as replying to the message sent by the clicked sender.
+                const senderEmail = senderToReceiver.querySelector(
+                    ".sender-email",
+                ) as HTMLElement;
+                const recentEmailUid = (
+                    senderToReceiver.querySelector(".uid") as HTMLElement
+                ).innerText.trim();
+                const receiverAccount = SharedStore.accounts.find(
+                    (acc) => acc.email_address === receiverEmailAddress,
+                )!;
+                const receivedEmail = SharedStore.recentEmailsChannel[
+                    receiverAccount.email_address
+                ].find((email) => email.uid === recentEmailUid)!;
+                senderEmail.addEventListener("click", async () => {
+                    await replyReceivedEmail(receiverAccount, receivedEmail);
+                });
+            });
+    });
 
     async function showMailboxOfReceiver(receiverEmailAddress: string) {
         if (receiverEmailAddress === "home") return;
@@ -86,42 +118,6 @@
             },
         });
     }
-
-    let notificationsContainer: HTMLElement;
-    onMount(() => {
-        notificationsContainer
-            .querySelectorAll<HTMLElement>(".sender-to-receiver")
-            .forEach((senderToReceiver) => {
-                // Set current account to clicked receiver email then
-                // show its inbox.
-                const receiverEmail = senderToReceiver.querySelector(
-                    ".receiver-email",
-                ) as HTMLElement;
-                const receiverEmailAddress = extractEmailAddress(
-                    receiverEmail.innerText,
-                );
-                receiverEmail.addEventListener("click", () => {
-                    showMailboxOfReceiver(receiverEmailAddress);
-                });
-
-                // Show compose as replying to the message sent by the clicked sender.
-                const senderEmail = senderToReceiver.querySelector(
-                    ".sender-email",
-                ) as HTMLElement;
-                const recentEmailUid = (
-                    senderToReceiver.querySelector(".uid") as HTMLElement
-                ).innerText.trim();
-                const receiverAccount = SharedStore.accounts.find(
-                    (acc) => acc.email_address === receiverEmailAddress,
-                )!;
-                const receivedEmail = SharedStore.recentEmailsChannel[
-                    receiverAccount.email_address
-                ].find((email) => email.uid === recentEmailUid)!;
-                senderEmail.addEventListener("click", async () => {
-                    await replyReceivedEmail(receiverAccount, receivedEmail);
-                });
-            });
-    });
 
     const showHome = async (): Promise<void> => {
         if (SharedStore.currentAccount === "home") return;
@@ -204,18 +200,30 @@
             }
         }
     };
+
+    const toggleNotifications = () => {
+        isNotificationsHidden = !isNotificationsHidden;
+    };
+
+    const closeWhenClickedOutside = (e: Event) => {
+        if (!isNotificationsHidden && !notificationsContainer.contains(e.target as HTMLElement)) {
+            isNotificationsHidden = true;
+        }
+    };
 </script>
+
+<svelte:window onclick={closeWhenClickedOutside} />
 
 <div class="notifications-container" bind:this={notificationsContainer}>
     <Button.Basic
         type="button"
-        class="btn-cta nav-button"
+        class="btn-inline notification-btn"
         onclick={toggleNotifications}
     >
         <Icon name="notifications" />
     </Button.Basic>
-    {#if isNotificationsHidden}
-        <div class="notifications">
+    {#if !isNotificationsHidden}
+        <div class="notifications left">
             <div class="notifications-header">
                 <div class="title">{local.notifications[DEFAULT_LANGUAGE]}</div>
                 <div class="action">
@@ -224,7 +232,7 @@
                         class="btn-inline"
                         onclick={clearRecentEmails}
                     >
-                        {local.clear[DEFAULT_LANGUAGE]}
+                        <Icon name="trash" />
                     </Button.Basic>
                 </div>
             </div>
@@ -284,7 +292,9 @@
                         </div>
                     {/each}
                 {:else}
-                    <div class="empty"></div>
+                    <div class="empty">
+                        All clear!
+                    </div>
                 {/each}
             </div>
             <div class="notifications-footer">
@@ -305,33 +315,48 @@
         .notifications-container {
             position: relative;
 
+            & .notification-btn {
+                & svg {
+                    width: var(--font-size-lg);
+                    height: var(--font-size-lg);
+                }
+            }
+
             & .notifications {
                 position: absolute;
-                top: var(--font-size-md);
-                left: var(--font-size-md);
                 border: 1px solid var(--color-border);
                 border-radius: var(--radius-md);
                 background-color: var(--color-bg-primary);
+                margin-top: var(--spacing-xs);
+
+                &.left {
+                    right: 0;
+                }
 
                 & .notifications-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    padding: var(--spacing-xs) var(--spacing-sm);
 
                     & .title {
-                        font-size: var(--font-size-lg);
+                        font-size: var(--font-size-md);
                     }
                 }
 
                 & .notifications-body {
                     display: flex;
                     flex-direction: row;
+                    padding: var(--spacing-xs) var(--spacing-sm);
+                    width: var(--container-sm);
+                    height: var(--container-sm);
+                    overflow-y: scroll;
+                    overflow-x: hidden;
 
                     &:has(.empty) {
                         justify-content: center;
                         align-items: center;
                         font-size: var(--font-size-2xl);
-                        padding: var(--spacing-xl);
                     }
 
                     & .notification-item {
@@ -371,6 +396,7 @@
                     align-items: center;
                     font-size: var(--font-size-md);
                     border-top: 1px solid var(--color-border);
+                    padding: var(--spacing-xs) var(--spacing-sm);
                 }
             }
         }
