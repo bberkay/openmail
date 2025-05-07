@@ -248,7 +248,7 @@
                 left: 0;
                 width: max-content;
                 border: 1px solid var(--color-border);
-                border-radius: var(--radius-sm);
+                border-radius: var(--radius-md);
                 border-top-left-radius: none;
                 border-top-right-radius: none;
                 padding: var(--spacing-sm);
@@ -273,7 +273,6 @@
 
                     & .month-year-text {
                         font-size: var(--font-size-md);
-                        margin-top: 5px;
                     }
 
                     & svg {
@@ -292,6 +291,7 @@
                     background: none;
                     color: var(--color-text-secondary);
                     border-bottom: none;
+                    font-weight: normal;
                 }
 
                 & td {

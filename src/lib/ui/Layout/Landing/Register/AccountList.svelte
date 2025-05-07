@@ -348,7 +348,7 @@
                                 <Icon name="warning" />
                             {/if}
                             <span>{account.fullname}</span>
-                            <i class="muted">&lt;{account.email_address}&gt;</i>
+                            <small class="muted">&lt;{account.email_address}&gt;</small>
                         </Table.Cell>
                         <Table.Cell class="action-cell">
                             <div class="action-buttons">
@@ -422,7 +422,7 @@
         .checkbox-cell {
             width: var(--font-size-2xl);
             padding-left: var(--spacing-sm);
-            padding-bottom: 0 !important;
+            padding-top: var(--spacing-md);
         }
 
         .body-cell {
