@@ -84,9 +84,9 @@
                     : searchingAccounts}
             {#each searchingAccountList as account}
                 <Badge
-                    content={escapeHTML(
-                        createSenderAddressFromAccount(account),
-                    )}
+                    content={
+                        getSenderAddressTemplate(account.email_address, account.fullname)
+                    }
                     righticon="close"
                     onclick={() => removeSearchingAccount(account)}
                 />
@@ -101,6 +101,10 @@
             & .searching-account {
                 width: 100%;
                 margin-top: var(--spacing-2xs);
+
+                & .options-container {
+                    max-height: 150px;
+                }
             }
         }
     }

@@ -120,7 +120,7 @@
                     width: 100%;
 
                     & .options-container {
-                        height: 150px;
+                        max-height: 150px;
                     }
                 }
             }
