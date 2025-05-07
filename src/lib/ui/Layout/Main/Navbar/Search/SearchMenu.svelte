@@ -47,18 +47,21 @@
     let isExtraOptionsHidden = $state(true);
 
     let searchCriteria: SearchCriteria = $state({});
-    let searchingFolder: string | Folder = $state(Folder.All);
     let searchingAccounts: "home" | TAccount[] = $state(
         SharedStore.currentAccount == "home"
             ? "home"
             : [SharedStore.currentAccount],
     );
+    let searchingFolder: string | Folder = $state(Folder.All);
     let simpleSearchInput: HTMLInputElement | undefined = $state(undefined);
 
     const search = async (
         accounts: TAccount[],
         searchCriteriaOrKeywords: SearchCriteria | string,
     ): Promise<void> => {
+        if (accounts.length > 1)
+            searchingFolder = Folder.All;
+
         const results = await Promise.allSettled(
             accounts.map(async (account) => {
                 const response = await MailboxController.getMailbox(
@@ -152,9 +155,7 @@
         </Input.Group>
         <div class="modal-like-body {isExtraOptionsHidden ? 'hidden' : ''}">
             <Account bind:searchingAccounts />
-            {#if SharedStore.currentAccount !== "home"}
-                <Folders bind:searchingFolder />
-            {/if}
+            <Folders bind:searchingAccounts bind:searchingFolder />
             <Senders bind:searchCriteria />
             <Receivers bind:searchCriteria />
             <Cc bind:searchCriteria />

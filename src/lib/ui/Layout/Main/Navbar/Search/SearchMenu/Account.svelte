@@ -30,6 +30,7 @@
     };
 </script>
 
+<!-- TODO: fix Modal like -->
 <FormGroup>
     <Label for="searching-account">
         {local.searching_account[DEFAULT_LANGUAGE]}

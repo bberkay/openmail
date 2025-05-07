@@ -8,26 +8,28 @@
     import * as Select from "$lib/ui/Components/Select";
 
     interface Props {
+        searchingAccounts: "home" | Account[];
         searchingFolder: string | Folder
     }
 
     let {
+        searchingAccounts = $bindable(),
         searchingFolder = $bindable()
     }: Props = $props();
 
     let standardFolders: string[] = $derived(
-        SharedStore.currentAccount !== "home"
+        searchingAccounts !== "home" && searchingAccounts.length === 1
             ? SharedStore.folders[
-                  (SharedStore.currentAccount as Account).email_address
-              ].standard
+                searchingAccounts[0].email_address
+            ].standard
             : [],
     );
 
     let customFolders: string[] = $derived(
-        SharedStore.currentAccount !== "home"
+        searchingAccounts !== "home" && searchingAccounts.length === 1
             ? SharedStore.folders[
-                  (SharedStore.currentAccount as Account).email_address
-              ].custom
+                searchingAccounts[0].email_address
+            ].custom
             : [],
     );
 
@@ -38,26 +40,38 @@
 
 <FormGroup>
     <Label for="searching-folder">{local.folder[DEFAULT_LANGUAGE]}</Label>
-    <Select.Root
-        id="searching-folder"
-        value={Folder.All}
-        style="width:100%;"
-        onchange={selectFolder}
-    >
-        {#each standardFolders as standardFolder}
-            {@const [folderTag, folderName] =
-                standardFolder.split(":")}
-            <Select.Option
-                value={folderTag}
-                content={folderName}
-            />
-        {/each}
-        <Select.Separator />
-        {#each customFolders as customFolder}
-            <Select.Option
-                value={customFolder}
-                content={customFolder}
-            />
-        {/each}
-    </Select.Root>
+    {#if searchingAccounts.length > 1}
+        <Select.Root
+            id="searching-folder"
+            value={Folder.All}
+            style="width:100%;"
+            onchange={() => {}}
+            disabled={true}
+        >
+            <Select.Option value={Folder.All} content={Folder.All} />
+        </Select.Root>
+    {:else}
+        <Select.Root
+            id="searching-folder"
+            value={Folder.All}
+            style="width:100%;"
+            onchange={selectFolder}
+        >
+            {#each standardFolders as standardFolder}
+                {@const [folderTag, ] =
+                    standardFolder.split(":")}
+                <Select.Option
+                    value={folderTag}
+                    content={folderTag}
+                />
+            {/each}
+            <Select.Separator />
+            {#each customFolders as customFolder}
+                <Select.Option
+                    value={customFolder}
+                    content={customFolder}
+                />
+            {/each}
+        </Select.Root>
+    {/if}
 </FormGroup>

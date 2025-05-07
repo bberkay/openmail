@@ -345,7 +345,7 @@ export const local = {
         en: "Account",
     },
     search_for_account: {
-        en: "Search for {account}...",
+        en: "Search for {account}",
     },
     searching_account: {
         en: "Searching Account",
