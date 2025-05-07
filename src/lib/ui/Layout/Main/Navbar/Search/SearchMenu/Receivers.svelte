@@ -48,6 +48,7 @@
             {#each searchCriteria.receivers as receiver}
                 <Badge
                     content={receiver}
+                    righticon="close"
                     onclick={() => {
                         searchCriteria.receivers =
                             searchCriteria.receivers!.filter(

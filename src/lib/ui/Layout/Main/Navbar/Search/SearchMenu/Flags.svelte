@@ -57,7 +57,16 @@
             <div class="tags">
                 {#if searchCriteria.included_flags}
                     {#each searchCriteria.included_flags as included_flag}
-                        <Badge content={included_flag} />
+                        <Badge
+                            content={included_flag}
+                            righticon="close"
+                            onclick={() => {
+                                searchCriteria.included_flags =
+                                    searchCriteria.included_flags!.filter(
+                                        (flag) => flag !== included_flag,
+                                    );
+                            }}
+                        />
                     {/each}
                 {/if}
             </div>
@@ -80,7 +89,16 @@
             <div class="tags">
                 {#if searchCriteria.excluded_flags}
                     {#each searchCriteria.excluded_flags as excluded_flag}
-                        <Badge content={excluded_flag} />
+                        <Badge
+                            content={excluded_flag}
+                            righticon="close"
+                            onclick={() => {
+                                searchCriteria.excluded_flags =
+                                    searchCriteria.excluded_flags!.filter(
+                                        (flag) => flag !== excluded_flag,
+                                    );
+                            }}
+                        />
                     {/each}
                 {/if}
             </div>

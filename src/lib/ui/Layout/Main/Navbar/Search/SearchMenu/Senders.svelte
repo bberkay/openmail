@@ -46,6 +46,7 @@
             {#each searchCriteria.senders as sender}
                 <Badge
                     content={sender}
+                    righticon="close"
                     onclick={() => {
                         searchCriteria.senders =
                             searchCriteria.senders!.filter(

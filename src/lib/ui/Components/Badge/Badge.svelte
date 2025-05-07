@@ -1,11 +1,12 @@
 <script lang="ts">
     import { combine } from "$lib/utils";
-    import type Icon from "$lib/ui/Components/Icon";
+    import Icon from "$lib/ui/Components/Icon";
 
     interface Props {
         content: string;
-        lefticon?: Icon;
-        righticon?: Icon;
+        lefticon?: string;
+        righticon?: string;
+        onclick?: (e: Event) => void;
         [attribute: string]: unknown;
     }
 
@@ -13,6 +14,7 @@
         content,
         lefticon,
         righticon,
+        onclick,
         ...attributes
     }: Props  = $props();
 
@@ -23,17 +25,18 @@
 </script>
 
 <div
-    class={combine("badge", additionalClass)}
+    class={combine(`badge ${onclick ? "clickable" : ""}`, additionalClass)}
+    {onclick}
     {...restAttributes}
 >
     {#if lefticon}
-        {lefticon}
+        <Icon name={lefticon} />
     {/if}
     <span>
         {@html content}
     </span>
     {#if righticon}
-        {righticon}
+        <Icon name={righticon} />
     {/if}
 </div>
 
@@ -44,6 +47,7 @@
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
+            gap: var(--spacing-xs);
             padding: var(--spacing-xs);
             padding-top: calc(var(--spacing-2xs) / 2);
             padding-bottom: var(--spacing-2xs);
@@ -51,6 +55,15 @@
             border: 1px solid var(--color-border);
             background-color: transparent;
             color: var(--color-text-primary);
+            margin-top: var(--spacing-2xs);
+
+            &.clickable:hover {
+                background-color: var(--color-hover);
+            }
+
+            &.clickable:active {
+                background-color: var(--color-border);
+            }
         }
     }
 </style>

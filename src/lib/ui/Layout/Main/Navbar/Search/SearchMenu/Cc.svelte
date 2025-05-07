@@ -46,10 +46,12 @@
             {#each searchCriteria.cc as cc}
                 <Badge
                     content={cc}
+                    righticon="close"
                     onclick={() => {
-                        searchCriteria.cc = searchCriteria.cc!.filter(
-                            (addr) => addr !== cc,
-                        );
+                        searchCriteria.cc =
+                            searchCriteria.cc!.filter(
+                                (addr) => addr !== cc,
+                            );
                     }}
                 />
             {/each}

@@ -11,7 +11,7 @@
         getSearchForAccountTemplate,
     } from "$lib/templates";
     import AccountSelection from "$lib/ui/Layout/Main/Portable/AccountSelection.svelte";
-    import { createSenderAddressFromAccount } from "$lib/utils";
+    import { createSenderAddressFromAccount, escapeHTML } from "$lib/utils";
 
     interface Props {
         searchingAccounts: "home" | Account[];
@@ -34,13 +34,16 @@
     <Label for="searching-account">
         {local.searching_account[DEFAULT_LANGUAGE]}
     </Label>
-    <Button.Basic onclick={showAccountSelection}>
+    <Button.Basic
+        class="btn-outline select-account-btn"
+        onclick={showAccountSelection}
+    >
         {getSearchForAccountTemplate(
             (searchingAccounts === "home"
                 ? SharedStore.accounts
                 : searchingAccounts
             )
-                .map((acc) => createSenderAddressFromAccount(acc))
+                .map((acc) => escapeHTML(createSenderAddressFromAccount(acc)))
                 .join(","),
         )}
     </Button.Basic>
@@ -52,7 +55,8 @@
                     : searchingAccounts}
             {#each searchingAccountList as account}
                 <Badge
-                    content={createSenderAddressFromAccount(account)}
+                    content={escapeHTML(createSenderAddressFromAccount(account))}
+                    righticon="close"
                     onclick={() => {
                         if (searchingAccounts === "home") return;
                         searchingAccounts = searchingAccounts.filter(
@@ -72,3 +76,12 @@
     actionOnSelect={selectSearchingAccount}
     initialSelectedAccounts={searchingAccounts}
 />
+
+<style>
+    :global {
+        .select-account-btn {
+            text-align: left;
+            margin-top: var(--spacing-2xs);
+        }
+    }
+</style>

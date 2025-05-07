@@ -226,6 +226,8 @@ h1, h2, h3, h4, h5 {
 }
 
 .tags {
+    display: flex;
+    gap: var(--spacing-2xs);
     margin-top: var(--spacing-2xs);
     font-size: var(--font-size-sm);
 }
