@@ -58,6 +58,22 @@
         showModal(CreateFolder);
     };
 
+    const showCreateSubfolder = (parentFolderName: string) => {
+        showModal(CreateFolder, { parentFolderName });
+    }
+
+    const showRenameFolder = (folderName: string) => {
+        showModal(RenameFolder, { folderName });
+    }
+
+    const showMoveFolder = (folderName: string) => {
+        showModal(MoveFolder, { folderName });
+    }
+
+    const showDeleteFolder = (folderName: string) => {
+        showModal(DeleteFolder, { folderName })
+    }
+
     const refreshFolders = async () => {
         const response = await MailboxController.getFolders(
             SharedStore.currentAccount as Account,
@@ -109,36 +125,16 @@
                         <Icon name="ellipsis" />
                     </Dropdown.Toggle>
                     <Dropdown.Content>
-                        <Dropdown.Item
-                            onclick={() =>
-                                showModal(CreateFolder, {
-                                    parentFolderName: customFolder,
-                                })}
-                        >
+                        <Dropdown.Item onclick={() => showCreateSubfolder(customFolder)}>
                             {local.create_subfolder[DEFAULT_LANGUAGE]}
                         </Dropdown.Item>
-                        <Dropdown.Item
-                            onclick={() =>
-                                showModal(RenameFolder, {
-                                    folderName: customFolder,
-                                })}
-                        >
+                        <Dropdown.Item onclick={() => showRenameFolder(customFolder)}>
                             {local.rename_folder[DEFAULT_LANGUAGE]}
                         </Dropdown.Item>
-                        <Dropdown.Item
-                            onclick={() =>
-                                showModal(MoveFolder, {
-                                    folderName: customFolder,
-                                })}
-                        >
+                        <Dropdown.Item onclick={() => showMoveFolder(customFolder)}>
                             {local.move_folder[DEFAULT_LANGUAGE]}
                         </Dropdown.Item>
-                        <Dropdown.Item
-                            onclick={() =>
-                                showModal(DeleteFolder, {
-                                    folderName: customFolder,
-                                })}
-                        >
+                        <Dropdown.Item onclick={() => showDeleteFolder(customFolder)}>
                             {local.delete_folder[DEFAULT_LANGUAGE]}
                         </Dropdown.Item>
                     </Dropdown.Content>
