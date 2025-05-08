@@ -104,6 +104,18 @@
         <Dropdown.Item onclick={showCreateFolder}>
             {local.create_folder[DEFAULT_LANGUAGE]}
         </Dropdown.Item>
+        <Dropdown.Item onclick={showCreateFolder}>
+            {local.create_folder[DEFAULT_LANGUAGE]}
+        </Dropdown.Item>
+        <Dropdown.Item onclick={showCreateFolder}>
+            {local.create_folder[DEFAULT_LANGUAGE]}
+        </Dropdown.Item>
+        <Dropdown.Item onclick={showCreateFolder}>
+            {local.create_folder[DEFAULT_LANGUAGE]}
+        </Dropdown.Item>
+        <Dropdown.Item onclick={showCreateFolder}>
+            {local.create_folder[DEFAULT_LANGUAGE]}
+        </Dropdown.Item>
         <Dropdown.Item onclick={refreshFolders}>
             {local.refresh_folders[DEFAULT_LANGUAGE]}
         </Dropdown.Item>
@@ -149,7 +161,7 @@
         nav {
             & .folders {
                 & > .dropdown-content {
-                    height: 350px!important;
+                    max-height: 80vh!important;
                     overflow-y: scroll;
                     overflow-x: hidden;
                 }

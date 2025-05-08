@@ -17,6 +17,9 @@
 
     let dropdownItem: HTMLElement;
 
+    // TODO: Dropdown and others should be closed when clicked on.
+    // TODO: and this will also fix `closeWhenClickedOutside` click
+    // problem when modal backdrop is active.
     const makeAnAction = async (e: Event) => {
         e.stopPropagation();
         e.preventDefault();

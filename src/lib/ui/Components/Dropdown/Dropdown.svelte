@@ -24,14 +24,60 @@
     let content: HTMLElement;
     let isOpen: boolean = false;
 
-    const closeSiblingDropdowns = (e: Event) => {
-        const parentDropdown = container.parentElement!.closest(".dropdown-container");
+    function closeSiblingDropdowns(e: Event) {
+        const parentDropdown = container.parentElement!.closest(
+            ".dropdown-container",
+        );
         if (parentDropdown) {
-            const siblingContent = parentDropdown
-                .querySelector<HTMLElement>(".dropdown-container.inline .dropdown-content:not(.hidden)")
+            const siblingContent = parentDropdown.querySelector<HTMLElement>(
+                ".dropdown-container.inline .dropdown-content:not(.hidden)",
+            );
             if (siblingContent !== content) {
                 siblingContent?.classList.add("hidden");
             }
+        }
+    }
+
+    function restructureInlineDropdown() {
+        if (!inline) return;
+
+        if (isOpen) {
+            document.body.append(content);
+        } else {
+            container.append(content);
+        }
+
+        repositionInlineDropdown();
+
+        const parentDropdownContent = container.parentElement?.
+            closest(".dropdown-container")?.
+            querySelector(".dropdown-content");
+        if (parentDropdownContent) {
+            console.log("parent: ", isOpen);
+            if (isOpen) {
+                parentDropdownContent.addEventListener("scroll", repositionInlineDropdown);
+            } else {
+                parentDropdownContent.removeEventListener("scroll", repositionInlineDropdown);
+            }
+        }
+    }
+
+    function repositionInlineDropdown() {
+        console.log("ge1231");
+        if (!inline) return;
+
+        if (isOpen) {
+            const toggleRect = toggle.getBoundingClientRect();
+            const scrollX =
+                window.scrollX || document.documentElement.scrollLeft;
+            const scrollY =
+                window.scrollY || document.documentElement.scrollTop;
+
+            content.style.top = `${toggleRect.bottom + scrollY}px`;
+            content.style.left = `${toggleRect.left + scrollX}px`;
+        } else {
+            content.style.top = "";
+            content.style.left = "";
         }
     }
 
@@ -46,9 +92,11 @@
             e.stopPropagation();
             closeSiblingDropdowns(e);
         }
+
         if (!disabled) {
             content.classList.toggle("hidden");
             isOpen = !content.classList.contains("hidden");
+            restructureInlineDropdown();
         }
     };
 

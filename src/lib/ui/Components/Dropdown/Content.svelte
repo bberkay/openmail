@@ -25,22 +25,20 @@
 <style>
     :global {
         .dropdown-content {
-            width: 100%;
+            width: max-content;
             position: absolute;
-            display: flex;
             user-select: none;
             background-color: var(--color-bg-primary);
             color: var(--color-text-primary);
-            flex-direction: column;
             text-align: left!important;
             border: 1px solid var(--color-border);
             border-radius: var(--radius-sm);
             z-index: var(--z-index-dropdown);
         }
 
-        .dropdown-container.inline {
+        .dropdown-container {
             & .dropdown-content {
-                width: max-content;
+                width: 100%;
             }
         }
     }
