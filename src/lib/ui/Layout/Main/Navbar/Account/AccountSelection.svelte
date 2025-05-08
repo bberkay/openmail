@@ -118,7 +118,7 @@
             onkeyup={search}
             onblur={search}
         />
-        <Button.Basic type="button" data-modal-close="">
+        <Button.Basic type="button" data-modal-close>
             <Icon name="close" />
         </Button.Basic>
     </Input.Group>

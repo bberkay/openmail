@@ -131,7 +131,7 @@
         <Button.Basic type="button" onclick={toggleExtraOptions}>
             <Icon name="funnel" />
         </Button.Basic>
-        <Button.Basic type="button" data-modal-close="">
+        <Button.Basic type="button" data-modal-close>
             <Icon name="close" />
         </Button.Basic>
     </Input.Group>

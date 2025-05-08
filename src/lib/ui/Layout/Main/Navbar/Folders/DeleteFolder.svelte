@@ -73,7 +73,7 @@
             <Button.Basic
                 type="button"
                 class="btn-inline"
-                data-modal-close=""
+                data-modal-close
             >
                 <span>{local.cancel[DEFAULT_LANGUAGE]}</span>
             </Button.Basic>
