@@ -14,7 +14,6 @@ Key features include:
 Primarily designed for use by the `Openmail` class.
 
 Author: <berkaykayaforbusiness@outlook.com>
-License: MIT
 """
 
 from email.message import EmailMessage

@@ -1,42 +1,43 @@
 {
-  "productName": "open-mail",
-  "version": "0.0.1",
-  "identifier": "com.tauri.dev",
-  "build": {
-    "beforeDevCommand": "bun run dev",
-    "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun run build",
-    "frontendDist": "../build"
-  },
-  "app": {
-      "macOSPrivateApi": true,
-    "windows": [
-      {
-        "width": 1200,
-        "height": 700,
-        "center": true,
-        "decorations": false,
-        "transparent": true
-      }
-    ],
-    "security": {
-      "csp": null
+    "productName": "Openmail",
+    "version": "0.1.0",
+    "identifier": "com.tauri.dev",
+    "build": {
+        "beforeDevCommand": "bun run dev",
+        "devUrl": "http://localhost:1420",
+        "beforeBuildCommand": "bun run build",
+        "frontendDist": "../build"
+    },
+    "app": {
+        "macOSPrivateApi": true,
+        "windows": [
+            {
+                "title": "Openmail",
+                "width": 1200,
+                "height": 700,
+                "center": true,
+                "decorations": false,
+                "transparent": true
+            }
+        ],
+        "security": {
+            "csp": null
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ]
+    },
+    "plugins": {
+        "fs": {
+            "requireLiteralLeadingDot": false
+        }
     }
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
-  },
-  "plugins": {
-      "fs": {
-        "requireLiteralLeadingDot": false
-      }
-  }
 }

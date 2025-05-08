@@ -1,7 +1,7 @@
 {
-  "name": "open-mail",
-  "version": "0.0.1",
-  "description": "",
+  "name": "openmail",
+  "version": "0.1.0",
+  "description": "Self hosted email client",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -11,7 +11,6 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "tauri"
   },
-  "license": "MIT",
   "dependencies": {
     "@bberkay/wysiwygeditor": "^2.1.4",
     "@tauri-apps/api": "^2.4.1",

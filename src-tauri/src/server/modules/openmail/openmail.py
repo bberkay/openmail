@@ -8,7 +8,6 @@ Dependencies:
 `smtp` modules.
 
 Author: <berkaykayaforbusiness@outlook.com>
-License: MIT
 """
 
 from .imap import IMAPManager, IMAPManagerException
