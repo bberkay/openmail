@@ -13,11 +13,11 @@
 
     onMount(() => {
         appWindow.onThemeChanged(async ({ payload: theme }) => {
-            await handleThemeOnSystemThemeChanged(theme);
+            await handleTheme(theme);
         });
     });
 
-    async function handleThemeOnSystemThemeChanged(theme: "light" | "dark") {
+    async function handleTheme(theme: "light" | "dark") {
         if (SharedStore.preferences.theme === Theme.System) {
             const newTheme = theme.toLowerCase();
             document.documentElement.setAttribute("data-color-scheme", theme);

@@ -63,7 +63,7 @@
 </script>
 
 <Dropdown.Root class="accounts">
-    <Dropdown.Toggle>
+    <Dropdown.Toggle tooltip>
         {SharedStore.currentAccount === "home"
             ? local.home[DEFAULT_LANGUAGE]
             : SharedStore.currentAccount.email_address}

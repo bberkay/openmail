@@ -119,6 +119,7 @@
     --z-index-overlay: 300;
     --z-index-modal: 400;
     --z-index-modal-over: 500;
+    --z-index-tooltip: 600;
     --z-index-titlebar: 9999;
 }
 

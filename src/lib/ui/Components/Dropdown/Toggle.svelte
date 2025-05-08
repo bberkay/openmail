@@ -2,6 +2,7 @@
     import { combine } from "$lib/utils";
     import type { Snippet } from "svelte";
     import Icon from "$lib/ui/Components/Icon";
+    import { show as showTooltip } from "$lib/ui/Components/Tooltip";
 
     interface Props {
         children: Snippet;
@@ -12,6 +13,7 @@
 
     const {
         class: additionalClass,
+        tooltip,
         ...restAttributes
     } = attributes;
 </script>
@@ -22,7 +24,9 @@
     class={combine("dropdown-toggle", additionalClass)}
     {...restAttributes}
 >
-    {@render children()}
+    <div class="dropdown-toggle-content" use:showTooltip={tooltip}>
+        {@render children()}
+    </div>
     <Icon name="dropdown" class="non-inline-dropdown-icon"/>
 </div>
 
@@ -39,6 +43,11 @@
             padding: var(--spacing-xs) var(--spacing-sm);
             cursor: pointer;
             background-color: var(--color-bg-primary);
+            gap: var(--spacing-2xs);
+
+            & .dropdown-toggle-content {
+                flex: 1;
+            }
         }
 
         .dropdown-container.inline {
