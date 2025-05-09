@@ -24,7 +24,7 @@
     class={combine("dropdown-toggle", additionalClass)}
     {...restAttributes}
 >
-    <div class="dropdown-toggle-content" use:showTooltip={tooltip}>
+    <div class="dropdown-toggle-content">
         {@render children()}
     </div>
     <Icon name="dropdown" class="non-inline-dropdown-icon"/>
@@ -47,6 +47,9 @@
 
             & .dropdown-toggle-content {
                 flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
         }
 

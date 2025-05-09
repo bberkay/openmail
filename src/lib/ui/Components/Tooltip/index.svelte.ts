@@ -13,7 +13,7 @@ export const show: Action<HTMLElement, string | unknown> = (
     node: HTMLElement,
     content: string | unknown,
 ) => {
-    if (!content) return;
+    content = content || node.innerText;
 
     function mountTooltip() {
         const mountWrapper = () => {
@@ -49,7 +49,6 @@ export const show: Action<HTMLElement, string | unknown> = (
         }
     }
 
-    node.classList.add("fit");
     node.addEventListener("mouseenter", mountTooltip);
     node.addEventListener("mouseleave", unmountTooltip);
     document.addEventListener("scroll", unmountTooltip);

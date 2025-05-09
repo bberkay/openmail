@@ -100,7 +100,6 @@
         .search-menu {
             & .searching-account {
                 width: 100%;
-                margin-top: var(--spacing-2xs);
 
                 & .options-container {
                     max-height: 150px;

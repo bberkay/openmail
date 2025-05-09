@@ -241,7 +241,7 @@
 <style>
     :global {
         .label + .custom-select-wrapper {
-            margin-top: var(--spacing-2xs);
+            margin-top: var(--spacing-xs);
         }
 
         .custom-select-wrapper {

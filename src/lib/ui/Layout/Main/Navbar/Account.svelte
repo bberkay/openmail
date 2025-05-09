@@ -15,6 +15,8 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { createSenderAddress, createSenderAddressFromAccount } from "$lib/utils";
+    import { show as showTooltip } from "$lib/ui/Components/Tooltip";
 
     const setCurrentAccountAsHome = async () => {
         await setCurrentAccount("home");
@@ -63,10 +65,12 @@
 </script>
 
 <Dropdown.Root class="accounts">
-    <Dropdown.Toggle tooltip>
-        {SharedStore.currentAccount === "home"
-            ? local.home[DEFAULT_LANGUAGE]
-            : SharedStore.currentAccount.email_address}
+    <Dropdown.Toggle>
+        <span use:showTooltip>
+            {SharedStore.currentAccount === "home"
+                ? local.home[DEFAULT_LANGUAGE]
+                : SharedStore.currentAccount.email_address}
+        </span>
     </Dropdown.Toggle>
     <Dropdown.Content>
         <Dropdown.Item onclick={setCurrentAccountAsHome}>
@@ -84,10 +88,9 @@
         </Dropdown.Item>
         {#if SharedStore.currentAccount !== "home"}
             <Dropdown.Item onclick={logout}>
-                {getLogoutFromTemplate(
-                    SharedStore.currentAccount.fullname ||
-                        SharedStore.currentAccount.email_address,
-                )}
+                <span use:showTooltip={`Logout from ${createSenderAddressFromAccount(SharedStore.currentAccount)}`}>
+                    Logout
+                </span>
             </Dropdown.Item>
         {/if}
         <Dropdown.Item onclick={quit}>

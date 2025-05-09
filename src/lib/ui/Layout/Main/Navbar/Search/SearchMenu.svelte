@@ -18,7 +18,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import {
         DEFAULT_LANGUAGE,
-        GENERAL_FADE_DURATION_MS,
         REALTIME_SEARCH_DELAY_MS,
     } from "$lib/constants";
     import { local } from "$lib/locales";
@@ -155,9 +154,7 @@
 <style>
     :global {
         .search-menu {
-            &:not(:has(.frameless-body.hidden)) {
-                width: var(--container-lg) !important;
-            }
+            width: var(--container-lg) !important;
         }
     }
 </style>

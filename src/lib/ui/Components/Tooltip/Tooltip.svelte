@@ -2,25 +2,24 @@
     import { onMount } from "svelte";
     import { fade } from 'svelte/transition';
 
+    const FADE_DURATION_MS = 200;
+
     interface Props {
         content: string;
     }
 
     let { content }: Props = $props();
 
-    let parent: HTMLElement;
     let container: HTMLElement;
     onMount(() => {
-        parent = container.parentElement as HTMLElement;
         if (typeof content !== "string") {
-            content = parent.innerText;
+            content = container.innerText;
         }
         container.innerText = content;
         positionTooltip();
     });
 
     function positionTooltip() {
-        const GAP = 4;
         const tooltipRect = container.getBoundingClientRect();
 
         const horizontanlPosition = "0px";
@@ -30,7 +29,7 @@
             container.style.left = horizontanlPosition;
         }
 
-        const verticalPosition = `${tooltipRect.height + GAP}px`;
+        const verticalPosition = `${container.offsetTop}px`;
         if (tooltipRect.bottom > window.innerHeight) {
             container.style.bottom = verticalPosition;
         } else {
@@ -39,7 +38,7 @@
     }
 </script>
 
-<div transition:fade={{ duration: 200 }} bind:this={container} class="tooltip" tabindex="-1"></div>
+<div transition:fade={{ duration: FADE_DURATION_MS }} bind:this={container} class="tooltip" tabindex="-1"></div>
 
 <style>
     :global {
