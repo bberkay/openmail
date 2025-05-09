@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount, onDestroy } from "svelte";
     import { type Snippet } from "svelte";
     import { combine } from "$lib/utils";
 
@@ -63,7 +63,6 @@
     }
 
     function repositionInlineDropdown() {
-        console.log("ge1231");
         if (!inline) return;
 
         if (isOpen) {
@@ -105,7 +104,12 @@
         toggle.addEventListener("click", toggleDropdown);
         toggle.addEventListener("keydown", toggleDropdown);
         content = container.querySelector(".dropdown-content")!;
+        container.addEventListener("closeDropdown", toggleDropdown);
     });
+
+    onDestroy(() => {
+        container.removeEventListener("closeDropdown", toggleDropdown);
+    })
 </script>
 
 <svelte:body onclick={closeWhenClickedOutside} />

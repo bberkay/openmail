@@ -16,10 +16,11 @@
     }: Props = $props();
 
     let dropdownItem: HTMLElement;
+    const closeDropdownEvent = new CustomEvent(
+        "closeDropdown",
+        { bubbles: true }
+    )
 
-    // TODO: Dropdown and others should be closed when clicked on.
-    // TODO: and this will also fix `closeWhenClickedOutside` click
-    // problem when modal backdrop is active.
     const makeAnAction = async (e: Event) => {
         e.stopPropagation();
         e.preventDefault();
@@ -32,6 +33,7 @@
 
         await onclick(e);
         unmount(loader);
+        dropdownItem.dispatchEvent(closeDropdownEvent);
         dropdownItem.classList.remove("disabled");
     }
 
