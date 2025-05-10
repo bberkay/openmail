@@ -56,13 +56,13 @@
             }
 
             &.btn-inline {
-                padding: var(--spacing-2xs);
+                padding: var(--spacing-2xs) var(--spacing-sm);
                 margin: 0;
                 background-color: transparent;
                 color: var(--color-text-primary);
 
-                &:has(span) {
-                    padding: var(--spacing-2xs) var(--spacing-sm);
+                &:has(> svg:only-child) {
+                    padding: var(--spacing-2xs);
                 }
 
                 &:hover,

@@ -1,5 +1,9 @@
 import Context from "./Context.svelte";
-import ContextItem from "./ContextItem.svelte";
-import ContextSeparator from "./ContextSeparator.svelte";
+import Item from "./Item.svelte";
+import Separator from "./Separator.svelte";
 
-export { Context as Root, ContextItem as Item, ContextSeparator as Separator };
+export {
+    Context as Root,
+    Item,
+    Separator
+};

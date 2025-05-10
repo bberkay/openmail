@@ -17,17 +17,6 @@
 
 <div
     role="separator"
-    class={combine("select-separator", additionalClass)}
+    class={combine("separator", additionalClass)}
     {...restAttributes}
 ></div>
-
-<style>
-    :global {
-        .select-separator {
-            width: 100%;
-            margin-bottom: var(--spacing-2xs);
-            background-color: var(--color-border);
-            height: 1px;
-        }
-    }
-</style>

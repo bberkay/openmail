@@ -2,7 +2,6 @@
     import { combine } from "$lib/utils";
     import type { Snippet } from "svelte";
     import Icon from "$lib/ui/Components/Icon";
-    import { show as showTooltip } from "$lib/ui/Components/Tooltip";
 
     interface Props {
         children: Snippet;
@@ -13,7 +12,6 @@
 
     const {
         class: additionalClass,
-        tooltip,
         ...restAttributes
     } = attributes;
 </script>
