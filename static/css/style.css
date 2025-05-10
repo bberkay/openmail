@@ -205,6 +205,14 @@ h1, h2, h3, h4, h5 {
     color: var(--color-text-secondary);
 }
 
+.separator,
+[role="separator"] {
+    width: 100%;
+    margin-bottom: var(--spacing-2xs);
+    background-color: var(--color-border);
+    height: 1px;
+}
+
 .hidden {
     display: none!important;
 }

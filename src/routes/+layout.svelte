@@ -13,17 +13,13 @@
 
     onMount(() => {
         appWindow.onThemeChanged(async ({ payload: theme }) => {
-            await handleTheme(theme);
+            if (SharedStore.preferences.theme === Theme.System) {
+                const newTheme = theme.toLowerCase();
+                document.documentElement.setAttribute("data-color-scheme", newTheme);
+                localStorage.setItem("theme", newTheme);
+            }
         });
     });
-
-    async function handleTheme(theme: "light" | "dark") {
-        if (SharedStore.preferences.theme === Theme.System) {
-            const newTheme = theme.toLowerCase();
-            document.documentElement.setAttribute("data-color-scheme", theme);
-            localStorage.setItem("theme", theme);
-        }
-    }
 
     /* TODO: Remove this later */
     const handleShortcuts = (e: KeyboardEvent) => {

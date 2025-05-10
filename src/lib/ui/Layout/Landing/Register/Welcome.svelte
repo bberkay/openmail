@@ -9,10 +9,12 @@
     import Label from "$lib/ui/Components/Label";
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { FileSystem } from "$lib/services/FileSystem";
-    import { getEnumKeyByValue, getEnumValueByKey } from "$lib/utils";
+    import { convertToLanguageEnum, convertToRFC5646Format, convertToThemeEnum, getEnumKeyByValue, getEnumValueByKey } from "$lib/utils";
     import AddAccountForm from "$lib/ui/Layout/Landing/Register/AddAccountForm.svelte";
     import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
+    import { getCurrentWindow } from "@tauri-apps/api/window";
+    import { locale } from "@tauri-apps/plugin-os";
 
     onMount(() => {
         showAlert("info-change-alert-container", {
@@ -21,12 +23,62 @@
         });
     });
 
+    const selectLanguage = async (selectedLanguage: string) => {
+        SharedStore.preferences.language = getEnumValueByKey(
+            Language,
+            selectedLanguage as keyof typeof Language,
+        );
+
+        let foundLocale = "";
+        if (SharedStore.preferences.language === Language.System) {
+            const preferredLocale = await locale();
+            foundLocale = preferredLocale
+                ? convertToLanguageEnum(preferredLocale) || Language.EN_US
+                : Language.EN_US;
+        } else {
+            foundLocale = SharedStore.preferences.language;
+        }
+
+        document.documentElement.setAttribute(
+            "lang",
+            convertToRFC5646Format(foundLocale)
+        );
+    }
+
+    const selectTheme = async (selectedTheme: string) => {
+        SharedStore.preferences.theme = getEnumValueByKey(
+            Theme,
+            selectedTheme as keyof typeof Theme,
+        );
+
+        let foundTheme = "";
+        if(SharedStore.preferences.theme === Theme.System) {
+            const preferredTheme = await getCurrentWindow().theme();
+            foundTheme = (preferredTheme
+                ? convertToThemeEnum(preferredTheme) || Theme.Dark
+                : Theme.Dark).toLowerCase();
+        } else {
+            foundTheme = SharedStore.preferences.theme.toLowerCase();
+        }
+
+        document.documentElement.setAttribute("data-color-scheme", foundTheme);
+    }
+
     const saveInitialPreferences = async (e: Event): Promise<void> => {
         const fileSystem = await FileSystem.getInstance();
         await fileSystem.savePreferences({
             language: SharedStore.preferences.language,
             theme: SharedStore.preferences.theme,
         });
+
+        localStorage.setItem("theme", SharedStore.preferences.theme.toLowerCase());
+        localStorage.setItem(
+            "language",
+            convertToRFC5646Format(
+                getEnumKeyByValue(Language, SharedStore.preferences.language)!,
+            )
+        );
+
         showContent(
             SharedStore.accounts.length > 0 ||
                 SharedStore.failedAccounts.length > 0
@@ -47,12 +99,7 @@
                 Language,
                 SharedStore.preferences.language,
             )}
-            onchange={(selectedOption) => {
-                SharedStore.preferences.language = getEnumValueByKey(
-                    Language,
-                    selectedOption as keyof typeof Language,
-                );
-            }}
+            onchange={selectLanguage}
             style="width:100%"
         >
             {#each Object.entries(Language) as langEntry}
@@ -67,12 +114,7 @@
             id="theme"
             placeholder="Theme"
             value={getEnumKeyByValue(Theme, SharedStore.preferences.theme)}
-            onchange={(selectedOption) => {
-                SharedStore.preferences.theme = getEnumValueByKey(
-                    Theme,
-                    selectedOption as keyof typeof Theme,
-                );
-            }}
+            onchange={selectTheme}
             style="width:100%"
         >
             {#each Object.entries(Theme) as themeEntry}

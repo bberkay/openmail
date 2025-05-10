@@ -450,7 +450,7 @@ export const local = {
         en: "Delete Folder",
     },
     minimize_to_tray: {
-        en: "Minimize to tray"
+        en: "Minimize"
     },
     settings: {
         en: "Settings"

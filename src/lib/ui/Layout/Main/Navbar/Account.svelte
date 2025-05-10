@@ -3,9 +3,10 @@
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { show as showModal } from "$lib/ui/Components/Modal";
+    import Settings from "$lib/ui/Layout/Main/Content/Settings.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import {
-        getLogoutFromTemplate,
         getNotLoggedOutFromTemplate,
     } from "$lib/templates";
     import { show as showToast } from "$lib/ui/Components/Toast";
@@ -15,7 +16,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import { createSenderAddress, createSenderAddressFromAccount } from "$lib/utils";
+    import { createSenderAddressFromAccount } from "$lib/utils";
     import { show as showTooltip } from "$lib/ui/Components/Tooltip";
 
     const setCurrentAccountAsHome = async () => {
@@ -26,9 +27,11 @@
         showModal(AccountSelection);
     }
 
-    const minimize = () => {};
+    const showSettings = () => {
+        showContent(Settings);
+    };
 
-    const showSettings = () => {};
+    const minimize = () => {};
 
     const logout = () => {
         showConfirm({
@@ -80,11 +83,11 @@
             Change account
         </Dropdown.Item>
         <Dropdown.Separator/>
-        <Dropdown.Item onclick={minimize}>
-            {local.minimize_to_tray[DEFAULT_LANGUAGE]}
-        </Dropdown.Item>
         <Dropdown.Item onclick={showSettings}>
             {local.settings[DEFAULT_LANGUAGE]}
+        </Dropdown.Item>
+        <Dropdown.Item onclick={minimize}>
+            {local.minimize_to_tray[DEFAULT_LANGUAGE]}
         </Dropdown.Item>
         {#if SharedStore.currentAccount !== "home"}
             <Dropdown.Item onclick={logout}>
