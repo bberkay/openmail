@@ -4,6 +4,7 @@
     import Navbar from "$lib/ui/Layout/Main/Navbar.svelte";
     import Content from "$lib/ui/Layout/Main/Content.svelte";
     import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import Settings from "$lib/ui/Layout/Main/Content/Settings.svelte";
     import Landing from "$lib/ui/Layout/Landing.svelte";
     import Register from "$lib/ui/Layout/Landing/Register.svelte";
     import Welcome from "$lib/ui/Layout/Landing/Register/Welcome.svelte";
@@ -15,9 +16,10 @@
 {#if Object.keys(SharedStore.mailboxes).length > 0}
     <Main>
         <Navbar />
-        <!--<Content>
-            <Mailbox />
-            </Content>-->
+        <Content>
+            <!--<Mailbox />-->
+            <Settings />
+        </Content>
     </Main>
 {:else}
     <Landing>

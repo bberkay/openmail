@@ -96,8 +96,11 @@
 <style>
     :global {
         .content {
-            width: 80%;
-            margin-top: var(--spacing-xl);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: var(--spacing-2xl);
 
             &:has(.compose) {
                 width: 50%;
