@@ -136,8 +136,15 @@ export enum Theme {
     Dark = "Dark",
 }
 
+export enum MailboxLength {
+    Fast = "10",
+    Standard = "50",
+    Compact = "100"
+}
+
 export interface Preferences {
     theme: Theme;
     language: Language;
-    mailboxLength: number;
+    mailboxLength: MailboxLength;
+    isAutostartEnabled: boolean;
 }

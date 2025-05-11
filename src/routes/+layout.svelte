@@ -6,6 +6,7 @@
     import { Theme } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { getCurrentWindow } from '@tauri-apps/api/window';
+
     let { children } = $props();
 
     let isAppLoaded = $derived(SharedStore.isAppLoaded);

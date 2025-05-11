@@ -1,13 +1,10 @@
 import type { ClientInit } from "@sveltejs/kit";
 import { invoke } from "@tauri-apps/api/core";
-import { locale } from '@tauri-apps/plugin-os';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Language, TauriCommand, Theme } from "$lib/types";
-import { SharedStore, SharedStoreKeys } from "$lib/stores/shared.svelte";
+import { TauriCommand } from "$lib/types";
+import { SharedStore } from "$lib/stores/shared.svelte";
 import { ApiService } from "$lib/services/ApiService";
 import { FileSystem } from "$lib/services/FileSystem";
 import { AccountController } from "$lib/controllers/AccountController";
-import { convertToLanguageEnum, convertToThemeEnum, convertToRFC5646Format, getEnumKeyByValue } from "$lib/utils";
 
 const SERVER_CONNECTION_TRY_SLEEP_MS = 500;
 

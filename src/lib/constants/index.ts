@@ -1,11 +1,11 @@
-import { Language, Theme, type Preferences } from "$lib/types";
+import { Language, MailboxLength, Theme, type Preferences } from "$lib/types";
 
 export const DEFAULT_LANGUAGE = "en"; // TODO: Remove this later.
 export const MAILBOX_LENGTH = 10; // TODO: Remove this later.
 export const DEFAULT_PREFERENCES: Preferences = {
     theme: Theme.System,
     language: Language.EN_US,
-    mailboxLength: 10
+    mailboxLength: MailboxLength.Fast
 };
 
 export const MIN_MAILBOX_LENGTH = 10;
