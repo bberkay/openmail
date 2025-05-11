@@ -2,14 +2,24 @@
     import * as Input from "$lib/ui/Components/Input";
 
     interface Props {
+        checked?: boolean;
+        element?: HTMLInputElement;
         [attribute: string]: unknown;
     }
 
-    let { ...attributes }: Props = $props();
+    let {
+        checked = $bindable(),
+        element,
+        ...attributes
+    }: Props = $props();
 </script>
 
 <label class="switch">
-    <Input.Basic type="checkbox" {...attributes} />
+    <Input.Basic
+        bind:element
+        bind:checked
+        {...attributes}
+    />
     <span class="slider"></span>
 </label>
 

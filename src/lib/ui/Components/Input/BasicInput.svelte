@@ -3,6 +3,7 @@
 
     interface Props {
         group?: string[] | undefined;
+        checked?: boolean;
         value?: string;
         element?: HTMLInputElement;
         [attribute: string]: unknown;
@@ -10,6 +11,7 @@
 
     let {
         group = $bindable(undefined),
+        checked = $bindable(undefined),
         value = $bindable(undefined),
         element = $bindable(undefined),
         ...attributes
@@ -31,15 +33,25 @@
 </script>
 
 {#if restAttributes["type"] === "checkbox"}
-    <!-- input type will be (mostly) "checkbox" -->
-    <input
-        bind:this={element}
-        {value}
-        checked={group?.includes(value as string)}
-        onchange={handleChange}
-        class={combine("input", additionalClass)}
-        {...restAttributes}
-    />
+    {#if group}
+        <input
+            bind:this={element}
+            {value}
+            checked={group.includes(value as string)}
+            onchange={handleChange}
+            class={combine("input", additionalClass)}
+            {...restAttributes}
+        />
+    {:else}
+        <input
+            type="checkbox"
+            bind:this={element}
+            {value}
+            bind:checked
+            class={combine("input", additionalClass)}
+            {...restAttributes}
+        />
+    {/if}
 {:else}
     <input
         bind:this={element}

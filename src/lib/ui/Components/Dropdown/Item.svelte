@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { mount, unmount, type Snippet } from "svelte";
+    import { getContext, mount, unmount, type Snippet } from "svelte";
     import { combine } from "$lib/utils";
     import { Spinner } from "$lib/ui/Components/Loader";
 
@@ -16,10 +16,7 @@
     }: Props = $props();
 
     let dropdownItem: HTMLElement;
-    const closeDropdownEvent = new CustomEvent(
-        "closeDropdown",
-        { bubbles: true }
-    )
+    const closeDropdown: () => void = getContext('close-dropdown');
 
     const makeAnAction = async (e: Event) => {
         e.stopPropagation();
@@ -33,8 +30,8 @@
 
         await onclick(e);
         unmount(loader);
-        dropdownItem.dispatchEvent(closeDropdownEvent);
         dropdownItem.classList.remove("disabled");
+        closeDropdown();
     }
 
     const {

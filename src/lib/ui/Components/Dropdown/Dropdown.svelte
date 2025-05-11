@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
+    import { onMount, onDestroy, setContext } from "svelte";
     import { type Snippet } from "svelte";
     import { combine } from "$lib/utils";
 
@@ -98,6 +98,8 @@
             restructureInlineDropdown();
         }
     };
+
+    setContext('close-dropdown', toggleDropdown);
 
     onMount(() => {
         toggle = container.querySelector(".dropdown-toggle")!;
