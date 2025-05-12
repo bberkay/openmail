@@ -34,25 +34,33 @@
     const minimize = () => {};
 
     const logout = () => {
+        const logoutWrapper = async () => {
+            const email_address = (SharedStore.currentAccount as Account).email_address
+            const response = await AccountController.remove(email_address);
+
+            if (!response.success) {
+                showMessage({
+                    title: getNotLoggedOutFromTemplate(
+                        (SharedStore.currentAccount as Account)
+                            .email_address,
+                    ),
+                });
+                console.error(response.message);
+                return;
+            }
+
+            if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
+                SharedStore.notificationChannels[email_address].terminate();
+                delete SharedStore.notificationChannels[email_address];
+            }
+
+            showToast({ content: "logout success" });
+        }
+
         showConfirm({
             title: local.are_you_certain_log_out[DEFAULT_LANGUAGE],
             onConfirmText: local.yes_logout[DEFAULT_LANGUAGE],
-            onConfirm: async () => {
-                const response = await AccountController.remove(
-                    (SharedStore.currentAccount as Account).email_address,
-                );
-                if (!response.success) {
-                    showMessage({
-                        title: getNotLoggedOutFromTemplate(
-                            (SharedStore.currentAccount as Account)
-                                .email_address,
-                        ),
-                    });
-                    console.error(response.message);
-                    return;
-                }
-                showToast({ content: "logout success" });
-            },
+            onConfirm: logoutWrapper,
         });
     };
 
@@ -60,9 +68,7 @@
         showConfirm({
             title: local.are_you_certain_quit_app[DEFAULT_LANGUAGE],
             onConfirmText: local.yes_close_the_app[DEFAULT_LANGUAGE],
-            onConfirm: async () => {
-                await exit(0);
-            },
+            onConfirm: async () => await exit(0)
         });
     };
 </script>

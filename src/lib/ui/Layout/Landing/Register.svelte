@@ -23,8 +23,16 @@
     let { children }: Props = $props();
 </script>
 
-<section bind:this={sectionContainer}>
+<section class="register-container" bind:this={sectionContainer}>
     {#if !isMounted}
         {@render children()}
     {/if}
 </section>
+
+<style>
+    :global {
+        .register-container {
+            margin-top: var(--spacing-2xl);
+        }
+    }
+</style>

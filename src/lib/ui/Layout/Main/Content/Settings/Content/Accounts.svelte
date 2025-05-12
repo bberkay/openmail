@@ -1,4 +1,21 @@
 <script lang="ts">
+
+    /*
+    Edit:
+    if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
+        SharedStore.notificationChannels[email_address].reinitialize();
+    }
+
+    Remove all:
+    Object.values(SharedStore.notificationChannels).forEach(nc => nc.terminate());
+    SharedStore.notificationChannels = {};
+
+    Remove:
+    if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
+        SharedStore.notificationChannels[email_address].terminate();
+        delete SharedStore.notificationChannels[email_address];
+    }
+    */
 </script>
 
 <div class="settings-content-header">
