@@ -6,6 +6,15 @@ export type OpenmailTaskResults<T> = {
     [email_address: string]: T;
 };
 
+export interface INotificationHandler {
+    account: Account;
+    initialize(): void;
+    terminate(): void;
+    reinitialize(): void;
+    areNotificationsAllowed(): boolean;
+    pushDesktopNotification(title?: string, body?: string): void;
+}
+
 export interface Account {
     email_address: string;
     fullname?: string;

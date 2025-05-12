@@ -5,6 +5,7 @@ import {
     type Mailbox,
     type OpenmailTaskResults,
     type Preferences,
+    type INotificationHandler,
 } from "../types";
 
 export enum SharedStoreKeys {
@@ -15,6 +16,7 @@ export enum SharedStoreKeys {
     currentAccount = "currentAccount",
     folders = "folders",
     hierarchyDelimiters = "hierarchyDelimiters",
+    notificationChannels = "notificationChannels",
     recentEmailsChannel = "recentEmailsChannel",
     mailboxes = "mailboxes",
     failedAccounts = "failedAccounts",
@@ -33,6 +35,7 @@ interface ISharedStore {
         custom: string[]
     }>;
     [SharedStoreKeys.hierarchyDelimiters]: OpenmailTaskResults<string>;
+    [SharedStoreKeys.notificationChannels]: OpenmailTaskResults<INotificationHandler>;
     [SharedStoreKeys.recentEmailsChannel]: OpenmailTaskResults<Email[]>;
     [SharedStoreKeys.mailboxes]: OpenmailTaskResults<Mailbox>;
     [SharedStoreKeys.failedAccounts]: Account[];
@@ -48,6 +51,7 @@ export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = $state({
     [SharedStoreKeys.currentAccount]: "home",
     [SharedStoreKeys.folders]: {},
     [SharedStoreKeys.hierarchyDelimiters]: {},
+    [SharedStoreKeys.notificationChannels]: {},
     [SharedStoreKeys.recentEmailsChannel]: {},
     [SharedStoreKeys.mailboxes]: {},
     [SharedStoreKeys.failedAccounts]: [],
