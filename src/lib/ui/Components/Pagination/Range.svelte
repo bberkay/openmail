@@ -20,10 +20,10 @@
         ...attributes
     }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     let current = $state(Math.max(1, startAt));
 

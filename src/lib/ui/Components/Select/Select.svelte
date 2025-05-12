@@ -36,7 +36,10 @@
         ...attributes
     }: Props = $props();
 
-    const { class: additionalClass, ...restAttributes } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     let isOpen = $state(false);
     let options: HTMLElement[] = $state([]);

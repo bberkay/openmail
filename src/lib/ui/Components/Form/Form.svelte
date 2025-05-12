@@ -15,10 +15,10 @@
         ...attributes
     }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     const makeAnApiRequest = async (e: Event) => {
         e.preventDefault();

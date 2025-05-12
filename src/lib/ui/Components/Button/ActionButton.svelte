@@ -16,10 +16,10 @@
         ...attributes
     }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     const makeAnAction = async (e: Event): Promise<void> => {
         e.preventDefault();

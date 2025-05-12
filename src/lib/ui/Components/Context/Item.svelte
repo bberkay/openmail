@@ -15,10 +15,10 @@
         ...attributes
     }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     const onClickWrapper = async (e: Event) => {
         await onclick(e);

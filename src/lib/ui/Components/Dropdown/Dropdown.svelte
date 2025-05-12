@@ -17,7 +17,10 @@
         ...attributes
     }: Props = $props();
 
-    const { class: additionalClass, ...restAttributes } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     let container: HTMLElement;
     let toggle: HTMLElement;

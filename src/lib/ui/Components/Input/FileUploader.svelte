@@ -12,10 +12,10 @@
 
     let { ...attributes }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     let files: FileList | null | undefined = $state();
     let fileUploaderWrapper: HTMLElement;

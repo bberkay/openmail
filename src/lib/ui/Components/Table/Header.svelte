@@ -12,10 +12,10 @@
         ...attributes
     }: Props  = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 </script>
 
 <thead

@@ -23,10 +23,10 @@
         ...attributes
     }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     total = Math.ceil(total / offsetStep);
     let current = $state(Math.max(1, startAt));

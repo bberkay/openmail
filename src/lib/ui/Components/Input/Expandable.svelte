@@ -24,10 +24,10 @@
     let isOpen = $state(false);
     let inputValue = $state("");
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     const tween = new Tween(20, {
         duration: 300,

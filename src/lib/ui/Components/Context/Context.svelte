@@ -18,10 +18,10 @@
         ...attributes
     }: Props = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     let targetElements: NodeListOf<HTMLElement>;
     let cursor = $state({ x: 0, y: 0 });

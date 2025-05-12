@@ -16,7 +16,10 @@
 
     let { id, placeholder, value, onchange, ...attributes }: Props = $props();
 
-    const { class: additionalClass, ...restAttributes } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();

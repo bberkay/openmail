@@ -21,10 +21,10 @@
         ...attributes
     }: PropsWithMountId = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 
     let toast: HTMLElement;
     onMount(() => {
