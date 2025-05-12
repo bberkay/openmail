@@ -16,32 +16,18 @@
 </script>
 
 <script lang="ts">
-    import { SharedStore } from "$lib/stores/shared.svelte";
-    import Form from "$lib/ui/Components/Form";
-    import { FileSystem } from "$lib/services/FileSystem";
-
     interface Props {
         children: Snippet;
     }
 
     let { children }: Props = $props();
-
-    const saveChanges = async (e: Event): Promise<void> => {
-        const fileSystem = await FileSystem.getInstance();
-        await fileSystem.savePreferences({
-            language: SharedStore.preferences.language,
-            theme: SharedStore.preferences.theme,
-        });
-    };
 </script>
 
-<Form onsubmit={saveChanges}>
-    <section class="settings-content" bind:this={sectionContainer}>
-        {#if !isMounted}
-            {@render children()}
-        {/if}
-    </section>
-</Form>
+<section class="settings-content" bind:this={sectionContainer}>
+    {#if !isMounted}
+        {@render children()}
+    {/if}
+</section>
 
 <style>
     :global {
@@ -55,6 +41,7 @@
                 padding: var(--spacing-lg) var(--spacing-xl);
                 font-size: var(--font-size-sm);
                 gap: var(--spacing-lg);
+                height: 100%;
 
                 & .settings-content-header {
                     display: flex;
@@ -68,6 +55,10 @@
                 & .settings-content-body {
                     display: flex;
                     flex-direction: column;
+                    height: 100%;
+                    overflow-x: hidden;
+                    overflow-y: auto;
+                    margin-bottom: 200px;
 
                     & .settings-section {
                         display: flex;
@@ -79,11 +70,11 @@
                         & .settings-section-title {
                             display: flex;
                             flex-direction: column;
-                            flex-grow: 1;
+                            width: 40%;
                         }
 
                         & .settings-section-body {
-                            flex-grow: 2;
+                            width: 60%;
                         }
                     }
                 }

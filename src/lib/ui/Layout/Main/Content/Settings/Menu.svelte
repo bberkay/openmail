@@ -7,16 +7,26 @@
     import Notifications from "./Content/Notifications.svelte";
     import About from "./Content/About.svelte";
     import { showThis as showContent } from "./Content.svelte";
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { DEFAULT_PREFERENCES } from "$lib/constants";
+    import { FileSystem } from "$lib/services/FileSystem";
 
-    const makeMenuShown = (e: Event) => {
+    const highlightSelectedMenu = (e: Event) => {
         document.querySelector(".settings-title-btn.shown")?.classList.remove("shown");
         const newTarget = e.target as HTMLElement;
         newTarget.classList.add("shown");
     }
 
-    const showClickedSettings = (e: Event, component: any) => {
-        makeMenuShown(e);
+    const displaySelectedSettings = (e: Event, component: any) => {
+        highlightSelectedMenu(e);
         showContent(component);
+    }
+
+    const resetToDefault = async () => {
+        SharedStore.preferences = DEFAULT_PREFERENCES;
+        const fileSystem = await FileSystem.getInstance();
+        await fileSystem.savePreferences(SharedStore.preferences);
+        document.dispatchEvent(new CustomEvent("preferencesResetToDefault"));
     }
 </script>
 
@@ -25,42 +35,42 @@
         <Button.Basic
             type="button"
             class="btn-inline settings-title-btn shown"
-            onclick={(e: Event) => showClickedSettings(e, General)}
+            onclick={(e: Event) => displaySelectedSettings(e, General)}
         >
             General
         </Button.Basic>
         <Button.Basic
             type="button"
             class="btn-inline settings-title-btn"
-            onclick={(e: Event) => showClickedSettings(e, Appearance)}
+            onclick={(e: Event) => displaySelectedSettings(e, Appearance)}
         >
             Appearance
         </Button.Basic>
         <Button.Basic
             type="button"
             class="btn-inline settings-title-btn"
-            onclick={(e: Event) => showClickedSettings(e, Mailbox)}
+            onclick={(e: Event) => displaySelectedSettings(e, Mailbox)}
         >
             Mailbox
         </Button.Basic>
         <Button.Basic
             type="button"
             class="btn-inline settings-title-btn"
-            onclick={(e: Event) => showClickedSettings(e, Accounts)}
+            onclick={(e: Event) => displaySelectedSettings(e, Accounts)}
         >
             Accounts
         </Button.Basic>
         <Button.Basic
             type="button"
             class="btn-inline settings-title-btn"
-            onclick={(e: Event) => showClickedSettings(e, Notifications)}
+            onclick={(e: Event) => displaySelectedSettings(e, Notifications)}
         >
             Notifications
         </Button.Basic>
         <Button.Basic
             type="button"
             class="btn-inline settings-title-btn"
-            onclick={(e: Event) => showClickedSettings(e, About)}
+            onclick={(e: Event) => displaySelectedSettings(e, About)}
         >
             About
         </Button.Basic>
@@ -68,14 +78,14 @@
     <div class="settings-menu-right">
         <Button.Action
             type="button"
-            class="btn-inline settings-operation-btn"
-            onclick={() => {}}
+            class="btn-inline btn-md"
+            onclick={resetToDefault}
         >
             Reset to default
         </Button.Action>
         <Button.Action
             type="submit"
-            class="btn-outline settings-operation-btn"
+            class="btn-outline btn-md"
             onclick={() => {}}
         >
             Save changes
@@ -113,10 +123,6 @@
                     display: flex;
                     flex-direction: row;
                     gap: var(--spacing-sm);
-
-                    & .settings-operation-btn {
-                        font-size: var(--font-size-xs);
-                    }
                 }
             }
         }
