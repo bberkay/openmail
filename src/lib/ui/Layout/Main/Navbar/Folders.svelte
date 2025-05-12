@@ -92,7 +92,7 @@
 </script>
 
 <Dropdown.Root
-    class="folders"
+    class="dropdown-sm folders"
     disabled={SharedStore.currentAccount === "home"}
 >
     <Dropdown.Toggle>

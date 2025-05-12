@@ -11,7 +11,7 @@
 
 <Button.Basic
     type="button"
-    class="btn-outline"
+    class="btn-outline btn-sm"
     onclick={showSearchMenu}
 >
     <Icon name="search" />

@@ -67,7 +67,7 @@
     };
 </script>
 
-<Dropdown.Root class="accounts">
+<Dropdown.Root class="dropdown-sm accounts">
     <Dropdown.Toggle>
         <span use:showTooltip>
             {SharedStore.currentAccount === "home"

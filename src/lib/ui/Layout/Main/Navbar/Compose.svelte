@@ -11,7 +11,7 @@
 
 <Button.Basic
     type="button"
-    class="btn-cta"
+    class="btn-cta btn-sm"
     style="width:auto"
     onclick={showCompose}
 >
