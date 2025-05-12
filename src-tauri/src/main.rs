@@ -106,9 +106,8 @@ fn get_server_url() -> String {
 }
 
 fn main() {
-    let mut builder = tauri::Builder::default()
-        .plugin(tauri_plugin_autostart::init())
-        .plugin(tauri_plugin_os::init());
+    let mut builder = tauri::Builder::default();
+
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -121,6 +120,8 @@ fn main() {
     }
 
     builder
+        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
