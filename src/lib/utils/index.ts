@@ -471,9 +471,9 @@ export function convertToRFC5646Format(enumKey: string): string {
     return `${lang.toLowerCase()}-${region.toUpperCase()}`;
 }
 
-export function getEnumKeyByValue<T extends Record<string, string>>(
+export function getEnumKeyByValue<T extends Record<string, any>>(
     enumObj: T,
-    value: string,
+    value: any,
 ): keyof T | undefined {
     return Object.entries(enumObj).find((k) => k[1] === value)?.[0];
 }
