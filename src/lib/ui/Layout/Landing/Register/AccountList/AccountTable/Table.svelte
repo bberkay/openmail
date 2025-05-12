@@ -119,7 +119,6 @@
     };
 </script>
 
-shown Accounts: {shownAccounts.length}
 {#if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
     {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
     <Table.Root class={`account-table ${shownAccounts.length === 0 ? "disabled" : ""}`}>
@@ -145,7 +144,7 @@ shown Accounts: {shownAccounts.length}
                         disabled={accountSelection.length === 0}
                         onclick={removeSelectedAccounts}
                     >
-                        {local.remove_all[DEFAULT_LANGUAGE]}
+                        {local.remove[DEFAULT_LANGUAGE]}
                     </Button.Action>
                 </Table.Head>
             </Table.Row>
@@ -196,7 +195,10 @@ shown Accounts: {shownAccounts.length}
             {:else}
                 <Table.Row>
                     <Table.Cell colspan="3" class="full">
-                        No results found
+                        <div class="no-match-results">
+                            <Icon name="warning"/>
+                            <span>No results found</span>
+                        </div>
                     </Table.Cell>
                 </Table.Row>
             {/each}
@@ -246,6 +248,14 @@ shown Accounts: {shownAccounts.length}
                         height: var(--font-size-md);
                     }
                 }
+            }
+
+            & .no-match-results {
+                display: flex;
+                align-items: center;
+                gap: var(--spacing-sm);
+                justify-content: center;
+                padding: var(--spacing-2xs);
             }
         }
     }

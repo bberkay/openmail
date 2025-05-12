@@ -31,10 +31,6 @@
             width: 100%;
             border-spacing: 0;
             border-radius: var(--radius-sm);
-
-            &.disabled {
-                filter: brightness(1)!important;
-            }
         }
     }
 </style>
