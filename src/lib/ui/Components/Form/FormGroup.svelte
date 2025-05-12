@@ -35,12 +35,12 @@
         .form-group {
             display: flex;
 
-            &:not(:has(.form-group)) {
-                margin-bottom: var(--spacing-lg);
+            &:not(:has(.form-group)):not(:first-of-type) {
+                margin-top: var(--spacing-lg);
             }
 
             & .form-group {
-                margin-top:var(--spacing-2xs);
+                margin-top: var(--spacing-2xs);
             }
 
             &.form-group-vertical {

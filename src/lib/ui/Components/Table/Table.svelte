@@ -12,10 +12,10 @@
         ...attributes
     }: Props  = $props();
 
-    const {
-        class: additionalClass,
-        ...restAttributes
-    } = attributes;
+	let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
 </script>
 
 <table
@@ -31,6 +31,10 @@
             width: 100%;
             border-spacing: 0;
             border-radius: var(--radius-sm);
+
+            &.disabled {
+                filter: brightness(1)!important;
+            }
         }
     }
 </style>
