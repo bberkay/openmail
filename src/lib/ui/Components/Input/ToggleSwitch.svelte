@@ -15,11 +15,7 @@
 </script>
 
 <label class="switch">
-    <Input.Basic
-        bind:element
-        bind:checked
-        {...attributes}
-    />
+    <input type="checkbox" />
     <span class="slider"></span>
 </label>
 
@@ -28,8 +24,8 @@
         .switch {
             position: relative;
             display: inline-block;
-            width: var(--font-size-2xl);
-            height: calc(var(--font-size-2xl) / 1.75);
+            width: 35px;
+            height: 20px;
 
             & input {
                 opacity: 0;
@@ -42,9 +38,9 @@
             }
 
             & input:checked + .slider:before {
-                -webkit-transform: translateX(calc(var(--font-size-2xl) - calc(var(--font-size-2xl) / 1.75)));
-                -ms-transform: translateX(calc(var(--font-size-2xl) - calc(var(--font-size-2xl) / 1.75)));
-                transform: translateX(calc(var(--font-size-2xl) - calc(var(--font-size-2xl) / 1.75)));
+                -webkit-transform: translateX(14px);
+                -ms-transform: translateX(14px);
+                transform: translateX(14px);
             }
 
             & .slider {
@@ -55,20 +51,20 @@
                 right: 0;
                 bottom: 0;
                 background-color: var(--color-gray);
-                -webkit-transition: var(--transition-slow);
-                transition: var(--transition-slow);
-                border-radius: calc(var(--font-size-2xl) / 1.75);
+                -webkit-transition: var(--transition-normal);
+                transition: var(--transition-normal);
+                border-radius: 10px;
 
                 &:before {
                     position: absolute;
                     content: "";
-                    height: calc(var(--font-size-2xl) - calc(var(--font-size-2xl) / 1.75));
-                    height: calc(var(--font-size-2xl) - calc(var(--font-size-2xl) / 1.75));
-                    left: var(--spacing-2xs);
-                    bottom: var(--spacing-2xs);
+                    height: 14px;
+                    width: 14px;
+                    left: 4px;
+                    bottom: 3px;
                     background-color: white;
-                    -webkit-transition: var(--transition-slow);
-                    transition: var(--transition-slow);
+                    -webkit-transition: var(--transition-normal);
+                    transition: var(--transition-normal);
                     border-radius: 50%;
                 }
             }
