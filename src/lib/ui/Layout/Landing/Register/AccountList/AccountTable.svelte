@@ -1,7 +1,7 @@
 <script lang="ts">
-    import Header from "./AccountsTable/Header.svelte";
-    import Table from "./AccountsTable/Table.svelte";
-    import Pagination from "./AccountsTable/Pagination.svelte";
+    import Header from "./AccountTable/Header.svelte";
+    import Table from "./AccountTable/Table.svelte";
+    import Pagination from "./AccountTable/Pagination.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { type Account } from "$lib/types";
 
@@ -9,40 +9,37 @@
         accountsPerPage: number;
         showEditAccount: (account: Account) => void;
         onRemoveAccount?: (email_address: string) => Promise<void>;
-        onRemoveAllAccounts?: () => Promise<void>;
     }
 
     let {
         accountsPerPage,
         showEditAccount,
         onRemoveAccount,
-        onRemoveAllAccounts
     }: Props = $props();
 
     let allAccounts = $derived(
         SharedStore.failedAccounts.concat(SharedStore.accounts),
     );
-    let accounts = $derived(allAccounts.slice(0, accountsPerPage));
+    let shownAccounts = $derived(allAccounts.slice(0, accountsPerPage));
     let accountSelection: string[] = $state([]);
-    let accountSelectionType: "shown" | "all" | false = $state(false);
+    let accountSelectionType: "shown" | "all" | "parts" = $state("parts");
 </script>
 
 <Header
     bind:allAccounts
-    bind:accounts
+    bind:shownAccounts
     bind:accountSelection
     bind:accountSelectionType
 />
 <Table
-    bind:accounts
+    bind:shownAccounts
     bind:accountSelection
     bind:accountSelectionType
     {showEditAccount}
     {onRemoveAccount}
-    {onRemoveAllAccounts}
 />
 <Pagination
     bind:allAccounts
-    bind:accounts
+    bind:shownAccounts
     {accountsPerPage}
 />

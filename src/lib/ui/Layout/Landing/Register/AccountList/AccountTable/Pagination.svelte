@@ -4,18 +4,18 @@
 
     interface Props {
         allAccounts: Account[];
-        accounts: Account[];
+        shownAccounts: Account[];
         accountsPerPage: number;
     }
 
     let {
         allAccounts = $bindable(),
-        accounts = $bindable(),
+        shownAccounts = $bindable(),
         accountsPerPage
     }: Props = $props();
 
     const updateAccountPage = (newOffset: number) => {
-        accounts = allAccounts.slice(
+        shownAccounts = allAccounts.slice(
             newOffset - accountsPerPage,
             newOffset,
         );

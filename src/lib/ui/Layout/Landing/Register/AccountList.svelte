@@ -1,16 +1,11 @@
 <script lang="ts">
-    import {
-        isPermissionGranted,
-        requestPermission,
-        sendNotification,
-    } from "@tauri-apps/plugin-notification";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import {
         getFailedAccountsTemplate,
         getFailedItemTemplate,
     } from "$lib/templates";
-    import { Folder, type Account, type Email } from "$lib/types";
+    import { type Account } from "$lib/types";
     import * as Button from "$lib/ui/Components/Button";
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { show as showMessage } from "$lib/ui/Components/Message";
@@ -20,22 +15,10 @@
     import EditAccountForm from "./EditAccountForm.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import AddAccountForm from "./AddAccountForm.svelte";
-    import AccountsTable from "./AccountList/AccountsTable.svelte";
+    import AccountTable from "./AccountList/AccountTable.svelte";
     import { NotificationHandler } from "$lib/services/NotificationHandler";
 
     const ACCOUNT_COUNT_PER_PAGE = 5;
-
-    async function initMailboxes(): Promise<void> {
-        const response = await MailboxController.init();
-        if (!response.success) {
-            console.error(response.message);
-            showMessage({
-                title: local.error_initialize_mailboxes[DEFAULT_LANGUAGE],
-            });
-        }
-        // TODO: Open this later.
-        //await listenForNotifications();
-    }
 
     /**
      * Create WebSocket connections
@@ -65,6 +48,28 @@
         showEditAccount(SharedStore.failedAccounts[0]);
     }
 
+    const initMailboxes = async () => {
+        const response = await MailboxController.init();
+        if (!response.success) {
+            console.error(response.message);
+            showMessage({
+                title: local.error_initialize_mailboxes[DEFAULT_LANGUAGE],
+            });
+        }
+        // TODO: Open this later.
+        //await listenForNotifications();
+    }
+
+    const showEditAccount = (account: Account) => {
+        showContent(EditAccountForm, {
+            account,
+        });
+    };
+
+    const showAddAccount = () => {
+        showContent(AddAccountForm);
+    };
+
     $effect(() => {
         if (SharedStore.failedAccounts.length > 0) {
             showAlert("accounts-alert-container", {
@@ -82,16 +87,6 @@
             });
         }
     });
-
-    const showEditAccount = (account: Account) => {
-        showContent(EditAccountForm, {
-            account,
-        });
-    };
-
-    const showAddAccount = () => {
-        showContent(AddAccountForm);
-    };
 </script>
 
 <div>
@@ -101,7 +96,7 @@
             Add an account
         </Button.Basic>
     {:else}
-        <AccountsTable
+        <AccountTable
             accountsPerPage={ACCOUNT_COUNT_PER_PAGE}
             {showEditAccount}
         />
