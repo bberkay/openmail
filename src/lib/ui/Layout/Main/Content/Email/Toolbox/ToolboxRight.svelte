@@ -9,8 +9,9 @@
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
-    import { DEFAULT_LANGUAGE, MAILBOX_LENGTH } from "$lib/constants";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
+    import { SharedStore } from "$lib/stores/shared.svelte";
 
     interface Props {
         account: Account;
@@ -43,7 +44,10 @@
     };
 
     const getPreviousEmail = async () => {
-        if (currentOffset <= 1) return;
+        if (currentOffset <= 1)
+            return;
+
+        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         if (currentOffset - (1 % MAILBOX_LENGTH) == 0) {
             await paginateMailboxBackward(currentOffset - 1);
         }
@@ -53,7 +57,10 @@
     };
 
     const getNextEmail = async () => {
-        if (currentOffset >= getCurrentMailbox().total) return;
+        if (currentOffset >= getCurrentMailbox().total)
+            return;
+
+        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         if (currentOffset + (1 % MAILBOX_LENGTH) == 1) {
             await paginateMailboxForward(currentOffset + 1);
         }

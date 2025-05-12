@@ -137,9 +137,9 @@ export enum Theme {
 }
 
 export enum MailboxLength {
-    Fast = "10",
-    Standard = "50",
-    Compact = "100"
+    Fast = 10,
+    Standard = 50,
+    Compact = 100
 }
 
 export interface Preferences {
@@ -147,4 +147,5 @@ export interface Preferences {
     language: Language;
     mailboxLength: MailboxLength;
     isAutostartEnabled: boolean;
+    isSendDelayEnabled: boolean;
 }

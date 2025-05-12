@@ -36,8 +36,20 @@
 <style>
     :global {
         .layout-container{
-            margin-top: var(--titlebar-height);
+            margin-top: var(--spacing-xs);
             height: calc(100vh - var(--titlebar-height));
+        }
+
+        .alert-container {
+            display: flex;
+            flex-direction: column reverse;
+            margin-bottom: var(--spacing-md);
+
+            &:not(:has(div.alert)) {
+                visibility: hidden;
+                height: 0;
+                margin: 0;
+            }
         }
     }
 </style>

@@ -6,8 +6,9 @@
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import * as Button from "$lib/ui/Components/Button";
-    import { DEFAULT_LANGUAGE, MAILBOX_LENGTH } from "$lib/constants";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
+    import { SharedStore } from "$lib/stores/shared.svelte";
 
     interface Props {
         currentOffset: number;
@@ -16,6 +17,7 @@
     let { currentOffset = $bindable() }: Props = $props();
 
     const getPreviousEmails = async () => {
+        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         if (currentOffset <= MAILBOX_LENGTH) return;
         await paginateMailboxBackward(currentOffset);
         currentOffset = Math.min(
@@ -27,6 +29,7 @@
     const getNextEmails = async () => {
         if (currentOffset >= getCurrentMailbox().total) return;
         await paginateMailboxForward(currentOffset);
+        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         currentOffset = Math.min(
             getCurrentMailbox().total,
             currentOffset + MAILBOX_LENGTH,
@@ -38,7 +41,7 @@
     <div class="pagination">
         <Button.Action
             type="button"
-            class="btn-inline {currentOffset <= MAILBOX_LENGTH
+            class="btn-inline {currentOffset <= SharedStore.preferences.mailboxLength
                 ? 'disabled'
                 : ''}"
             onclick={getPreviousEmails}
@@ -48,7 +51,7 @@
         <small>
             {getRangePaginationTemplate(
                 currentOffset.toString(),
-                (currentOffset - 1 + MAILBOX_LENGTH).toString(),
+                (currentOffset - 1 + SharedStore.preferences.mailboxLength).toString(),
                 getCurrentMailbox().total.toString(),
             )}
         </small>

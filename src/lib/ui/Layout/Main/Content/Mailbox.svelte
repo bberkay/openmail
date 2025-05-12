@@ -1,7 +1,7 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { type Mailbox, Folder } from "$lib/types";
-    import { MAILBOX_LENGTH, PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT_MS } from "$lib/constants";
+    import { PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT_MS } from "$lib/constants";
     import { MailboxController } from "$lib/controllers/MailboxController";
 
     let waitPrev: ReturnType<typeof setInterval> | null;
@@ -36,6 +36,7 @@
     }
 
     export async function paginateMailboxBackward(currentOffset: number): Promise<void> {
+        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         if (currentOffset <= MAILBOX_LENGTH)
             return;
 
@@ -106,6 +107,8 @@
 
         return new Promise((resolve) => {
             if (!waitNext) {
+                const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+
                 const emailAddrs =
                     SharedStore.currentAccount !== "home"
                         ? [SharedStore.currentAccount.email_address]

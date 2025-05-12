@@ -8,7 +8,6 @@ import {
     type PostResponse,
 } from "$lib/services/ApiService";
 import {
-    MAILBOX_LENGTH,
     PAGINATE_MAILBOX_CHECK_DELAY_MS,
     WAIT_FOR_EMAILS_TIMEOUT_MS,
 } from "$lib/constants";
@@ -50,7 +49,7 @@ export class MailboxController {
                     account: account,
                     response: await MailboxController.getFolders(account),
                 };
-            })
+            }),
         );
 
         folderResults.forEach((result) => {
@@ -58,7 +57,9 @@ export class MailboxController {
                 response.success = result.value.response.success;
                 response.message = result.value.response.message;
                 if (!response.success) {
-                    SharedStore.accountsWithFailedFolders.push(result.value.account);
+                    SharedStore.accountsWithFailedFolders.push(
+                        result.value.account,
+                    );
                 }
             } else {
                 response.success = false;
@@ -100,7 +101,9 @@ export class MailboxController {
                 response.success = result.value.response.success;
                 response.message = result.value.response.message;
                 if (!response.success) {
-                    SharedStore.accountsWithFailedMailboxes.push(result.value.account);
+                    SharedStore.accountsWithFailedMailboxes.push(
+                        result.value.account,
+                    );
                 }
             } else {
                 response.success = false;
@@ -139,19 +142,16 @@ export class MailboxController {
     }
 
     public static async getFolders(account: Account): Promise<BaseResponse> {
-        const response = await ApiService.get(
-            GetRoutes.GET_FOLDERS,
-            {
-                pathParams: {
-                    account: account.email_address,
-                },
+        const response = await ApiService.get(GetRoutes.GET_FOLDERS, {
+            pathParams: {
+                account: account.email_address,
             },
-        );
+        });
 
         if (response.success && response.data) {
             SharedStore.folders[account.email_address] = {
                 standard: [],
-                custom: []
+                custom: [],
             };
 
             for (const email_address in response.data) {
@@ -179,21 +179,18 @@ export class MailboxController {
         folder?: Folder | string,
         searchCriteria?: SearchCriteria | string,
     ): Promise<GetResponse<GetRoutes.SEARCH_EMAILS>> {
-        return await ApiService.get(
-            GetRoutes.SEARCH_EMAILS,
-            {
-                pathParams: {
-                    account: account.email_address,
-                },
-                queryParams: {
-                    folder: folder,
-                    search:
-                        searchCriteria && typeof searchCriteria !== "string"
-                            ? JSON.stringify(searchCriteria)
-                            : searchCriteria,
-                },
+        return await ApiService.get(GetRoutes.SEARCH_EMAILS, {
+            pathParams: {
+                account: account.email_address,
             },
-        );
+            queryParams: {
+                folder: folder,
+                search:
+                    searchCriteria && typeof searchCriteria !== "string"
+                        ? JSON.stringify(searchCriteria)
+                        : searchCriteria,
+            },
+        });
     }
 
     public static async getMailbox(
@@ -203,6 +200,7 @@ export class MailboxController {
         offsetStart?: number,
         offsetEnd?: number,
     ): Promise<BaseResponse> {
+        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         offsetStart = Math.max(1, offsetStart ?? 1);
         offsetEnd = Math.max(1, offsetEnd ?? offsetStart - 1 + MAILBOX_LENGTH);
 
@@ -210,23 +208,20 @@ export class MailboxController {
             throw Error("`offsetStart` can not be larger than `offsetEnd`");
         }
 
-        const response = await ApiService.get(
-            GetRoutes.GET_MAILBOX,
-            {
-                pathParams: {
-                    account: account.email_address,
-                },
-                queryParams: {
-                    folder: folder,
-                    search:
-                        searchCriteria && typeof searchCriteria !== "string"
-                            ? JSON.stringify(searchCriteria)
-                            : searchCriteria,
-                    offset_start: offsetStart,
-                    offset_end: offsetEnd,
-                },
+        const response = await ApiService.get(GetRoutes.GET_MAILBOX, {
+            pathParams: {
+                account: account.email_address,
             },
-        );
+            queryParams: {
+                folder: folder,
+                search:
+                    searchCriteria && typeof searchCriteria !== "string"
+                        ? JSON.stringify(searchCriteria)
+                        : searchCriteria,
+                offset_start: offsetStart,
+                offset_end: offsetEnd,
+            },
+        });
 
         if (response.success && response.data) {
             SharedStore.mailboxes[account.email_address] = {
@@ -278,16 +273,13 @@ export class MailboxController {
             throw Error("`offsetStart` can not be larger than `offsetEnd`");
         }
 
-        const response = await ApiService.get(
-            GetRoutes.PAGINATE_MAILBOX,
-            {
-                pathParams: {
-                    account: account.email_address,
-                    offset_start: offsetStart,
-                    offset_end: offsetEnd,
-                },
+        const response = await ApiService.get(GetRoutes.PAGINATE_MAILBOX, {
+            pathParams: {
+                account: account.email_address,
+                offset_start: offsetStart,
+                offset_end: offsetEnd,
             },
-        );
+        });
 
         if (response.success && response.data) {
             const currentEmails = currentMailbox.emails.current;
@@ -313,22 +305,24 @@ export class MailboxController {
         folder: string,
         uid: string,
     ): Promise<GetResponse<GetRoutes.GET_EMAIL_CONTENT>> {
-        if (Object.hasOwn(SharedStore.recentEmails, account.email_address)) {
-            SharedStore.recentEmails[account.email_address] =
-                SharedStore.recentEmails[account.email_address].filter(
+        if (
+            Object.hasOwn(
+                SharedStore.recentEmailsChannel,
+                account.email_address,
+            )
+        ) {
+            SharedStore.recentEmailsChannel[account.email_address] =
+                SharedStore.recentEmailsChannel[account.email_address].filter(
                     (email) => email.uid !== uid,
                 );
         }
-        return await ApiService.get(
-            GetRoutes.GET_EMAIL_CONTENT,
-            {
-                pathParams: {
-                    account: account.email_address,
-                    folder: folder,
-                    uid: uid,
-                },
+        return await ApiService.get(GetRoutes.GET_EMAIL_CONTENT, {
+            pathParams: {
+                account: account.email_address,
+                folder: folder,
+                uid: uid,
             },
-        );
+        });
     }
 
     public static async downloadAttachment(
@@ -338,72 +332,55 @@ export class MailboxController {
         name: string,
         cid?: string,
     ): Promise<GetResponse<GetRoutes.DOWNLOAD_ATTACHMENT>> {
-        return await ApiService.get(
-            GetRoutes.DOWNLOAD_ATTACHMENT,
-            {
-                pathParams: {
-                    account: account.email_address,
-                    folder: folder,
-                    uid: uid,
-                    name: name,
-                },
-                queryParams: {
-                    cid: cid,
-                },
+        return await ApiService.get(GetRoutes.DOWNLOAD_ATTACHMENT, {
+            pathParams: {
+                account: account.email_address,
+                folder: folder,
+                uid: uid,
+                name: name,
             },
-        );
+            queryParams: {
+                cid: cid,
+            },
+        });
     }
 
     public static async sendEmail(
         email: FormData | Draft,
     ): Promise<PostResponse> {
-        return await ApiService.post(
-            PostRoutes.SEND_EMAIL,
-            email,
-        );
+        return await ApiService.post(PostRoutes.SEND_EMAIL, email);
     }
 
     public static async replyEmail(
         originalMessageId: string,
         email: FormData | Draft,
     ): Promise<PostResponse> {
-        return await ApiService.post(
-            PostRoutes.REPLY_EMAIL,
-            email,
-            {
-                pathParams: {
-                    original_message_id: originalMessageId,
-                },
+        return await ApiService.post(PostRoutes.REPLY_EMAIL, email, {
+            pathParams: {
+                original_message_id: originalMessageId,
             },
-        );
+        });
     }
 
     public static async forwardEmail(
         originalMessageId: string,
         email: FormData | Draft,
     ): Promise<PostResponse> {
-        return await ApiService.post(
-            PostRoutes.FORWARD_EMAIL,
-            email,
-            {
-                pathParams: {
-                    original_message_id: originalMessageId,
-                },
+        return await ApiService.post(PostRoutes.FORWARD_EMAIL, email, {
+            pathParams: {
+                original_message_id: originalMessageId,
             },
-        );
+        });
     }
 
     public static async saveEmailAsDraft(
         email: FormData | Draft,
         appenduid?: string,
     ): Promise<PostResponse<PostRoutes.SAVE_EMAIL_AS_DRAFT>> {
-        return await ApiService.post(
-            PostRoutes.SAVE_EMAIL_AS_DRAFT,
-            {
-                email,
-                appenduid,
-            },
-        );
+        return await ApiService.post(PostRoutes.SAVE_EMAIL_AS_DRAFT, {
+            email,
+            appenduid,
+        });
     }
 
     public static async deleteEmails(
@@ -412,14 +389,11 @@ export class MailboxController {
         folder: string,
         offset?: number,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.DELETE_EMAIL,
-            {
-                account: account.email_address,
-                sequence_set: removeWhitespaces(selection),
-                folder: folder,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.DELETE_EMAIL, {
+            account: account.email_address,
+            sequence_set: removeWhitespaces(selection),
+            folder: folder,
+        });
 
         if (!response.success) return response;
 
@@ -443,6 +417,7 @@ export class MailboxController {
             return response;
         }
 
+        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         // Delete emails from current mailbox and update total count.
         const countBeforeDelete = currentMailbox.emails.current.length;
         const wasFullBeforeDelete = countBeforeDelete >= MAILBOX_LENGTH;
@@ -532,15 +507,12 @@ export class MailboxController {
         destinationFolder: string,
         offset?: number,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.MOVE_EMAIL,
-            {
-                account: account.email_address,
-                sequence_set: removeWhitespaces(selection),
-                source_folder: sourceFolder,
-                destination_folder: destinationFolder,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.MOVE_EMAIL, {
+            account: account.email_address,
+            sequence_set: removeWhitespaces(selection),
+            source_folder: sourceFolder,
+            destination_folder: destinationFolder,
+        });
 
         if (!response.success) return response;
 
@@ -565,6 +537,7 @@ export class MailboxController {
             return response;
         }
 
+        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         const countBeforeMove = currentMailbox.emails.current.length;
         const wasFullBeforeMove = countBeforeMove >= MAILBOX_LENGTH;
         currentMailbox.emails.current = currentMailbox.emails.current.filter(
@@ -630,15 +603,12 @@ export class MailboxController {
         sourceFolder: string,
         destinationFolder: string,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.COPY_EMAIL,
-            {
-                account: account.email_address,
-                sequence_set: removeWhitespaces(selection),
-                source_folder: sourceFolder,
-                destination_folder: destinationFolder,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.COPY_EMAIL, {
+            account: account.email_address,
+            sequence_set: removeWhitespaces(selection),
+            source_folder: sourceFolder,
+            destination_folder: destinationFolder,
+        });
 
         return response;
     }
@@ -649,15 +619,12 @@ export class MailboxController {
         mark: string | Mark,
         folder: string,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.MARK_EMAIL,
-            {
-                account: account.email_address,
-                mark: mark,
-                sequence_set: removeWhitespaces(selection),
-                folder: folder,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.MARK_EMAIL, {
+            account: account.email_address,
+            mark: mark,
+            sequence_set: removeWhitespaces(selection),
+            folder: folder,
+        });
 
         if (response.success) {
             const currentMailbox = SharedStore.mailboxes[account.email_address];
@@ -685,15 +652,12 @@ export class MailboxController {
         mark: string | Mark,
         folder: string,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.UNMARK_EMAIL,
-            {
-                account: account.email_address,
-                mark: mark,
-                sequence_set: removeWhitespaces(selection),
-                folder: folder,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.UNMARK_EMAIL, {
+            account: account.email_address,
+            mark: mark,
+            sequence_set: removeWhitespaces(selection),
+            folder: folder,
+        });
 
         if (response.success) {
             const currentMailbox = SharedStore.mailboxes[account.email_address];
@@ -722,14 +686,11 @@ export class MailboxController {
         folderName: string,
         parentFolder?: string,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.CREATE_FOLDER,
-            {
-                account: account.email_address,
-                folder_name: folderName,
-                parent_folder: parentFolder,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.CREATE_FOLDER, {
+            account: account.email_address,
+            folder_name: folderName,
+            parent_folder: parentFolder,
+        });
 
         if (response.success) {
             SharedStore.folders[account.email_address].custom.push(
@@ -745,42 +706,56 @@ export class MailboxController {
         folderName: string,
         destinationFolder: string,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.MOVE_FOLDER,
-            {
-                account: account.email_address,
-                folder_name: folderName,
-                destination_folder: destinationFolder,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.MOVE_FOLDER, {
+            account: account.email_address,
+            folder_name: folderName,
+            destination_folder: destinationFolder,
+        });
 
         if (response.success) {
             const currentMailbox = SharedStore.mailboxes[account.email_address];
-            const hierarchyDelimiter = SharedStore.hierarchyDelimiters[account.email_address];
+            const hierarchyDelimiter =
+                SharedStore.hierarchyDelimiters[account.email_address];
 
-            const oldFolderName = extractFolderName(folderName, hierarchyDelimiter);
-            if (destinationFolder !== "") destinationFolder += hierarchyDelimiter;
+            const oldFolderName = extractFolderName(
+                folderName,
+                hierarchyDelimiter,
+            );
+            if (destinationFolder !== "")
+                destinationFolder += hierarchyDelimiter;
             const newFolderPath = `${destinationFolder}${folderName}`;
 
             SharedStore.folders[account.email_address].custom.map(
                 (customFolderPath) => {
-                    if (isSubfolderOrMatch(customFolderPath, oldFolderName, hierarchyDelimiter)) {
+                    if (
+                        isSubfolderOrMatch(
+                            customFolderPath,
+                            oldFolderName,
+                            hierarchyDelimiter,
+                        )
+                    ) {
                         return replaceFolderName(
                             customFolderPath,
                             oldFolderName,
                             newFolderPath,
-                            hierarchyDelimiter
+                            hierarchyDelimiter,
                         );
                     }
                 },
             );
 
-            if (isSubfolderOrMatch(currentMailbox.folder, oldFolderName, hierarchyDelimiter)) {
+            if (
+                isSubfolderOrMatch(
+                    currentMailbox.folder,
+                    oldFolderName,
+                    hierarchyDelimiter,
+                )
+            ) {
                 currentMailbox.folder = replaceFolderName(
                     currentMailbox.folder,
                     oldFolderName,
                     newFolderPath,
-                    hierarchyDelimiter
+                    hierarchyDelimiter,
                 );
             }
         }
@@ -793,20 +768,21 @@ export class MailboxController {
         folderName: string,
         newFolderName: string,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.RENAME_FOLDER,
-            {
-                account: account.email_address,
-                folder_name: folderName,
-                new_folder_name: newFolderName,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.RENAME_FOLDER, {
+            account: account.email_address,
+            folder_name: folderName,
+            new_folder_name: newFolderName,
+        });
 
         if (response.success) {
             // TODO: Should we should fetch folders again?
             const currentMailbox = SharedStore.mailboxes[account.email_address];
-            const hierarchyDelimiter = SharedStore.hierarchyDelimiters[account.email_address];
-            const oldFolderName = extractFolderName(folderName, hierarchyDelimiter);
+            const hierarchyDelimiter =
+                SharedStore.hierarchyDelimiters[account.email_address];
+            const oldFolderName = extractFolderName(
+                folderName,
+                hierarchyDelimiter,
+            );
 
             SharedStore.folders[account.email_address].custom.map(
                 (customFolder) => {
@@ -814,17 +790,23 @@ export class MailboxController {
                         customFolder,
                         oldFolderName,
                         newFolderName,
-                        hierarchyDelimiter
+                        hierarchyDelimiter,
                     );
                 },
             );
 
-            if (isSubfolderOrMatch(currentMailbox.folder, oldFolderName, hierarchyDelimiter)) {
+            if (
+                isSubfolderOrMatch(
+                    currentMailbox.folder,
+                    oldFolderName,
+                    hierarchyDelimiter,
+                )
+            ) {
                 currentMailbox.folder = replaceFolderName(
                     currentMailbox.folder,
                     oldFolderName,
                     newFolderName,
-                    hierarchyDelimiter
+                    hierarchyDelimiter,
                 );
             }
         }
@@ -837,43 +819,63 @@ export class MailboxController {
         folderName: string,
         delete_subfolders: boolean,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.DELETE_FOLDER,
-            {
-                account: account.email_address,
-                folder_name: folderName,
-                delete_subfolders: delete_subfolders,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.DELETE_FOLDER, {
+            account: account.email_address,
+            folder_name: folderName,
+            delete_subfolders: delete_subfolders,
+        });
 
         if (response.success) {
             const currentMailbox = SharedStore.mailboxes[account.email_address];
             const currentFolders = SharedStore.folders[account.email_address];
-            const hierarchyDelimiter = SharedStore.hierarchyDelimiters[account.email_address];
+            const hierarchyDelimiter =
+                SharedStore.hierarchyDelimiters[account.email_address];
 
             currentFolders.custom = currentFolders.custom.filter(
                 (customFolderPath) => {
-                    if (isExactFolderMatch(customFolderPath, folderName, hierarchyDelimiter)) {
+                    if (
+                        isExactFolderMatch(
+                            customFolderPath,
+                            folderName,
+                            hierarchyDelimiter,
+                        )
+                    ) {
                         return false;
                     } else if (
-                        isSubfolderOrMatch(customFolderPath, folderName, hierarchyDelimiter)
+                        isSubfolderOrMatch(
+                            customFolderPath,
+                            folderName,
+                            hierarchyDelimiter,
+                        )
                     ) {
                         return !delete_subfolders;
                     }
                 },
             );
 
-            if (isExactFolderMatch(currentMailbox.folder, folderName, hierarchyDelimiter)) {
+            if (
+                isExactFolderMatch(
+                    currentMailbox.folder,
+                    folderName,
+                    hierarchyDelimiter,
+                )
+            ) {
                 SharedStore.mailboxes[account.email_address] = {
                     folder: "",
                     emails: { prev: [], current: [], next: [] },
                     total: 0,
                 };
-            } else if (isSubfolderOrMatch(currentMailbox.folder, folderName, hierarchyDelimiter)) {
+            } else if (
+                isSubfolderOrMatch(
+                    currentMailbox.folder,
+                    folderName,
+                    hierarchyDelimiter,
+                )
+            ) {
                 currentMailbox.folder = removeFromPath(
                     currentMailbox.folder,
                     folderName,
-                    hierarchyDelimiter
+                    hierarchyDelimiter,
                 );
             }
         }
@@ -886,14 +888,11 @@ export class MailboxController {
         list_unsubscribe: string,
         list_unsubscribe_post?: string,
     ): Promise<PostResponse> {
-        const response = await ApiService.post(
-            PostRoutes.UNSUBSCRIBE_EMAIL,
-            {
-                account: account.email_address,
-                list_unsubscribe,
-                list_unsubscribe_post,
-            },
-        );
+        const response = await ApiService.post(PostRoutes.UNSUBSCRIBE_EMAIL, {
+            account: account.email_address,
+            list_unsubscribe,
+            list_unsubscribe_post,
+        });
 
         if (response.success) {
             const currentMailbox =

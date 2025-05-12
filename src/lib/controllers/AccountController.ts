@@ -14,7 +14,7 @@ export class AccountController {
     public static async init(): Promise<BaseResponse> {
         const response = await AccountController.list();
         if (response.success && response.data) {
-            SharedStore.currentAccount = "home";
+            SharedStore.currentAccount = response.data.connected[0]; // TODO: Change this to "home"
             SharedStore.accounts = response.data.connected;
             SharedStore.failedAccounts = response.data.failed;
         }

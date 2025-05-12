@@ -28,3 +28,11 @@
         {@render children()}
     {/if}
 </section>
+
+<style>
+    :global {
+        #main-container {
+            height: 100%;
+        }
+    }
+</style>
