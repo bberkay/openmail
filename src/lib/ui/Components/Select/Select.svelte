@@ -43,7 +43,7 @@
     let selectedOption: HTMLElement | null = $state(null);
     const defaultValue = value;
     const isInitializedAsDisabled = disabled;
-    disableClearButton = isInitializedAsDisabled;
+    disableClearButton = disableClearButton || isInitializedAsDisabled;
 
     let selectWrapper: HTMLElement;
     let optionsList: HTMLElement;
@@ -188,17 +188,16 @@
                     <span data-value={selectedOption.getAttribute("data-value")}>
                         {selectedOption.textContent?.trim()}
                     </span>
-                    {#if !disableClearButton}
-                        <Button.Basic
-                            type="button"
-                            class="btn-inline clear-button {selectedOption
-                                ? 'visible'
-                                : ''}"
-                            onclick={clearSelection}
-                        >
-                            <Icon name="close" />
-                        </Button.Basic>
-                    {/if}
+                    <Button.Basic
+                        type="button"
+                        class="btn-inline clear-button {disableClearButton ? "invisible" : ""} {selectedOption
+                            ? 'visible'
+                            : ''}"
+                        onclick={clearSelection}
+                        disabled={disableClearButton}
+                    >
+                        <Icon name="close" />
+                    </Button.Basic>
                 {:else}
                     <span data-value="">{placeholder}</span>
                 {/if}
@@ -323,6 +322,22 @@
                     color: var(--color-text-secondary);
                     text-align: center;
                     font-style: italic;
+                }
+            }
+
+            &.select-sm {
+                font-size: var(--font-size-xs);
+
+                & .custom-select {
+                    padding: var(--spacing-2xs) var(--spacing-xs);
+                }
+
+                & .options-container {
+                    font-size: var(--font-size-xs);
+
+                    & .option {
+                        padding: var(--spacing-xs);
+                    }
                 }
             }
         }

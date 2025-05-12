@@ -112,9 +112,18 @@
                 }
             }
 
-            &.btn-sm {
-                padding: var(--spacing-xs) var(--spacing-sm);
+            &.btn-md {
                 font-size: var(--font-size-xs);
+            }
+
+            &.btn-sm {
+                padding: var(--spacing-2xs) var(--spacing-sm)!important;
+                font-size: var(--font-size-xs);
+
+                & svg {
+                    width: var(--font-size-md);
+                    height: var(--font-size-md);
+                }
             }
         }
     }

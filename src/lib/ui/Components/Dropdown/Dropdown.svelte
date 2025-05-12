@@ -137,11 +137,23 @@
             position: relative;
             width: max-content;
 
+            &.dropdown-sm {
+                width: 140px;
+
+                & .dropdown-toggle {
+                    padding: var(--spacing-2xs) var(--spacing-xs);
+                }
+
+                & .dropdown-content .dropdown-item {
+                    font-size: var(--font-size-xs);
+                }
+            }
+
             &:not(:has(> .dropdown-content.hidden)) .dropdown-toggle {
                 border-color: var(--color-text-primary);
             }
 
-            .dropdown-item:first-child {
+            & .dropdown-item:first-child {
                 border-top: none;
             }
         }
