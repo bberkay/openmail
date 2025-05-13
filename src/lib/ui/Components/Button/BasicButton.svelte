@@ -62,7 +62,7 @@
                 color: var(--color-text-primary);
 
                 &:has(> svg:only-child) {
-                    padding: var(--spacing-2xs);
+                    padding: var(--spacing-2xs)!important;
                 }
 
                 &:hover,
@@ -96,19 +96,16 @@
                 }
             }
 
-            &.btn-outline,
-            &.btn-cta {
-                &:has(svg) {
-                    justify-content: space-between;
+            &:has(svg) {
+                justify-content: space-between;
 
-                    & svg {
-                        margin-right: var(--spacing-xs);
-                        margin-left: calc(-0.5 * var(--spacing-xs));
-                    }
+                & svg {
+                    margin-right: var(--spacing-xs);
+                    margin-left: calc(-0.5 * var(--spacing-xs));
+                }
 
-                    &:not(:has(span)) svg {
-                        margin-right: calc(-0.5 * var(--spacing-xs));
-                    }
+                &:not(:has(span)) svg {
+                    margin-right: calc(-0.5 * var(--spacing-xs));
                 }
             }
 

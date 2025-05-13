@@ -102,9 +102,7 @@
     ) {
         disabled = true;
         if (selectedOption) selectedOption.classList.remove("selected");
-        selectedOption = options.find(
-            (option) => option.dataset.value == value,
-        )!;
+        selectedOption = options.find(option => option.dataset.value == value)!;
         selectedOption.classList.add("selected");
         if (onchange && !disableCallback) await onchange(value.toString());
         if (!isInitializedAsDisabled) disabled = false;
@@ -188,8 +186,8 @@
         <div class="select-trigger">
             <div class="select-trigger-content">
                 {#if selectedOption}
-                    <span data-value={selectedOption.getAttribute("data-value")}>
-                        {selectedOption.textContent?.trim()}
+                    <span data-value={selectedOption.dataset.value}>
+                        {selectedOption.textContent}
                     </span>
                     <Button.Basic
                         type="button"

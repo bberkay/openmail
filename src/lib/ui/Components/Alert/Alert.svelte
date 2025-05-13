@@ -62,7 +62,7 @@
             {#if onManage}
                 <Button.Action
                     type="button"
-                    class="alert-manage"
+                    class="btn-outline btn-sm alert-manage"
                     onclick={onManageWrapper}
                 >
                     {onManageText || local.manage[DEFAULT_LANGUAGE]}
@@ -71,10 +71,10 @@
             {#if closeable}
                 <Button.Basic
                     type="button"
-                    class="alert-close"
+                    class="btn-outline btn-sm alert-close"
                     onclick={dismiss}
                 >
-                    X
+                    <Icon name="close" />
                 </Button.Basic>
             {/if}
         </div>
@@ -82,6 +82,7 @@
     {#if details}
         <div class="alert-details">
             <Collapse title="Details" openAtStart={false}>
+                <div class="separator"></div>
                 {@html details}
             </Collapse>
         </div>
@@ -93,6 +94,7 @@
         .alert {
             color: var(--color-text-primary);
             padding: var(--spacing-md);
+            padding-bottom: 0;
             border-radius: var(--radius-md);
             font-size: var(--font-size-sm);
             opacity: 0;
@@ -106,6 +108,16 @@
                 border-left: 2px solid var(--color-error-text);
                 color: var(--color-error-text);
 
+                & .alert-manage {
+                    border-color: var(--color-error-border);
+                    color: var(--color-error-text);
+                    background-color: var(--color-error-bg);
+                }
+
+                & .separator {
+                    background-color: var(--color-error-border);
+                }
+
                 & svg {
                     fill: var(--color-error-text);
                 }
@@ -116,6 +128,16 @@
                 border: 1px solid var(--color-warning-border);
                 border-left: 2px solid var(--color-warning-text);
                 color: var(--color-warning-text);
+
+                & .alert-manage {
+                    border-color: var(--color-warning-border);
+                    color: var(--color-warning-text);
+                    background-color: var(--color-warning-bg);
+                }
+
+                & .separator {
+                    background-color: var(--color-warning-border);
+                }
 
                 & svg {
                     fill: var(--color-warning-text);
@@ -128,6 +150,16 @@
                 border-left: 2px solid var(--color-info-text);
                 color: var(--color-info-text);
 
+                & .alert-manage {
+                    border-color: var(--color-info-border);
+                    color: var(--color-info-text);
+                    background-color: var(--color-info-bg);
+                }
+
+                & .separator {
+                    background-color: var(--color-info-border);
+                }
+
                 & svg {
                     fill: var(--color-info-text);
                 }
@@ -138,6 +170,16 @@
                 border: 1px solid var(--color-success-border);
                 border-left: 2px solid var(--color-success-text);
                 color: var(--color-success-text);
+
+                & .alert-manage {
+                    border-color: var(--color-success-border);
+                    color: var(--color-success-text);
+                    background-color: var(--color-success-bg);
+                }
+
+                & .separator {
+                    background-color: var(--color-success-border);
+                }
 
                 & svg {
                     fill: var(--color-success-text);
@@ -169,12 +211,54 @@
                     }
                 }
 
+                & .alert-manage {
+                    &:hover {
+                        filter: brightness(1.2);
+                    }
+
+                    &:active {
+                        filter: brightness(0.9);
+                    }
+                }
+
                 & .alert-close {
-                    background: none;
-                    border: none;
-                    font-size: var(--font-size-md);
-                    cursor: pointer;
-                    padding: 0;
+                    background: transparent;
+                    border: transparent;
+
+                    &:hover {
+                        background: rgba(255, 255, 255, 0.2);
+                    }
+
+                    &:active {
+                        background: rgba(255, 255, 255, 0.1);
+                    }
+                }
+
+                & .alert-body-action {
+                    display: flex;
+                    gap: var(--spacing-sm);
+                }
+            }
+
+            & .alert-details {
+                font-size: var(--font-size-xs);
+
+                & svg {
+                    width: var(--font-size-md);
+                    height: var(--font-size-md);
+                }
+
+                & .collapse-header {
+                    padding: var(--spacing-sm) var(--spacing-2xs);
+                    padding-bottom: 0;
+                }
+
+                & .collapse-content {
+                    padding: var(--spacing-sm) var(--spacing-2xs);
+                }
+
+                & .separator {
+                    margin-bottom: var(--spacing-sm);
                 }
             }
         }

@@ -42,6 +42,11 @@
                 stroke-width: 1;
                 fill: var(--color-text-secondary)!important;
             }
+
+            &[name="error"] {
+                stroke-width: 1;
+                fill: var(--color-error-text)!important;
+            }
         }
     }
 </style>
