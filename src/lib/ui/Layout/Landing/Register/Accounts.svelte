@@ -9,7 +9,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { show as showMessage } from "$lib/ui/Components/Message";
-    import { createSenderAddress, isStandardFolder } from "$lib/utils";
+    import { createSenderAddress } from "$lib/utils";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
     import EditAccountForm from "./EditAccountForm.svelte";

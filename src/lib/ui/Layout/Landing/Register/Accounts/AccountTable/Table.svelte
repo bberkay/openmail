@@ -11,9 +11,8 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
     import type { Account } from "$lib/types";
-    import { simpleDeepCopy } from "$lib/utils";
     import { onMount } from "svelte";
-    import { show as showModal } from "$lib/ui/Components/Modal";
+    import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import EditAccountForm from "../../EditAccountForm.svelte";
     import type { PostResponse, PostRoutes } from "$lib/services/ApiService";
 
@@ -109,7 +108,7 @@
 
     const showEditAccount = async (account: Account) => {
         resetAccountSelection();
-        showModal(EditAccountForm, { account });
+        showContent(EditAccountForm, { account });
     };
 </script>
 
@@ -229,7 +228,7 @@
             }
 
             & .action-cell {
-                padding-right: var(--spacing-sm);
+                padding-right: var(--spacing-md);
                 width: calc(2 * var(--font-size-2xl));
 
                 & .action-buttons {
