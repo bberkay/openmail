@@ -6,10 +6,18 @@
     import Icon from '$lib/ui/Components/Icon';
     import InputGroup from './InputGroup.svelte';
 
+    const DEFAULT_COLLAPSED_WIDTH = 20;
+    const DEFAULT_EXPANDED_WIDTH = 200;
+    const DEFAULT_EXPAND_DURATION = 300;
+
     interface Props {
         direction?: "left" | "right";
         onClose?: (((e: Event) => void) | ((e: Event) => Promise<void>)),
         toggleButtonIconName?: string;
+        collapsedWidth?: number;
+        expandedWidth?: number;
+        expandDuration?: number;
+        collapseWhenClickedOutside?: boolean,
         [attribute: string]: unknown;
     }
 
@@ -17,6 +25,10 @@
         direction = "left",
         onClose,
         toggleButtonIconName,
+        collapsedWidth = DEFAULT_COLLAPSED_WIDTH,
+        expandedWidth = DEFAULT_EXPANDED_WIDTH,
+        expandDuration = DEFAULT_EXPAND_DURATION,
+        collapseWhenClickedOutside = false,
         ...attributes
     }: Props = $props();
 
@@ -29,8 +41,8 @@
 		...restAttributes
 	} = $derived(attributes);
 
-    const tween = new Tween(20, {
-        duration: 300,
+    const tween = new Tween(collapsedWidth, {
+        duration: expandDuration,
         easing: cubicOut,
     });
 
@@ -38,15 +50,18 @@
         isOpen = !isOpen;
 
         if (isOpen) {
-            tween.set(200);
+            tween.set(expandedWidth);
         } else {
-            tween.set(20);
+            tween.set(collapsedWidth);
             inputValue = "";
             if(onClose) await onClose(e);
         }
     }
 
     const handleClickOutside = (e: MouseEvent) => {
+        if (!collapseWhenClickedOutside)
+            return;
+
         setTimeout(() => {
           if (isOpen &&
               !expandableContainer.contains(document.activeElement)) {
@@ -56,6 +71,7 @@
     }
 </script>
 
+<svelte:window onclick={handleClickOutside} />
 
 <div
     bind:this={expandableContainer}
@@ -68,10 +84,10 @@
 >
     {#if isOpen}
         <InputGroup>
-            <!--onblur={handleClickOutside}-->
             <BasicInput
                 type="text"
                 bind:value={inputValue}
+                onblur={handleClickOutside}
                 autofocus
                 {...restAttributes}
             />
@@ -100,6 +116,10 @@
             display: flex;
             height: calc(var(--font-size-2xl) + 10px);
             align-items: center;
+
+            & .input-group {
+                width: 100%;
+            }
         }
     }
 </style>
