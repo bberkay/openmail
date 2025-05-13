@@ -6,9 +6,11 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import AccountList from "./Accounts/AccountList.svelte";
+    import AccountTable from "./Accounts/AccountTable.svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
     import EditAccountForm from "./Accounts/EditAccountForm.svelte";
+
+    const ACCOUNTS_PER_PAGE = 5;
 
     function printFailedAccounts(): string {
         return getFailedAccountsTemplate(
@@ -84,5 +86,5 @@
 <div class="settings-content-body">
     <div class="alert-container" id="failed-accounts-alert-container"></div>
     <div class="alert-container" id="failed-mailboxes-or-folders-alert-container"></div>
-    <AccountList />
+    <AccountTable accountsPerPage={ACCOUNTS_PER_PAGE} />
 </div>

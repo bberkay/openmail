@@ -15,7 +15,7 @@
     import EditAccountForm from "./EditAccountForm.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import AddAccountForm from "./AddAccountForm.svelte";
-    import AccountTable from "./AccountList/AccountTable.svelte";
+    import AccountTable from "./Accounts/AccountTable.svelte";
     import { NotificationHandler } from "$lib/services/NotificationHandler";
 
     const ACCOUNT_COUNT_PER_PAGE = 5;

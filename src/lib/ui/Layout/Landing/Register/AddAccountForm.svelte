@@ -9,7 +9,7 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
-    import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
+    import Accounts from "$lib/ui/Layout/Landing/Register/Accounts.svelte";
 
     const addAccount = async (e: Event): Promise<void> => {
         const form = e.target as HTMLFormElement;
@@ -26,8 +26,8 @@
         }
     };
 
-    const showAccountList = () => {
-        showContent(AccountList);
+    const showAccounts = () => {
+        showContent(Accounts);
     };
 </script>
 
@@ -70,7 +70,7 @@
         <Button.Basic
             type="button"
             class="btn-inline"
-            onclick={showAccountList}
+            onclick={showAccounts}
         >
             {local.which_accounts_added[DEFAULT_LANGUAGE]}
         </Button.Basic>

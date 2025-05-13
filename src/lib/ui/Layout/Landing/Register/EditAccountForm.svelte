@@ -11,7 +11,7 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
-    import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
+    import Accounts from "$lib/ui/Layout/Landing/Register/Accounts.svelte";
 
     interface Props {
         account: Account;
@@ -35,7 +35,7 @@
     };
 
     const cancelEdit = () => {
-        showContent(AccountList);
+        showContent(Accounts);
     };
 </script>
 

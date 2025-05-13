@@ -7,7 +7,7 @@
     import { FileSystem } from "$lib/services/FileSystem";
     import { convertToRFC5646Format, getEnumKeyByValue } from "$lib/utils";
     import AddAccountForm from "$lib/ui/Layout/Landing/Register/AddAccountForm.svelte";
-    import AccountList from "$lib/ui/Layout/Landing/Register/AccountList.svelte";
+    import Accounts from "$lib/ui/Layout/Landing/Register/Accounts.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import Language from "./Welcome/Language.svelte";
     import Theme from "./Welcome/Language.svelte";
@@ -37,7 +37,7 @@
         showContent(
             SharedStore.accounts.length > 0 ||
                 SharedStore.failedAccounts.length > 0
-                ? AccountList
+                ? Accounts
                 : AddAccountForm,
         );
     };
