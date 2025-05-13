@@ -18,11 +18,12 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { show as showAlert } from "$lib/ui/Components/Alert";
-    import { getFailedAccountsTemplate, getFailedItemTemplate, getFailedMailboxOrFoldersTemplate } from "$lib/templates";
-    import { createSenderAddress } from "$lib/utils";
-    import { MailboxController } from "$lib/controllers/MailboxController";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import { showThis as showContentOfSettings } from "$lib/ui/Layout/Main/Content/Settings/Content.svelte";
+    import Settings from "./Content/Settings.svelte";
+    import Accounts from "./Content/Settings/Content/Accounts.svelte";
 
     interface Props {
         children: Snippet;
@@ -30,64 +31,27 @@
 
     let { children }: Props = $props();
 
+    function manageFailedAccounts() {
+        showContent(Settings);
+        showContentOfSettings(Accounts);
+    }
+
     $effect(() => {
         if (SharedStore.failedAccounts.length > 0) {
-            showAlert("accounts-alert-container", {
+            showAlert("check-out-accounts-alert-container", {
                 content: local.accounts_failed_to_connect[DEFAULT_LANGUAGE],
                 type: "error",
-                details: getFailedAccountsTemplate(
-                    SharedStore.failedAccounts
-                        .map((account) => {
-                            return getFailedItemTemplate(
-                                createSenderAddress(account.email_address, account.fullname)
-                            )
-                        })
-                        .join(""),
-                ),
-                onManage: () => {
-                    // TODO: showContent account list on settings.
-                },
+                details: "There are some failed account/mailbox connections you should manage.",
+                onManage: manageFailedAccounts,
                 onManageText: local.manage_accounts[DEFAULT_LANGUAGE],
-                closeable: true
-            });
-        }
-
-        if (
-            SharedStore.accountsWithFailedMailboxes.length > 0 ||
-            SharedStore.accountsWithFailedFolders.length > 0
-        ) {
-            showAlert("mailboxes-or-folders-alert-container", {
-                content: local.error_failed_mailboxes_or_folders[DEFAULT_LANGUAGE],
-                type: "error",
-                details: getFailedMailboxOrFoldersTemplate(
-                    SharedStore.accountsWithFailedMailboxes
-                        .map((account) => {
-                            return getFailedItemTemplate(
-                                createSenderAddress(account.email_address, account.fullname)
-                            )
-                        })
-                        .join(""),
-                    SharedStore.accountsWithFailedFolders
-                        .map((account) => {
-                            return getFailedItemTemplate(
-                                createSenderAddress(account.email_address, account.fullname)
-                            )
-                        })
-                        .join(""),
-                ),
-                onManage: async () => {
-                    await MailboxController.init(true);
-                },
-                onManageText: local.retry[DEFAULT_LANGUAGE],
-                closeable: true
+                closeable: false
             });
         }
     });
 </script>
 
 <div class="content" bind:this={sectionContainer}>
-    <div class="alert-container" id="accounts-alert-container"></div>
-    <div class="alert-container" id="mailboxes-or-folders-alert-container"></div>
+    <div class="alert-container" id="check-out-settings-accounts-alert-container"></div>
     {#if !isMounted}
         {@render children()}
     {/if}

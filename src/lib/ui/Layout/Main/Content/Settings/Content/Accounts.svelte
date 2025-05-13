@@ -1,21 +1,80 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import AccountTable from "$lib/ui/Layout/Landing/Register/AccountList/AccountTable.svelte";
+    import { show as showAlert } from "$lib/ui/Components/Alert";
+    import { getFailedAccountsTemplate, getFailedItemTemplate, getFailedMailboxOrFoldersTemplate } from "$lib/templates";
+    import { createSenderAddress } from "$lib/utils";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import AccountList from "./Accounts/AccountList.svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
-    import EditAccountForm from "./Accounts/AddAccountForm.svelte";
+    import EditAccountForm from "./Accounts/EditAccountForm.svelte";
 
-    const ACCOUNTS_PER_PAGE = 15;
-
-    const showEditAccount = () => {
-        showModal(EditAccountForm);
-    };
-
-    const onRemoveAccount = async (email_address: string) => {
-        if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
-            SharedStore.notificationChannels[email_address].terminate();
-            delete SharedStore.notificationChannels[email_address];
-        }
+    function printFailedAccounts(): string {
+        return getFailedAccountsTemplate(
+            SharedStore.failedAccounts
+                .map((account) => {
+                    return getFailedItemTemplate(
+                        createSenderAddress(account.email_address, account.fullname)
+                    )
+                })
+                .join(""),
+        );
     }
+
+    function manageFailedAccounts() {
+        showModal(EditAccountForm, { account: SharedStore.failedAccounts[0] });
+    }
+
+    function printFailedMailboxesOrFolders(): string {
+        return getFailedMailboxOrFoldersTemplate(
+            SharedStore.accountsWithFailedMailboxes
+                .map((account) => {
+                    return getFailedItemTemplate(
+                        createSenderAddress(account.email_address, account.fullname)
+                    )
+                })
+                .join(""),
+            SharedStore.accountsWithFailedFolders
+                .map((account) => {
+                    return getFailedItemTemplate(
+                        createSenderAddress(account.email_address, account.fullname)
+                    )
+                })
+                .join(""),
+        );
+    }
+
+    async function manageFailedMailboxesOrFolders() {
+        await MailboxController.init(true);
+    }
+
+    $effect(() => {
+        if (SharedStore.failedAccounts.length > 0) {
+            showAlert("failed-accounts-alert-container", {
+                content: local.accounts_failed_to_connect[DEFAULT_LANGUAGE],
+                type: "error",
+                details: printFailedAccounts(),
+                onManage: manageFailedAccounts,
+                onManageText: local.manage_accounts[DEFAULT_LANGUAGE],
+                closeable: false
+            });
+        }
+
+        if (
+            SharedStore.accountsWithFailedMailboxes.length > 0 ||
+            SharedStore.accountsWithFailedFolders.length > 0
+        ) {
+            showAlert("failed-mailboxes-or-folders-alert-container", {
+                content: local.error_failed_mailboxes_or_folders[DEFAULT_LANGUAGE],
+                type: "error",
+                details: printFailedMailboxesOrFolders(),
+                onManage: manageFailedMailboxesOrFolders,
+                onManageText: local.retry[DEFAULT_LANGUAGE],
+                closeable: false
+            });
+        }
+    });
 </script>
 
 <div class="settings-content-header">
@@ -23,10 +82,7 @@
     <span class="settings-content-description muted">These are accounts settings.</span>
 </div>
 <div class="settings-content-body">
-    <!-- TODO: Add account form, and failed accounts alert uncloseable --->
-    <AccountTable
-        accountsPerPage={ACCOUNTS_PER_PAGE}
-        {showEditAccount}
-        {onRemoveAccount}
-    />
+    <div class="alert-container" id="failed-accounts-alert-container"></div>
+    <div class="alert-container" id="failed-mailboxes-or-folders-alert-container"></div>
+    <AccountList />
 </div>
