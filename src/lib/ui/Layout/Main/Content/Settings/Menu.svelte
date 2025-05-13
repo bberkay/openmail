@@ -10,10 +10,11 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { DEFAULT_PREFERENCES } from "$lib/constants";
     import { FileSystem } from "$lib/services/FileSystem";
+    import Icon from "$lib/ui/Components/Icon";
 
     const highlightSelectedMenu = (e: Event) => {
         document.querySelector(".settings-title-btn.shown")?.classList.remove("shown");
-        const newTarget = e.target as HTMLElement;
+        const newTarget = (e.target as HTMLElement).closest(".settings-title-btn")!;
         newTarget.classList.add("shown");
     }
 
@@ -58,7 +59,14 @@
             class="btn-inline settings-title-btn"
             onclick={(e: Event) => displaySelectedSettings(e, Accounts)}
         >
-            Accounts
+            <!--{#if
+                SharedStore.failedAccounts.length > 0 ||
+                SharedStore.accountsWithFailedMailboxes.length > 0 ||
+                SharedStore.accountsWithFailedFolders.length > 0
+            }
+            {/if}-->
+            <Icon name="error" />
+            <span>Accounts</span>
         </Button.Basic>
         <Button.Basic
             type="button"
@@ -111,6 +119,11 @@
                     & .settings-title-btn {
                         color: var(--color-text-secondary);
                         filter: brightness(0.7);
+
+                        & svg {
+                            width: var(--font-size-xl);
+                            height: var(--font-size-xl);
+                        }
 
                         &.shown {
                             color: var(--color-text-primary);
