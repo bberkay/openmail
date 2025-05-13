@@ -7,14 +7,10 @@
 
     interface Props {
         accountsPerPage: number;
-        showEditAccount: (account: Account) => void;
-        onRemoveAccount?: (email_address: string) => Promise<void>;
     }
 
     let {
         accountsPerPage,
-        showEditAccount,
-        onRemoveAccount,
     }: Props = $props();
 
     let allAccounts = $derived(
@@ -35,8 +31,6 @@
     bind:shownAccounts
     bind:accountSelection
     bind:accountSelectionType
-    {showEditAccount}
-    {onRemoveAccount}
 />
 <Pagination
     bind:allAccounts

@@ -49,11 +49,6 @@
                 return;
             }
 
-            if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
-                SharedStore.notificationChannels[email_address].terminate();
-                delete SharedStore.notificationChannels[email_address];
-            }
-
             showToast({ content: "logout success" });
         }
 

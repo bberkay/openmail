@@ -34,10 +34,6 @@
             console.error(response.message);
             return;
         }
-
-        if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
-            SharedStore.notificationChannels[email_address].reinitialize();
-        }
     };
 </script>
 

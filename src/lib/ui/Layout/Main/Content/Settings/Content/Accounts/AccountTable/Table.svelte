@@ -13,26 +13,27 @@
     import type { Account } from "$lib/types";
     import { simpleDeepCopy } from "$lib/utils";
     import { onMount } from "svelte";
+    import { show as showModal } from "$lib/ui/Components/Modal";
+    import EditAccountForm from "../EditAccountForm.svelte";
+    import type { PostResponse, PostRoutes } from "$lib/services/ApiService";
 
     interface Props {
         shownAccounts: Account[];
         accountSelection: string[];
         accountSelectionType: "shown" | "all" | "parts";
-        showEditAccount: (account: Account) => void;
-        onRemoveAccount?: (email_address: string) => Promise<void>;
     }
 
     let {
         shownAccounts = $bindable(),
         accountSelection = $bindable(),
         accountSelectionType = $bindable(),
-        showEditAccount,
-        onRemoveAccount,
     }: Props = $props();
 
     let selectShownCheckbox: HTMLInputElement;
     onMount(() => {
-        selectShownCheckbox = document.getElementById("select-shown-checkbox") as HTMLInputElement;
+        selectShownCheckbox = document.getElementById(
+            "select-shown-checkbox",
+        ) as HTMLInputElement;
     });
 
     const selectShownAccounts = () => {
@@ -56,12 +57,13 @@
         selectShownCheckbox.checked = false;
     };
 
-    const removeAccount = async (email_address: string): Promise<void> => {
+    const removeAccount = async (account: Account): Promise<void> => {
         resetAccountSelection();
 
-        const removeAccountWrapper = async (e: Event) => {
-            const target = e.target as HTMLButtonElement;
-            const response = await AccountController.remove(email_address);
+        const removeAccountWrapper = async () => {
+            const response = await AccountController.remove(
+                account.email_address,
+            );
 
             if (!response.success) {
                 showMessage({
@@ -70,8 +72,6 @@
                 console.error(response.message);
                 return;
             }
-
-            if (onRemoveAccount) await onRemoveAccount(email_address);
         };
 
         showConfirm({
@@ -82,26 +82,20 @@
     };
 
     const removeSelectedAccounts = async (): Promise<void> => {
-        const removeSelectedAccountsWrapper = async (e: Event) => {
-            const tempAccountSelection = simpleDeepCopy(accountSelection);
+        const removeSelectedAccountsWrapper = async () => {
+            const failed: PostResponse<PostRoutes>[] = [];
+            accountSelection.forEach(async (email_address) => {
+                const response = await AccountController.remove(email_address);
+                if (!response.success) failed.push(response);
+            });
+
             resetAccountSelection();
-
-            const results = await Promise.allSettled(
-                tempAccountSelection.map(async (email_address) => {
-                    const response =
-                        await AccountController.remove(email_address);
-                    if (!response.success) throw new Error(response.message);
-                    if (onRemoveAccount) await onRemoveAccount(email_address);
-                }),
-            );
-
-            const failed = results.filter((r) => r.status === "rejected");
 
             if (failed.length > 0) {
                 showMessage({
                     title: local.error_remove_all_account[DEFAULT_LANGUAGE],
                 });
-                failed.forEach((f) => console.error(f.reason));
+                failed.forEach((f) => console.error(f.message));
                 return;
             }
         };
@@ -113,15 +107,17 @@
         });
     };
 
-    const editAccount = async (account: Account) => {
+    const showEditAccount = async (account: Account) => {
         resetAccountSelection();
-        showEditAccount(account);
+        showModal(EditAccountForm, { account });
     };
 </script>
 
 {#if (SharedStore.accounts && SharedStore.accounts.length > 0) || (SharedStore.failedAccounts && SharedStore.failedAccounts.length > 0)}
     {@const failedAccountLength = (SharedStore.failedAccounts || []).length}
-    <Table.Root class={`account-table ${shownAccounts.length === 0 ? "disabled" : ""}`}>
+    <Table.Root
+        class={`account-table ${shownAccounts.length === 0 ? "disabled" : ""}`}
+    >
         <Table.Header>
             <Table.Row>
                 <Table.Head class="checkbox-cell">
@@ -178,14 +174,13 @@
                             <Button.Basic
                                 type="button"
                                 class="btn-inline"
-                                onclick={() => editAccount(account)}
+                                onclick={() => showEditAccount(account)}
                             >
                                 <Icon name="edit" />
                             </Button.Basic>
                             <Button.Action
                                 class="btn-inline"
-                                onclick={() =>
-                                    removeAccount(account.email_address)}
+                                onclick={() => removeAccount(account)}
                             >
                                 <Icon name="trash" />
                             </Button.Action>
@@ -196,7 +191,7 @@
                 <Table.Row>
                     <Table.Cell colspan="3" class="full">
                         <div class="no-match-results">
-                            <Icon name="warning"/>
+                            <Icon name="warning" />
                             <span>No results found</span>
                         </div>
                     </Table.Cell>
@@ -209,53 +204,15 @@
 <style>
     :global {
         .account-table {
-            & .tr:has(.checkbox-cell input[type="checkbox"]:checked) {
-                background-color: var(--color-hover) !important;
-            }
-
-            & .checkbox-cell {
-                width: var(--font-size-2xl);
-                padding-left: var(--spacing-sm);
-                padding-top: var(--spacing-md);
-            }
-
-            & .body-cell {
-                padding: var(--spacing-md);
-                padding-left: var(--spacing-xs);
-                text-align: left;
-
-                & span {
-                    margin-right: var(--spacing-2xs);
-
-                    &:not(:first-child) {
-                        margin-left: var(--spacing-2xs);
-                    }
-                }
-            }
-
             & .action-cell {
-                padding-right: var(--spacing-sm);
-                width: calc(2 * var(--font-size-2xl));
-
                 & .action-buttons {
-                    display: flex;
-                    align-items: center;
-                    justify-content: flex-end;
-                    gap: var(--spacing-sm);
+                    gap: var(--spacing-lg);
 
                     & svg {
                         width: var(--font-size-md);
                         height: var(--font-size-md);
                     }
                 }
-            }
-
-            & .no-match-results {
-                display: flex;
-                align-items: center;
-                gap: var(--spacing-sm);
-                justify-content: center;
-                padding: var(--spacing-2xs);
             }
         }
     }

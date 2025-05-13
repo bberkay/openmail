@@ -2,7 +2,10 @@
     import type { Account } from "$lib/types";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";
+    import Icon from "$lib/ui/Components/Icon";
     import { onMount } from "svelte";
+    import { show as showModal } from "$lib/ui/Components/Modal";
+    import AddAccountForm from "../AddAccountForm.svelte";
 
     interface Props {
         allAccounts: Account[];
@@ -52,6 +55,10 @@
     const showAllAccounts = () => {
         shownAccounts = allAccounts;
     };
+
+    const showAddAccount = () => {
+        showModal(AddAccountForm);
+    };
 </script>
 
 <div class="accounts-info">
@@ -72,6 +79,14 @@
             Clear Selection
         </Button.Basic>
     {:else}
+        <Button.Basic
+            type="button"
+            class="btn-outline btn-cta"
+            onclick={showAddAccount}
+        >
+            <Icon name="add" />
+            <span>Add Account</span>
+        </Button.Basic>
         <Input.Expandable
             type="text"
             placeholder="Search accounts..."

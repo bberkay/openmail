@@ -1,7 +1,6 @@
 <script lang="ts">
     import Modal from "$lib/ui/Components/Modal";
     import { AccountController } from "$lib/controllers/AccountController";
-    import { type Account } from "$lib/types";
     import Form from "$lib/ui/Components/Form";
     import { FormGroup } from "$lib/ui/Components/Form";
     import * as Input from "$lib/ui/Components/Input";
@@ -10,8 +9,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import { SharedStore } from "$lib/stores/shared.svelte";
-    import { NotificationHandler } from "$lib/services/NotificationHandler";
 
     const addAccount = async (e: Event): Promise<void> => {
         const form = e.target as HTMLFormElement;
@@ -22,6 +19,7 @@
             email_address,
             formData.get("password") as string,
             formData.get("fullname") as string,
+            true
         );
 
         if (!response.success) {
@@ -29,11 +27,6 @@
             console.error(response.message);
             return;
         }
-
-        const targetAccount = SharedStore.accounts.find(
-            acc => acc.email_address === email_address
-        )!;
-        SharedStore.notificationChannels[email_address] = new NotificationHandler(targetAccount);
     };
 </script>
 
