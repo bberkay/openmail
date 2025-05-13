@@ -251,6 +251,7 @@
                 & .collapse-header {
                     padding: var(--spacing-sm) var(--spacing-2xs);
                     padding-bottom: 0;
+                    margin-right: var(--spacing-2xs);
                 }
 
                 & .collapse-content {
