@@ -49,8 +49,8 @@
                     resetAfterSelect={true}
                     placeholder="Flag"
                 >
-                    {#each Object.entries(Mark) as mark}
-                        <Select.Option value={mark[1]} content={mark[0]} />
+                    {#each Object.entries(Mark) as [markName, markId]}
+                        <Select.Option value={markId} content={markName} />
                     {/each}
                 </Select.Root>
             </FormGroup>
@@ -81,8 +81,8 @@
                     resetAfterSelect={true}
                     placeholder="Flag"
                 >
-                    {#each Object.entries(Mark) as mark}
-                        <Select.Option value={mark[1]} content={mark[0]} />
+                    {#each Object.entries(Mark) as [markName, markId]}
+                        <Select.Option value={markId} content={markName} />
                     {/each}
                 </Select.Root>
             </FormGroup>

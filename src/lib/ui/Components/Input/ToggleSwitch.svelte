@@ -1,21 +1,40 @@
 <script lang="ts">
-    import * as Input from "$lib/ui/Components/Input";
+    import { combine } from "$lib/utils";
 
     interface Props {
+        onchange?: (((checked: boolean) => void) | ((checked: boolean) => Promise<void>)),
         checked?: boolean;
         element?: HTMLInputElement;
         [attribute: string]: unknown;
     }
 
     let {
+        onchange,
         checked = $bindable(),
         element,
         ...attributes
     }: Props = $props();
+
+    checked = checked || false;
+
+    let {
+	    class: additionalClass,
+		...restAttributes
+	} = $derived(attributes);
+
+    const onchangeWrapper = async () => {
+        if(onchange) await onchange(checked as boolean);
+    }
 </script>
 
-<label class="switch">
-    <input type="checkbox" />
+<label class={combine("switch", additionalClass)}>
+    <input
+        type="checkbox"
+        bind:this={element}
+        bind:checked={checked}
+        onchange={onchangeWrapper}
+        {...restAttributes}
+    />
     <span class="slider"></span>
 </label>
 

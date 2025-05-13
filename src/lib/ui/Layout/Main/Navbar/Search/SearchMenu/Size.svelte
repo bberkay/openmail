@@ -85,10 +85,10 @@
                     value={largerThanUnit}
                     onchange={setLargerThanUnit}
                 >
-                    {#each Object.entries(Size) as size}
+                    {#each Object.entries(Size) as [sizeId, sizeName]}
                         <Select.Option
-                            value={size[0]}
-                            content={size[1]}
+                            value={sizeId}
+                            content={sizeName}
                         />
                     {/each}
                 </Select.Root>
@@ -109,10 +109,10 @@
                     value={smallerThanUnit}
                     onchange={setSmallerThanUnit}
                 >
-                    {#each Object.entries(Size) as size}
+                    {#each Object.entries(Size) as [sizeId, sizeName]}
                         <Select.Option
-                            value={size[0]}
-                            content={size[1]}
+                            value={sizeId}
+                            content={sizeName}
                         />
                     {/each}
                 </Select.Root>

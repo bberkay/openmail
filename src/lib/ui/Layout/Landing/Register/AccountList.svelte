@@ -20,14 +20,30 @@
 
     const ACCOUNT_COUNT_PER_PAGE = 5;
 
-    /**
-     * Create WebSocket connections
-     * for every account to receive
-     * new email notifications.
-     */
-    async function listenForNotifications() {
+    function listenForNotifications() {
         SharedStore.accounts.forEach((account) => new NotificationHandler(account));
     }
+
+    const initMailboxes = async () => {
+        const response = await MailboxController.init();
+        if (!response.success) {
+            console.error(response.message);
+            showMessage({
+                title: local.error_initialize_mailboxes[DEFAULT_LANGUAGE],
+            });
+        }
+        listenForNotifications();
+    }
+
+    const showEditAccount = (account: Account) => {
+        showContent(EditAccountForm, {
+            account,
+        });
+    };
+
+    const showAddAccount = () => {
+        showContent(AddAccountForm);
+    };
 
     function printFailedAccounts() {
         return getFailedAccountsTemplate(
@@ -47,28 +63,6 @@
     function manageFailedAccounts() {
         showEditAccount(SharedStore.failedAccounts[0]);
     }
-
-    const initMailboxes = async () => {
-        const response = await MailboxController.init();
-        if (!response.success) {
-            console.error(response.message);
-            showMessage({
-                title: local.error_initialize_mailboxes[DEFAULT_LANGUAGE],
-            });
-        }
-        // TODO: Open this later.
-        //await listenForNotifications();
-    }
-
-    const showEditAccount = (account: Account) => {
-        showContent(EditAccountForm, {
-            account,
-        });
-    };
-
-    const showAddAccount = () => {
-        showContent(AddAccountForm);
-    };
 
     $effect(() => {
         if (SharedStore.failedAccounts.length > 0) {

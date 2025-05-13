@@ -36,8 +36,7 @@
         onchange={selectTheme}
         style="width:100%"
     >
-        {#each Object.entries(Theme) as themeEntry}
-            {@const [themeId, themeName] = themeEntry}
+        {#each Object.entries(Theme) as [themeId, themeName]}
             <Select.Option
                 value={themeId}
                 content={themeName}

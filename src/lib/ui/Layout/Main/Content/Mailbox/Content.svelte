@@ -216,14 +216,14 @@
             </Button.Basic>
         </div>
     {/if}
-    {#each Object.entries(groupedEmailsByDate) as group}
+    {#each Object.entries(groupedEmailsByDate) as [groupDate, groupedEmails]}
         <div class="group-separator">
             <div class="timeline-label">
-                <span>{group[0]}</span>
+                <span>{groupDate}</span>
             </div>
         </div>
         <div class="email-group">
-            {#each group[1] as email}
+            {#each groupedEmails as email}
                 {@const account = getAccountByEmail(email)!}
                 <div
                     class="email"

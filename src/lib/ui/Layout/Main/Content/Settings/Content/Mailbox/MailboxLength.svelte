@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { DEFAULT_PREFERENCES } from "$lib/constants";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxLength } from "$lib/types";
@@ -15,19 +16,19 @@
         document.addEventListener("preferencesResetToDefault", resetMailboxLength);
     });
 
-    const updateMailboxLength = (selectedLength: string) => {
-        newMailboxLength = Number(selectedLength) as MailboxLength;
-    };
-
-    const saveMailboxLengthChange = async () => {
+    async function saveMailboxLengthChange() {
         SharedStore.preferences.mailboxLength = newMailboxLength;
         await MailboxController.init();
     }
 
-    const resetMailboxLength = async () => {
-        newMailboxLength = SharedStore.preferences.mailboxLength;
-        await MailboxController.init();
+    async function resetMailboxLength() {
+        newMailboxLength = DEFAULT_PREFERENCES.mailboxLength;
+        await saveMailboxLengthChange();
     }
+
+    const updateMailboxLength = (selectedLength: string) => {
+        newMailboxLength = Number(selectedLength) as MailboxLength;
+    };
 </script>
 
 <div class="settings-section">
@@ -47,9 +48,7 @@
             onchange={updateMailboxLength}
             disableClearButton={true}
         >
-            {#each Object.entries(MailboxLength) as mailboxLengthEntry}
-                {@const [mailboxLengthName, mailboxLengthId] =
-                    mailboxLengthEntry}
+            {#each Object.entries(MailboxLength) as [mailboxLengthName, mailboxLengthId]}
                 <Select.Option
                     value={mailboxLengthId.toString()}
                     content={mailboxLengthName}

@@ -5,6 +5,7 @@
     import * as Select from "$lib/ui/Components/Select";
     import { convertToLanguageEnum, convertToRFC5646Format, getEnumKeyByValue, getEnumValueByKey } from "$lib/utils";
     import { onMount } from "svelte";
+    import { DEFAULT_PREFERENCES } from "$lib/constants";
 
     let newLanguage: Language = $state(SharedStore.preferences.language);
 
@@ -14,6 +15,18 @@
         document.removeEventListener("preferencesResetToDefault", resetLanguage);
         document.addEventListener("preferencesResetToDefault", resetLanguage);
     });
+
+    function saveLanguageChange() {
+        SharedStore.preferences.language = newLanguage;
+
+        // Check out app.html
+        localStorage.setItem("language", document.documentElement.getAttribute("lang")!);
+    }
+
+    function resetLanguage() {
+        changeLanguage(DEFAULT_PREFERENCES.language);
+        saveLanguageChange();
+    }
 
     const changeLanguage = async (selectedLanguage: string) => {
         newLanguage = getEnumValueByKey(
@@ -36,20 +49,6 @@
             convertToRFC5646Format(foundLocale)
         );
     }
-
-    const saveLanguageChange = () => {
-        SharedStore.preferences.language = newLanguage;
-
-        // Check out app.html
-        localStorage.setItem("language", document.documentElement.getAttribute("lang")!);
-    }
-
-    const resetLanguage = () => {
-        changeLanguage(SharedStore.preferences.language);
-
-        // Check out app.html
-        localStorage.setItem("language", document.documentElement.getAttribute("lang")!);
-    }
 </script>
 
 <div class="settings-section">
@@ -69,8 +68,7 @@
             onchange={changeLanguage}
             disableClearButton={true}
         >
-            {#each Object.entries(Language) as langEntry}
-                {@const [langId, langName] = langEntry}
+            {#each Object.entries(Language) as [langId, langName]}
                 <Select.Option value={langId} content={langName} />
             {/each}
         </Select.Root>

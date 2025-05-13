@@ -2,6 +2,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import { ToggleSwitch } from "$lib/ui/Components/Input";
 
+    // TODO: Implement this after updater plugin is added.
     const checkForUpdates = () => {
 
     }

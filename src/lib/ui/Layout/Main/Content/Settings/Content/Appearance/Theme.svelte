@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { DEFAULT_PREFERENCES } from "$lib/constants";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Theme } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
@@ -14,6 +15,18 @@
         document.removeEventListener("preferencesResetToDefault", resetTheme);
         document.addEventListener("preferencesResetToDefault", resetTheme);
     });
+
+    function saveThemeChange() {
+        SharedStore.preferences.theme = newTheme;
+
+        // Check out app.html
+        localStorage.setItem("theme", document.documentElement.getAttribute("data-color-scheme")!);
+    }
+
+    function resetTheme() {
+        changeTheme(DEFAULT_PREFERENCES.theme);
+        saveThemeChange();
+    }
 
     const changeTheme = async (selectedTheme: string) => {
         newTheme = getEnumValueByKey(
@@ -33,20 +46,6 @@
 
         document.documentElement.setAttribute("data-color-scheme", foundTheme);
     }
-
-    const saveThemeChange = () => {
-        SharedStore.preferences.theme = newTheme;
-
-        // Check out app.html
-        localStorage.setItem("theme", document.documentElement.getAttribute("data-color-scheme")!);
-    }
-
-    const resetTheme = () => {
-        changeTheme(SharedStore.preferences.theme);
-
-        // Check out app.html
-        localStorage.setItem("theme", document.documentElement.getAttribute("data-color-scheme")!);
-    }
 </script>
 
 <div class="settings-section">
@@ -59,12 +58,11 @@
              id="theme"
              class="select-sm"
              placeholder="Theme"
-             value={getEnumKeyByValue(Theme, SharedStore.preferences.theme)}
+             value={getEnumKeyByValue(Theme, newTheme)}
              onchange={changeTheme}
              disableClearButton={true}
          >
-             {#each Object.entries(Theme) as themeEntry}
-                 {@const [themeId, themeName] = themeEntry}
+             {#each Object.entries(Theme) as [themeId, themeName]}
                  <Select.Option
                      value={themeId}
                      content={themeName}

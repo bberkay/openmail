@@ -42,8 +42,7 @@
         onchange={selectLanguage}
         style="width:100%"
     >
-        {#each Object.entries(Language) as langEntry}
-            {@const [langId, langName] = langEntry}
+        {#each Object.entries(Language) as [langId, langName]}
             <Select.Option value={langId} content={langName} />
         {/each}
     </Select.Root>

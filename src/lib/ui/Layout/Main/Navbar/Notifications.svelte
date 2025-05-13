@@ -237,17 +237,15 @@
                 </div>
             </div>
             <div class="notifications-body">
-                {#each Object.entries(SharedStore.recentEmailsChannel) as entry}
-                    {@const emailAddress = entry[0]}
-                    {@const recentEmails = entry[1]}
+                {#each Object.entries(SharedStore.recentEmailsChannel) as [email_address, recentEmails]}
                     {#each recentEmails as recentEmail}
                         <div
                             class="notification-item"
                             onclick={() => {
-                                showEmailContent(emailAddress, recentEmail.uid);
+                                showEmailContent(email_address, recentEmail.uid);
                             }}
                             onkeydown={() => {
-                                showEmailContent(emailAddress, recentEmail.uid);
+                                showEmailContent(email_address, recentEmail.uid);
                             }}
                             tabindex="0"
                             role="button"
@@ -263,7 +261,7 @@
                                     {getNewMessageTemplate(
                                         extractFullname(recentEmail.sender),
                                         extractEmailAddress(recentEmail.sender),
-                                        emailAddress,
+                                        email_address,
                                         recentEmail.date,
                                     )}
                                 </span>
@@ -281,7 +279,7 @@
                                     class="btn-inline"
                                     onclick={() => {
                                         clearRecentEmails(
-                                            emailAddress,
+                                            email_address,
                                             recentEmail.uid,
                                         );
                                     }}
