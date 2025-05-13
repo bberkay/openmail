@@ -151,10 +151,13 @@ export enum MailboxLength {
     Compact = 100
 }
 
+export type NotificationStatus = true | false | { [email_address: string]: boolean };
+
 export interface Preferences {
     theme: Theme;
     language: Language;
     mailboxLength: MailboxLength;
     isAutostartEnabled: boolean;
     isSendDelayEnabled: boolean;
+    notificationStatus: NotificationStatus;
 }

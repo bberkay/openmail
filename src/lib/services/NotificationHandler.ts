@@ -19,7 +19,8 @@ export class NotificationHandler implements INotificationHandler {
         this._account = account;
         this._permissionGranted = false;
         this._ws = undefined;
-        this.initialize();
+        // TODO: Open this later.
+        //this.initialize();
     }
 
     public get account() {
@@ -112,8 +113,7 @@ export class NotificationHandler implements INotificationHandler {
         const recentMessages = e.data;
         this.pushDesktopNotification();
         Object.entries(recentMessages).forEach(
-            (recentMessage) => {
-                const [ emailAddr, recentEmails ] = recentMessage;
+            ([ emailAddr, recentEmails ]) => {
                 return this._handleIncomingEmailMessages(
                     emailAddr,
                     recentEmails

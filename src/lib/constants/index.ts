@@ -7,6 +7,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     mailboxLength: MailboxLength.Fast,
     isAutostartEnabled: false,
     isSendDelayEnabled: true,
+    notificationStatus: true
 };
 
 export const MIN_MAILBOX_LENGTH = 10;
