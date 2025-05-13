@@ -81,7 +81,8 @@
     {:else}
         <Button.Basic
             type="button"
-            class="btn-outline btn-cta"
+            class="btn-cta"
+            style="width:auto"
             onclick={showAddAccount}
         >
             <Icon name="add" />
@@ -92,19 +93,8 @@
             placeholder="Search accounts..."
             onkeyup={searchAccounts}
             onClose={showAllAccounts}
+            collapsedWidth={30}
+            expandedWidth={300}
         />
     {/if}
 </div>
-
-<style>
-    :global {
-        .accounts-info {
-            display: flex;
-            justify-content: space-between;
-            flex-direction: row;
-            align-items: end;
-            height: 45px;
-            margin-bottom: var(--spacing-xs);
-        }
-    }
-</style>

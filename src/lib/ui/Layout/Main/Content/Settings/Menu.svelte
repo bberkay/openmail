@@ -59,13 +59,13 @@
             class="btn-inline settings-title-btn"
             onclick={(e: Event) => displaySelectedSettings(e, Accounts)}
         >
-            <!--{#if
+            {#if
                 SharedStore.failedAccounts.length > 0 ||
                 SharedStore.accountsWithFailedMailboxes.length > 0 ||
                 SharedStore.accountsWithFailedFolders.length > 0
             }
-            {/if}-->
-            <Icon name="error" />
+                <Icon name="error" />
+            {/if}
             <span>Accounts</span>
         </Button.Basic>
         <Button.Basic

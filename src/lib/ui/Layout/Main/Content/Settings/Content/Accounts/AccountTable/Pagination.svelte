@@ -31,11 +31,3 @@
         />
     </div>
 {/if}
-
-<style>
-    :global {
-        .account-list-pagination-container {
-            margin-top: var(--spacing-md);
-        }
-    }
-</style>

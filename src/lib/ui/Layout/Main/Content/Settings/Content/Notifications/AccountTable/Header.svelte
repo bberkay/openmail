@@ -80,16 +80,3 @@
         />
     {/if}
 </div>
-
-<style>
-    :global {
-        .accounts-info {
-            display: flex;
-            justify-content: space-between;
-            flex-direction: row;
-            align-items: end;
-            height: 45px;
-            margin-bottom: var(--spacing-xs);
-        }
-    }
-</style>

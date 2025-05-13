@@ -62,7 +62,7 @@
                 color: var(--color-text-primary);
 
                 &:has(> svg:only-child) {
-                    padding: var(--spacing-xs)!important;
+                    padding: var(--spacing-2xs) var(--spacing-xs)!important;
                 }
 
                 &:hover,
