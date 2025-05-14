@@ -345,6 +345,16 @@ export class MailboxController {
         });
     }
 
+    public static async saveDraft(
+        email: FormData | Draft,
+        appenduid?: string,
+    ): Promise<PostResponse<PostRoutes.SAVE_EMAIL_AS_DRAFT>> {
+        return await ApiService.post(PostRoutes.SAVE_EMAIL_AS_DRAFT, {
+            email,
+            appenduid,
+        });
+    }
+
     public static async sendEmail(
         email: FormData | Draft,
     ): Promise<PostResponse> {
@@ -373,14 +383,15 @@ export class MailboxController {
         });
     }
 
-    public static async saveEmailAsDraft(
-        email: FormData | Draft,
-        appenduid?: string,
-    ): Promise<PostResponse<PostRoutes.SAVE_EMAIL_AS_DRAFT>> {
-        return await ApiService.post(PostRoutes.SAVE_EMAIL_AS_DRAFT, {
-            email,
-            appenduid,
-        });
+    public static async deleteDraft(
+        account: Account,
+        selection: string,
+    ): Promise<PostResponse> {
+        return await MailboxController.deleteEmails(
+            account,
+            selection,
+            Folder.Drafts
+        );
     }
 
     public static async deleteEmails(

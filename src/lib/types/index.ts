@@ -128,6 +128,16 @@ export enum Size {
     MB = "MB",
 }
 
+export interface OriginalMessageContext {
+    composeType: "reply" | "forward";
+    messageId: string;
+    sender: string;
+    receivers: string;
+    subject: string;
+    body: string;
+    date: string;
+}
+
 /**
  * The enum keys are derived from RFC 5646 language tags
  * (e.g., "en-US", "en-GB"),but are formatted using

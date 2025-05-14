@@ -7,10 +7,14 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
     interface Props {
+        element?: HTMLInputElement;
         [attribute: string]: unknown;
     }
 
-    let { ...attributes }: Props = $props();
+    let {
+        element = $bindable(),
+        ...attributes
+    }: Props = $props();
 
     let {
 	    class: additionalClass,
@@ -71,7 +75,6 @@
 <div
     bind:this={fileUploaderWrapper}
     class={combine("file-uploader-container", additionalClass)}
-    {...restAttributes}
 >
     <div class="file-upload-area">
         <label class="upload-btn">
@@ -79,6 +82,8 @@
             <Input.Basic
                 type="file"
                 class="file-input"
+                bind:element={element}
+                {...restAttributes}
             />
         </label>
         <div

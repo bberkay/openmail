@@ -1,31 +1,27 @@
+<script lang="ts" module>
+    export interface ComposeContext {
+        flagDraftAsChanged: () => void;
+    }
+</script>
+
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import type { PostResponse } from "$lib/services/ApiService";
     import { local } from "$lib/locales";
-    import { extractEmailAddress, isStandardFolder } from "$lib/utils";
-    import { getReplyTemplate, getForwardTemplate } from "$lib/templates";
+    import { isStandardFolder } from "$lib/utils";
     import {
-        AUTO_SAVE_DRAFT_INTERVAL_MS,
+        AUTOSAVE_DRAFT_INTERVAL_MS,
         DEFAULT_LANGUAGE,
         SEND_RECALL_DELAY_MS,
     } from "$lib/constants";
-    import { Folder, type Account } from "$lib/types";
-    import { MailboxController } from "$lib/controllers/MailboxController";
-    import { onDestroy, onMount } from "svelte";
-    import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
     import {
-        createSenderAddress,
-        escapeHTML,
-        addEmailToAddressList,
-    } from "$lib/utils";
-    import * as Select from "$lib/ui/Components/Select";
-    import * as Input from "$lib/ui/Components/Input";
-    import * as Button from "$lib/ui/Components/Button";
-    import Label from "$lib/ui/Components/Label";
-    import Icon from "$lib/ui/Components/Icon";
-    import Collapse from "$lib/ui/Components/Collapse";
-    import Form, { FormGroup } from "$lib/ui/Components/Form";
-    import Badge from "$lib/ui/Components/Badge";
+        Folder,
+        type Account,
+        type OriginalMessageContext,
+    } from "$lib/types";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { onMount, setContext } from "svelte";
+    import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
+    import Form from "$lib/ui/Components/Form";
     import Mailbox, {
         getCurrentMailbox,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
@@ -33,210 +29,130 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { show as showToast } from "$lib/ui/Components/Toast";
+    import Sender from "./Compose/Sender.svelte";
+    import Receivers from "./Compose/Receivers.svelte";
+    import Cc from "./Compose/Cc.svelte";
+    import Bcc from "./Compose/Bcc.svelte";
+    import Subject from "./Compose/Subject.svelte";
+    import Body from "./Compose/Body.svelte";
+    import Attachments from "./Compose/Attachments.svelte";
+    import Action from "./Compose/Action.svelte";
 
     interface Props {
-        originalMessageContext?: {
-            composeType: "reply" | "forward";
-            originalMessageId: string;
-            originalSender: string;
-            originalReceivers: string;
-            originalSubject: string;
-            originalBody: string;
-            originalDate: string;
-        };
+        originalMessageContext?: OriginalMessageContext;
     }
 
     let { originalMessageContext }: Props = $props();
 
-    let composeWrapper: HTMLElement;
-    let composeForm: HTMLFormElement;
-    let receiverInput: HTMLInputElement;
-    let ccInput: HTMLInputElement;
-    let bccInput: HTMLInputElement;
-    let subjectInput: HTMLInputElement;
-
-    let senderAccounts: Account[] = $state([]);
-    let isSendingEmail: boolean = $state(false);
-    let draftAppenduids: { [account: string]: string } = {};
-    let draftLoopTimeout: ReturnType<typeof setTimeout>;
-    let isSavingDraft: boolean = $state(false);
-    let lastDraftSavedTime: string = $state("");
-    let draftChangedAfterLastSave: boolean = true;
-
-    let body: WYSIWYGEditor;
-    let receivers: string[] = $state(
-        originalMessageContext
-            ? originalMessageContext.originalReceivers
-                  .split(",")
-                  .map((receiver) => extractEmailAddress(receiver))
-            : [],
+    let composeForm: HTMLFormElement | undefined = $state();
+    let senderAccount: Account = $state(
+        SharedStore.currentAccount !== "home"
+            ? SharedStore.currentAccount
+            : SharedStore.accounts[0]
     );
-    let cc: string[] = $state([]);
-    let bcc: string[] = $state([]);
+    let receiverList: string[] = $state([]);
+    let ccList: string[] = $state([]);
+    let bccList: string[] = $state([]);
+    let subject = $state("");
+    let body: WYSIWYGEditor | undefined = $state();
+
+    let isSendingEmail: boolean = $state(false);
+    let isSavingDraft: boolean = $state(false);
+    let draftAppenduid: string = "";
+    let lastDraftSavedTime: string = $state("");
+    let isDraftChangedAfterLastSave = false;
 
     onMount(() => {
-        composeForm = composeWrapper.querySelector('form[id="compose-form"]')!;
-        receiverInput = composeForm.querySelector('input[id="receivers"]')!;
-        ccInput = composeForm.querySelector('input[id="cc"]')!;
-        bccInput = composeForm.querySelector('input[id="bcc"]')!;
-        subjectInput = composeForm.querySelector('input[id="subject"]')!;
-
-        body = new WYSIWYGEditor("body");
-        body.init();
-        body.onChange = () => {
-            draftChangedAfterLastSave = true;
-        };
-        if (originalMessageContext) {
-            const getBodyTemplate =
-                originalMessageContext.composeType == "reply"
-                    ? getReplyTemplate
-                    : getForwardTemplate;
-            body.addFullHTMLPage(
-                getBodyTemplate(
-                    escapeHTML(originalMessageContext.originalSender || ""),
-                    escapeHTML(originalMessageContext.originalReceivers || ""),
-                    originalMessageContext.originalSubject || "",
-                    originalMessageContext.originalBody || "",
-                    originalMessageContext.originalDate || "",
-                ),
-            );
-        }
-
-        startAutoSaveDraftLoop();
+        startAutosaveDraftLoop();
     });
 
-    onDestroy(() => {
-        body.clear();
-        if (draftLoopTimeout) clearTimeout(draftLoopTimeout);
-    });
+    const flagDraftAsChanged = () => {
+        isDraftChangedAfterLastSave = true;
+    };
+    setContext("compose", { flagDraftAsChanged });
 
-    function startAutoSaveDraftLoop() {
-        if (draftLoopTimeout) return;
-
+    function startAutosaveDraftLoop() {
         const loop = async () => {
-            await saveEmailsAsDrafts();
-            draftLoopTimeout = setTimeout(loop, AUTO_SAVE_DRAFT_INTERVAL_MS);
+            await saveDraft();
+            setTimeout(loop, AUTOSAVE_DRAFT_INTERVAL_MS);
         };
-
         loop();
     }
 
-    function createFormDataOfDraft(sender: string): FormData {
+    function createDraft(): FormData {
         const formData = new FormData(composeForm);
-        formData.set("sender", sender);
-        formData.set("receivers", receivers.join(","));
-        formData.set("cc", cc.join(","));
-        formData.set("bcc", bcc.join(","));
-        formData.set("body", body.getHTMLContent());
+        formData.set("sender", senderAccount.email_address);
+        formData.set("receivers", receiverList.join(","));
+        formData.set("cc", ccList.join(","));
+        formData.set("bcc", bccList.join(","));
+        formData.set("body", body!.getHTMLContent());
         return formData;
     }
 
-    async function saveEmailAsDraft(sender: string): Promise<PostResponse> {
-        const formData = createFormDataOfDraft(sender);
-        const response = await MailboxController.saveEmailAsDraft(
-            formData,
-            draftAppenduids[sender],
-        );
-
-        if (response.success && response.data) {
-            draftAppenduids[sender] = response.data;
+    async function showSentMailbox() {
+        if (senderAccount !== SharedStore.currentAccount) {
+            SharedStore.currentAccount = senderAccount;
         }
 
-        return response;
-    }
-
-    async function sendEmail(sender: string): Promise<PostResponse> {
-        const draft = createFormDataOfDraft(sender);
-
-        // Remove saved draft before sending as email.
-        if (Object.hasOwn(draftAppenduids, sender)) {
-            await MailboxController.deleteEmails(
-                SharedStore.accounts.find(
-                    (acc) => acc.email_address === sender,
-                )!,
-                draftAppenduids[sender],
-                Folder.Drafts,
+        // Show sent folder of sender which must be the currentAccount
+        // at this point.
+        if (!isStandardFolder(getCurrentMailbox().folder, Folder.Sent)) {
+            const response = await MailboxController.getMailbox(
+                SharedStore.currentAccount,
+                Folder.Sent,
             );
-        }
 
-        let sentResponse;
-        if (originalMessageContext) {
-            if (originalMessageContext.composeType === "reply") {
-                sentResponse = await MailboxController.replyEmail(
-                    originalMessageContext.originalMessageId,
-                    draft,
-                );
-            } else {
-                sentResponse = await MailboxController.forwardEmail(
-                    originalMessageContext.originalMessageId,
-                    draft,
-                );
+            if (!response.success) {
+                showMessage({
+                    title: local.error_sent_mailbox_after_sending_emails[
+                        DEFAULT_LANGUAGE
+                    ],
+                });
+                console.error(response.message);
+                return;
             }
-        } else {
-            sentResponse = await MailboxController.sendEmail(draft);
         }
 
-        return sentResponse;
+        showContent(Mailbox);
     }
 
-    async function sendEmails() {
+    async function sendEmail() {
         if (isSendingEmail || isSavingDraft) return;
 
         const sendTimeout = setTimeout(async () => {
             isSendingEmail = true;
-            const results = await Promise.allSettled(
-                senderAccounts.map(async (account) => {
-                    const response = await sendEmail(
-                        createSenderAddress(
-                            account.email_address,
-                            account.fullname,
-                        ),
-                    );
-                    if (!response.success) {
-                        throw new Error(response.message);
-                    }
-                }),
-            );
 
-            const failed = results.filter((r) => r.status === "rejected");
+            // Remove draft from drafts folder if exists,
+            // before sending them email and create a new/updated
+            // one from form.
+            await MailboxController.deleteDraft(senderAccount, draftAppenduid);
+            const draft = createDraft();
 
-            if (failed.length > 0) {
-                showMessage({
-                    title: local.error_send_email_s[DEFAULT_LANGUAGE],
-                });
-                failed.forEach((f) => console.error(f.reason));
-                isSendingEmail = false;
-                return;
-            }
-
-            const isAccountSender =
-                SharedStore.currentAccount !== "home" &&
-                senderAccounts.includes(SharedStore.currentAccount);
-
-            if (!isAccountSender) {
-                SharedStore.currentAccount = senderAccounts[0];
-            }
-
-            // Show first sender's Folder.Sent mailbox.
-            if (!isStandardFolder(getCurrentMailbox().folder, Folder.Sent)) {
-                const response = await MailboxController.getMailbox(
-                    SharedStore.currentAccount as Account,
-                    Folder.Sent,
+            let response;
+            if (originalMessageContext?.composeType === "reply") {
+                response = await MailboxController.replyEmail(
+                    originalMessageContext.messageId,
+                    draft,
                 );
-
-                if (!response.success) {
-                    showMessage({
-                        title: local.error_sent_mailbox_after_sending_emails[
-                            DEFAULT_LANGUAGE
-                        ],
-                    });
-                    console.error(response.message);
-                    return;
-                }
+            } else if (originalMessageContext?.composeType === "forward") {
+                response = await MailboxController.forwardEmail(
+                    originalMessageContext.messageId,
+                    draft,
+                );
+            } else {
+                response = await MailboxController.sendEmail(draft);
             }
 
             isSendingEmail = false;
-            showContent(Mailbox);
+            if (!response.success) {
+                showMessage({
+                    title: local.error_send_email_s[DEFAULT_LANGUAGE],
+                });
+                console.error(response.message)
+                return;
+            }
+
+            showSentMailbox();
             showToast({ content: "Email sent" });
         }, SEND_RECALL_DELAY_MS);
 
@@ -249,274 +165,79 @@
         });
     }
 
-    const addSenderAccount = (senderEmailAddr: string) => {
-        const senderAccount = SharedStore.accounts.find(
-            (acc) => acc.email_address === senderEmailAddr,
-        )!;
-        senderAccounts.push(senderAccount);
-    };
-
-    const addReceiver = (e: Event) => {
-        addEmailToAddressList(e, receiverInput, receivers);
-        draftChangedAfterLastSave = true;
-    };
-
-    const addCc = (e: Event) => {
-        addEmailToAddressList(e, ccInput, cc);
-        draftChangedAfterLastSave = true;
-    };
-
-    const addBcc = (e: Event) => {
-        addEmailToAddressList(e, bccInput, bcc);
-        draftChangedAfterLastSave = true;
-    };
-
-    const saveEmailsAsDrafts = async () => {
-        if (isSendingEmail || isSavingDraft || !draftChangedAfterLastSave)
+    const saveDraft = async () => {
+        if (isSendingEmail || isSavingDraft || !isDraftChangedAfterLastSave)
             return;
+
         isSavingDraft = true;
 
-        const results = await Promise.allSettled(
-            senderAccounts.map(async (account) => {
-                const response = await saveEmailAsDraft(
-                    createSenderAddress(
-                        account.email_address,
-                        account.fullname,
-                    ),
-                );
-                if (!response.success) {
-                    throw new Error(response.message);
-                }
-            }),
+        const draft = createDraft();
+        const response = await MailboxController.saveDraft(
+            draft,
+            draftAppenduid,
         );
 
-        const failed = results.filter((r) => r.status === "rejected");
-
-        if (failed.length > 0) {
+        if (response.success && response.data) {
+            draftAppenduid = response.data;
+        } else {
             showMessage({
                 title: local.error_save_email_s_as_draft[DEFAULT_LANGUAGE],
             });
-            failed.forEach((f) => console.error(f.reason));
+            console.error(response.message);
         }
 
-        lastDraftSavedTime = new Date(Date.now()).toLocaleString();
         isSavingDraft = false;
-        draftChangedAfterLastSave = false;
+        isDraftChangedAfterLastSave = false;
+        lastDraftSavedTime = new Date(Date.now()).toLocaleString();
     };
 
-    const handleSendEmails = async () => {
-        if (receivers.length == 0) {
+    const handleSendEmailForm = async () => {
+        if (!senderAccount || receiverList.length === 0) {
             showMessage({
-                title: local.at_least_one_receiver[DEFAULT_LANGUAGE],
+                title: "Provide at least one sender and one receiver.",
             });
-            console.error(local.at_least_one_receiver[DEFAULT_LANGUAGE]);
+            console.error("Provide at least one sender and one receiver.");
             return;
         }
 
-        if (!subjectInput.value) {
+        if (!subject) {
             showConfirm({
                 title: local.are_you_certain_subject_is_empty[DEFAULT_LANGUAGE],
                 onConfirmText: local.yes_send[DEFAULT_LANGUAGE],
-                onConfirm: sendEmails,
+                onConfirm: sendEmail,
             });
             return;
         }
 
-        if (!body.getHTMLContent()) {
+        if (!body!.getHTMLContent()) {
             showConfirm({
                 title: local.are_you_certain_body_is_empty[DEFAULT_LANGUAGE],
                 onConfirmText: local.yes_send[DEFAULT_LANGUAGE],
-                onConfirm: sendEmails,
+                onConfirm: sendEmail,
             });
             return;
         }
 
-        await sendEmails();
+        await sendEmail();
     };
 </script>
 
-<div class="compose" bind:this={composeWrapper}>
-    <Form onsubmit={handleSendEmails} id="compose-form">
-        <div>
-            <FormGroup>
-                <Label for="senders">{local.sender_s[DEFAULT_LANGUAGE]}</Label>
-                <Select.Root
-                    id="senders"
-                    placeholder={local.account[DEFAULT_LANGUAGE]}
-                    onchange={addSenderAccount}
-                >
-                    {#each SharedStore.accounts as account}
-                        {@const sender = createSenderAddress(
-                            account.email_address,
-                            account.fullname,
-                        )}
-                        <Select.Option value={sender}>
-                            {sender}
-                        </Select.Option>
-                    {/each}
-                </Select.Root>
-                <div class="tags">
-                    {#each senderAccounts as account}
-                        <Badge
-                            content={account.email_address}
-                            onclick={() => {
-                                senderAccounts = senderAccounts.filter(
-                                    (addr) =>
-                                        addr.email_address !==
-                                        account.email_address,
-                                );
-                            }}
-                        />
-                    {/each}
-                </div>
-            </FormGroup>
-            <FormGroup>
-                <Label for="receivers">
-                    {local.receiver_s[DEFAULT_LANGUAGE]}
-                </Label>
-                <Input.Group>
-                    <Input.Basic
-                        type="email"
-                        id="receivers"
-                        placeholder={local
-                            .add_email_address_with_space_placeholder[
-                            DEFAULT_LANGUAGE
-                        ]}
-                        onkeyup={addReceiver}
-                        onblur={addReceiver}
-                    />
-                    <Button.Basic type="button" onclick={addReceiver}>
-                        <Icon name="add" />
-                    </Button.Basic>
-                </Input.Group>
-                <div class="tags">
-                    {#each receivers as receiver}
-                        <Badge
-                            content={receiver}
-                            onclick={() => {
-                                receivers = receivers.filter(
-                                    (addr) => addr !== receiver,
-                                );
-                            }}
-                        />
-                    {/each}
-                </div>
-            </FormGroup>
-            <FormGroup>
-                <Label for="subject">{local.subject[DEFAULT_LANGUAGE]}</Label>
-                <Input.Basic
-                    type="text"
-                    name="subject"
-                    id="subject"
-                    placeholder={local.subject_placeholder[DEFAULT_LANGUAGE]}
-                    value={originalMessageContext
-                        ? (originalMessageContext.composeType == "reply"
-                              ? "Re: "
-                              : "Fwd: ") +
-                          originalMessageContext.originalSubject
-                        : ""}
-                    onkeyup={() => {
-                        draftChangedAfterLastSave = true;
-                    }}
-                    required
-                />
-            </FormGroup>
-            <FormGroup>
-                <Collapse title="Cc">
-                    <Label for="cc">{local.cc[DEFAULT_LANGUAGE]}</Label>
-                    <Input.Group>
-                        <Input.Basic
-                            type="email"
-                            id="cc"
-                            placeholder={local
-                                .add_email_address_with_space_placeholder[
-                                DEFAULT_LANGUAGE
-                            ]}
-                            onkeyup={addCc}
-                            onblur={addCc}
-                        />
-                        <Button.Basic type="button" onclick={addCc}>
-                            <Icon name="add" />
-                        </Button.Basic>
-                    </Input.Group>
-                </Collapse>
-                <div class="tags">
-                    {#each cc as ccAddr}
-                        <Badge
-                            content={ccAddr}
-                            onclick={() => {
-                                cc = cc.filter((addr) => addr !== ccAddr);
-                            }}
-                        />
-                    {/each}
-                </div>
-            </FormGroup>
-            <FormGroup>
-                <Collapse title="Bcc">
-                    <Label for="bcc">{local.bcc[DEFAULT_LANGUAGE]}</Label>
-                    <Input.Group>
-                        <Input.Basic
-                            type="email"
-                            id="bcc"
-                            placeholder={local
-                                .add_email_address_with_space_placeholder[
-                                DEFAULT_LANGUAGE
-                            ]}
-                            onkeyup={addBcc}
-                            onblur={addBcc}
-                        />
-                        <Button.Basic type="button" onclick={addBcc}>
-                            <Icon name="add" />
-                        </Button.Basic>
-                    </Input.Group>
-                </Collapse>
-                <div class="tags">
-                    {#each bcc as bccAddr}
-                        <Badge
-                            content={bccAddr}
-                            onclick={() => {
-                                bcc = bcc.filter((addr) => addr !== bccAddr);
-                            }}
-                        />
-                    {/each}
-                </div>
-            </FormGroup>
-            <FormGroup>
-                <Label for="body">{local.body[DEFAULT_LANGUAGE]}</Label>
-                <div id="body"></div>
-            </FormGroup>
-            <FormGroup>
-                <Label for="attachments">
-                    {local.attachment_s[DEFAULT_LANGUAGE]}
-                </Label>
-                <Input.File name="attachments" id="attachments" multiple />
-            </FormGroup>
-            <div style="margin-top:10px">
-                <Button.Basic
-                    type="submit"
-                    id="send-email"
-                    class="btn-cta"
-                    disabled={isSendingEmail || isSavingDraft}
-                >
-                    {local.send_email[DEFAULT_LANGUAGE]}
-                </Button.Basic>
-                <Button.Action
-                    type="button"
-                    id="save-emails-as-drafts"
-                    class="btn-outline"
-                    onclick={saveEmailsAsDrafts}
-                    disabled={isSendingEmail || isSavingDraft}
-                >
-                    {local.save_as_draft[DEFAULT_LANGUAGE]}
-                </Button.Action>
-                {#if lastDraftSavedTime}
-                    <span class="draft-saved-feedback">
-                        Draft saved at {lastDraftSavedTime}
-                    </span>
-                {/if}
-            </div>
-        </div>
+<div class="compose">
+    <Form bind:element={composeForm} onsubmit={handleSendEmailForm}>
+        <Sender bind:senderAccount />
+        <Receivers bind:receiverList {originalMessageContext} />
+        <Cc bind:ccList />
+        <Bcc bind:bccList />
+        <Subject bind:value={subject} {originalMessageContext} />
+        <Body bind:editor={body} {originalMessageContext} />
+        <Attachments />
+        <Action bind:isSendingEmail bind:isSavingDraft {saveDraft} />
     </Form>
+    {#if lastDraftSavedTime}
+        <span class="draft-saved-feedback">
+            Draft saved at {lastDraftSavedTime}
+        </span>
+    {/if}
 </div>
 
 <style>

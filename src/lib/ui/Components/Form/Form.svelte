@@ -6,12 +6,14 @@
     interface Props {
         children: Snippet;
         onsubmit: (e: Event) => Promise<void>
+        element?: HTMLFormElement;
         [attribute: string]: unknown;
     }
 
     let {
         children,
         onsubmit,
+        element = $bindable(),
         ...attributes
     }: Props = $props();
 
@@ -48,6 +50,7 @@
 <form
     onsubmit={makeAnApiRequest}
     class={combine("form", additionalClass)}
+    bind:this={element}
     {...restAttributes}
 >
     {@render children()}
