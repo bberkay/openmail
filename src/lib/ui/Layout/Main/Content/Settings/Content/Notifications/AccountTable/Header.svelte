@@ -77,6 +77,8 @@
             placeholder="Search accounts..."
             onkeyup={searchAccounts}
             onClose={showAllAccounts}
+            collapsedWidth={30}
+            expandedWidth={300}
         />
     {/if}
 </div>
