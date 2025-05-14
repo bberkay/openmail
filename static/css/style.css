@@ -55,6 +55,7 @@
     --color-info-border: light-dark(#adccf0, #002e62);
     --color-white: light-dark(#ffffff, #ffffff);
     --color-black: light-dark(#000000, #000000);
+    --color-lightgray: light-dark(#858585, #858585);
     --color-gray: light-dark(#3d3d3d, #3d3d3d);
     --color-checked: light-dark(#2b80ef, #2b80ef);
     --color-bg-drop-area: light-dark(#4a90e20d, #4a90e20d);
@@ -212,6 +213,37 @@ h1, h2, h3, h4, h5 {
     margin-bottom: var(--spacing-2xs);
     background-color: var(--color-border);
     height: 1px;
+
+    &:has(.separator-title) {
+        position: relative;
+        text-align: center;
+        width: auto;
+        margin-bottom: auto;
+        background-color: initial;
+        height: initial;
+
+        &:before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background-color: var(--color-border);
+            z-index: 1;
+        }
+
+        & .separator-title {
+            white-space: nowrap;
+            background-color: var(--color-bg-primary);
+            padding: 0 var(--spacing-xs);
+            position: relative;
+            z-index: 2;
+            display: inline-block;
+            color: var(--color-lightgray);
+            font-size: var(--font-size-xs);
+        }
+    }
 }
 
 .hidden {

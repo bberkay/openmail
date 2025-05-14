@@ -115,7 +115,7 @@
             </Dropdown.Item>
         {/each}
         {#if customFolders.length > 0}
-            <Dropdown.Separator />
+            <Dropdown.Separator title="Custom Folders"/>
         {/if}
         {#each customFolders as customFolder}
             <Dropdown.Item onclick={() => setCurrentFolder(customFolder)}>

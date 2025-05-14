@@ -2,10 +2,12 @@
     import { combine } from "$lib/utils";
 
     interface Props {
+        title?: string;
         [attribute: string]: unknown;
     }
 
     let {
+        title,
         ...attributes
     }: Props = $props();
 
@@ -19,4 +21,8 @@
     role="separator"
     class={combine("separator", additionalClass)}
     {...restAttributes}
-></div>
+>
+    {#if title}
+        <div class="separator-title">{title}</div>
+    {/if}
+</div>
