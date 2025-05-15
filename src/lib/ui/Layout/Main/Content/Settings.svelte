@@ -23,10 +23,8 @@
 </div>
 
 <style>
-    :global {
-        .settings {
-            width: 80%;
-            height: 100%;
-        }
+    .settings {
+        width: 80%;
+        height: 100%;
     }
 </style>

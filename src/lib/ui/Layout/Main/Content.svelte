@@ -66,10 +66,6 @@
             margin-top: var(--spacing-2xl);
             height: 100%;
 
-            &:has(.compose) {
-                width: 50%;
-            }
-
             &:has(.email) {
                 width: 70%;
             }

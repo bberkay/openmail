@@ -23,16 +23,16 @@
     let { bccList = $bindable() }: Props = $props();
 
     let bccInput: HTMLInputElement | undefined = $state(undefined);
+    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
 
     const addBcc = (e: Event) => {
         addEmailToAddressList(e, bccInput!, bccList);
-        getContext<ComposeContext>("compose").flagDraftAsChanged();
+        flagDraftAsChanged();
     };
 </script>
 
 <FormGroup>
-    <Collapse title="Bcc">
-        <Label for="bcc">{local.bcc[DEFAULT_LANGUAGE]}</Label>
+    <Collapse title="Bcc (optional)" class="compose-collapse bcc-compose-collapse">
         <Input.Group>
             <Input.Basic
                 type="email"
@@ -54,6 +54,7 @@
         {#each bccList as bccAddr}
             <Badge
                 content={bccAddr}
+                righticon="close"
                 onclick={() => {
                     bccList = bccList.filter((addr) => addr !== bccAddr);
                 }}
@@ -61,3 +62,11 @@
         {/each}
     </div>
 </FormGroup>
+
+<style>
+    :global {
+        .bcc-compose-collapse {
+            margin-top: -10px;
+        }
+    }
+</style>

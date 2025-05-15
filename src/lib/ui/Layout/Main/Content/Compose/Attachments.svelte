@@ -10,10 +10,10 @@
     import { type ComposeContext } from "../Compose.svelte";
 
     let attachments: HTMLInputElement | undefined = $state();
-
+    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
     onMount(() => {
         attachments!.addEventListener("change", () => {
-            getContext<ComposeContext>("compose").flagDraftAsChanged();
+            flagDraftAsChanged();
         })
     })
 </script>
@@ -22,5 +22,22 @@
     <Label for="attachments">
         {local.attachment_s[DEFAULT_LANGUAGE]}
     </Label>
-    <Input.File name="attachments" id="attachments" bind:element={attachments} multiple />
+    <Input.File
+        name="attachments"
+        id="attachments"
+        class="attachments"
+        bind:element={attachments}
+        multiple
+        />
 </FormGroup>
+
+<style>
+    :global {
+        .compose {
+            .attachments {
+                margin-top: var(--spacing-xs);
+                width: 100%;
+            }
+        }
+    }
+</style>

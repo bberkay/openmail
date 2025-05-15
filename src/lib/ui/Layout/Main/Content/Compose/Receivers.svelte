@@ -29,6 +29,7 @@
     }: Props = $props();
 
     let receiverInput: HTMLInputElement | undefined = $state(undefined);
+    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
 
     onMount(() => {
         if (originalMessageContext) {
@@ -40,7 +41,7 @@
 
     const addReceiver = (e: Event) => {
         addEmailToAddressList(e, receiverInput!, receiverList);
-        getContext<ComposeContext>("compose").flagDraftAsChanged();
+        flagDraftAsChanged();
     };
 </script>
 
@@ -68,6 +69,7 @@
         {#each receiverList as receiver}
             <Badge
                 content={receiver}
+                righticon="close"
                 onclick={() => {
                     receiverList = receiverList.filter(
                         (addr) => addr !== receiver,

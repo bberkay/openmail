@@ -24,11 +24,12 @@
         originalMessageContext
     }: Props = $props();
 
+    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
     onMount(() => {
         editor = new WYSIWYGEditor("body");
         editor.init();
         editor.onChange = () => {
-            getContext<ComposeContext>("compose").flagDraftAsChanged();
+            flagDraftAsChanged();
         };
 
         if (originalMessageContext) {
@@ -57,3 +58,13 @@
     <Label for="body">{local.body[DEFAULT_LANGUAGE]}</Label>
     <div id="body"></div>
 </FormGroup>
+
+<style>
+    :global {
+        .compose {
+            #body {
+                margin-top: var(--spacing-xs);
+            }
+        }
+    }
+</style>

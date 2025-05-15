@@ -23,16 +23,16 @@
     let { ccList = $bindable() }: Props = $props();
 
     let ccInput: HTMLInputElement | undefined = $state(undefined);
+    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
 
     const addCc = (e: Event) => {
         addEmailToAddressList(e, ccInput!, ccList);
-        getContext<ComposeContext>("compose").flagDraftAsChanged();
+        flagDraftAsChanged();
     };
 </script>
 
 <FormGroup>
-    <Collapse title="Cc">
-        <Label for="cc">{local.cc[DEFAULT_LANGUAGE]}</Label>
+    <Collapse title="Cc (optional)" class="compose-collapse">
         <Input.Group>
             <Input.Basic
                 type="email"
@@ -54,6 +54,7 @@
         {#each ccList as ccAddr}
             <Badge
                 content={ccAddr}
+                righticon="close"
                 onclick={() => {
                     ccList = ccList.filter((addr) => addr !== ccAddr);
                 }}
@@ -61,3 +62,26 @@
         {/each}
     </div>
 </FormGroup>
+
+<style>
+    :global {
+        .compose {
+            & .compose-collapse {
+                margin-bottom: 0;
+
+                & .collapse-header {
+                    padding: 0 1px;
+                    padding-right: var(--spacing-2xs);
+                }
+
+                & .header-content {
+                    font-size: var(--font-size-sm);
+                }
+
+                & .collapse-content {
+                    padding: 0;
+                }
+            }
+        }
+    }
+</style>

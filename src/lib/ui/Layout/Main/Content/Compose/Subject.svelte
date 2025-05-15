@@ -17,6 +17,7 @@
     let { value = $bindable(), originalMessageContext }: Props = $props();
 
     let subjectInput: HTMLInputElement | undefined = $state(undefined);
+    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
 
     onMount(() => {
         if (originalMessageContext) {
@@ -26,8 +27,9 @@
                     : "Fwd: ") + originalMessageContext.subject;
         }
     });
+
     const onChange = () => {
-        getContext<ComposeContext>("compose").flagDraftAsChanged();
+        flagDraftAsChanged();
     };
 </script>
 

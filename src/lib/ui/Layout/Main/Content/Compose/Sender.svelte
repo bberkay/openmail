@@ -9,6 +9,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
     import { createSenderAddress } from "$lib/utils";
+    import { getSenderAddressTemplate } from "$lib/templates";
 
     interface Props {
         senderAccount: Account;
@@ -16,9 +17,9 @@
 
     let { senderAccount = $bindable() }: Props = $props();
 
-    const setSenderAccount = (senderEmailAddr: string) => {
+    const setSenderAccount = (email_address: string) => {
         senderAccount = SharedStore.accounts.find(
-            (acc) => acc.email_address === senderEmailAddr,
+            (acc) => acc.email_address === email_address,
         )!;
     };
 </script>
@@ -27,15 +28,19 @@
     <Label for="sender">{local.sender_s[DEFAULT_LANGUAGE]}</Label>
     <Select.Root
         id="sender"
+        style="width:100%"
         placeholder={local.account[DEFAULT_LANGUAGE]}
+        value={senderAccount.email_address}
         onchange={setSenderAccount}
     >
         {#each SharedStore.accounts as account}
-            {@const sender = createSenderAddress(
-                account.email_address,
-                account.fullname,
-            )}
-            <Select.Option value={sender} content={sender} />
+            <Select.Option
+                value={account.email_address}
+                content={getSenderAddressTemplate(
+                    account.email_address,
+                    account.fullname,
+                )}
+            />
         {/each}
     </Select.Root>
 </FormGroup>

@@ -48,7 +48,7 @@
     let senderAccount: Account = $state(
         SharedStore.currentAccount !== "home"
             ? SharedStore.currentAccount
-            : SharedStore.accounts[0]
+            : SharedStore.accounts[0],
     );
     let receiverList: string[] = $state([]);
     let ccList: string[] = $state([]);
@@ -63,7 +63,8 @@
     let isDraftChangedAfterLastSave = false;
 
     onMount(() => {
-        startAutosaveDraftLoop();
+        // TODO: Open this later...
+        //startAutosaveDraftLoop();
     });
 
     const flagDraftAsChanged = () => {
@@ -87,6 +88,13 @@
         formData.set("bcc", bccList.join(","));
         formData.set("body", body!.getHTMLContent());
         return formData;
+    }
+
+    async function deleteDraft() {
+        await MailboxController.deleteDraft(
+            senderAccount,
+            draftAppenduid,
+        );
     }
 
     async function showSentMailbox() {
@@ -125,7 +133,7 @@
             // Remove draft from drafts folder if exists,
             // before sending them email and create a new/updated
             // one from form.
-            await MailboxController.deleteDraft(senderAccount, draftAppenduid);
+            await deleteDraft();
             const draft = createDraft();
 
             let response;
@@ -148,7 +156,7 @@
                 showMessage({
                     title: local.error_send_email_s[DEFAULT_LANGUAGE],
                 });
-                console.error(response.message)
+                console.error(response.message);
                 return;
             }
 
@@ -223,7 +231,12 @@
 </script>
 
 <div class="compose">
-    <Form bind:element={composeForm} onsubmit={handleSendEmailForm}>
+    <h2 class="compose-title">Compose</h2>
+    <Form
+        class="compose-form"
+        bind:element={composeForm}
+        onsubmit={handleSendEmailForm}
+    >
         <Sender bind:senderAccount />
         <Receivers bind:receiverList {originalMessageContext} />
         <Cc bind:ccList />
@@ -231,7 +244,7 @@
         <Subject bind:value={subject} {originalMessageContext} />
         <Body bind:editor={body} {originalMessageContext} />
         <Attachments />
-        <Action bind:isSendingEmail bind:isSavingDraft {saveDraft} />
+        <Action bind:isSendingEmail bind:isSavingDraft {saveDraft} {deleteDraft} />
     </Form>
     {#if lastDraftSavedTime}
         <span class="draft-saved-feedback">
@@ -241,11 +254,27 @@
 </div>
 
 <style>
-    .compose {
-        display: flex;
-        flex-direction: column;
-        padding: var(--spacing-lg);
-        border: 1px solid var(--color-border-subtle);
-        border-radius: var(--radius-sm);
+    :global {
+        .compose {
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-xl) var(--spacing-2xl);
+            border: 1px solid var(--color-border-subtle);
+            border-radius: var(--radius-sm);
+            width: 75%;
+            height: 100%;
+
+            & .compose-form {
+                overflow-x: hidden;
+                overflow-y: auto;
+                height: 100%;
+                margin-bottom: 150px;
+                padding-right: 30px; /* because of the scrollbar */
+            }
+
+            & .compose-title {
+                margin-bottom: var(--spacing-lg);
+            }
+        }
     }
 </style>
