@@ -20,3 +20,13 @@
     class={combine("separator", additionalClass)}
     {...restAttributes}
 ></div>
+
+<style>
+    :global {
+        .custom-select-wrapper .options-list {
+            .separator + .separator {
+                display: none;
+            }
+        }
+    }
+</style>

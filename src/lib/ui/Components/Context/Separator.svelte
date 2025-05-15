@@ -20,3 +20,13 @@
     class={combine("separator", additionalClass)}
     {...restAttributes}
 ></div>
+
+<style>
+    :global {
+        .context-menu {
+            .separator + .separator {
+                display: none;
+            }
+        }
+    }
+</style>

@@ -26,3 +26,13 @@
         <div class="separator-title">{title}</div>
     {/if}
 </div>
+
+<style>
+    :global {
+        .dropdown-container {
+            .separator + .separator {
+                display: none;
+            }
+        }
+    }
+</style>
