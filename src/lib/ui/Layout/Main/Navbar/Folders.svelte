@@ -107,7 +107,7 @@
         <Dropdown.Item onclick={refreshFolders}>
             {local.refresh_folders[DEFAULT_LANGUAGE]}
         </Dropdown.Item>
-        <Dropdown.Separator />
+        <Dropdown.Separator title="Standard" />
         {#each standardFolders as standardFolder}
             {@const [folderTag, ] = standardFolder.split(":")}
             <Dropdown.Item onclick={() => setCurrentFolder(folderTag)}>
@@ -115,7 +115,7 @@
             </Dropdown.Item>
         {/each}
         {#if customFolders.length > 0}
-            <Dropdown.Separator title="Custom Folders"/>
+            <Dropdown.Separator title="Custom"/>
         {/if}
         {#each customFolders as customFolder}
             <Dropdown.Item onclick={() => setCurrentFolder(customFolder)}>
