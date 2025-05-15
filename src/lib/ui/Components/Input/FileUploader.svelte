@@ -120,9 +120,7 @@
 
 <style>
     :global {
-        .file-upload-container {
-            max-width: var(--container-md);
-
+        .file-uploader-container {
             & .file-upload-area {
                 display: flex;
                 align-items: center;
@@ -132,6 +130,14 @@
             & .upload-btn {
                 display: inline-block;
                 flex-shrink: 0;
+                padding: var(--spacing-xs) var(--spacing-md);
+                font-size: var(--font-size-sm);
+                border: 1px solid var(--color-border);
+                border-right: none;
+                border-radius: var(--radius-sm);
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+                cursor: pointer;
 
                 & .file-input {
                     display: none;
