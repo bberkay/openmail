@@ -76,13 +76,33 @@
     {/if}
     <Context.Separator />
     {#if emailSelection.length == 1}
-        <Reply>Reply</Reply>
-        <Forward>Forward</Forward>
+        <Reply
+            bind:emailSelection
+            bind:groupedUidSelection
+        >
+            Reply
+        </Reply>
+        <Forward
+            bind:emailSelection
+            bind:groupedUidSelection
+        >
+            Forward
+        </Forward>
         <Context.Separator />
-        <Unsubscribe>Unsubscribe</Unsubscribe>
+        <Unsubscribe
+            bind:emailSelection
+            bind:groupedUidSelection
+        >
+            Unsubscribe
+        </Unsubscribe>
     {:else if emailSelection.length > 1}
         {#if doAllSelectedEmailsHaveUnsubscribeOption(groupedUidSelection)}
-            <UnsubscribeAll>Unsubscribe All</UnsubscribeAll>
+            <UnsubscribeAll
+                bind:emailSelection
+                bind:groupedUidSelection
+            >
+                Unsubscribe All
+            </UnsubscribeAll>
         {/if}
     {/if}
     <Context.Separator />

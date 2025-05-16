@@ -2,14 +2,28 @@
     import { unsubscribe } from "../Toolbox/Operations/Unsubscribe.svelte";
     import * as Context from "$lib/ui/Components/Context";
     import type { Snippet } from "svelte";
+    import type { EmailSelection, GroupedUidSelection } from "../../Mailbox.svelte";
 
     interface Props {
-        children: Snippet
+        children: Snippet;
+        groupedUidSelection: GroupedUidSelection;
+        emailSelection: EmailSelection
     }
 
-    let { children }: Props = $props();
+    let {
+        children,
+        groupedUidSelection = $bindable(),
+        emailSelection = $bindable(),
+    }: Props = $props();
+
+    const unsubscribeOnClick = async () => {
+        await unsubscribe(
+            emailSelection,
+            groupedUidSelection
+        );
+    }
 </script>
 
-<Context.Item onclick={unsubscribe}>
+<Context.Item onclick={unsubscribeOnClick}>
     {@render children()}
 </Context.Item>

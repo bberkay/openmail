@@ -2,14 +2,28 @@
     import { forward } from "../Toolbox/Operations/Forward.svelte";
     import * as Context from "$lib/ui/Components/Context";
     import type { Snippet } from "svelte";
+    import type { EmailSelection, GroupedUidSelection } from "../../Mailbox.svelte";
 
     interface Props {
-        children: Snippet
+        children: Snippet;
+        groupedUidSelection: GroupedUidSelection;
+        emailSelection: EmailSelection
     }
 
-    let { children }: Props = $props();
+    let {
+        children,
+        groupedUidSelection = $bindable(),
+        emailSelection = $bindable(),
+    }: Props = $props();
+
+    const forwardOnClick = async () => {
+        await forward(
+            emailSelection,
+            groupedUidSelection
+        );
+    }
 </script>
 
-<Context.Item onclick={forward}>
+<Context.Item onclick={forwardOnClick}>
     {@render children()}
 </Context.Item>

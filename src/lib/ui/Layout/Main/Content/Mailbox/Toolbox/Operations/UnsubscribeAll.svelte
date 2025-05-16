@@ -1,17 +1,26 @@
 <script lang="ts" module>
-    export async function unsubscribeAll() {
-        const currentSelection = simpleDeepCopy(groupedEmailSelection);
-        const results = await Promise.allSettled(
-            currentSelection.map(async (group) => {
-                const emailAddress = group[0];
-                const uids = group[1];
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import type { EmailSelection, GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showToast } from "$lib/ui/Components/Toast";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { isUidInSelection, simpleDeepCopy } from "$lib/utils";
 
+    export async function unsubscribeAll(
+        emailSelection: EmailSelection,
+        groupedUidSelection: GroupedUidSelection
+    ) {
+        const currentSelection = simpleDeepCopy(groupedUidSelection);
+        const results = await Promise.allSettled(
+            currentSelection.map(async ([email_address, uids]) => {
                 const account = SharedStore.accounts.find(
-                    (acc) => acc.email_address === emailAddress,
+                    (acc) => acc.email_address === email_address,
                 )!;
 
                 const emails = SharedStore.mailboxes[
-                    emailAddress
+                    email_address
                 ].emails.current.filter((email) => {
                     return (
                         isUidInSelection(uids, email.uid) &&

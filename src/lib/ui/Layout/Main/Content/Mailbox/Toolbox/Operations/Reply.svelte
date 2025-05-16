@@ -1,14 +1,25 @@
 <script lang="ts" module>
-    export async function reply() {
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import type { EmailSelection, GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
+
+    export async function reply(
+        emailSelection: EmailSelection,
+        groupedUidSelection: GroupedUidSelection,
+    ) {
         // Check out `unsubscribe()`
         if (emailSelection.length > 1) return;
-
-        const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const replyingEmailUid = groupedEmailSelection[0][1];
+        const [
+            email_address,
+            replyingEmailUid
+        ] = groupedUidSelection[0];
 
         const email = SharedStore.mailboxes[
-            emailAddressOfSelection
-        ].emails.current.find((email) => email.uid == replyingEmailUid)!;
+            email_address
+        ].emails.current.find(
+            (email) => email.uid == replyingEmailUid
+        )!;
 
         showContent(Compose, {
             originalMessageContext: {

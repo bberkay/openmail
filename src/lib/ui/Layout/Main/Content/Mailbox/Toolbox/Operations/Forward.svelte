@@ -1,14 +1,25 @@
 <script lang="ts" module>
-    export async function forward() {
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import type { EmailSelection, GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+    import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
+
+    export async function forward(
+        emailSelection: EmailSelection,
+        groupedUidSelection: GroupedUidSelection,
+    ) {
         // Check out `unsubscribe()`
         if (emailSelection.length > 1) return;
-
-        const emailAddressOfSelection = groupedEmailSelection[0][0];
-        const forwardingEmailUid = groupedEmailSelection[0][1];
+        const [
+            email_address,
+            forwardingEmailUid
+        ] = groupedUidSelection[0];
 
         const email = SharedStore.mailboxes[
-            emailAddressOfSelection
-        ].emails.current.find((email) => email.uid == forwardingEmailUid)!;
+            email_address
+        ].emails.current.find(
+            (email) => email.uid == forwardingEmailUid
+        )!;
 
         showContent(Compose, {
             originalMessageContext: {
