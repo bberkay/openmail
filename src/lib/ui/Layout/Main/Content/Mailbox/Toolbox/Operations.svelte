@@ -1,0 +1,238 @@
+<script lang="ts" module>
+    import type {
+        EmailSelection,
+        GroupedUidSelection,
+        GroupedMessageIdSelection,
+    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { Mark } from "$lib/types";
+
+    export function doAllSelectedEmailsHaveMark(
+        emailSelection: EmailSelection,
+        mark: Mark,
+    ): boolean {
+        if (emailSelection === "1:*") return false;
+
+        return emailSelection.every((selection) => {
+            const [emailAddress, uid] = selection.split(",");
+            return SharedStore.mailboxes[emailAddress].emails.current.find(
+                (email: Email) =>
+                    email.uid == uid &&
+                    Object.hasOwn(email, "flags") &&
+                    email.flags!.includes(mark),
+            );
+        });
+    }
+
+    export function doAllSelectedEmailsLackMark(
+        emailSelection: EmailSelection,
+        mark: Mark,
+    ): boolean {
+        if (emailSelection === "1:*") return false;
+
+        return emailSelection.every((selection) => {
+            const [emailAddress, uid] = selection.split(",");
+            return SharedStore.mailboxes[emailAddress].emails.current.find(
+                (email: Email) =>
+                    email.uid == uid &&
+                    Object.hasOwn(email, "flags") &&
+                    !email.flags!.includes(mark),
+            );
+        });
+    }
+
+    export function doAllSelectedEmailsHaveUnsubscribeOption(
+        groupedUidSelection: GroupedUidSelection,
+    ) {
+        return groupedUidSelection.every((group) => {
+            const emailAddress = group[0];
+            const uids = group[1].split(",");
+            const targetMailbox =
+                SharedStore.mailboxes[emailAddress].emails.current;
+            return uids.every((uid) =>
+                targetMailbox.find(
+                    (email) => email.uid == uid && !!email.list_unsubscribe,
+                ),
+            );
+        });
+    }
+
+    export function convertUidSelectionToMessageIds(
+        selection: GroupedUidSelection,
+    ): GroupedMessageIdSelection {
+        let foundSelection: Record<string, string[]> = {};
+        selection.map(([email_address, uids]) => {
+            foundSelection[email_address] = [];
+            uids.split(",").forEach((uid) => {
+                const email = SharedStore.mailboxes[
+                    email_address
+                ].emails.current.find((em) => em.uid === uid);
+                if (email) {
+                    foundSelection[email_address].push(email.message_id);
+                }
+            });
+            return;
+        });
+        return Object.entries(foundSelection);
+    }
+
+    export async function fetchUidsByMessageIds(
+        selection: GroupedMessageIdSelection,
+        folder: string,
+    ): Promise<GroupedUidSelection> {
+        const foundSelection: GroupedUidSelection = [];
+        const results = await Promise.allSettled(
+            selection.map(async ([email_address, messageIds]) => {
+                const response = await MailboxController.searchEmails(
+                    SharedStore.accounts.find(
+                        (acc) => acc.email_address === email_address,
+                    )!,
+                    folder,
+                    { message_id: messageIds },
+                );
+                if (!response.success || !response.data) {
+                    throw new Error(response.message);
+                }
+                const foundUids = response.data[email_address].join(",");
+                foundSelection.push([email_address, foundUids]);
+            }),
+        );
+
+        const failed = results.filter((r) => r.status === "rejected");
+        if (failed.length > 0) {
+            showMessage({ title: "Could not fetched message ids" });
+            failed.forEach((f) => console.error(f.reason));
+        }
+
+        return foundSelection;
+    }
+</script>
+
+<script lang="ts">
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { type Email, Folder } from "$lib/types";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { isStandardFolder } from "$lib/utils";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import Icon from "$lib/ui/Components/Icon";
+    import Refresh from "./Operations/Refresh.svelte";
+    import DeleteFrom from "./Operations/DeleteFrom.svelte";
+    import MarkAs from "./Operations/MarkAs.svelte";
+    import MoveTo from "./Operations/MoveTo.svelte";
+    import CopyWithSelect from "./Operations/CopyWithSelect.svelte";
+    import MoveWithSelect from "./Operations/MoveWithSelect.svelte";
+    import Selection from "./Operations/Selection.svelte";
+
+    interface Props {
+        groupedUidSelection: GroupedUidSelection;
+        emailSelection: EmailSelection;
+        currentOffset: number;
+    }
+
+    let {
+        groupedUidSelection = $bindable(),
+        emailSelection = $bindable(),
+        currentOffset = $bindable(),
+    }: Props = $props();
+</script>
+
+<div class="operations">
+    <Selection bind:emailSelection/>
+
+    {#if emailSelection.length > 0}
+        <!-- Standard operations for all accounts -->
+        {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
+            <MarkAs bind:groupedUidSelection markType={Mark.Flagged}>
+                Star
+            </MarkAs>
+        {/if}
+        {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
+            <MarkAs
+                bind:groupedUidSelection
+                markType={Mark.Flagged}
+                isUnmark={true}
+            >
+                Remove star
+            </MarkAs>
+        {/if}
+        {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
+            <MarkAs bind:groupedUidSelection markType={Mark.Seen}>
+                Mark as Read
+            </MarkAs>
+        {/if}
+        {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
+            <MarkAs
+                bind:groupedUidSelection
+                markType={Mark.Seen}
+                isUnmark={true}
+            >
+                Mark as Unread
+            </MarkAs>
+        {/if}
+        {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
+            <MoveTo
+                bind:groupedUidSelection
+                bind:currentOffset
+                sourceFolder={Folder.Archive}
+                destinationFolder={Folder.Inbox}
+            >
+                Move to Inbox
+            </MoveTo>
+        {:else}
+            <MoveTo
+                bind:groupedUidSelection
+                bind:currentOffset
+                sourceFolder={getCurrentMailbox().folder}
+                destinationFolder={Folder.Archive}
+            >
+                Move to Archive
+            </MoveTo>
+        {/if}
+        <DeleteFrom
+            bind:groupedUidSelection
+            bind:currentOffset
+            folder={getCurrentMailbox().folder}
+        >
+            {isStandardFolder(getCurrentMailbox().folder, Folder.Trash)
+                ? local.delete_completely[DEFAULT_LANGUAGE]
+                : local.delete[DEFAULT_LANGUAGE]}
+        </DeleteFrom>
+
+        <!-- Account related specific operations -->
+        {#if groupedUidSelection.length == 1}
+            <div class="tool-separator"></div>
+            <CopyWithSelect
+                bind:groupedUidSelection
+                sourceFolder={getCurrentMailbox().folder}
+            />
+            <MoveWithSelect
+                bind:groupedUidSelection
+                sourceFolder={getCurrentMailbox().folder}
+            />
+        {/if}
+    {:else}
+        <Refresh>
+            <Icon name="refresh" />
+        </Refresh>
+    {/if}
+</div>
+
+<style>
+    :global {
+        .toolbox {
+            & .operations {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: var(--spacing-xl);
+
+                & .tool-separator {
+                    height: 100%;
+                    margin: 0 var(--spacing-xs);
+                }
+            }
+        }
+    }
+</style>

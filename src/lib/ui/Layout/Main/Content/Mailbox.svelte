@@ -4,6 +4,10 @@
     import { PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT_MS } from "$lib/constants";
     import { MailboxController } from "$lib/controllers/MailboxController";
 
+    export type EmailSelection = "1:*" | string[];
+    export type GroupedUidSelection = [string, string][];
+    export type GroupedMessageIdSelection = [string, string[]][];
+
     let waitPrev: ReturnType<typeof setInterval> | null;
     let waitNext: ReturnType<typeof setInterval> | null;
 
@@ -175,12 +179,57 @@
 </script>
 
 <script lang="ts">
+    import Context from "$lib/ui/Layout/Main/Content/Mailbox/Context.svelte";
     import Toolbox from "$lib/ui/Layout/Main/Content/Mailbox/Toolbox.svelte";
     import Content from "$lib/ui/Layout/Main/Content/Mailbox/Content.svelte";
 
+    let emailSelection: EmailSelection = $state([]);
     let currentOffset = $state(1);
-    let emailSelection: "1:*" | string[] = $state([]);
+    let groupedUidSelection: GroupedUidSelection = $derived.by(() => {
+        if (!emailSelection) return [];
+
+        const accountUidMap: Record<string, string> = {};
+        // When `emailSelection` have become something like this:
+        // ["account1@mail.com,123", "account1@mail.com,124", "account2@mail.com,123"]
+        // `groupedUidSelection` will be something like this:
+        // [["account1@mail.com", "123,124"], ["account2@mail.com", "123"]]
+        // and with this way, we are minimizing api calls from this:
+        // C: A101 +STORE FLAG account1@mail.com 123
+        // C: A102 +STORE FLAG account1@mail.com 124
+        // C: A103 +STORE FLAG account1@mail.com 125
+        // to this:
+        // C: A101 +STORE FLAG account1@mail.com 123, 124
+        // C: A102 +STORE FLAG account1@mail.com 125
+        if (emailSelection === "1:*") {
+            if (SharedStore.currentAccount === "home") {
+                SharedStore.accounts.forEach((account) => {
+                    accountUidMap[account.email_address] = "1:*";
+                });
+            } else {
+                accountUidMap[SharedStore.currentAccount.email_address] = "1:*";
+            }
+        } else {
+            emailSelection.forEach((selection) => {
+                const [emailAddr, uid] = selection.split(",");
+                accountUidMap[emailAddr] = Object.hasOwn(
+                    accountUidMap,
+                    emailAddr,
+                )
+                    ? accountUidMap[emailAddr].concat(",", uid)
+                    : uid;
+            });
+        }
+        return Object.entries(accountUidMap);
+    });
 </script>
 
-<Toolbox bind:emailSelection bind:currentOffset />
-<Content bind:emailSelection />
+<Context
+    bind:groupedUidSelection
+    bind:emailSelection
+    bind:currentOffset
+/>
+<Toolbox
+    bind:groupedUidSelection
+    bind:emailSelection
+    bind:currentOffset
+/>
