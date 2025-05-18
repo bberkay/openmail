@@ -96,13 +96,20 @@
 {/if}
 
 <style>
-    .context-menu {
-        display: inline-flex;
-        width: max-content;
-        background-color: var(--color-border-subtle);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        flex-direction: column;
+    :global {
+        .context-menu {
+            display: inline-flex;
+            width: max-content;
+            background-color: var(--color-border-subtle);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            flex-direction: column;
+
+            & .context-menu-toggled {
+                background-color: var(--color-hover);
+                outline: 1px solid var(--color-border-subtle);
+            }
+        }
     }
 </style>
