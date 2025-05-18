@@ -630,7 +630,11 @@ class MessageParser:
             ['\\Seen', '\\Flagged']
         """
         flags = FLAGS_PATTERN.findall(message)
-        return flags[0].decode().split(" ") if flags else []
+        if not flags:
+            return []
+
+        flags = flags[0].decode().strip()
+        return flags.split(" ") if flags else []
 
     @staticmethod
     def get_headers(message: bytes) -> MessageHeaders:
@@ -673,7 +677,8 @@ class MessageParser:
 
         for field_type, field_pattern in MESSAGE_HEADER_PATTERN_MAP.items():
             field = field_pattern.search(header_match)
-            field = field.group(1).decode() if field else ""
+            field = field.group(1) if field else ""
+            field = field.decode() if field else ""
             field = MessageDecoder.utf8_header(field)
             field = SPACE_PATTERN.sub(" ", field)
             field = field.strip()
@@ -770,7 +775,7 @@ class MessageDecoder:
         decoded_message = ""
         for line in LINE_PATTERN.split(message):
             line = line.strip()
-            if line.startswith("=?UTF-8") or line.startswith("=?utf-8"):
+            if "=?UTF-8" in line or "=?utf-8" in line:
                 decoded_lines = decode_header(line)
                 for decoded_line in decoded_lines:
                     decoded_message += decoded_line[0].decode("utf-8") + " "
