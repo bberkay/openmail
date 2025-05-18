@@ -8,6 +8,41 @@ export function createDomElement(html: string): HTMLElement {
     return template.content.firstElementChild as HTMLElement;
 }
 
+export function getMonths(): string[] {
+    return [
+        local.january[DEFAULT_LANGUAGE],
+        local.february[DEFAULT_LANGUAGE],
+        local.march[DEFAULT_LANGUAGE],
+        local.april[DEFAULT_LANGUAGE],
+        local.may[DEFAULT_LANGUAGE],
+        local.june[DEFAULT_LANGUAGE],
+        local.july[DEFAULT_LANGUAGE],
+        local.august[DEFAULT_LANGUAGE],
+        local.september[DEFAULT_LANGUAGE],
+        local.october[DEFAULT_LANGUAGE],
+        local.november[DEFAULT_LANGUAGE],
+        local.december[DEFAULT_LANGUAGE],
+    ];
+}
+
+export function getDays(): string[] {
+    return [
+        local.sun[DEFAULT_LANGUAGE],
+        local.mon[DEFAULT_LANGUAGE],
+        local.tue[DEFAULT_LANGUAGE],
+        local.wed[DEFAULT_LANGUAGE],
+        local.thu[DEFAULT_LANGUAGE],
+        local.fri[DEFAULT_LANGUAGE],
+        local.sat[DEFAULT_LANGUAGE],
+    ];
+}
+
+export function isSameDay(date1: Date, date2: Date): boolean {
+    return date1.getUTCFullYear() === date2.getUTCFullYear() &&
+           date1.getUTCMonth() === date2.getUTCMonth() &&
+           date1.getUTCDate() === date2.getUTCDate();
+}
+
 /**
  * Converts a locale string (e.g., "en-US") following the RFC 5646 standard
  * into a corresponding Language enum value (e.g., Language.EN_US).
@@ -340,6 +375,11 @@ export function capitalize(s: string): string {
     return s && String(s[0]).toUpperCase() + String(s).slice(1).toLowerCase();
 }
 
+export function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
 export function isEmailValid(email: string): boolean {
     return (
         email.match(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/) !== null
@@ -411,35 +451,6 @@ export function extractEmailAddress(sender: string): string {
               ? sender
               : ""
     ).trim();
-}
-
-export function getMonths(): string[] {
-    return [
-        local.january[DEFAULT_LANGUAGE],
-        local.february[DEFAULT_LANGUAGE],
-        local.march[DEFAULT_LANGUAGE],
-        local.april[DEFAULT_LANGUAGE],
-        local.may[DEFAULT_LANGUAGE],
-        local.june[DEFAULT_LANGUAGE],
-        local.july[DEFAULT_LANGUAGE],
-        local.august[DEFAULT_LANGUAGE],
-        local.september[DEFAULT_LANGUAGE],
-        local.october[DEFAULT_LANGUAGE],
-        local.november[DEFAULT_LANGUAGE],
-        local.december[DEFAULT_LANGUAGE],
-    ];
-}
-
-export function getDays(): string[] {
-    return [
-        local.sun[DEFAULT_LANGUAGE],
-        local.mon[DEFAULT_LANGUAGE],
-        local.tue[DEFAULT_LANGUAGE],
-        local.wed[DEFAULT_LANGUAGE],
-        local.thu[DEFAULT_LANGUAGE],
-        local.fri[DEFAULT_LANGUAGE],
-        local.sat[DEFAULT_LANGUAGE],
-    ];
 }
 
 export function addEmailToAddressList(
