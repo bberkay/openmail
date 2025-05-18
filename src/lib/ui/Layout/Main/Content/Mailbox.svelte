@@ -223,7 +223,7 @@
     });
 </script>
 
-<Context
+<!--<Context
     bind:groupedUidSelection
     bind:emailSelection
     bind:currentOffset
@@ -232,5 +232,7 @@
     bind:groupedUidSelection
     bind:emailSelection
     bind:currentOffset
+/>-->
+<Content
+    bind:emailSelection
 />
-<!-- TODO: Add content --->

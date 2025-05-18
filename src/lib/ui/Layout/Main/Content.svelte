@@ -63,8 +63,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: var(--spacing-2xl);
-            height: 100%;
+            margin-top: 5vh;
+            height: 80vh;
         }
     }
 </style>

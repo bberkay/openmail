@@ -58,7 +58,6 @@
                     height: 100%;
                     overflow-x: hidden;
                     overflow-y: auto;
-                    margin-bottom: 200px;
 
                     & .settings-section {
                         display: flex;

@@ -31,6 +31,7 @@
             width: 100%;
             padding: var(--spacing-lg);
             font-size: var(--font-size-xs);
+            height: 14vh;
 
             & .nav-section {
                 display: flex;
