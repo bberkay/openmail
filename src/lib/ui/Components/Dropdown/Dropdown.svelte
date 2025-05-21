@@ -56,7 +56,6 @@
             closest(".dropdown-container")?.
             querySelector(".dropdown-content");
         if (parentDropdownContent) {
-            console.log("parent: ", isOpen);
             if (isOpen) {
                 parentDropdownContent.addEventListener("scroll", repositionInlineDropdown);
             } else {
@@ -70,18 +69,43 @@
 
         if (isOpen) {
             const toggleRect = toggle.getBoundingClientRect();
-            const scrollX =
-                window.scrollX || document.documentElement.scrollLeft;
-            const scrollY =
-                window.scrollY || document.documentElement.scrollTop;
+            const scrollX = window.scrollX || document.documentElement.scrollLeft;
+            const scrollY = window.scrollY || document.documentElement.scrollTop;
 
-            content.style.top = `${toggleRect.bottom + scrollY}px`;
-            content.style.left = `${toggleRect.left + scrollX}px`;
+            const dropdownWidth = content.offsetWidth;
+            const dropdownHeight = content.offsetHeight;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let top = toggleRect.bottom + scrollY;
+            let left = toggleRect.left + scrollX;
+
+            // Prevent right overflow
+            if (left + dropdownWidth > scrollX + viewportWidth) {
+                // 10px padding
+                left = scrollX + viewportWidth - dropdownWidth - 10;
+            }
+
+            // Prevent bottom overflow
+            if (top + dropdownHeight > scrollY + viewportHeight) {
+                const aboveTop = toggleRect.top + scrollY - dropdownHeight;
+                if (aboveTop >= scrollY) {
+                    // show at the top of the toggle
+                    top = aboveTop;
+                } else {
+                    // show at the bottom of the toggle
+                    top = scrollY + viewportHeight - dropdownHeight - 10;
+                }
+            }
+
+            content.style.top = `${top}px`;
+            content.style.left = `${left}px`;
         } else {
             content.style.top = "";
             content.style.left = "";
         }
     }
+
 
     const closeWhenClickedOutside = (e: Event) => {
         if (isOpen && !container.contains(e.target as HTMLElement)) {
