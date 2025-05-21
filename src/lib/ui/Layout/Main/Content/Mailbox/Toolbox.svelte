@@ -35,6 +35,7 @@
             justify-content: space-between;
             width: 80%;
             padding: var(--spacing-sm) var(--spacing-md);
+            height: 60px;
         }
     }
 </style>

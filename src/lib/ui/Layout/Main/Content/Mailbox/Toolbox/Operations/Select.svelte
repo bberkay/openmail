@@ -25,11 +25,15 @@
             shownEmailUids = [];
             document
                 .querySelectorAll<HTMLInputElement>(
-                    ".mailbox .email-selection-checkbox",
+                    ".mailbox .email-preview-selection",
                 )
                 .forEach((element) => {
                     shownEmailUids.push(element.value);
                 });
+        }
+
+        if (emailSelection.length < 2 && selectShownCheckbox) {
+            selectShownCheckbox.checked = false;
         }
     });
 

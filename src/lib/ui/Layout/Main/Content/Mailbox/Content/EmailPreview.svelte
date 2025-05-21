@@ -183,6 +183,10 @@
                 font-size: var(--font-size-sm);
                 align-items: center;
 
+                &:has(.email-preview-selection:checked) {
+                    background-color: var(--color-border-subtle);
+                }
+
                 &:hover {
                     background-color: var(--color-hover);
                 }

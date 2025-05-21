@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Folder, Mark } from "$lib/types";
+    import Icon from "$lib/ui/Components/Icon";
     import * as Context from "$lib/ui/Components/Context";
     import { getCurrentMailbox, type EmailSelection, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { isStandardFolder } from "$lib/utils";
@@ -28,50 +29,53 @@
         currentOffset = $bindable(),
     }: Props = $props();
 
-    const selectEmail = (e: Event) => {
+    const selectEmail = (selectedEmail: HTMLElement) => {
         if (emailSelection === "1:*") return;
-        const selectedEmail = e.target as HTMLElement;
-        const selectedEmailUid = selectedEmail.querySelector<HTMLInputElement>(
-            ".email-selection-checkbox",
-        )!.value;
+        const selectedEmailCheckbox = selectedEmail.querySelector
+            <HTMLInputElement>(".email-preview-selection")!;
+        if (!selectedEmailCheckbox.checked) emailSelection = [];
+        const selectedEmailUid = selectedEmailCheckbox.value;
         emailSelection.push(selectedEmailUid);
     };
 
-    const deselectEmail = (e: Event) => {
+    const deselectEmail = (lastSelectedEmail: HTMLElement) => {
         if (emailSelection === "1:*") return;
-        const selectedEmail = e.target as HTMLElement;
-        const selectedEmailUid = selectedEmail.querySelector<HTMLInputElement>(
-            ".email-selection-checkbox",
-        )!.value;
+        const lastSelectedEmailCheckbox = lastSelectedEmail.querySelector
+            <HTMLInputElement>(".email-preview-selection")!;
+        const lastSelectedEmailUid = lastSelectedEmailCheckbox.value;
         emailSelection = emailSelection.filter(
-            (selection) => selection !== selectedEmailUid,
+            (selection) => selection !== lastSelectedEmailUid,
         );
     };
 </script>
 
 <Context.Root
-    target=".mailbox .email"
+    selector=".mailbox .email-preview"
     beforeOpen={selectEmail}
     afterClose={deselectEmail}
 >
     {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
         <MarkAs bind:groupedUidSelection markType={Mark.Flagged}>
-            Marked as {Mark.Flagged}
+            <Icon name="star" />
+            <span>Mark as Important</span>
         </MarkAs>
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
         <MarkAs bind:groupedUidSelection markType={Mark.Flagged} isUnmark={true}>
-            Unmarked as {Mark.Flagged}
+            <Icon name="star" class="filled"/>
+            <span>Unmark as Important</span>
         </MarkAs>
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
         <MarkAs bind:groupedUidSelection markType={Mark.Seen}>
-            Marked as {Mark.Seen}
+            <Icon name="seen" />
+            <span>Mark as seen</span>
         </MarkAs>
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
         <MarkAs bind:groupedUidSelection markType={Mark.Seen} isUnmark={true}>
-            Unmarked as {Mark.Seen}
+            <Icon name="unseen" />
+            <span>Unmark as seen</span>
         </MarkAs>
     {/if}
     <Context.Separator />
@@ -80,13 +84,15 @@
             bind:emailSelection
             bind:groupedUidSelection
         >
-            Reply
+            <Icon name="reply" />
+            <span>Reply</span>
         </Reply>
         <Forward
             bind:emailSelection
             bind:groupedUidSelection
         >
-            Forward
+            <Icon name="forward" />
+            <span>Forward</span>
         </Forward>
         <Context.Separator />
         <Unsubscribe
@@ -112,7 +118,8 @@
             sourceFolder={Folder.Archive}
             destinationFolder={Folder.Inbox}
         >
-            Move to Inbox
+            <Icon name="inbox" />
+            <span>Move to Inbox</span>
         </MoveTo>
     {:else}
         <MoveTo
@@ -120,7 +127,8 @@
             sourceFolder={getCurrentMailbox().folder}
             destinationFolder={Folder.Archive}
         >
-            Move to Archive
+            <Icon name="archive" />
+            <span>Archive</span>
         </MoveTo>
     {/if}
     <DeleteFrom
@@ -128,6 +136,9 @@
         bind:groupedUidSelection
         folder={getCurrentMailbox().folder}
     >
-        Delete from {getCurrentMailbox().folder}
+        <Icon name="trash" />
+        <span>{isStandardFolder(getCurrentMailbox().folder, Folder.Trash)
+            ? "Delete Completely"
+            : "Move to Trash"}</span>
     </DeleteFrom>
 </Context.Root>

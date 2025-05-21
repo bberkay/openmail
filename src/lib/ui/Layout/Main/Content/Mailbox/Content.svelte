@@ -8,6 +8,7 @@
     import Selection from "./Content/Selection.svelte";
     import GroupDate from "./Content/GroupDate.svelte";
     import EmailPreview from "./Content/EmailPreview.svelte";
+    import { onMount } from "svelte";
 
     interface Props {
         emailSelection: EmailSelection;
@@ -65,10 +66,23 @@
 
         return groupedEmails;
     });
+
+    let isSelectShownChecked = $state(false);
+    onMount(() => {
+        const selectShownCheckbox = document.getElementById(
+            "select-shown"
+        ) as HTMLInputElement;
+        selectShownCheckbox.addEventListener("change", (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            isSelectShownChecked = target.checked;
+        });
+    })
 </script>
 
 <div class="mailbox">
-    <Selection bind:emailSelection />
+    {#if isSelectShownChecked}
+        <Selection bind:emailSelection />
+    {/if}
     {#each Object.entries(groupedEmailsByDate) as [groupDate, groupedEmails]}
         {#if groupedEmails.length > 0}
             <GroupDate {groupDate} />

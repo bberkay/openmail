@@ -3,15 +3,15 @@
     import { onMount, type Snippet } from "svelte";
 
     interface Props {
-        target: string;
-        beforeOpen?: ((e: Event) => void) | ((e: Event) => Promise<void>);
-        afterClose?: ((e: Event) => void) | ((e: Event) => Promise<void>);
+        selector: string;
+        beforeOpen?: ((target: HTMLElement) => void) | ((target: HTMLElement) => Promise<void>);
+        afterClose?: ((target: HTMLElement) => void) | ((target: HTMLElement) => Promise<void>);
         children: Snippet;
         [attribute: string]: unknown;
     }
 
     let {
-        target,
+        selector,
         beforeOpen,
         afterClose,
         children,
@@ -24,15 +24,17 @@
 	} = $derived(attributes);
 
     let targetElements: NodeListOf<HTMLElement>;
+    let currentTarget: HTMLElement;
     let cursor = $state({ x: 0, y: 0 });
     let menu = $state({ w: 0, h: 0 });
     let browser = $state({ w: 0, h: 0 });
     let showMenu = $state(false);
 
-    async function rightClickContextMenu(e: MouseEvent) {
+    async function rightClickContextMenu(e: MouseEvent, target: HTMLElement) {
         e.preventDefault();
-        (e.target as HTMLElement).classList.add("context-menu-toggled");
-        if (beforeOpen) await beforeOpen(e);
+        currentTarget = target;
+        currentTarget.classList.add("context-menu-toggled");
+        if (beforeOpen) await beforeOpen(currentTarget);
         showMenu = true;
         browser = {
             w: window.innerWidth,
@@ -47,11 +49,12 @@
     }
 
     async function onPageClick(e: MouseEvent) {
+        if (!showMenu) return;
         targetElements.forEach((targetElement) =>
             targetElement.classList.remove("context-menu-toggled"),
         );
         showMenu = false;
-        if (afterClose) await afterClose(e);
+        if (afterClose) await afterClose(currentTarget);
     }
 
     function getContextMenuDimension(node: HTMLElement) {
@@ -64,13 +67,12 @@
     }
 
     onMount(() => {
-        targetElements = document.querySelectorAll<HTMLElement>(target)!;
-        targetElements.forEach((targetElement) =>
-            targetElement.addEventListener(
-                "contextmenu",
-                rightClickContextMenu,
-            ),
-        );
+        targetElements = document.querySelectorAll<HTMLElement>(selector)!;
+        targetElements.forEach((targetElement) => {
+            targetElement.addEventListener("contextmenu", (e) =>
+                rightClickContextMenu(e, targetElement)
+            )
+        });
     });
 </script>
 
@@ -105,6 +107,7 @@
             border-radius: var(--radius-md);
             overflow: hidden;
             flex-direction: column;
+            justify-content: start;
 
             & .context-menu-toggled {
                 background-color: var(--color-hover);

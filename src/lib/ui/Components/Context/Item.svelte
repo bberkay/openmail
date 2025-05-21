@@ -40,7 +40,13 @@
 </div>
 
 <style>
-    .context-menu-item {
-        padding: 0 var(--spacing-2xs);
+    :global {
+        .context-menu-item {
+            padding: 0 var(--spacing-2xs);
+
+            & .btn-inline {
+                justify-content: start;
+            }
+        }
     }
 </style>
