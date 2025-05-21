@@ -58,6 +58,7 @@
     --color-lightgray: light-dark(#858585, #858585);
     --color-gray: light-dark(#3d3d3d, #3d3d3d);
     --color-checked: light-dark(#2b80ef, #2b80ef);
+    --color-important: light-dark(#fefce8, #62420e40);
     --color-bg-drop-area: light-dark(#4a90e20d, #4a90e20d);
     --color-border-drop-area: light-dark(#4a90e2, #4a90e2);
 

@@ -314,7 +314,7 @@ export function getMailboxSelectionInfoTemplate(
 export function getMailboxSelectAllTemplate(total: string | number) {
     return local.select_all_emails_in_mailbox[DEFAULT_LANGUAGE].replace(
         "{total}",
-        String(total),
+        total.toString(),
     );
 }
 

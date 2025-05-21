@@ -145,6 +145,7 @@
 
                 & .dropdown-toggle {
                     padding: var(--spacing-2xs) var(--spacing-xs);
+                    font-size: var(--font-size-xs);
                 }
 
                 & .dropdown-content .dropdown-item {

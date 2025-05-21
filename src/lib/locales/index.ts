@@ -48,7 +48,7 @@ export const local = {
         en: "<b>{selection_count}</b> emails in this page selected.",
     },
     select_all_emails_in_mailbox: {
-        en: "Select all <b>{total}</b> emails in this page.",
+        en: "Select all &nbsp;<b>{total}</b>&nbsp; emails in this page.",
     },
     clear_selection: {
         en: "Clear selection",

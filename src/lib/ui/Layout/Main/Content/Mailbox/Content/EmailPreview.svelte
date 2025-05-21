@@ -117,13 +117,15 @@
     tabindex="0"
     role="button"
 >
-    <Input.Basic
-        type="checkbox"
-        class="email-preview-selection"
-        bind:group={emailSelection as string[]}
-        onclick={deselectAllAccounts}
-        value={account.email_address.concat(",", email.uid)}
-    />
+    <div class="email-preview-select">
+        <Input.Basic
+            type="checkbox"
+            class="email-preview-selection"
+            bind:group={emailSelection as string[]}
+            onclick={deselectAllAccounts}
+            value={account.email_address.concat(",", email.uid)}
+        />
+    </div>
     <div class="email-preview-sender">
         {extractFullname(email.sender) || extractEmailAddress(email.sender)}
     </div>
@@ -185,6 +187,10 @@
                     background-color: var(--color-hover);
                 }
 
+                & .email-preview-select {
+                    display: flex;
+                }
+
                 & .email-preview-selection {
                     margin-right: 15px;
                 }
@@ -238,7 +244,6 @@
                 }
 
                 & .email-preview-date {
-                    margin-top: 4px;
                     text-align: right;
                     color: var(--color-text-secondary);
                     white-space: nowrap;

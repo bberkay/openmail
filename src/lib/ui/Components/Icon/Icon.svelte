@@ -47,6 +47,10 @@
                 stroke-width: 1;
                 fill: var(--color-error-text)!important;
             }
+
+            &[name="star"].filled {
+                fill: var(--color-important)!important;
+            }
         }
     }
 </style>

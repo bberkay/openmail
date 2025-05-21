@@ -1,7 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder } from "$lib/types";
-    import * as Select from "$lib/ui/Components/Select";
+    import * as Dropdown from "$lib/ui/Components/Dropdown";
     import { getCurrentMailbox, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
@@ -26,7 +26,7 @@
         ].custom.includes(getCurrentMailbox().folder);
     });
 
-    const copyEmailsOnChange = async (destinationFolder: string | Folder) => {
+    const copyEmailsOnClick = async (destinationFolder: string | Folder) => {
         await copyTo(
             groupedUidSelection,
             sourceFolder,
@@ -37,18 +37,24 @@
 </script>
 
 <div class="tool">
-    <Select.Root
-        onchange={copyEmailsOnChange}
-        placeholder={local.copy_to[DEFAULT_LANGUAGE]}
-    >
-        {#if isCurrentFolderCustom}
-            <!-- Add inbox option if email is in custom folder -->
-            <Select.Option value={Folder.Inbox} content={Folder.Inbox} />
-        {/if}
-        {#each SharedStore.folders[email_address].custom as customFolder}
-            {#if SharedStore.currentAccount === "home" || customFolder !== getCurrentMailbox().folder}
-                <Select.Option value={customFolder} content={customFolder} />
+    <Dropdown.Root class="dropdown-sm">
+        <Dropdown.Toggle>
+            {local.copy_to[DEFAULT_LANGUAGE]}
+        </Dropdown.Toggle>
+        <Dropdown.Content>
+            {#if isCurrentFolderCustom}
+                <!-- Add inbox option if email is in custom folder -->
+                <Dropdown.Item onclick={async () => await copyEmailsOnClick(Folder.Inbox)}>
+                    {Folder.Inbox}
+                </Dropdown.Item>
             {/if}
-        {/each}
-    </Select.Root>
+            {#each SharedStore.folders[email_address].custom as customFolder}
+                {#if SharedStore.currentAccount === "home" || customFolder !== getCurrentMailbox().folder}
+                    <Dropdown.Item onclick={async () => await copyEmailsOnClick(customFolder)}>
+                        {customFolder}
+                    </Dropdown.Item>
+                {/if}
+            {/each}
+        </Dropdown.Content>
+    </Dropdown.Root>
 </div>

@@ -95,7 +95,7 @@
     ).toString()}
     <div class="email-preview-selection-info">
         <span>
-            {getMailboxSelectionInfoTemplate(selectionCount)}
+            {@html getMailboxSelectionInfoTemplate(selectionCount)}
         </span>
         <Button.Basic
             type="button"
@@ -104,7 +104,7 @@
                 ? deselectAllEmails
                 : selectAllEmails}
         >
-            {getMailboxSelectAllTemplate(selectionCount)}
+            {@html getMailboxSelectAllTemplate(getCurrentMailbox().total)}
         </Button.Basic>
     </div>
 {/if}
@@ -113,6 +113,10 @@
     :global {
         .mailbox .email-preview-selection-info {
             width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-xs);
             color: var(--color-text-secondary);
             font-size: var(--font-size-sm);
             padding: var(--spacing-sm);

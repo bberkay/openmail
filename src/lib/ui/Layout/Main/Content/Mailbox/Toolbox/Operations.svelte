@@ -114,8 +114,6 @@
     import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { isStandardFolder } from "$lib/utils";
-    import { local } from "$lib/locales";
-    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Icon from "$lib/ui/Components/Icon";
     import Refresh from "./Operations/Refresh.svelte";
     import DeleteFrom from "./Operations/DeleteFrom.svelte";
@@ -123,7 +121,7 @@
     import MoveTo from "./Operations/MoveTo.svelte";
     import CopyWithSelect from "./Operations/CopyWithSelect.svelte";
     import MoveWithSelect from "./Operations/MoveWithSelect.svelte";
-    import Selection from "./Operations/Selection.svelte";
+    import Select from "./Operations/Select.svelte";
 
     interface Props {
         groupedUidSelection: GroupedUidSelection;
@@ -139,13 +137,16 @@
 </script>
 
 <div class="operations">
-    <Selection bind:emailSelection/>
+    <div class="tool-group">
+        <Select bind:emailSelection />
+    </div>
 
     {#if emailSelection.length > 0}
+        <div class="tool-group">
         <!-- Standard operations for all accounts -->
         {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
             <MarkAs bind:groupedUidSelection markType={Mark.Flagged}>
-                Star
+                <Icon name="star" />
             </MarkAs>
         {/if}
         {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
@@ -154,12 +155,15 @@
                 markType={Mark.Flagged}
                 isUnmark={true}
             >
-                Remove star
+                <Icon name="star" class="filled"/>
             </MarkAs>
         {/if}
         {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
-            <MarkAs bind:groupedUidSelection markType={Mark.Seen}>
-                Mark as Read
+            <MarkAs
+                bind:groupedUidSelection
+                markType={Mark.Seen}
+            >
+                <Icon name="seen" />
             </MarkAs>
         {/if}
         {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
@@ -168,7 +172,7 @@
                 markType={Mark.Seen}
                 isUnmark={true}
             >
-                Mark as Unread
+                <Icon name="unseen" />
             </MarkAs>
         {/if}
         {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
@@ -178,7 +182,7 @@
                 sourceFolder={Folder.Archive}
                 destinationFolder={Folder.Inbox}
             >
-                Move to Inbox
+                <Icon name="inbox" />
             </MoveTo>
         {:else}
             <MoveTo
@@ -187,7 +191,7 @@
                 sourceFolder={getCurrentMailbox().folder}
                 destinationFolder={Folder.Archive}
             >
-                Move to Archive
+                <Icon name="archive" />
             </MoveTo>
         {/if}
         <DeleteFrom
@@ -195,27 +199,29 @@
             bind:currentOffset
             folder={getCurrentMailbox().folder}
         >
-            {isStandardFolder(getCurrentMailbox().folder, Folder.Trash)
-                ? local.delete_completely[DEFAULT_LANGUAGE]
-                : local.delete[DEFAULT_LANGUAGE]}
+            <Icon name="trash" />
         </DeleteFrom>
-
-        <!-- Account related specific operations -->
-        {#if groupedUidSelection.length == 1}
-            <div class="tool-separator"></div>
-            <CopyWithSelect
-                bind:groupedUidSelection
-                sourceFolder={getCurrentMailbox().folder}
-            />
-            <MoveWithSelect
-                bind:groupedUidSelection
-                sourceFolder={getCurrentMailbox().folder}
-            />
-        {/if}
+        </div>
+        <div class="tool-group-separator"></div>
+        <div class="tool-group">
+            <!-- Account related specific operations -->
+            {#if groupedUidSelection.length == 1}
+                <CopyWithSelect
+                    bind:groupedUidSelection
+                    sourceFolder={getCurrentMailbox().folder}
+                />
+                <MoveWithSelect
+                    bind:groupedUidSelection
+                    sourceFolder={getCurrentMailbox().folder}
+                />
+            {/if}
+        </div>
     {:else}
-        <Refresh>
-            <Icon name="refresh" />
-        </Refresh>
+        <div class="tool-group">
+            <Refresh>
+                <Icon name="refresh" />
+            </Refresh>
+        </div>
     {/if}
 </div>
 
@@ -226,11 +232,29 @@
                 display: flex;
                 flex-direction: row;
                 align-items: center;
-                gap: var(--spacing-xl);
+                gap: var(--spacing-sm);
+                height: 100%;
 
-                & .tool-separator {
-                    height: 100%;
+                & .tool-group {
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    gap: var(--spacing-md);
+
+                    & .tool {
+                        display: flex;
+                    }
+
+                    & .dropdown-sm {
+                        width: 100px;
+                    }
+                }
+
+                & .tool-group-separator {
+                    height: 75%;
                     margin: 0 var(--spacing-xs);
+                    background-color: var(--color-border);
+                    width: 1px;
                 }
             }
         }

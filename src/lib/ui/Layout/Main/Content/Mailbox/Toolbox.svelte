@@ -34,14 +34,7 @@
             align-items: center;
             justify-content: space-between;
             width: 80%;
-            padding: var(--spacing-sm) var(--spacing-lg);
-
-            & .toolbox-left {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                gap: var(--spacing-xl);
-            }
+            padding: var(--spacing-sm) var(--spacing-md);
         }
     }
 </style>
