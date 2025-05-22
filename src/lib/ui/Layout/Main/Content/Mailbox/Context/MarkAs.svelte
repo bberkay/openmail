@@ -1,7 +1,7 @@
 <script lang="ts">
     import { markEmails, unmarkEmails } from "../Toolbox/Operations/MarkAs.svelte";
     import * as Context from "$lib/ui/Components/Context";
-    import { type Mark } from "$lib/types";
+    import { type Mark, Folder } from "$lib/types";
     import type { Snippet } from "svelte";
     import type { GroupedUidSelection } from "../../Mailbox.svelte";
 
@@ -9,6 +9,7 @@
         children: Snippet,
         groupedUidSelection: GroupedUidSelection;
         markType: Mark;
+        folder: string | Folder;
         isUnmark?: boolean;
     }
 
@@ -16,15 +17,16 @@
         children,
         groupedUidSelection = $bindable(),
         markType,
+        folder,
         isUnmark = false
     }: Props = $props();
 
     const markEmailsOnClick = async () => {
-        await markEmails(groupedUidSelection, markType);
+        await markEmails(groupedUidSelection, markType, folder);
     };
 
     const unmarkEmailsOnClick = async () => {
-        await unmarkEmails(groupedUidSelection, markType);
+        await unmarkEmails(groupedUidSelection, markType, folder);
     };
 </script>
 

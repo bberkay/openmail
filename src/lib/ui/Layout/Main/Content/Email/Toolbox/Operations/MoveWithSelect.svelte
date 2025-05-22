@@ -9,12 +9,14 @@
 
     interface Props {
         account: Account;
+        sourceFolder: string | Folder;
         email: Email;
         currentOffset?: number;
     }
 
     let {
         account,
+        sourceFolder,
         email,
         currentOffset
     }: Props = $props();
@@ -24,15 +26,15 @@
 
         return SharedStore.folders[
             SharedStore.currentAccount.email_address
-        ].custom.includes(getCurrentMailbox().folder);
+        ].custom.includes(sourceFolder);
     });
 
     const moveEmailsOnClick = async (destinationFolder: string | Folder) => {
         await moveTo(
             account,
-            email.uid,
-            getCurrentMailbox().folder,
+            sourceFolder,
             destinationFolder,
+            email.uid,
             currentOffset,
             email.message_id,
             false
@@ -53,7 +55,7 @@
                 </Dropdown.Item>
             {/if}
             {#each SharedStore.folders[account.email_address].custom as customFolder}
-                {#if customFolder !== getCurrentMailbox().folder}
+                {#if customFolder !== sourceFolder}
                     <Dropdown.Item onclick={async () => await moveEmailsOnClick(customFolder)}>
                         {customFolder}
                     </Dropdown.Item>

@@ -13,11 +13,11 @@
     import { convertUidSelectionToMessageIds, fetchUidsByMessageIds } from "../Operations.svelte";
 
     export async function moveTo(
-        selection: GroupedUidSelection,
         sourceFolder: string | Folder,
         destinationFolder: string | Folder,
+        selection: GroupedUidSelection,
+        currentOffset?: number,
         isUndo: boolean = false,
-        currentOffset?: number
     ): Promise<void> {
         const currentSelection = simpleDeepCopy(selection);
         const messageIdsOfSelection =
@@ -28,7 +28,13 @@
                 messageIdsOfSelection,
                 destinationFolder,
             );
-            await moveTo(newUids, destinationFolder, sourceFolder, true);
+            await moveTo(
+                destinationFolder,
+                sourceFolder,
+                newUids,
+                undefined,
+                true
+            );
         };
 
         const results = await Promise.allSettled(
@@ -37,9 +43,9 @@
                     SharedStore.accounts.find(
                         (acc) => acc.email_address === email_address,
                     )!,
-                    sortSelection(uids),
                     sourceFolder,
                     destinationFolder,
+                    sortSelection(uids),
                     isUndo ? undefined : currentOffset,
                 );
 
@@ -77,27 +83,27 @@
 
     interface Props {
         children: Snippet
-        groupedUidSelection: GroupedUidSelection;
         sourceFolder: string | Folder;
         destinationFolder: string | Folder;
+        groupedUidSelection: GroupedUidSelection;
         currentOffset?: number;
     }
 
     let {
         children,
-        groupedUidSelection = $bindable(),
         sourceFolder,
         destinationFolder,
+        groupedUidSelection = $bindable(),
         currentOffset = $bindable()
     }: Props = $props();
 
     const moveEmailsOnClick = async () => {
         await moveTo(
-            groupedUidSelection,
             sourceFolder,
             destinationFolder,
+            groupedUidSelection,
+            currentOffset,
             false,
-            currentOffset
         );
     };
 </script>

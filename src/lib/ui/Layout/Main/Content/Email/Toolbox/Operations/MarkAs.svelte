@@ -20,6 +20,7 @@
         account: Account,
         uid: string,
         mark: Mark,
+        folder: string | Folder,
         isUndo: boolean = false,
         isUnmarkOperation: boolean = false,
     ) {
@@ -31,7 +32,7 @@
             account,
             uid,
             mark,
-            getCurrentMailbox().folder,
+            folder
         );
 
         if (!response.success) {
@@ -51,7 +52,7 @@
                     const undoMarkOperation = isUnmarkOperation
                         ? markEmail
                         : unmarkEmail;
-                    undoMarkOperation(account, uid, mark, true);
+                    undoMarkOperation(account, uid, mark, folder, true);
                 },
             });
         }
@@ -61,18 +62,20 @@
         account: Account,
         uid: string,
         mark: Mark,
+        folder: string | Folder,
         isUndo: boolean = false,
     ) {
-        await markOrUnmarkEmail(account, uid, mark, isUndo);
+        await markOrUnmarkEmail(account, uid, mark, folder, isUndo);
     }
 
     export async function unmarkEmail(
         account: Account,
         uid: string,
         mark: Mark,
+        folder: string | Folder,
         isUndo: boolean = false,
     ) {
-        await markOrUnmarkEmail(account, uid, mark, isUndo, true);
+        await markOrUnmarkEmail(account, uid, mark, folder, isUndo, true);
     }
 </script>
 
@@ -89,6 +92,7 @@
         account: Account;
         email: Email;
         markType: Mark;
+        folder: string | Folder;
         isUnmark?: boolean;
     }
 
@@ -97,15 +101,16 @@
         account,
         email,
         markType,
+        folder,
         isUnmark = false
     }: Props = $props();
 
     const markEmailOnClick = async () => {
-        await markEmail(account, email.uid, markType);
+        await markEmail(account, email.uid, markType, folder);
     };
 
     const unmarkEmailOnClick = async () => {
-        await unmarkEmail(account, email.uid, markType);
+        await unmarkEmail(account, email.uid, markType, folder);
         if (markType === Mark.Seen) {
             showContent(Mailbox);
         }

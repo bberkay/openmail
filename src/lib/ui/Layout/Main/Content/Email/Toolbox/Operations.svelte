@@ -80,6 +80,7 @@
                 {account}
                 {email}
                 markType={Mark.Flagged}
+                folder={getCurrentMailbox().folder}
             >
                 <Icon name="star" />
             </MarkAs>
@@ -88,6 +89,7 @@
                 {account}
                 {email}
                 markType={Mark.Flagged}
+                folder={getCurrentMailbox().folder}
                 isUnmark={true}
             >
                 <Icon name="star" class="filled" />
@@ -98,6 +100,7 @@
                 {account}
                 {email}
                 markType={Mark.Seen}
+                folder={getCurrentMailbox().folder}
             >
                 <Icon name="seen" />
             </MarkAs>
@@ -106,6 +109,7 @@
                 {account}
                 {email}
                 markType={Mark.Seen}
+                folder={getCurrentMailbox().folder}
                 isUnmark={true}
             >
                 <Icon name="unseen" />
@@ -114,18 +118,19 @@
         {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
             <MoveTo
                 {account}
-                {email}
                 sourceFolder={getCurrentMailbox().folder}
                 destinationFolder={Folder.Inbox}
+                {email}
+                {currentOffset}
             >
                 <Icon name="inbox" />
             </MoveTo>
         {:else}
             <MoveTo
                 {account}
-                {email}
                 sourceFolder={getCurrentMailbox().folder}
                 destinationFolder={Folder.Archive}
+                {email}
                 {currentOffset}
             >
                 <Icon name="archive" />
@@ -144,11 +149,13 @@
     <div class="tool-group">
         <MoveWithSelect
             {account}
+            sourceFolder={getCurrentMailbox().folder}
             {email}
             {currentOffset}
         />
         <CopyWithSelect
             {account}
+            sourceFolder={getCurrentMailbox().folder}
             {email}
         />
     </div>

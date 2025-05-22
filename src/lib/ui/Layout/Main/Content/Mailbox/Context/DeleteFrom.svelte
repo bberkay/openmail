@@ -6,25 +6,24 @@
     import type { GroupedUidSelection } from "../../Mailbox.svelte";
 
     interface Props {
-        groupedUidSelection: GroupedUidSelection;
-        folder: string | Folder;
         children: Snippet;
+        folder: string | Folder;
+        groupedUidSelection: GroupedUidSelection;
         currentOffset?: number;
     }
 
     let {
-        groupedUidSelection = $bindable(),
-        folder,
         children,
+        folder,
+        groupedUidSelection = $bindable(),
         currentOffset = $bindable()
     }: Props = $props();
 
     const deleteEmailsOnClick = async () => {
         await deleteFrom(
-            groupedUidSelection,
             folder,
-            false,
-            currentOffset
+            groupedUidSelection,
+            currentOffset,
         );
     };
 </script>

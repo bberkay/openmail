@@ -13,9 +13,9 @@
 
     export async function moveTo(
         account: Account,
-        uid: string,
         sourceFolder: string | Folder,
         destinationFolder: string | Folder,
+        uid: string,
         currentOffset?: number,
         message_id?: string,
         isUndo: boolean = false,
@@ -31,10 +31,10 @@
             if (movedEmailUid) {
                 await moveTo(
                     account,
-                    movedEmailUid,
                     destinationFolder,
                     sourceFolder,
-                    currentOffset,
+                    movedEmailUid,
+                    undefined,
                     message_id,
                     true,
                 );
@@ -43,9 +43,9 @@
 
         const response = await MailboxController.moveEmails(
             account,
-            uid,
             sourceFolder,
             destinationFolder,
+            uid,
             isUndo ? undefined : currentOffset,
         );
 
@@ -75,27 +75,27 @@
     interface Props {
         children: Snippet;
         account: Account;
-        email: Email;
         sourceFolder: string | Folder;
         destinationFolder: string | Folder;
+        email: Email;
         currentOffset?: number;
     }
 
     let {
         children,
         account,
-        email,
         sourceFolder,
         destinationFolder,
+        email,
         currentOffset
     }: Props = $props();
 
     const moveEmailsOnClick = async () => {
         await moveTo(
             account,
-            email.uid,
             sourceFolder,
             destinationFolder,
+            email.uid,
             currentOffset,
             email.message_id,
             false,

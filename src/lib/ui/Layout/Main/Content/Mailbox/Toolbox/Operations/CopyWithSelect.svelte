@@ -8,13 +8,13 @@
     import { copyTo } from "./CopyTo.svelte";
 
     interface Props {
-        groupedUidSelection: GroupedUidSelection;
         sourceFolder: string | Folder;
+        groupedUidSelection: GroupedUidSelection;
     }
 
     let {
-        groupedUidSelection = $bindable(),
         sourceFolder,
+        groupedUidSelection = $bindable(),
     }: Props = $props();
 
     let email_address = $derived(groupedUidSelection[0][0]);
@@ -23,15 +23,14 @@
 
         return SharedStore.folders[
             SharedStore.currentAccount.email_address
-        ].custom.includes(getCurrentMailbox().folder);
+        ].custom.includes(sourceFolder);
     });
 
     const copyEmailsOnClick = async (destinationFolder: string | Folder) => {
         await copyTo(
-            groupedUidSelection,
             sourceFolder,
             destinationFolder,
-            false
+            groupedUidSelection
         );
     }
 </script>
@@ -49,7 +48,7 @@
                 </Dropdown.Item>
             {/if}
             {#each SharedStore.folders[email_address].custom as customFolder}
-                {#if SharedStore.currentAccount === "home" || customFolder !== getCurrentMailbox().folder}
+                {#if SharedStore.currentAccount === "home" || customFolder !== sourceFolder}
                     <Dropdown.Item onclick={async () => await copyEmailsOnClick(customFolder)}>
                         {customFolder}
                     </Dropdown.Item>

@@ -14,9 +14,9 @@
 
     export async function copyTo(
         account: Account,
-        uid: string,
         sourceFolder: string | Folder,
         destinationFolder: string | Folder,
+        uid: string,
         message_id?: string,
         isUndo: boolean = false,
     ): Promise<void> {
@@ -42,9 +42,9 @@
 
         const response = await MailboxController.copyEmails(
             account,
-            uid,
             sourceFolder,
             destinationFolder,
+            uid,
         );
 
         if (!response.success) {
@@ -73,27 +73,26 @@
     interface Props {
         children: Snippet;
         account: Account;
-        email: Email;
         sourceFolder: string | Folder;
         destinationFolder: string | Folder;
+        email: Email;
     }
 
     let {
         children,
         account,
-        email,
         sourceFolder,
         destinationFolder,
+        email,
     }: Props = $props();
 
     const copyEmailsOnClick = async () => {
         await copyTo(
             account,
-            email.uid,
             sourceFolder,
             destinationFolder,
+            email.uid,
             email.message_id,
-            false,
         );
     };
 </script>

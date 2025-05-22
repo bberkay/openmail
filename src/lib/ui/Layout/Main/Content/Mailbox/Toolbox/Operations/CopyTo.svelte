@@ -13,9 +13,9 @@
     import { convertUidSelectionToMessageIds, fetchUidsByMessageIds } from "../Operations.svelte";
 
     export async function copyTo(
-        selection: GroupedUidSelection,
         sourceFolder: string | Folder,
         destinationFolder: string | Folder,
+        selection: GroupedUidSelection,
         isUndo: boolean = false,
     ): Promise<void> {
         const currentSelection = simpleDeepCopy(selection);
@@ -27,7 +27,12 @@
                 messageIdsOfSelection,
                 destinationFolder,
             );
-            await deleteFrom(newUids, destinationFolder, true);
+            await deleteFrom(
+                destinationFolder,
+                newUids,
+                undefined,
+                true
+            );
         };
 
         const results = await Promise.allSettled(
@@ -36,9 +41,9 @@
                     SharedStore.accounts.find(
                         (acc) => acc.email_address === email_address,
                     )!,
-                    sortSelection(uids),
                     sourceFolder,
                     destinationFolder,
+                    sortSelection(uids),
                 );
 
                 if (!response.success) {
@@ -72,24 +77,27 @@
     import Icon from "$lib/ui/Components/Icon";
     import { deleteFrom } from "./DeleteFrom.svelte";
     import type { GroupedUidSelection } from "../../../Mailbox.svelte";
+    import type { Snippet } from "svelte";
 
     interface Props {
-        groupedUidSelection: GroupedUidSelection;
+        children: Snippet;
         sourceFolder: string | Folder;
         destinationFolder: string | Folder;
+        groupedUidSelection: GroupedUidSelection;
     }
 
     let {
-        groupedUidSelection = $bindable(),
+        children,
         sourceFolder,
-        destinationFolder
+        destinationFolder,
+        groupedUidSelection = $bindable(),
     }: Props = $props();
 
     const copyEmailsOnClick = async () => {
         await copyTo(
-            groupedUidSelection,
             sourceFolder,
             destinationFolder,
+            groupedUidSelection
         );
     };
 </script>
@@ -100,6 +108,6 @@
         class="btn-inline"
         onclick={copyEmailsOnClick}
     >
-        Copy from {sourceFolder} to {destinationFolder}
+        {@render children()}
     </Button.Action>
 </div>

@@ -2,19 +2,21 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder } from "$lib/types";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
-    import { getCurrentMailbox, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { moveTo } from "./MoveTo.svelte";
 
     interface Props {
-        groupedUidSelection: GroupedUidSelection;
         sourceFolder: string | Folder;
+        groupedUidSelection: GroupedUidSelection;
+        currentOffset?: number;
     }
 
     let {
-        groupedUidSelection = $bindable(),
         sourceFolder,
+        groupedUidSelection = $bindable(),
+        currentOffset,
     }: Props = $props();
 
     let email_address = $derived(groupedUidSelection[0][0]);
@@ -23,14 +25,15 @@
 
         return SharedStore.folders[
             SharedStore.currentAccount.email_address
-        ].custom.includes(getCurrentMailbox().folder);
+        ].custom.includes(sourceFolder);
     });
 
     const moveEmailsOnClick = async (destinationFolder: string | Folder) => {
         await moveTo(
-            groupedUidSelection,
             sourceFolder,
             destinationFolder,
+            groupedUidSelection,
+            currentOffset,
             false
         );
     }
@@ -47,9 +50,9 @@
                 <Dropdown.Item onclick={async () => await moveEmailsOnClick(Folder.Inbox)}>
                     {Folder.Inbox}
                 </Dropdown.Item>
-                {/if}
+            {/if}
             {#each SharedStore.folders[email_address].custom as customFolder}
-                {#if SharedStore.currentAccount === "home" || customFolder !== getCurrentMailbox().folder}
+                {#if SharedStore.currentAccount === "home" || customFolder !== sourceFolder}
                     <Dropdown.Item onclick={async () => await moveEmailsOnClick(customFolder)}>
                         {customFolder}
                     </Dropdown.Item>

@@ -6,24 +6,27 @@
     import type { GroupedUidSelection } from "../../Mailbox.svelte";
 
     interface Props {
-        groupedUidSelection: GroupedUidSelection;
+        children: Snippet
         sourceFolder: string | Folder;
         destinationFolder: string | Folder;
-        children: Snippet
+        groupedUidSelection: GroupedUidSelection;
+        currentOffset?: number;
     }
 
     let {
-        groupedUidSelection = $bindable(),
+        children,
         sourceFolder,
         destinationFolder,
-        children
+        groupedUidSelection = $bindable(),
+        currentOffset
     }: Props = $props();
 
     const moveEmailsOnClick = async () => {
         await moveTo(
-            groupedUidSelection,
             sourceFolder,
             destinationFolder,
+            groupedUidSelection,
+            currentOffset
         );
     };
 </script>

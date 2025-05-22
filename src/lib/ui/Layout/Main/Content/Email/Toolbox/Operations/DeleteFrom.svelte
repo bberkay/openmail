@@ -31,10 +31,10 @@
             if (movedEmailUid) {
                 await moveTo(
                     account,
-                    movedEmailUid,
                     Folder.Trash,
                     folder,
-                    currentOffset,
+                    movedEmailUid,
+                    undefined,
                     message_id,
                     true
                 );
@@ -43,8 +43,8 @@
 
         const response = await MailboxController.deleteEmails(
             account,
-            uid,
             folder,
+            uid,
             isUndo ? undefined : currentOffset,
         );
 
@@ -96,7 +96,6 @@
             email.uid,
             currentOffset,
             email.message_id,
-            false
         );
     };
 </script>

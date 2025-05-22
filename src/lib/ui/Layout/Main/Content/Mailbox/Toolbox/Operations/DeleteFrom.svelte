@@ -15,10 +15,10 @@
     import { moveTo } from "./MoveTo.svelte";
 
     export async function deleteFrom(
-        selection: GroupedUidSelection,
         folder: string | Folder,
+        selection: GroupedUidSelection,
+        currentOffset?: number,
         isUndo: boolean = false,
-        currentOffset?: number
     ): Promise<void> {
         const currentSelection = simpleDeepCopy(selection);
         const messageIdsOfSelection =
@@ -29,7 +29,13 @@
                 messageIdsOfSelection,
                 Folder.Trash,
             );
-            await moveTo(newUids, Folder.Trash, folder, true);
+            await moveTo(
+                Folder.Trash,
+                folder,
+                newUids,
+                undefined,
+                true
+            );
         };
 
         const results = await Promise.allSettled(
@@ -38,8 +44,8 @@
                     SharedStore.accounts.find(
                         (acc) => acc.email_address === email_address,
                     )!,
-                    sortSelection(uids),
                     folder,
+                    sortSelection(uids),
                     isUndo ? undefined : currentOffset,
                 );
 
@@ -76,23 +82,22 @@
 
     interface Props {
         children: Snippet;
-        groupedUidSelection: GroupedUidSelection;
         folder: string | Folder;
+        groupedUidSelection: GroupedUidSelection;
         currentOffset?: number;
     }
 
     let {
         children,
-        groupedUidSelection = $bindable(),
         folder,
+        groupedUidSelection = $bindable(),
         currentOffset = $bindable()
     }: Props = $props();
 
     const deleteEmailsOnClick = async () => {
         await deleteFrom(
-            groupedUidSelection,
             folder,
-            false,
+            groupedUidSelection,
             currentOffset
         );
     };

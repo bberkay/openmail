@@ -389,21 +389,21 @@ export class MailboxController {
     ): Promise<PostResponse> {
         return await MailboxController.deleteEmails(
             account,
+            Folder.Drafts,
             selection,
-            Folder.Drafts
         );
     }
 
     public static async deleteEmails(
         account: Account,
-        selection: string,
         folder: string,
+        selection: string,
         offset?: number,
     ): Promise<PostResponse> {
         const response = await ApiService.post(PostRoutes.DELETE_EMAIL, {
             account: account.email_address,
-            sequence_set: removeWhitespaces(selection),
             folder: folder,
+            sequence_set: removeWhitespaces(selection),
         });
 
         if (!response.success) return response;
@@ -513,16 +513,16 @@ export class MailboxController {
 
     public static async moveEmails(
         account: Account,
-        selection: string,
         sourceFolder: string,
         destinationFolder: string,
+        selection: string,
         offset?: number,
     ): Promise<PostResponse> {
         const response = await ApiService.post(PostRoutes.MOVE_EMAIL, {
             account: account.email_address,
-            sequence_set: removeWhitespaces(selection),
             source_folder: sourceFolder,
             destination_folder: destinationFolder,
+            sequence_set: removeWhitespaces(selection),
         });
 
         if (!response.success) return response;
@@ -610,15 +610,15 @@ export class MailboxController {
 
     public static async copyEmails(
         account: Account,
-        selection: string,
         sourceFolder: string,
         destinationFolder: string,
+        selection: string,
     ): Promise<PostResponse> {
         const response = await ApiService.post(PostRoutes.COPY_EMAIL, {
             account: account.email_address,
-            sequence_set: removeWhitespaces(selection),
             source_folder: sourceFolder,
             destination_folder: destinationFolder,
+            sequence_set: removeWhitespaces(selection),
         });
 
         return response;

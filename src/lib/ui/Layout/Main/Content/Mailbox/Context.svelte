@@ -55,25 +55,43 @@
     afterClose={deselectEmail}
 >
     {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
-        <MarkAs bind:groupedUidSelection markType={Mark.Flagged}>
+        <MarkAs
+            bind:groupedUidSelection
+            markType={Mark.Flagged}
+            folder={getCurrentMailbox().folder}
+        >
             <Icon name="star" />
             <span>Mark as Important</span>
         </MarkAs>
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
-        <MarkAs bind:groupedUidSelection markType={Mark.Flagged} isUnmark={true}>
+        <MarkAs
+            bind:groupedUidSelection
+            markType={Mark.Flagged}
+            folder={getCurrentMailbox().folder}
+            isUnmark={true}
+        >
             <Icon name="star" class="filled"/>
             <span>Unmark as Important</span>
         </MarkAs>
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
-        <MarkAs bind:groupedUidSelection markType={Mark.Seen}>
+        <MarkAs
+            bind:groupedUidSelection
+            markType={Mark.Seen}
+            folder={getCurrentMailbox().folder}
+        >
             <Icon name="seen" />
             <span>Mark as seen</span>
         </MarkAs>
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
-        <MarkAs bind:groupedUidSelection markType={Mark.Seen} isUnmark={true}>
+        <MarkAs
+            bind:groupedUidSelection
+            markType={Mark.Seen}
+            folder={getCurrentMailbox().folder}
+            isUnmark={true}
+        >
             <Icon name="unseen" />
             <span>Unmark as seen</span>
         </MarkAs>

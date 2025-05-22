@@ -56,8 +56,8 @@
         const emptyTrashWrapper = async () => {
             const response = await MailboxController.deleteEmails(
                 SharedStore.currentAccount as Account,
-                "1:*",
                 Folder.Trash,
+                "1:*",
             );
 
             if (!response.success) {

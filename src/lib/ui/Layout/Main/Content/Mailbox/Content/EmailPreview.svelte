@@ -84,7 +84,6 @@
     }
 
     const showEmailContent = async (): Promise<void> => {
-        return;
         const response = await MailboxController.getEmailContent(
             account,
             getCurrentMailbox().folder,

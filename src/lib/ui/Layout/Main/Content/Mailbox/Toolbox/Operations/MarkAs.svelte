@@ -5,7 +5,7 @@
         getEmailsMarkedTemplate,
         getErrorMarkEmailsTemplate,
     } from "$lib/templates";
-    import { Mark } from "$lib/types";
+    import { Mark, Folder } from "$lib/types";
     import { getCurrentMailbox, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
@@ -19,6 +19,7 @@
     async function markOrUnmarkEmails(
         selection: GroupedUidSelection,
         mark: Mark,
+        folder: string | Folder,
         isUndo: boolean = false,
         isUnmarkOperation: boolean = false,
     ) {
@@ -38,7 +39,7 @@
                     )!,
                     uids,
                     mark,
-                    getCurrentMailbox().folder,
+                    folder
                 );
 
                 if (!response.success) {
@@ -65,7 +66,7 @@
                     const undoMarkOperation = isUnmarkOperation
                         ? markEmails
                         : unmarkEmails;
-                    await undoMarkOperation(selection, mark, true);
+                    await undoMarkOperation(selection, mark, folder, true);
                 },
             });
         }
@@ -74,17 +75,19 @@
     export const markEmails = async (
         selection: GroupedUidSelection,
         mark: Mark,
+        folder: string | Folder,
         isUndo: boolean = false,
     ) => {
-        await markOrUnmarkEmails(selection, mark, isUndo);
+        await markOrUnmarkEmails(selection, mark, folder, isUndo);
     };
 
     export const unmarkEmails = async (
         selection: GroupedUidSelection,
         mark: Mark,
+        folder: string | Folder,
         isUndo: boolean = false,
     ) => {
-        await markOrUnmarkEmails(selection, mark, isUndo, true);
+        await markOrUnmarkEmails(selection, mark, folder, isUndo, true);
     };
 </script>
 
@@ -97,6 +100,7 @@
         children: Snippet
         groupedUidSelection: GroupedUidSelection;
         markType: Mark;
+        folder: string | Folder;
         isUnmark?: boolean;
     }
 
@@ -104,15 +108,16 @@
         children,
         groupedUidSelection = $bindable(),
         markType,
+        folder,
         isUnmark = false
     }: Props = $props();
 
     const markEmailsOnClick = async () => {
-        await markEmails(groupedUidSelection, markType);
+        await markEmails(groupedUidSelection, markType, folder);
     };
 
     const unmarkEmailsOnClick = async () => {
-        await unmarkEmails(groupedUidSelection, markType);
+        await unmarkEmails(groupedUidSelection, markType, folder);
     };
 </script>
 

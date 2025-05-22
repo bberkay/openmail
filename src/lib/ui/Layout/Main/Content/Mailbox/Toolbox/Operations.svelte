@@ -5,6 +5,7 @@
         GroupedMessageIdSelection,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { Mark } from "$lib/types";
+    import { doEmailHaveMark, doEmailHaveUnsubscribeOption, doEmailLackMark } from "$lib/ui/Layout/Main/Content/Email/Toolbox/Operations.svelte";
 
     export function doAllSelectedEmailsHaveMark(
         emailSelection: EmailSelection,
@@ -16,9 +17,7 @@
             const [emailAddress, uid] = selection.split(",");
             return SharedStore.mailboxes[emailAddress].emails.current.find(
                 (email: Email) =>
-                    email.uid == uid &&
-                    Object.hasOwn(email, "flags") &&
-                    email.flags!.includes(mark),
+                    email.uid == uid && doEmailHaveMark(email, mark)
             );
         });
     }
@@ -33,9 +32,7 @@
             const [emailAddress, uid] = selection.split(",");
             return SharedStore.mailboxes[emailAddress].emails.current.find(
                 (email: Email) =>
-                    email.uid == uid &&
-                    Object.hasOwn(email, "flags") &&
-                    !email.flags!.includes(mark),
+                    email.uid == uid && doEmailLackMark(email, mark)
             );
         });
     }
@@ -50,7 +47,7 @@
                 SharedStore.mailboxes[emailAddress].emails.current;
             return uids.every((uid) =>
                 targetMailbox.find(
-                    (email) => email.uid == uid && !!email.list_unsubscribe,
+                    (email) => email.uid == uid && doEmailHaveUnsubscribeOption(email)
                 ),
             );
         });
@@ -143,64 +140,71 @@
 
     {#if emailSelection.length > 0}
         <div class="tool-group">
-        <!-- Standard operations for all accounts -->
-        {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
-            <MarkAs bind:groupedUidSelection markType={Mark.Flagged}>
-                <Icon name="star" />
-            </MarkAs>
-        {/if}
-        {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
-            <MarkAs
-                bind:groupedUidSelection
-                markType={Mark.Flagged}
-                isUnmark={true}
-            >
-                <Icon name="star" class="filled"/>
-            </MarkAs>
-        {/if}
-        {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
-            <MarkAs
-                bind:groupedUidSelection
-                markType={Mark.Seen}
-            >
-                <Icon name="seen" />
-            </MarkAs>
-        {/if}
-        {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
-            <MarkAs
-                bind:groupedUidSelection
-                markType={Mark.Seen}
-                isUnmark={true}
-            >
-                <Icon name="unseen" />
-            </MarkAs>
-        {/if}
-        {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
-            <MoveTo
+            <!-- Standard operations for all accounts -->
+            {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
+                <MarkAs
+                    bind:groupedUidSelection
+                    markType={Mark.Flagged}
+                    folder={getCurrentMailbox().folder}
+                >
+                    <Icon name="star" />
+                </MarkAs>
+            {/if}
+            {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
+                <MarkAs
+                    bind:groupedUidSelection
+                    markType={Mark.Flagged}
+                    folder={getCurrentMailbox().folder}
+                    isUnmark={true}
+                >
+                    <Icon name="star" class="filled"/>
+                </MarkAs>
+            {/if}
+            {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
+                <MarkAs
+                    bind:groupedUidSelection
+                    markType={Mark.Seen}
+                    folder={getCurrentMailbox().folder}
+                >
+                    <Icon name="seen" />
+                </MarkAs>
+            {/if}
+            {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
+                <MarkAs
+                    bind:groupedUidSelection
+                    markType={Mark.Seen}
+                    folder={getCurrentMailbox().folder}
+                    isUnmark={true}
+                >
+                    <Icon name="unseen" />
+                </MarkAs>
+            {/if}
+            {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
+                <MoveTo
+                    bind:groupedUidSelection
+                    bind:currentOffset
+                    sourceFolder={Folder.Archive}
+                    destinationFolder={Folder.Inbox}
+                >
+                    <Icon name="inbox" />
+                </MoveTo>
+            {:else}
+                <MoveTo
+                    bind:groupedUidSelection
+                    bind:currentOffset
+                    sourceFolder={getCurrentMailbox().folder}
+                    destinationFolder={Folder.Archive}
+                >
+                    <Icon name="archive" />
+                </MoveTo>
+            {/if}
+            <DeleteFrom
                 bind:groupedUidSelection
                 bind:currentOffset
-                sourceFolder={Folder.Archive}
-                destinationFolder={Folder.Inbox}
+                folder={getCurrentMailbox().folder}
             >
-                <Icon name="inbox" />
-            </MoveTo>
-        {:else}
-            <MoveTo
-                bind:groupedUidSelection
-                bind:currentOffset
-                sourceFolder={getCurrentMailbox().folder}
-                destinationFolder={Folder.Archive}
-            >
-                <Icon name="archive" />
-            </MoveTo>
-        {/if}
-        <DeleteFrom
-            bind:groupedUidSelection
-            bind:currentOffset
-            folder={getCurrentMailbox().folder}
-        >
-            <Icon name="trash" />
-        </DeleteFrom>
+                <Icon name="trash" />
+            </DeleteFrom>
         </div>
         <div class="tool-group-separator"></div>
         <div class="tool-group">
