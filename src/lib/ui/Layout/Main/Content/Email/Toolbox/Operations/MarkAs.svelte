@@ -1,0 +1,133 @@
+<script lang="ts" module>
+    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { MailboxController } from "$lib/controllers/MailboxController";
+    import {
+        getEmailsMarkedTemplate,
+        getErrorMarkEmailsTemplate,
+    } from "$lib/templates";
+    import { Mark, type Email, type Account, Folder } from "$lib/types";
+    import {
+        getCurrentMailbox,
+        type GroupedUidSelection,
+    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showToast } from "$lib/ui/Components/Toast";
+    import { simpleDeepCopy, sortSelection } from "$lib/utils";
+    import { local } from "$lib/locales";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
+
+    async function markOrUnmarkEmail(
+        account: Account,
+        uid: string,
+        mark: Mark,
+        isUndo: boolean = false,
+        isUnmarkOperation: boolean = false,
+    ) {
+        const markOperation = isUnmarkOperation
+            ? MailboxController.unmarkEmails
+            : MailboxController.markEmails;
+
+        const response = await markOperation(
+            account,
+            uid,
+            mark,
+            getCurrentMailbox().folder,
+        );
+
+        if (!response.success) {
+            showMessage({
+                title: getErrorMarkEmailsTemplate(mark),
+            });
+            console.error(response.message);
+            return;
+        }
+
+        if (isUndo) {
+            showToast({ content: local.undo_done[DEFAULT_LANGUAGE] });
+        } else {
+            showToast({
+                content: local.email_s_marked[DEFAULT_LANGUAGE],
+                onUndo: async () => {
+                    const undoMarkOperation = isUnmarkOperation
+                        ? markEmail
+                        : unmarkEmail;
+                    undoMarkOperation(account, uid, mark, true);
+                },
+            });
+        }
+    }
+
+    export async function markEmail(
+        account: Account,
+        uid: string,
+        mark: Mark,
+        isUndo: boolean = false,
+    ) {
+        await markOrUnmarkEmail(account, uid, mark, isUndo);
+    }
+
+    export async function unmarkEmail(
+        account: Account,
+        uid: string,
+        mark: Mark,
+        isUndo: boolean = false,
+    ) {
+        await markOrUnmarkEmail(account, uid, mark, isUndo, true);
+    }
+</script>
+
+<script lang="ts">
+    import * as Button from "$lib/ui/Components/Button";
+    import Icon from "$lib/ui/Components/Icon";
+    import type { Snippet } from "svelte";
+    import { doEmailLackMark } from "../Operations.svelte";
+    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
+
+    interface Props {
+        children: Snippet
+        account: Account;
+        email: Email;
+        markType: Mark;
+        isUnmark?: boolean;
+    }
+
+    let {
+        children,
+        account,
+        email,
+        markType,
+        isUnmark = false
+    }: Props = $props();
+
+    const markEmailOnClick = async () => {
+        await markEmail(account, email.uid, markType);
+    };
+
+    const unmarkEmailOnClick = async () => {
+        await unmarkEmail(account, email.uid, markType);
+        if (markType === Mark.Seen) {
+            showContent(Mailbox);
+        }
+    };
+</script>
+
+<div class="tool">
+    {#if isUnmark}
+        <Button.Action
+            type="button"
+            class="btn-inline"
+            onclick={unmarkEmailOnClick}
+        >
+            {@render children()}
+        </Button.Action>
+    {:else}
+        <Button.Action
+            type="button"
+            class="btn-inline"
+            onclick={markEmailOnClick}
+        >
+            {@render children()}
+        </Button.Action>
+    {/if}
+</div>

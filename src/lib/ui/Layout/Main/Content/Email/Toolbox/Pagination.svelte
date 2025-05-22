@@ -3,6 +3,7 @@
     import { type Account, type Email } from "$lib/types";
     import { getEmailPaginationTemplate } from "$lib/templates";
     import * as Button from "$lib/ui/Components/Button";
+    import Icon from "$lib/ui/Components/Icon";
     import {
         getCurrentMailbox,
         paginateMailboxBackward,
@@ -70,31 +71,29 @@
     };
 </script>
 
-<div class="toolbox-right">
-    {#if currentOffset > 0}
-        <div class="pagination">
-            <Button.Action
-                type="button"
-                class="btn-inline {currentOffset == 1 ? 'disabled' : ''}"
-                onclick={getPreviousEmail}
-            >
-                {local.prev[DEFAULT_LANGUAGE]}
-            </Button.Action>
-            <small>
-                {getEmailPaginationTemplate(
-                    (currentOffset + 1).toString(),
-                    getCurrentMailbox().total.toString(),
-                )}
-            </small>
-            <Button.Action
-                type="button"
-                class="btn-inline {currentOffset >= getCurrentMailbox().total
-                    ? 'disabled'
-                    : ''}"
-                onclick={getNextEmail}
-            >
-                {local.next[DEFAULT_LANGUAGE]}
-            </Button.Action>
-        </div>
-    {/if}
-</div>
+{#if currentOffset > 0}
+    <div class="pagination">
+        <Button.Action
+            type="button"
+            class="btn-inline {currentOffset == 1 ? 'disabled' : ''}"
+            onclick={getPreviousEmail}
+        >
+            <Icon name="prev" />
+        </Button.Action>
+        <small>
+            {getEmailPaginationTemplate(
+                (currentOffset + 1).toString(),
+                getCurrentMailbox().total.toString(),
+            )}
+        </small>
+        <Button.Action
+            type="button"
+            class="btn-inline {currentOffset >= getCurrentMailbox().total
+                ? 'disabled'
+                : ''}"
+            onclick={getNextEmail}
+        >
+            <Icon name="next" />
+        </Button.Action>
+    </div>
+{/if}
