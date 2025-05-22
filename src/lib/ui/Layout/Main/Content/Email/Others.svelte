@@ -10,7 +10,12 @@
         bcc?: string;
     }
 
-    let { toggleText, receivers, cc, bcc }: Props = $props();
+    let {
+        toggleText,
+        receivers,
+        cc,
+        bcc
+    }: Props = $props();
 </script>
 
 <Popover.Root>
@@ -36,6 +41,3 @@
         {/if}
     </Popover.Content>
 </Popover.Root>
-
-<style>
-</style>

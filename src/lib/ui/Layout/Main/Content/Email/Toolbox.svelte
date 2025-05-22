@@ -1,7 +1,7 @@
 <script lang="ts">
     import { type Account, type Email } from "$lib/types";
-    import ToolboxLeft from "$lib/ui/Layout/Main/Content/Email/Toolbox/ToolboxLeft.svelte";
-    import ToolboxRight from "$lib/ui/Layout/Main/Content/Email/Toolbox/ToolboxRight.svelte";
+    import Operations from "$lib/ui/Layout/Main/Content/Email/Toolbox/Operations.svelte";
+    import Pagination from "$lib/ui/Layout/Main/Content/Email/Toolbox/Pagination.svelte";
 
     interface Props {
         account: Account;
@@ -17,6 +17,14 @@
 </script>
 
 <div class="toolbox">
-    <ToolboxLeft {account} {email} {currentOffset} />
-    <ToolboxRight {account} bind:email bind:currentOffset />
+    <Operations
+        {account}
+        {email}
+        {currentOffset}
+    />
+    <Pagination
+        {account}
+        bind:email
+        bind:currentOffset
+    />
 </div>
