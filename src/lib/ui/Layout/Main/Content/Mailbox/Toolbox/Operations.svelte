@@ -73,8 +73,8 @@
     }
 
     export async function fetchUidsByMessageIds(
-        selection: GroupedMessageIdSelection,
         folder: string,
+        selection: GroupedMessageIdSelection,
     ): Promise<GroupedUidSelection> {
         const foundSelection: GroupedUidSelection = [];
         const results = await Promise.allSettled(

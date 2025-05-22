@@ -26,8 +26,8 @@
 
         const undo = async () => {
             const newUids = await fetchUidsByMessageIds(
-                messageIdsOfSelection,
                 Folder.Trash,
+                messageIdsOfSelection,
             );
             await moveTo(
                 Folder.Trash,
