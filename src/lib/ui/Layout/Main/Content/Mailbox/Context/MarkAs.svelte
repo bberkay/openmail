@@ -15,7 +15,7 @@
 
     let {
         children,
-        groupedUidSelection = $bindable(),
+        groupedUidSelection,
         markType,
         folder,
         isUnmark = false

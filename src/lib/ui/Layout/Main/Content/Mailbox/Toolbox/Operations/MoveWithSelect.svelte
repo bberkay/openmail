@@ -15,8 +15,8 @@
 
     let {
         sourceFolder,
-        groupedUidSelection = $bindable(),
-        currentOffset,
+        groupedUidSelection,
+        currentOffset
     }: Props = $props();
 
     let email_address = $derived(groupedUidSelection[0][0]);

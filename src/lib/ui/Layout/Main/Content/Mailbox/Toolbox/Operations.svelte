@@ -127,9 +127,9 @@
     }
 
     let {
-        groupedUidSelection = $bindable(),
+        groupedUidSelection,
         emailSelection = $bindable(),
-        currentOffset = $bindable(),
+        currentOffset,
     }: Props = $props();
 </script>
 
@@ -143,7 +143,7 @@
             <!-- Standard operations for all accounts -->
             {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
                 <MarkAs
-                    bind:groupedUidSelection
+                    {groupedUidSelection}
                     markType={Mark.Flagged}
                     folder={getCurrentMailbox().folder}
                 >
@@ -152,7 +152,7 @@
             {/if}
             {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
                 <MarkAs
-                    bind:groupedUidSelection
+                    {groupedUidSelection}
                     markType={Mark.Flagged}
                     folder={getCurrentMailbox().folder}
                     isUnmark={true}
@@ -162,7 +162,7 @@
             {/if}
             {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
                 <MarkAs
-                    bind:groupedUidSelection
+                    {groupedUidSelection}
                     markType={Mark.Seen}
                     folder={getCurrentMailbox().folder}
                 >
@@ -171,7 +171,7 @@
             {/if}
             {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
                 <MarkAs
-                    bind:groupedUidSelection
+                    {groupedUidSelection}
                     markType={Mark.Seen}
                     folder={getCurrentMailbox().folder}
                     isUnmark={true}
@@ -181,8 +181,8 @@
             {/if}
             {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
                 <MoveTo
-                    bind:groupedUidSelection
-                    bind:currentOffset
+                    {groupedUidSelection}
+                    {currentOffset}
                     sourceFolder={Folder.Archive}
                     destinationFolder={Folder.Inbox}
                 >
@@ -190,8 +190,8 @@
                 </MoveTo>
             {:else}
                 <MoveTo
-                    bind:groupedUidSelection
-                    bind:currentOffset
+                    {groupedUidSelection}
+                    {currentOffset}
                     sourceFolder={getCurrentMailbox().folder}
                     destinationFolder={Folder.Archive}
                 >
@@ -199,8 +199,8 @@
                 </MoveTo>
             {/if}
             <DeleteFrom
-                bind:groupedUidSelection
-                bind:currentOffset
+                {groupedUidSelection}
+                {currentOffset}
                 folder={getCurrentMailbox().folder}
             >
                 <Icon name="trash" />
@@ -211,11 +211,12 @@
             <!-- Account related specific operations -->
             {#if groupedUidSelection.length == 1}
                 <CopyWithSelect
-                    bind:groupedUidSelection
+                    {groupedUidSelection}
                     sourceFolder={getCurrentMailbox().folder}
                 />
                 <MoveWithSelect
-                    bind:groupedUidSelection
+                    {groupedUidSelection}
+                    {currentOffset}
                     sourceFolder={getCurrentMailbox().folder}
                 />
             {/if}

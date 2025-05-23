@@ -19,5 +19,12 @@
     );
 </script>
 
-<Toolbox {account} bind:email bind:currentOffset />
-<Content {account} {email} />
+<Toolbox
+    {account}
+    bind:email
+    bind:currentOffset
+/>
+<Content
+    {account}
+    {email}
+/>

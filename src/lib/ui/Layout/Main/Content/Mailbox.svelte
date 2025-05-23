@@ -224,12 +224,12 @@
 </script>
 
 <Context
-    bind:groupedUidSelection
+    {groupedUidSelection}
     bind:emailSelection
-    bind:currentOffset
+    {currentOffset}
 />
 <Toolbox
-    bind:groupedUidSelection
+    {groupedUidSelection}
     bind:emailSelection
     bind:currentOffset
 />

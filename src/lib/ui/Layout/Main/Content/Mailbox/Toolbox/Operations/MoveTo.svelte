@@ -93,8 +93,8 @@
         children,
         sourceFolder,
         destinationFolder,
-        groupedUidSelection = $bindable(),
-        currentOffset = $bindable()
+        groupedUidSelection,
+        currentOffset
     }: Props = $props();
 
     const moveEmailsOnClick = async () => {

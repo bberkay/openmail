@@ -24,9 +24,9 @@
     }
 
     let {
-        groupedUidSelection = $bindable(),
+        groupedUidSelection,
         emailSelection = $bindable(),
-        currentOffset = $bindable(),
+        currentOffset,
     }: Props = $props();
 
     const selectEmail = (selectedEmail: HTMLElement) => {
@@ -56,7 +56,7 @@
 >
     {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
         <MarkAs
-            bind:groupedUidSelection
+            {groupedUidSelection}
             markType={Mark.Flagged}
             folder={getCurrentMailbox().folder}
         >
@@ -66,7 +66,7 @@
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
         <MarkAs
-            bind:groupedUidSelection
+            {groupedUidSelection}
             markType={Mark.Flagged}
             folder={getCurrentMailbox().folder}
             isUnmark={true}
@@ -77,7 +77,7 @@
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
         <MarkAs
-            bind:groupedUidSelection
+            {groupedUidSelection}
             markType={Mark.Seen}
             folder={getCurrentMailbox().folder}
         >
@@ -87,7 +87,7 @@
     {/if}
     {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
         <MarkAs
-            bind:groupedUidSelection
+            {groupedUidSelection}
             markType={Mark.Seen}
             folder={getCurrentMailbox().folder}
             isUnmark={true}
@@ -99,31 +99,31 @@
     <Context.Separator />
     {#if emailSelection.length == 1}
         <Reply
-            bind:emailSelection
-            bind:groupedUidSelection
+            {groupedUidSelection}
+            {emailSelection}
         >
             <Icon name="reply" />
             <span>Reply</span>
         </Reply>
         <Forward
-            bind:emailSelection
-            bind:groupedUidSelection
+            {groupedUidSelection}
+            {emailSelection}
         >
             <Icon name="forward" />
             <span>Forward</span>
         </Forward>
         <Context.Separator />
         <Unsubscribe
-            bind:emailSelection
-            bind:groupedUidSelection
+            {groupedUidSelection}
+            {emailSelection}
         >
             Unsubscribe
         </Unsubscribe>
     {:else if emailSelection.length > 1}
         {#if doAllSelectedEmailsHaveUnsubscribeOption(groupedUidSelection)}
             <UnsubscribeAll
-                bind:emailSelection
-                bind:groupedUidSelection
+                {groupedUidSelection}
+                {emailSelection}
             >
                 Unsubscribe All
             </UnsubscribeAll>
@@ -132,7 +132,7 @@
     <Context.Separator />
     {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
         <MoveTo
-            bind:groupedUidSelection
+            {groupedUidSelection}
             sourceFolder={Folder.Archive}
             destinationFolder={Folder.Inbox}
         >
@@ -141,7 +141,7 @@
         </MoveTo>
     {:else}
         <MoveTo
-            bind:groupedUidSelection
+            {groupedUidSelection}
             sourceFolder={getCurrentMailbox().folder}
             destinationFolder={Folder.Archive}
         >
@@ -150,8 +150,8 @@
         </MoveTo>
     {/if}
     <DeleteFrom
-        bind:currentOffset
-        bind:groupedUidSelection
+        {groupedUidSelection}
+        {currentOffset}
         folder={getCurrentMailbox().folder}
     >
         <Icon name="trash" />

@@ -15,8 +15,8 @@
     let {
         children,
         folder,
-        groupedUidSelection = $bindable(),
-        currentOffset = $bindable()
+        groupedUidSelection,
+        currentOffset
     }: Props = $props();
 
     const deleteEmailsOnClick = async () => {

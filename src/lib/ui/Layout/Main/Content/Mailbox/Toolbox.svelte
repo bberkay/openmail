@@ -10,7 +10,7 @@
     }
 
     let {
-        groupedUidSelection = $bindable(),
+        groupedUidSelection,
         emailSelection = $bindable(),
         currentOffset = $bindable()
     }: Props = $props();
@@ -19,9 +19,9 @@
 
 <div class="toolbox">
     <Operations
-        bind:groupedUidSelection
+        {groupedUidSelection}
         bind:emailSelection
-        bind:currentOffset
+        {currentOffset}
     />
     <Pagination bind:currentOffset />
 </div>

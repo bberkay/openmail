@@ -12,8 +12,8 @@
 
     let {
         children,
-        groupedUidSelection = $bindable(),
-        emailSelection = $bindable(),
+        groupedUidSelection,
+        emailSelection,
     }: Props = $props();
 
     const unsubscribeOnClick = async () => {

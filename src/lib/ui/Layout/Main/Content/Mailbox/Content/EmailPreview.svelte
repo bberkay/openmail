@@ -51,7 +51,11 @@
         email: TEmail;
     }
 
-    let { emailSelection = $bindable(), email }: Props = $props();
+    let {
+        emailSelection = $bindable(),
+        email
+    }: Props = $props();
+
     const account = $state(findAccountByEmail(email)!);
 
     function compactEmailDate(emailDateStr: string) {

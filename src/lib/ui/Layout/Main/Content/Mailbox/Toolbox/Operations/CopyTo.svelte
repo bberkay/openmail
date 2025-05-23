@@ -90,7 +90,7 @@
         children,
         sourceFolder,
         destinationFolder,
-        groupedUidSelection = $bindable(),
+        groupedUidSelection,
     }: Props = $props();
 
     const copyEmailsOnClick = async () => {
