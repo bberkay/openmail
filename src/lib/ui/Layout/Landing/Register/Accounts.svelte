@@ -92,7 +92,6 @@
     {:else}
         <AccountTable
             accountsPerPage={ACCOUNT_COUNT_PER_PAGE}
-            {showEditAccount}
         />
 
         <div class="landing-body-footer">

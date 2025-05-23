@@ -1,17 +1,28 @@
 <script module lang="ts">
-    import { display, destroy } from "./Section.svelte";
+    import { mount, unmount } from "svelte";
     import { type Snippet } from "svelte";
 
     let sectionContainer: HTMLElement;
     let isMounted = $state(false);
+    let currentMount: Record<string, any> | null = null;
+
     export function showThis(section: any, props?: any) {
         isMounted = true;
-        display(section, sectionContainer, props);
+        clear();
+        currentMount = mount(section, {
+            target: sectionContainer,
+            props: props
+        });
     }
 
     export function backToDefault() {
-        destroy();
+        clear();
         isMounted = false;
+    }
+
+    function clear() {
+        if (currentMount) unmount(currentMount);
+        currentMount = null;
     }
 </script>
 
