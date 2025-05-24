@@ -82,7 +82,7 @@
                 markType={Mark.Flagged}
                 folder={getCurrentMailbox().folder}
             >
-                <Icon name="star" />
+                <Icon name="flag" />
             </MarkAs>
         {:else}
             <MarkAs
@@ -92,7 +92,7 @@
                 folder={getCurrentMailbox().folder}
                 isUnmark={true}
             >
-                <Icon name="star" class="filled" />
+                <Icon name="flagged" />
             </MarkAs>
         {/if}
         {#if doEmailLackMark(email, Mark.Seen)}

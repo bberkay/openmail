@@ -147,7 +147,7 @@
                     markType={Mark.Flagged}
                     folder={getCurrentMailbox().folder}
                 >
-                    <Icon name="star" />
+                    <Icon name="flag" />
                 </MarkAs>
             {/if}
             {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
@@ -157,7 +157,7 @@
                     folder={getCurrentMailbox().folder}
                     isUnmark={true}
                 >
-                    <Icon name="star" class="filled"/>
+                    <Icon name="flagged"/>
                 </MarkAs>
             {/if}
             {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}

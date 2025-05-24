@@ -31,11 +31,11 @@
 </script>
 
 {#if isUnmark}
-    <Context.Item onclick={markEmailsOnClick}>
+    <Context.Item onclick={unmarkEmailsOnClick}>
         {@render children()}
     </Context.Item>
 {:else}
-    <Context.Item onclick={unmarkEmailsOnClick}>
+    <Context.Item onclick={markEmailsOnClick}>
         {@render children()}
     </Context.Item>
 {/if}

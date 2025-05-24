@@ -48,7 +48,7 @@
                 fill: var(--color-error-text)!important;
             }
 
-            &[name="star"].filled {
+            &[name="flagged"] {
                 fill: var(--color-important)!important;
             }
         }

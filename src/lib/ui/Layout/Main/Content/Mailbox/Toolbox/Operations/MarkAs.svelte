@@ -93,7 +93,6 @@
 
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
-    import Icon from "$lib/ui/Components/Icon";
     import type { Snippet } from "svelte";
 
     interface Props {

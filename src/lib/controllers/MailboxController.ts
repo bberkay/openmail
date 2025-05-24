@@ -433,7 +433,7 @@ export class MailboxController {
         const wasFullBeforeDelete = countBeforeDelete >= MAILBOX_LENGTH;
         currentMailbox.emails.current = currentMailbox.emails.current.filter(
             (email) =>
-                !isUidInSelection(selection, removeWhitespaces(email.uid)),
+                !isUidInSelection(selection, email.uid),
         );
         const deletedCount =
             countBeforeDelete - currentMailbox.emails.current.length;
@@ -488,22 +488,24 @@ export class MailboxController {
                 if (waitNext) {
                     clearInterval(waitNext);
                     waitNext = null;
-                    resolve(response);
                 }
             };
 
             if (currentMailbox.emails.next.length > 0) {
                 processNextBatch();
                 clearWaitNextInterval();
+                resolve(response);
             } else {
                 const startTime = Date.now();
                 waitNext = setInterval(() => {
                     if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT_MS) {
                         clearWaitNextInterval();
+                        resolve(response);
                     }
                     if (currentMailbox.emails.next.length > 0) {
                         processNextBatch();
                         clearWaitNextInterval();
+                        resolve(response);
                     }
                 }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
             }
@@ -585,22 +587,24 @@ export class MailboxController {
                 if (waitNext) {
                     clearInterval(waitNext);
                     waitNext = null;
-                    resolve(response);
                 }
             };
 
             if (currentMailbox.emails.next.length > 0) {
                 processNextBatch();
                 clearNextInterval();
+                resolve(response);
             } else {
                 const startTime = Date.now();
                 waitNext = setInterval(() => {
                     if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT_MS) {
                         clearNextInterval();
+                        resolve(response);
                     }
                     if (currentMailbox.emails.next.length > 0) {
                         processNextBatch();
                         clearNextInterval();
+                        resolve(response);
                     }
                 }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
             }
@@ -637,16 +641,13 @@ export class MailboxController {
         });
 
         if (response.success) {
-            const currentMailbox = SharedStore.mailboxes[account.email_address];
-            currentMailbox.emails.current.forEach((email: Email) => {
+            const currentMailbox = SharedStore.mailboxes[account.email_address].emails.current;
+            currentMailbox.forEach((email: Email) => {
                 if (
                     Object.hasOwn(email, "flags") &&
                     email.flags &&
                     (selection === "1:*" ||
-                        isUidInSelection(
-                            selection,
-                            removeWhitespaces(email.uid),
-                        ))
+                        isUidInSelection(selection, email.uid))
                 ) {
                     email.flags.push(mark);
                 }
@@ -676,10 +677,7 @@ export class MailboxController {
                     Object.hasOwn(email, "flags") &&
                     email.flags &&
                     (selection === "1:*" ||
-                        isUidInSelection(
-                            selection,
-                            removeWhitespaces(email.uid),
-                        ))
+                        isUidInSelection(selection, email.uid))
                 ) {
                     email.flags = email.flags.filter(
                         (flag: string) => flag !== mark,

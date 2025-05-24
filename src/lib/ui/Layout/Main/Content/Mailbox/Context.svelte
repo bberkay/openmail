@@ -60,7 +60,7 @@
             markType={Mark.Flagged}
             folder={getCurrentMailbox().folder}
         >
-            <Icon name="star" />
+            <Icon name="flag" />
             <span>Mark as Important</span>
         </MarkAs>
     {/if}
@@ -71,7 +71,7 @@
             folder={getCurrentMailbox().folder}
             isUnmark={true}
         >
-            <Icon name="star" class="filled"/>
+            <Icon name="flagged" />
             <span>Unmark as Important</span>
         </MarkAs>
     {/if}

@@ -148,12 +148,13 @@ export function isUidInSelection(
     selection: string,
     searching: string,
 ): boolean {
+    searching = removeWhitespaces(searching);
     if (
         selection.startsWith(searching + ",") ||
         selection.endsWith("," + searching)
     )
         return true;
-    return selection.includes("," + searching + ",");
+    return selection.includes("," + searching + ",") || selection === searching;
 }
 
 /**

@@ -34,7 +34,6 @@
             destinationFolder,
             groupedUidSelection,
             currentOffset,
-            false
         );
     }
 </script>

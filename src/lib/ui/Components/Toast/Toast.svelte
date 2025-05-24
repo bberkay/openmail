@@ -65,7 +65,7 @@
     {#if onUndo}
         <Button.Action
             type="button"
-            class="toast-close"
+            class="btn-outline toast-close"
             onclick={onUndoWrapper}
         >
             {local.undo[DEFAULT_LANGUAGE]}
@@ -73,7 +73,7 @@
     {/if}
     <Button.Basic
         type="button"
-        class="toast-close"
+        class="btn-inline toast-close"
         onclick={dismiss}
     >
         X
