@@ -27,8 +27,13 @@
             iframeDoc.open();
             iframeDoc.writeln(email.body);
             iframeDoc.close();
-
-            body.style.height = iframeDoc.body.scrollHeight + "px";
+            iframe.onload = () => {
+                const iframeBody = iframe.contentDocument?.body;
+                if (iframeBody) {
+                    const height = iframeBody.scrollHeight;
+                    body.style.height = `${height}px`;
+                }
+            };
         }
     }
 </script>
@@ -38,6 +43,7 @@
 <style>
     .body {
         :global(iframe) {
+            display: block;
             width: 100%;
             height: 100%;
             border: none;
