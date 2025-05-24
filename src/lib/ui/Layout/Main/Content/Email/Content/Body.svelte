@@ -23,10 +23,13 @@
         iframeDoc = iframe.contentWindow
             ? iframe.contentWindow.document
             : iframe.contentDocument;
+
         if (iframeDoc) {
             iframeDoc.open();
             iframeDoc.writeln(email.body);
             iframeDoc.close();
+
+            body.style.height = iframeDoc.body.scrollHeight + "px";
             iframe.onload = () => {
                 const iframeBody = iframe.contentDocument?.body;
                 if (iframeBody) {
@@ -48,6 +51,7 @@
             height: 100%;
             border: none;
             background-color: white;
+            overflow: hidden;
         }
     }
 </style>
