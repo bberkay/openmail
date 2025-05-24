@@ -11,6 +11,7 @@
     import { DEFAULT_PREFERENCES } from "$lib/constants";
     import { FileSystem } from "$lib/services/FileSystem";
     import Icon from "$lib/ui/Components/Icon";
+    import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
 
     const highlightSelectedMenu = (e: Event) => {
         document.querySelector(".settings-title-btn.shown")?.classList.remove("shown");
@@ -33,6 +34,13 @@
 
 <div class="settings-menu">
     <div class="settings-menu-left">
+        <Button.Basic
+            type="button"
+            class="btn-inline"
+            onclick={backToDefault}
+        >
+            <Icon name="back" />
+        </Button.Basic>
         <Button.Basic
             type="button"
             class="btn-inline settings-title-btn shown"
