@@ -1761,7 +1761,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 body_part = MessageParser.get_part(message[0], ["TEXT", "PLAIN"])
                 if not body_part:
                     body_part = MessageParser.get_part(message[0], ["TEXT", "HTML"])
-                    if not body_part: body_part = "1"
+                    if not body_part:
+                        body_part = "1"
 
                 if body_part in fetchs:
                     fetchs[body_part].append(uid)
@@ -1771,11 +1772,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
             messages.clear()
             for body_part, uids in fetchs.items():
                 uids = sorted(uids, key=int)
-                _, bodies = self.uid(
+                status, bodies = self.uid(
                     "FETCH",
                     ",".join(uids),
                     f"(BODY.PEEK[{body_part}] BODY.PEEK[{body_part}.MIME])",
                 )
+                if status != "OK":
+                    print(f"Could not found bodies in emails {uids}")
+                    continue
+
                 bodies = MessageParser.group_messages(bodies)
                 for index, body in enumerate(bodies):
                     content_type, encoding = (
@@ -1890,7 +1895,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 uid,
                 "(BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC "
                 "MESSAGE-ID IN-REPLY-TO REFERENCES LIST-UNSUBSCRIBE CONTENT-"
-                "TRANSFER-ENCODING)] FLAGS BODYSTRUCTURE BODY[1])",
+                "TRANSFER-ENCODING)] FLAGS BODYSTRUCTURE)",
             )
             if status != "OK":
                 raise IMAPManagerException(
@@ -1901,10 +1906,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 raise ValueError(f"No email found with given {uid} uid.")
 
             message = MessageParser.group_messages(message)[0]
-            headers = MessageParser.get_headers(message[3])
+            headers = MessageParser.get_headers(message[1])
             flags = MessageParser.get_flags(message[0])
-            _, encoding = MessageParser.get_content_type_and_encoding(message[3])
-            for attachment in MessageParser.get_inline_attachment_list(message[2]):
+            for attachment in MessageParser.get_inline_attachment_list(message[0]):
                 inline_attachments.append(
                     Attachment(
                         name=attachment[0],
@@ -1914,20 +1918,36 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     )
                 )
 
-            body = (
-                MessageParser.get_text_html_body(message[1])
-                or MessageParser.get_text_plain_body(message[1])
-                or (-1, -1, MessageDecoder.body(message[1], encoding=encoding))
-            )
+            body_part = MessageParser.get_part(message[0], ["TEXT", "HTML"])
+            if not body_part:
+                body_part = "1"
 
-            start, end, body = body
+            start, end, body = -1, -1, ""
+            status, body_raw = self.uid(
+                "FETCH",
+                uid,
+                f"(BODY.PEEK[{body_part}] BODY.PEEK[{body_part}.MIME])",
+            )
+            if status != "OK":
+                print(f"Could not found any body in email {uid}")
+                body = body_raw = ""
+            else:
+                body = MessageParser.group_messages(body_raw)[0]
+                body_raw = body[1]
+                _, encoding = MessageParser.get_content_type_and_encoding(body[3])
+                start, end, body = (
+                    MessageParser.get_text_html_body(body_raw)
+                    or MessageParser.get_text_plain_body(body_raw)
+                    or (-1, -1, MessageDecoder.body(body_raw, encoding=encoding))
+                )
+
             if start >= 0 and end >= 0:
                 try:
                     for (
                         cid,
                         data,
                     ) in MessageParser.get_cid_and_data_of_inline_attachments(
-                        message[1][:start] + message[1][end:]
+                        body_raw[:start] + body_raw[end:]
                     ):
                         i = 0
                         while i < len(inline_attachments):
@@ -1963,7 +1983,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     cid=attachment[2],
                     type=attachment[3],
                 )
-                for attachment in MessageParser.get_attachment_list(message[2])
+                for attachment in MessageParser.get_attachment_list(message[0])
             ],
         )
 
