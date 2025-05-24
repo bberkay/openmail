@@ -89,8 +89,7 @@ export class MailboxController {
                     account: account,
                     response: await MailboxController.getMailbox(
                         account,
-                        Folder.Inbox,
-                        { excluded_flags: [Mark.Seen] },
+                        Folder.Inbox
                     ),
                 };
             }),

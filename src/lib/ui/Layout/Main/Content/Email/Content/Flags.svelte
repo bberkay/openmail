@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import { type Email } from "$lib/types";
     import Badge from "$lib/ui/Components/Badge";
 
@@ -10,10 +9,18 @@
     let { email }: Props = $props();
 </script>
 
-<div class="tags">
-    {#if Object.hasOwn(email, "flags") && email.flags}
+{#if Object.hasOwn(email, "flags") && email.flags && email.flags.length > 0}
+    <div class="tags flags">
         {#each email.flags as flag}
             <Badge content={flag} />
         {/each}
-    {/if}
-</div>
+    </div>
+{/if}
+
+<style>
+    :global {
+        .email-content .flags {
+            margin-bottom: var(--spacing-md);
+        }
+    }
+</style>

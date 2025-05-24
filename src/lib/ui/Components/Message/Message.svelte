@@ -40,6 +40,7 @@
     {/if}
     <Button.Action
         type="button"
+        class="btn-outline"
         onclick={onCloseWrapper}
     >
         {onCloseText || local.close[DEFAULT_LANGUAGE]}

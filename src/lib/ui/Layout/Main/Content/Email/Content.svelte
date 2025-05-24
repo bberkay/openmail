@@ -19,7 +19,7 @@
     <Flags {email} />
     <Subject {email} />
     <Sender {account} {email} />
-    <div class="separator"></div>
+    <div class="separator" style="margin: var(--spacing-md) 0"></div>
     <Body {email} />
     {#if email.attachments}
         <div class="separator"></div>
@@ -34,11 +34,12 @@
 <style>
     :global {
         .email-content {
-            display: flex;
-            flex-direction: column;
+            width: 80%;
             padding: var(--spacing-lg);
             border: 1px solid var(--color-border-subtle);
             border-radius: var(--radius-sm);
+            overflow-x: hidden;
+            overflow-y: scroll;
         }
     }
 </style>

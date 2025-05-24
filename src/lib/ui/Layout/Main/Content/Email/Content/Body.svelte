@@ -34,3 +34,14 @@
 </script>
 
 <div class="body" bind:this={body}></div>
+
+<style>
+    .body {
+        :global(iframe) {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: white;
+        }
+    }
+</style>

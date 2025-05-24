@@ -5,6 +5,7 @@
         getSenderToReceiverAndOthersTemplate,
     } from "$lib/templates";
     import {
+    compactEmailDate,
         extractEmailAddress,
         extractFullname,
     } from "$lib/utils";
@@ -33,8 +34,9 @@
         senderToReceiver.innerHTML = senderToReceiverTemplate(
             extractFullname(email.sender),
             extractEmailAddress(email.sender),
+            account.fullname || "",
             account.email_address,
-            email.date,
+            compactEmailDate(email.date, false),
         );
 
         const others = senderToReceiver.querySelector<HTMLElement>(".others");

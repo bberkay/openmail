@@ -20,7 +20,7 @@
 </script>
 
 <div class="tool">
-    <Dropdown.Root>
+    <Dropdown.Root inline={true}>
         <Dropdown.Toggle>⋮</Dropdown.Toggle>
         <Dropdown.Content>
             <Spam {account} {email}>

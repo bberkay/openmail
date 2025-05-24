@@ -33,10 +33,10 @@ export const local = {
         en: "To",
     },
     sender_to_receiver: {
-        en: "{sender_fullname} <a>&lt;{sender_email}&gt;</a> to {receiver_email} at {sent_at}",
+        en: "{sender_fullname} <a>&lt;{sender_email}&gt;</a> to {receiver_fullname} <a>&lt;{receiver_email}&gt;</a> at {sent_at}",
     },
     sender_to_receiver_and_others: {
-        en: `{sender_fullname} <a>&lt;{sender_email}&gt;</a> to {receiver_email} and <u class="others">others</u> at {sent_at}`,
+        en: `{sender_fullname} <a>&lt;{sender_email}&gt;</a> to {receiver_fullname} <a>&lt;{receiver_email}&gt;</a> and <u class="others">others</u> at {sent_at}`,
     },
     current_email_offset: {
         en: "{current} of {total}",

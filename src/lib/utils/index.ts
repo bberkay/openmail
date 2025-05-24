@@ -38,9 +38,40 @@ export function getDays(): string[] {
 }
 
 export function isSameDay(date1: Date, date2: Date): boolean {
-    return date1.getUTCFullYear() === date2.getUTCFullYear() &&
-           date1.getUTCMonth() === date2.getUTCMonth() &&
-           date1.getUTCDate() === date2.getUTCDate();
+    return (
+        date1.getUTCFullYear() === date2.getUTCFullYear() &&
+        date1.getUTCMonth() === date2.getUTCMonth() &&
+        date1.getUTCDate() === date2.getUTCDate()
+    );
+}
+
+export function compactEmailDate(emailDateStr: string, strict = true) {
+    const inputDate = new Date(emailDateStr);
+    const currentDate = new Date();
+    const months = getMonths();
+
+    const hours = inputDate.getUTCHours().toString().padStart(2, "0");
+    const minutes = inputDate.getUTCMinutes().toString().padStart(2, "0");
+    const timeFormat = `${hours}:${minutes}`;
+
+    const isToday = isSameDay(inputDate, currentDate);
+    const isYesterday = isSameDay(
+        inputDate,
+        new Date(currentDate.getTime() - 86400000),
+    ); // 24 hours in milliseconds
+
+    const day = inputDate.getUTCDate();
+    const month = months[inputDate.getUTCMonth()];
+    const year = inputDate.getUTCFullYear();
+    const currentYear = currentDate.getFullYear();
+
+    if (strict && (isToday || isYesterday)) {
+        return timeFormat;
+    } else if (year === currentYear) {
+        return `${day} ${month} ${timeFormat}`;
+    } else {
+        return `${day} ${month} ${year}`;
+    }
 }
 
 /**
@@ -143,7 +174,7 @@ export function isStandardFolder(
     targetStandardFolder?: Folder,
 ) {
     if (folderName === "INBOX")
-        return !targetStandardFolder || targetStandardFolder === Folder.Inbox
+        return !targetStandardFolder || targetStandardFolder === Folder.Inbox;
     return (
         targetStandardFolder ? [targetStandardFolder] : Object.values(Folder)
     ).some((standardFolder) => folderName.startsWith(standardFolder + ":"));
@@ -326,16 +357,24 @@ export function escapeHTML(str: string): string {
 
 export function pulseTarget(target: HTMLElement): void {
     target.classList.add("pulse");
-    target.addEventListener("animationend", () => {
-        target.classList.remove("pulse");
-    }, { once: true });
+    target.addEventListener(
+        "animationend",
+        () => {
+            target.classList.remove("pulse");
+        },
+        { once: true },
+    );
 }
 
 export function shakeTarget(target: HTMLElement): void {
     target.classList.add("shake");
-    target.addEventListener("animationend", () => {
-        target.classList.remove("shake");
-    }, { once: true });
+    target.addEventListener(
+        "animationend",
+        () => {
+            target.classList.remove("shake");
+        },
+        { once: true },
+    );
 }
 
 export function adjustSizes(
@@ -376,8 +415,8 @@ export function capitalize(s: string): string {
 }
 
 export function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + "...";
 }
 
 export function isEmailValid(email: string): boolean {
@@ -431,9 +470,7 @@ export function createSenderAddress(
     return emailAddress;
 }
 
-export function createSenderAddressFromAccount(
-    account: Account
-): string {
+export function createSenderAddressFromAccount(account: Account): string {
     return createSenderAddress(account.email_address, account.fullname);
 }
 
@@ -465,8 +502,7 @@ export function addEmailToAddressList(
     }
 
     const trimmedValue = input.value.trim();
-    if (trimmedValue.length <= 0)
-        return;
+    if (trimmedValue.length <= 0) return;
 
     if (!isEmailValid(extractEmailAddress(trimmedValue))) {
         pulseTarget(input);

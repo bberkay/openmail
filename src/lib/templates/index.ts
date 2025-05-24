@@ -189,6 +189,7 @@ export function getForwardTemplate(
 export function getSenderToReceiverTemplate(
     sender_fullname: string,
     sender_email: string,
+    receiver_fullname: string,
     receiver_email: string,
     sent_at: string,
 ) {
@@ -197,6 +198,7 @@ export function getSenderToReceiverTemplate(
         sender_fullname,
     )
         .replace("{sender_email}", sender_email)
+        .replace("{receiver_fullname}", receiver_fullname)
         .replace("{receiver_email}", receiver_email)
         .replace("{sent_at}", sent_at);
 }
@@ -204,6 +206,7 @@ export function getSenderToReceiverTemplate(
 export function getSenderToReceiverAndOthersTemplate(
     sender_fullname: string,
     sender_email: string,
+    receiver_fullname: string,
     receiver_email: string,
     sent_at: string,
 ) {
@@ -212,6 +215,7 @@ export function getSenderToReceiverAndOthersTemplate(
         sender_fullname,
     )
         .replace("{sender_email}", sender_email)
+        .replace("{receiver_fullname}", receiver_fullname)
         .replace("{receiver_email}", receiver_email)
         .replace("{sent_at}", sent_at);
 }

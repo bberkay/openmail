@@ -16,7 +16,6 @@
 <style>
     :global {
         .email-content .subject {
-            margin-top: var(--spacing-md);
             display: flex;
             flex-direction: column;
             font-size: var(--font-size-lg);

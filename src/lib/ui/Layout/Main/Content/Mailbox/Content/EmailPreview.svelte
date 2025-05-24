@@ -1,6 +1,6 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { getMonths, isSameDay } from "$lib/utils";
+    import { compactEmailDate, getMonths, isSameDay } from "$lib/utils";
 
     export function findAccountByEmail(email: TEmail): Account | undefined {
         if (SharedStore.currentAccount !== "home") {
@@ -58,36 +58,10 @@
 
     const account = $state(findAccountByEmail(email)!);
 
-    function compactEmailDate(emailDateStr: string) {
-        const inputDate = new Date(emailDateStr);
-        const currentDate = new Date();
-        const months = getMonths();
+    const showEmailContent = async (e: Event): Promise<void> => {
+        const target = (e.target as HTMLElement).closest(".email-preview") as HTMLElement;
+        target.setAttribute("disabled", "true");
 
-        const hours = inputDate.getUTCHours().toString().padStart(2, "0");
-        const minutes = inputDate.getUTCMinutes().toString().padStart(2, "0");
-        const timeFormat = `${hours}:${minutes}`;
-
-        const isToday = isSameDay(inputDate, currentDate);
-        const isYesterday = isSameDay(
-            inputDate,
-            new Date(currentDate.getTime() - 86400000),
-        ); // 24 hours in milliseconds
-
-        const day = inputDate.getUTCDate();
-        const month = months[inputDate.getUTCMonth()];
-        const year = inputDate.getUTCFullYear();
-        const currentYear = currentDate.getFullYear();
-
-        if (isToday || isYesterday) {
-            return timeFormat;
-        } else if (year === currentYear) {
-            return `${day} ${month} ${timeFormat}`;
-        } else {
-            return `${day} ${month} ${year}`;
-        }
-    }
-
-    const showEmailContent = async (): Promise<void> => {
         const response = await MailboxController.getEmailContent(
             account,
             getCurrentMailbox().folder,
@@ -102,6 +76,7 @@
             return;
         }
 
+        target.removeAttribute("disabled");
         showContent(Email, {
             account: account,
             email: response.data,
@@ -167,6 +142,14 @@
 
 <style>
     :global {
+        .mailbox:has(.email-preview[disabled]) {
+            cursor: wait!important;
+
+            & .email-preview {
+                pointer-events: none!important;
+            }
+        }
+
         .mailbox .email-preview-group {
             display: flex;
             flex-direction: column;
