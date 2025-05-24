@@ -37,6 +37,9 @@
     import Body from "./Compose/Body.svelte";
     import Attachments from "./Compose/Attachments.svelte";
     import Action from "./Compose/Action.svelte";
+    import Icon from "$lib/ui/Components/Icon";
+    import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
+    import * as Button from "$lib/ui/Components/Button";
 
     interface Props {
         originalMessageContext?: OriginalMessageContext;
@@ -231,6 +234,14 @@
 </script>
 
 <div class="compose">
+    <Button.Basic
+        type="button"
+        class="btn-inline"
+        onclick={backToDefault}
+    >
+        <Icon name="back" />
+    </Button.Basic>
+
     <h2 class="compose-title">Compose</h2>
     <Form
         class="compose-form"
@@ -268,7 +279,7 @@
                 overflow-x: hidden;
                 overflow-y: auto;
                 height: 100%;
-                margin-bottom: 150px;
+                margin-bottom: 50px;
                 padding-right: 30px; /* because of the scrollbar */
             }
 

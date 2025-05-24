@@ -1,5 +1,4 @@
 <script lang="ts" module>
-    import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email, Folder, Mark } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
@@ -57,7 +56,8 @@
     import Reply from "./Operations/Reply.svelte";
     import Forward from "./Operations/Forward.svelte";
     import Others from "./Operations/Others.svelte";
-    import Back from "./Operations/Back.svelte";
+    import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
+    import * as Button from "$lib/ui/Components/Button";
 
     interface Props {
         account: Account;
@@ -70,9 +70,14 @@
 
 <div class="operations">
     <div class="tool-group">
-        <Back>
+        <Button.Basic
+            type="button"
+            class="btn-inline"
+            style="margin-right: var(--spacing-sm)"
+            onclick={backToDefault}
+        >
             <Icon name="back" />
-        </Back>
+        </Button.Basic>
     </div>
     <div class="tool-group">
         {#if doEmailLackMark(email, Mark.Flagged)}
