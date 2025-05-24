@@ -141,7 +141,7 @@
     {#if emailSelection.length > 0}
         <div class="tool-group">
             <!-- Standard operations for all accounts -->
-            {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
+            {#if emailSelection.length > 1 || doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
                 <MarkAs
                     {groupedUidSelection}
                     markType={Mark.Flagged}
@@ -150,7 +150,7 @@
                     <Icon name="flag" />
                 </MarkAs>
             {/if}
-            {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
+            {#if emailSelection.length > 1 || doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
                 <MarkAs
                     {groupedUidSelection}
                     markType={Mark.Flagged}
@@ -160,7 +160,7 @@
                     <Icon name="flagged"/>
                 </MarkAs>
             {/if}
-            {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
+            {#if emailSelection.length > 1 || doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
                 <MarkAs
                     {groupedUidSelection}
                     markType={Mark.Seen}
@@ -169,7 +169,7 @@
                     <Icon name="seen" />
                 </MarkAs>
             {/if}
-            {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
+            {#if emailSelection.length > 1 || doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
                 <MarkAs
                     {groupedUidSelection}
                     markType={Mark.Seen}

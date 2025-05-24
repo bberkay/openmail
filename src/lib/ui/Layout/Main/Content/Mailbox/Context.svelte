@@ -35,7 +35,9 @@
             <HTMLInputElement>(".email-preview-selection")!;
         if (!selectedEmailCheckbox.checked) emailSelection = [];
         const selectedEmailUid = selectedEmailCheckbox.value;
-        emailSelection.push(selectedEmailUid);
+        if (!emailSelection.includes(selectedEmailUid)) {
+            emailSelection.push(selectedEmailUid);
+        }
     };
 
     const deselectEmail = (lastSelectedEmail: HTMLElement) => {
@@ -54,7 +56,7 @@
     beforeOpen={selectEmail}
     afterClose={deselectEmail}
 >
-    {#if !doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
+    {#if emailSelection.length > 1 || doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
         <MarkAs
             {groupedUidSelection}
             markType={Mark.Flagged}
@@ -64,7 +66,7 @@
             <span>Mark as Important</span>
         </MarkAs>
     {/if}
-    {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
+    {#if emailSelection.length > 1 || doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
         <MarkAs
             {groupedUidSelection}
             markType={Mark.Flagged}
@@ -75,7 +77,7 @@
             <span>Unmark as Important</span>
         </MarkAs>
     {/if}
-    {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
+    {#if emailSelection.length > 1 || doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
         <MarkAs
             {groupedUidSelection}
             markType={Mark.Seen}
@@ -85,7 +87,7 @@
             <span>Mark as seen</span>
         </MarkAs>
     {/if}
-    {#if !doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
+    {#if emailSelection.length > 1 || doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
         <MarkAs
             {groupedUidSelection}
             markType={Mark.Seen}
