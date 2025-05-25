@@ -174,11 +174,13 @@ export function isStandardFolder(
     folderName: string,
     targetStandardFolder?: Folder,
 ) {
-    if (folderName === "INBOX")
-        return !targetStandardFolder || targetStandardFolder === Folder.Inbox;
     return (
         targetStandardFolder ? [targetStandardFolder] : Object.values(Folder)
-    ).some((standardFolder) => folderName.startsWith(standardFolder + ":"));
+    ).some(
+        (standardFolder) =>
+            folderName.startsWith(standardFolder + ":") ||
+            folderName === standardFolder,
+    );
 }
 
 export function removeTrailingDelimiter(

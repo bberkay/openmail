@@ -89,7 +89,7 @@ export class MailboxController {
                     account: account,
                     response: await MailboxController.getMailbox(
                         account,
-                        Folder.Inbox
+                        Folder.Inbox,
                     ),
                 };
             }),
@@ -116,6 +116,24 @@ export class MailboxController {
             success: true,
             message: "Mailbox Controller Initialized",
         };
+    }
+
+    private static _resolveStandardFolder(
+        account: Account,
+        folder: Folder,
+        folder2: Folder,
+    ): Folder {
+        const isStandardFolderFound = SharedStore.folders[
+            account.email_address
+        ].standard.find((f) => isStandardFolder(f, folder as Folder));
+        if (isStandardFolderFound) return folder;
+
+        const folderAll = SharedStore.folders[
+            account.email_address
+        ].standard.find((f) => isStandardFolder(f, folder2));
+        if (!folderAll) throw new Error("");
+
+        return folderAll.split(":")[1] as Folder;
     }
 
     public static async getHiearchyDelimiter(
@@ -178,6 +196,13 @@ export class MailboxController {
         folder?: Folder | string,
         searchCriteria?: SearchCriteria | string,
     ): Promise<GetResponse<GetRoutes.SEARCH_EMAILS>> {
+        if (folder && isStandardFolder(folder))
+            folder = MailboxController._resolveStandardFolder(
+                account,
+                folder as Folder,
+                Folder.All,
+            );
+
         return await ApiService.get(GetRoutes.SEARCH_EMAILS, {
             pathParams: {
                 account: account.email_address,
@@ -199,6 +224,13 @@ export class MailboxController {
         offsetStart?: number,
         offsetEnd?: number,
     ): Promise<BaseResponse> {
+        if (folder && isStandardFolder(folder))
+            folder = MailboxController._resolveStandardFolder(
+                account,
+                folder as Folder,
+                Folder.All,
+            );
+
         const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         offsetStart = Math.max(1, offsetStart ?? 1);
         offsetEnd = Math.max(1, offsetEnd ?? offsetStart - 1 + MAILBOX_LENGTH);
@@ -304,6 +336,13 @@ export class MailboxController {
         folder: string,
         uid: string,
     ): Promise<GetResponse<GetRoutes.GET_EMAIL_CONTENT>> {
+        if (isStandardFolder(folder))
+            folder = MailboxController._resolveStandardFolder(
+                account,
+                folder as Folder,
+                Folder.All,
+            );
+
         if (
             Object.hasOwn(
                 SharedStore.recentEmailsChannel,
@@ -331,6 +370,13 @@ export class MailboxController {
         name: string,
         cid?: string,
     ): Promise<GetResponse<GetRoutes.DOWNLOAD_ATTACHMENT>> {
+        if (isStandardFolder(folder))
+            folder = MailboxController._resolveStandardFolder(
+                account,
+                folder as Folder,
+                Folder.All,
+            );
+
         return await ApiService.get(GetRoutes.DOWNLOAD_ATTACHMENT, {
             pathParams: {
                 account: account.email_address,
@@ -399,6 +445,13 @@ export class MailboxController {
         selection: string,
         offset?: number,
     ): Promise<PostResponse> {
+        if (isStandardFolder(folder))
+            folder = MailboxController._resolveStandardFolder(
+                account,
+                folder as Folder,
+                Folder.All,
+            );
+
         const response = await ApiService.post(PostRoutes.DELETE_EMAIL, {
             account: account.email_address,
             folder: folder,
@@ -432,8 +485,7 @@ export class MailboxController {
         const countBeforeDelete = currentMailbox.emails.current.length;
         const wasFullBeforeDelete = countBeforeDelete >= MAILBOX_LENGTH;
         currentMailbox.emails.current = currentMailbox.emails.current.filter(
-            (email) =>
-                !isUidInSelection(selection, email.uid),
+            (email) => !isUidInSelection(selection, email.uid),
         );
         const deletedCount =
             countBeforeDelete - currentMailbox.emails.current.length;
@@ -514,11 +566,24 @@ export class MailboxController {
 
     public static async moveEmails(
         account: Account,
-        sourceFolder: string,
-        destinationFolder: string,
+        sourceFolder: string | Folder,
+        destinationFolder: string | Folder,
         selection: string,
         offset?: number,
     ): Promise<PostResponse> {
+        if (isStandardFolder(sourceFolder))
+            sourceFolder = MailboxController._resolveStandardFolder(
+                account,
+                sourceFolder as Folder,
+                Folder.All,
+            );
+        if (isStandardFolder(destinationFolder))
+            destinationFolder = MailboxController._resolveStandardFolder(
+                account,
+                destinationFolder as Folder,
+                Folder.All,
+            );
+
         const response = await ApiService.post(PostRoutes.MOVE_EMAIL, {
             account: account.email_address,
             source_folder: sourceFolder,
@@ -613,10 +678,23 @@ export class MailboxController {
 
     public static async copyEmails(
         account: Account,
-        sourceFolder: string,
-        destinationFolder: string,
+        sourceFolder: string | Folder,
+        destinationFolder: string | Folder,
         selection: string,
     ): Promise<PostResponse> {
+        if (isStandardFolder(sourceFolder))
+            sourceFolder = MailboxController._resolveStandardFolder(
+                account,
+                sourceFolder as Folder,
+                Folder.All,
+            );
+        if (isStandardFolder(destinationFolder))
+            destinationFolder = MailboxController._resolveStandardFolder(
+                account,
+                destinationFolder as Folder,
+                Folder.All,
+            );
+
         const response = await ApiService.post(PostRoutes.COPY_EMAIL, {
             account: account.email_address,
             source_folder: sourceFolder,
@@ -631,8 +709,15 @@ export class MailboxController {
         account: Account,
         selection: string,
         mark: string | Mark,
-        folder: string,
+        folder: string | Folder
     ): Promise<PostResponse> {
+        if (isStandardFolder(folder))
+            folder = MailboxController._resolveStandardFolder(
+                account,
+                folder as Folder,
+                Folder.All,
+            );
+
         const response = await ApiService.post(PostRoutes.MARK_EMAIL, {
             account: account.email_address,
             mark: mark,
@@ -641,7 +726,8 @@ export class MailboxController {
         });
 
         if (response.success) {
-            const currentMailbox = SharedStore.mailboxes[account.email_address].emails.current;
+            const currentMailbox =
+                SharedStore.mailboxes[account.email_address].emails.current;
             currentMailbox.forEach((email: Email) => {
                 if (
                     Object.hasOwn(email, "flags") &&
@@ -663,6 +749,13 @@ export class MailboxController {
         mark: string | Mark,
         folder: string,
     ): Promise<PostResponse> {
+        if (isStandardFolder(folder))
+            folder = MailboxController._resolveStandardFolder(
+                account,
+                folder as Folder,
+                Folder.All,
+            );
+
         const response = await ApiService.post(PostRoutes.UNMARK_EMAIL, {
             account: account.email_address,
             mark: mark,
