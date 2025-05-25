@@ -61,23 +61,25 @@
     class={combine("toast", additionalClass)}
     {...restAttributes}
 >
-    <div>{@html content}</div>
-    {#if onUndo}
-        <Button.Action
+    <div class="toast-body">{@html content}</div>
+    <div class="toast-footer">
+        {#if onUndo}
+            <Button.Action
+                type="button"
+                class="btn-outline toast-close"
+                onclick={onUndoWrapper}
+            >
+                {local.undo[DEFAULT_LANGUAGE]}
+            </Button.Action>
+        {/if}
+        <Button.Basic
             type="button"
-            class="btn-outline toast-close"
-            onclick={onUndoWrapper}
+            class="btn-inline toast-close"
+            onclick={dismiss}
         >
-            {local.undo[DEFAULT_LANGUAGE]}
-        </Button.Action>
-    {/if}
-    <Button.Basic
-        type="button"
-        class="btn-inline toast-close"
-        onclick={dismiss}
-    >
-        X
-    </Button.Basic>
+            X
+        </Button.Basic>
+    </div>
 </div>
 
 <style>
