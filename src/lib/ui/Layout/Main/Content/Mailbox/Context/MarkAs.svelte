@@ -6,7 +6,7 @@
     import * as Context from "$lib/ui/Components/Context";
     import { type Mark, Folder } from "$lib/types";
     import type { Snippet } from "svelte";
-    import { getMailboxContext } from "../../Mailbox.svelte";
+    import { getMailboxContext } from "../../Mailbox";
 
     interface Props {
         children: Snippet;

@@ -4,7 +4,7 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Selection from "./Content/Selection.svelte";
     import GroupDate from "./Content/GroupDate.svelte";
-    import { getMailboxContext } from "../Mailbox.svelte";
+    import { getMailboxContext } from "../Mailbox";
     import EmailPreview from "./Content/EmailPreview.svelte";
     import { onMount } from "svelte";
 

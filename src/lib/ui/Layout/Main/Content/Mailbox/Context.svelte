@@ -2,7 +2,7 @@
     import { Folder, Mark } from "$lib/types";
     import Icon from "$lib/ui/Components/Icon";
     import * as Context from "$lib/ui/Components/Context";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import { isStandardFolder } from "$lib/utils";
     import Forward from "./Context/Forward.svelte";
     import Reply from "./Context/Reply.svelte";

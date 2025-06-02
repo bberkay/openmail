@@ -46,7 +46,7 @@
 
 <script lang="ts">
     import Icon from "$lib/ui/Components/Icon";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import { isStandardFolder } from "$lib/utils";
     import MarkAs from "./Operations/MarkAs.svelte";
     import MoveTo from "./Operations/MoveTo.svelte";

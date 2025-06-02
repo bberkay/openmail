@@ -2,7 +2,7 @@
     import { type Account, type Email } from "$lib/types";
     import Toolbox from "./Email/Toolbox.svelte";
     import Content from "./Email/Content.svelte";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
 
     interface Props {
         account: Account;

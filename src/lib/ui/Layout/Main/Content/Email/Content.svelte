@@ -5,7 +5,7 @@
     import Subject from "./Content/Subject.svelte";
     import Flags from "./Content/Flags.svelte";
     import Sender from "./Content/Sender.svelte";
-    import { getMailboxContext } from "../Mailbox.svelte";
+    import { getMailboxContext } from "../Mailbox";
 
     interface Props {
         account: Account;

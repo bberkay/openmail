@@ -4,8 +4,8 @@
     import { getEmailPaginationTemplate } from "$lib/templates";
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import {
-        getMailboxContext,
         paginateMailboxBackward,
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";

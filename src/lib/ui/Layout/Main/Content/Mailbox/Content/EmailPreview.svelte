@@ -31,7 +31,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Email as TEmail, type Account } from "$lib/types";
     import { extractEmailAddress, extractFullname, truncate } from "$lib/utils";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
     import Badge from "$lib/ui/Components/Badge/Badge.svelte";

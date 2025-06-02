@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import * as Input from "$lib/ui/Components/Input";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
 
     const mailboxContext = getMailboxContext();
 

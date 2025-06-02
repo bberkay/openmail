@@ -73,7 +73,7 @@
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
     import { deleteFrom } from "./DeleteFrom.svelte";
-    import { getMailboxContext } from "../../../Mailbox.svelte";
+    import { getMailboxContext } from "../../../Mailbox";
     import type { Snippet } from "svelte";
 
     interface Props {

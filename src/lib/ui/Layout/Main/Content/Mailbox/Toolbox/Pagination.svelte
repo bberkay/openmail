@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getRangePaginationTemplate } from "$lib/templates";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import {
-        getMailboxContext,
         paginateMailboxBackward,
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";

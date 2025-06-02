@@ -22,9 +22,8 @@
     import { onMount, setContext } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
     import Form from "$lib/ui/Components/Form";
-    import Mailbox, {
-        getMailboxContext,
-    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";

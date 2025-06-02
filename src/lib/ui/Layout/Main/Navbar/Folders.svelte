@@ -7,9 +7,8 @@
     import RenameFolder from "$lib/ui/Layout/Main/Navbar/Folders/RenameFolder.svelte";
     import MoveFolder from "$lib/ui/Layout/Main/Navbar/Folders/MoveFolder.svelte";
     import DeleteFolder from "$lib/ui/Layout/Main/Navbar/Folders/DeleteFolder.svelte";
-    import Mailbox, {
-        getMailboxContext,
-    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox"
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
     import { show as showMessage } from "$lib/ui/Components/Message";

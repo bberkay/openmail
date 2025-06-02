@@ -2,7 +2,7 @@
     import { unsubscribe } from "../Toolbox/Operations/Unsubscribe.svelte";
     import * as Context from "$lib/ui/Components/Context";
     import type { Snippet } from "svelte";
-    import { getMailboxContext } from "../../Mailbox.svelte";
+    import { getMailboxContext } from "../../Mailbox";
 
     interface Props {
         children: Snippet;
