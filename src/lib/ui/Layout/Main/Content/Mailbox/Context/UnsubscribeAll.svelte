@@ -18,6 +18,7 @@
         await unsubscribeAll(
             mailboxContext.getGroupedUidSelection()
         );
+        mailboxContext.emailSelection.value = [];
     }
 </script>
 

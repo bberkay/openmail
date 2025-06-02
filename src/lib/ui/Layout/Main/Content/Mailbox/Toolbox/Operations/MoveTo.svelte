@@ -4,10 +4,7 @@
     import { Folder } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
-    import {
-        simpleDeepCopy,
-        sortSelection,
-    } from "$lib/utils";
+    import { simpleDeepCopy } from "$lib/utils";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { convertUidSelectionToMessageIds, fetchUidsByMessageIds } from "../Operations.svelte";
@@ -46,7 +43,7 @@
                     )!,
                     sourceFolder,
                     destinationFolder,
-                    sortSelection(uids),
+                    uids,
                     isUndo ? undefined : currentOffset,
                 );
 

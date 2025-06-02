@@ -1,17 +1,15 @@
 <script lang="ts" module>
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { getMailboxContext, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { isUidInSelection, simpleDeepCopy } from "$lib/utils";
 
-    const mailboxContext = getMailboxContext();
-
     export async function unsubscribeAll(
-        groupedUidSelection: GroupedUidSelection
+        groupedUidSelection: GroupedUidSelection,
     ) {
         const currentSelection = simpleDeepCopy(groupedUidSelection);
         const results = await Promise.allSettled(
@@ -31,12 +29,11 @@
 
                 const unsubscribeResultOfAccount = await Promise.allSettled(
                     emails.map(async (email) => {
-                        const response =
-                            await MailboxController.unsubscribe(
-                                account,
-                                email.list_unsubscribe!,
-                                email.list_unsubscribe_post,
-                            );
+                        const response = await MailboxController.unsubscribe(
+                            account,
+                            email.list_unsubscribe!,
+                            email.list_unsubscribe_post,
+                        );
 
                         if (!response.success) {
                             throw new Error(response.message);
@@ -49,12 +46,13 @@
                 );
                 if (failed.length > 0) {
                     failed.forEach((f) => console.error(f.reason));
-                    throw new Error("one or more unsubscribe operations have failed.");
+                    throw new Error(
+                        "one or more unsubscribe operations have failed.",
+                    );
                 }
             }),
         );
 
-        mailboxContext.emailSelection.value = [];
         const failed = results.filter((r) => r.status === "rejected");
         if (failed.length > 0) {
             showMessage({
@@ -65,5 +63,5 @@
         }
 
         showToast({ content: "success unsubscribe" });
-    };
+    }
 </script>

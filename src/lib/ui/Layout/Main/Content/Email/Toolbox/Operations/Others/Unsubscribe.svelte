@@ -33,6 +33,7 @@
 
 <script lang="ts">
     import type { Snippet } from "svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     interface Props {
         children: Snippet,
@@ -46,11 +47,14 @@
         email
     }: Props = $props();
 
+    const mailboxContext = getMailboxContext();
+
     const unsubscribeOnClick = async () => {
         await unsubscribe(
             account,
             email
         );
+        mailboxContext.emailSelection.value = [];
     }
 </script>
 

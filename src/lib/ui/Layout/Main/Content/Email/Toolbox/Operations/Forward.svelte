@@ -21,6 +21,7 @@
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
     import type { Snippet } from "svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     interface Props {
         children: Snippet,
@@ -32,8 +33,11 @@
         email
     }: Props = $props();
 
+    const mailboxContext = getMailboxContext();
+
     const forwardOnClick = () => {
         forward(email);
+        mailboxContext.emailSelection.value = [];
     }
 </script>
 

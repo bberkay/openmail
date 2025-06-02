@@ -1,5 +1,4 @@
 <script lang="ts" module>
-    import { SharedStore } from "$lib/stores/shared.svelte";
     import { type Email } from "$lib/types";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
@@ -21,8 +20,8 @@
 
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
-    import Icon from "$lib/ui/Components/Icon";
     import type { Snippet } from "svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     interface Props {
         children: Snippet,
@@ -32,10 +31,13 @@
     let {
         children,
         email
-    } = $props();
+    }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     const replyOnClick = () => {
         reply(email);
+        mailboxContext.emailSelection.value = [];
     }
 </script>
 

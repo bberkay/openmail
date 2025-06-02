@@ -4,11 +4,7 @@
     import { Folder } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
-    import {
-        isStandardFolder,
-        simpleDeepCopy,
-        sortSelection,
-    } from "$lib/utils";
+    import { isStandardFolder, simpleDeepCopy } from "$lib/utils";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import {
@@ -43,7 +39,7 @@
                         (acc) => acc.email_address === email_address,
                     )!,
                     folder,
-                    sortSelection(uids),
+                    uids,
                     isUndo ? undefined : currentOffset,
                 );
 

@@ -19,6 +19,7 @@
             mailboxContext.emailSelection.value,
             mailboxContext.getGroupedUidSelection()
         );
+        mailboxContext.emailSelection.value = [];
     }
 </script>
 

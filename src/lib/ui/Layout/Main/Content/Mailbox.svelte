@@ -1,17 +1,32 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { type Mailbox, Folder } from "$lib/types";
-    import { PAGINATE_MAILBOX_CHECK_DELAY_MS, WAIT_FOR_EMAILS_TIMEOUT_MS } from "$lib/constants";
+    import {
+        PAGINATE_MAILBOX_CHECK_DELAY_MS,
+        WAIT_FOR_EMAILS_TIMEOUT_MS,
+    } from "$lib/constants";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { getContext } from "svelte";
+    import { sortSelection } from "$lib/utils";
+
+    // Example of EmailSelection:
+    // ["someone1@mail.com,2", "someone1@mail.com,3", "someone1@mail.com,6"]
+    export type EmailSelection = "1:*" | string[];
+
+    // Example of GroupedUidSelection:
+    // [["someone1@mail.com", "2,3,6"], ["someone1@mail.com", "1,4,6"]]
+    export type GroupedUidSelection = [email_address: string, uids: string][];
+
+    // Example of GroupedMessageIdSelection:
+    // [["someone1@mail.com", ["<1A0..>","<4C7..>"]], ["someone1@mail.com", ["<2QX..>","<39A..>"]]]
+    export type GroupedMessageIdSelection = [
+        email_address: string,
+        message_ids: string[],
+    ][];
 
     /**
      * MailboxContext Initializing
      */
-    export type EmailSelection = "1:*" | string[];
-    export type GroupedUidSelection = [string, string][];
-    export type GroupedMessageIdSelection = [string, string[]][];
-
+    export const CONTEXT_KEY = "MAILBOX";
     export interface MailboxContext {
         getCurrentMailbox: () => Mailbox;
         currentOffset: { value: number };
@@ -24,7 +39,7 @@
             let currentMailbox: Mailbox = {
                 total: 0,
                 emails: { prev: [], current: [], next: [] },
-                folder: Folder.Inbox // mailboxes are going to be INBOX while selecting account to "home"
+                folder: Folder.Inbox, // mailboxes are going to be INBOX while selecting account to "home"
             };
             Object.values(SharedStore.mailboxes).forEach((mailbox) => {
                 currentMailbox.total += mailbox.total;
@@ -33,13 +48,16 @@
                 currentMailbox.emails.next.push(...mailbox.emails.next);
             });
             Object.values(currentMailbox.emails).forEach((emails) => {
-                emails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            })
+                emails.sort(
+                    (a, b) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime(),
+                );
+            });
             return currentMailbox;
         } else {
             return SharedStore.mailboxes[
                 SharedStore.currentAccount.email_address
-            ]
+            ];
         }
     });
     let currentOffset: { value: number } = $state({ value: 1 });
@@ -74,16 +92,12 @@
                     accountUidMap,
                     emailAddr,
                 )
-                    ? accountUidMap[emailAddr].concat(",", uid)
+                    ? sortSelection(accountUidMap[emailAddr].concat(",", uid))
                     : uid;
             });
         }
         return Object.entries(accountUidMap);
     });
-
-    export function getMailboxContext(): MailboxContext {
-        return getContext<MailboxContext>("mailbox");
-    }
 
     /**
      * Mailbox filling logic.
@@ -91,10 +105,11 @@
 
     let waitPrev: ReturnType<typeof setInterval> | null;
 
-    export async function paginateMailboxBackward(currentOffset: number): Promise<void> {
+    export async function paginateMailboxBackward(
+        currentOffset: number,
+    ): Promise<void> {
         const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
-        if (currentOffset <= MAILBOX_LENGTH)
-            return;
+        if (currentOffset <= MAILBOX_LENGTH) return;
 
         return new Promise((resolve) => {
             if (!waitPrev) {
@@ -128,23 +143,26 @@
                             );
                         });
                     }
-                }
+                };
 
                 const clearWaitPrevInterval = () => {
                     if (waitPrev) {
-                       clearInterval(waitPrev);
-                       waitPrev = null;
-                       resolve();
+                        clearInterval(waitPrev);
+                        waitPrev = null;
+                        resolve();
                     }
-                }
+                };
 
                 if (currentMailbox.emails.prev.length > 0) {
-                    shiftEmailPagesBackward()
+                    shiftEmailPagesBackward();
                     clearWaitPrevInterval();
                 } else {
                     const startTime = Date.now();
                     waitPrev = setInterval(() => {
-                        if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT_MS) {
+                        if (
+                            Date.now() - startTime >=
+                            WAIT_FOR_EMAILS_TIMEOUT_MS
+                        ) {
                             clearWaitPrevInterval();
                         }
                         if (currentMailbox.emails.prev.length > 0) {
@@ -159,9 +177,10 @@
 
     let waitNext: ReturnType<typeof setInterval> | null;
 
-    export async function paginateMailboxForward(currentOffset: number): Promise<void> {
-        if (currentOffset >= currentMailbox.total)
-            return;
+    export async function paginateMailboxForward(
+        currentOffset: number,
+    ): Promise<void> {
+        if (currentOffset >= currentMailbox.total) return;
 
         return new Promise((resolve) => {
             if (!waitNext) {
@@ -172,8 +191,8 @@
                         ? [SharedStore.currentAccount.email_address]
                         : SharedStore.accounts.filter((acc) => {
                               return (
-                                  SharedStore.mailboxes[acc.email_address].total >
-                                  currentOffset
+                                  SharedStore.mailboxes[acc.email_address]
+                                      .total > currentOffset
                               );
                           });
 
@@ -202,7 +221,7 @@
                             );
                         });
                     }
-                }
+                };
 
                 const clearWaitNextInterval = () => {
                     if (waitNext) {
@@ -210,15 +229,18 @@
                         waitNext = null;
                         resolve();
                     }
-                }
+                };
 
                 if (currentMailbox.emails.next.length > 0) {
-                    shiftEmailPagesForward()
+                    shiftEmailPagesForward();
                     clearWaitNextInterval();
                 } else {
                     const startTime = Date.now();
                     waitNext = setInterval(() => {
-                        if (Date.now() - startTime >= WAIT_FOR_EMAILS_TIMEOUT_MS) {
+                        if (
+                            Date.now() - startTime >=
+                            WAIT_FOR_EMAILS_TIMEOUT_MS
+                        ) {
                             clearWaitNextInterval();
                         }
                         if (currentMailbox.emails.next.length > 0) {
@@ -228,7 +250,7 @@
                     }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
                 }
             }
-        })
+        });
     }
 </script>
 
@@ -238,12 +260,12 @@
     import Content from "$lib/ui/Layout/Main/Content/Mailbox/Content.svelte";
     import { setContext } from "svelte";
 
-    setContext<MailboxContext>("mailbox", {
+    setContext<MailboxContext>(CONTEXT_KEY, {
         currentOffset,
         emailSelection,
         getCurrentMailbox: () => currentMailbox,
-        getGroupedUidSelection: () => groupedUidSelection
-    })
+        getGroupedUidSelection: () => groupedUidSelection,
+    });
 </script>
 
 <Context />

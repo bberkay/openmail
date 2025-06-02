@@ -9,7 +9,7 @@
     import { type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
-    import { simpleDeepCopy, sortSelection } from "$lib/utils";
+    import { simpleDeepCopy } from "$lib/utils";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
@@ -22,17 +22,14 @@
     ) {
         const tempSelection = simpleDeepCopy(groupedUidSelection);
         const results = await Promise.allSettled(
-            tempSelection.map(async (group) => {
-                const emailAddress = group[0];
-                const uids = sortSelection(group[1]);
-
+            tempSelection.map(async ([email_address, uids]) => {
                 const markOperation = isUnmarkOperation
                     ? MailboxController.unmarkEmails
                     : MailboxController.markEmails;
 
                 const response = await markOperation(
                     SharedStore.accounts.find(
-                        (acc) => acc.email_address === emailAddress,
+                        (acc) => acc.email_address === email_address,
                     )!,
                     uids,
                     mark,
