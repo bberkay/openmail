@@ -64,6 +64,7 @@
             email.uid,
         );
 
+        mailboxContext.emailSelection.value = [];
         if (!response.success || !response.data) {
             showMessage({
                 title: local.error_get_email_content[DEFAULT_LANGUAGE],

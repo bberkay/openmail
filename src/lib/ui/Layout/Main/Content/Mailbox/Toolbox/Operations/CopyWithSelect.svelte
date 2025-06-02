@@ -32,6 +32,7 @@
             destinationFolder,
             mailboxContext.getGroupedUidSelection()
         );
+        mailboxContext.emailSelection.value = [];
     }
 </script>
 

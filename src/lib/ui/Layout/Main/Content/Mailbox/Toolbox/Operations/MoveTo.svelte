@@ -103,6 +103,7 @@
             mailboxContext.currentOffset.value,
             false,
         );
+        mailboxContext.emailSelection.value = [];
     };
 </script>
 

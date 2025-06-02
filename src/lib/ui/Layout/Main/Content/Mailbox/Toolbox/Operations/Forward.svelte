@@ -1,8 +1,10 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import type { EmailSelection, GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext, type EmailSelection, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
+
+    const mailboxContext = getMailboxContext();
 
     export async function forward(
         emailSelection: EmailSelection,
@@ -21,6 +23,7 @@
             (email) => email.uid == forwardingEmailUid
         )!;
 
+        mailboxContext.emailSelection.value = [];
         showContent(Compose, {
             originalMessageContext: {
                 composeType: "forward",

@@ -1,12 +1,14 @@
 <script lang="ts" module>
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import type { GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { isUidInSelection, simpleDeepCopy } from "$lib/utils";
+
+    const mailboxContext = getMailboxContext();
 
     export async function unsubscribeAll(
         groupedUidSelection: GroupedUidSelection
@@ -52,6 +54,7 @@
             }),
         );
 
+        mailboxContext.emailSelection.value = [];
         const failed = results.filter((r) => r.status === "rejected");
         if (failed.length > 0) {
             showMessage({

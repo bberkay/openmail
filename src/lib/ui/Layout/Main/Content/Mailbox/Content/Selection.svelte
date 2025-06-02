@@ -59,6 +59,7 @@
                 "1:*",
             );
 
+            mailboxContext.emailSelection.value = [];
             if (!response.success) {
                 showMessage({
                     title: local.error_empty_trash[DEFAULT_LANGUAGE],

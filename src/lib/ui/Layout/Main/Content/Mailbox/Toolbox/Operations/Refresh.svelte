@@ -38,6 +38,7 @@
 
 <script lang="ts">
     import type { Snippet } from "svelte";
+    import { getMailboxContext } from "../../../Mailbox.svelte";
 
     interface Props {
         children: Snippet;
@@ -45,8 +46,11 @@
 
     let { children }: Props = $props();
 
+    const mailboxContext = getMailboxContext();
+
     const refreshOnClick = async () => {
         await refresh();
+        mailboxContext.emailSelection.value = [];
     };
 </script>
 

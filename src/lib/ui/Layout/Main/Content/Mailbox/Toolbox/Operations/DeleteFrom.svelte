@@ -93,6 +93,7 @@
             mailboxContext.getGroupedUidSelection(),
             mailboxContext.currentOffset.value,
         );
+        mailboxContext.emailSelection.value = [];
     };
 </script>
 

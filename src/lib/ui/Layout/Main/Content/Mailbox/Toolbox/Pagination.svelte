@@ -19,6 +19,7 @@
             mailboxContext.getCurrentMailbox().total,
             mailboxContext.currentOffset.value + MAILBOX_LENGTH,
         );
+        mailboxContext.emailSelection.value = [];
     };
 
     const getNextEmails = async () => {
@@ -33,6 +34,7 @@
             mailboxContext.getCurrentMailbox().total,
             mailboxContext.currentOffset.value + MAILBOX_LENGTH,
         );
+        mailboxContext.emailSelection.value = [];
     };
 </script>
 

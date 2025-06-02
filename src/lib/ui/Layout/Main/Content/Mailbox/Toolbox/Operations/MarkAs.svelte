@@ -121,6 +121,7 @@
             markType,
             folder,
         );
+        mailboxContext.emailSelection.value = [];
     };
 
     const unmarkEmailsOnClick = async () => {
@@ -129,6 +130,7 @@
             markType,
             folder,
         );
+        mailboxContext.emailSelection.value = [];
     };
 </script>
 
