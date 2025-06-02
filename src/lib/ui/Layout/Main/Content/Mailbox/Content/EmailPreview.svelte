@@ -40,6 +40,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     const MAX_BODY_LENGTH = 150;
 
@@ -60,7 +61,7 @@
 
         const response = await MailboxController.getEmailContent(
             account,
-            mailboxContext.getCurrentMailbox().folder,
+            getCurrentMailbox().folder,
             email.uid,
         );
 

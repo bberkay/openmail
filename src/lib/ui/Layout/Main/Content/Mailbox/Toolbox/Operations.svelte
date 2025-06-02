@@ -119,6 +119,7 @@
     import CopyWithSelect from "./Operations/CopyWithSelect.svelte";
     import MoveWithSelect from "./Operations/MoveWithSelect.svelte";
     import Select from "./Operations/Select.svelte";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     const mailboxContext = getMailboxContext();
 </script>
@@ -134,7 +135,7 @@
             {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Flagged)}
                 <MarkAs
                     markType={Mark.Flagged}
-                    folder={mailboxContext.getCurrentMailbox().folder}
+                    folder={getCurrentMailbox().folder}
                 >
                     <Icon name="flag" />
                 </MarkAs>
@@ -142,7 +143,7 @@
             {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Flagged)}
                 <MarkAs
                     markType={Mark.Flagged}
-                    folder={mailboxContext.getCurrentMailbox().folder}
+                    folder={getCurrentMailbox().folder}
                     isUnmark={true}
                 >
                     <Icon name="flagged"/>
@@ -151,7 +152,7 @@
             {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Seen)}
                 <MarkAs
                     markType={Mark.Seen}
-                    folder={mailboxContext.getCurrentMailbox().folder}
+                    folder={getCurrentMailbox().folder}
                 >
                     <Icon name="seen" />
                 </MarkAs>
@@ -159,13 +160,13 @@
             {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Seen)}
                 <MarkAs
                     markType={Mark.Seen}
-                    folder={mailboxContext.getCurrentMailbox().folder}
+                    folder={getCurrentMailbox().folder}
                     isUnmark={true}
                 >
                     <Icon name="unseen" />
                 </MarkAs>
             {/if}
-            {#if isStandardFolder(mailboxContext.getCurrentMailbox().folder, Folder.Archive)}
+            {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
                 <MoveTo
                     sourceFolder={Folder.Archive}
                     destinationFolder={Folder.Inbox}
@@ -174,14 +175,14 @@
                 </MoveTo>
             {:else}
                 <MoveTo
-                    sourceFolder={mailboxContext.getCurrentMailbox().folder}
+                    sourceFolder={getCurrentMailbox().folder}
                     destinationFolder={Folder.Archive}
                 >
                     <Icon name="archive" />
                 </MoveTo>
             {/if}
             <DeleteFrom
-                folder={mailboxContext.getCurrentMailbox().folder}
+                folder={getCurrentMailbox().folder}
             >
                 <Icon name="trash" />
             </DeleteFrom>
@@ -191,10 +192,10 @@
             <!-- Account related specific operations -->
             {#if mailboxContext.getGroupedUidSelection().length == 1}
                 <CopyWithSelect
-                    sourceFolder={mailboxContext.getCurrentMailbox().folder}
+                    sourceFolder={getCurrentMailbox().folder}
                 />
                 <MoveWithSelect
-                    sourceFolder={mailboxContext.getCurrentMailbox().folder}
+                    sourceFolder={getCurrentMailbox().folder}
                 />
             {/if}
         </div>

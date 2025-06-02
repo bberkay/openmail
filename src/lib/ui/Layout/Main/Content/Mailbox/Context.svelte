@@ -16,6 +16,7 @@
     import DeleteFrom from "./Context/DeleteFrom.svelte";
     import Unsubscribe from "./Context/Unsubscribe.svelte";
     import UnsubscribeAll from "./Context/UnsubscribeAll.svelte";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     const mailboxContext = getMailboxContext();
 
@@ -55,7 +56,7 @@
     {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Flagged)}
         <MarkAs
             markType={Mark.Flagged}
-            folder={mailboxContext.getCurrentMailbox().folder}
+            folder={getCurrentMailbox().folder}
         >
             <Icon name="flag" />
             <span>Mark as Important</span>
@@ -64,7 +65,7 @@
     {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Flagged)}
         <MarkAs
             markType={Mark.Flagged}
-            folder={mailboxContext.getCurrentMailbox().folder}
+            folder={getCurrentMailbox().folder}
             isUnmark={true}
         >
             <Icon name="flagged" />
@@ -74,7 +75,7 @@
     {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Seen)}
         <MarkAs
             markType={Mark.Seen}
-            folder={mailboxContext.getCurrentMailbox().folder}
+            folder={getCurrentMailbox().folder}
         >
             <Icon name="seen" />
             <span>Mark as seen</span>
@@ -83,7 +84,7 @@
     {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Seen)}
         <MarkAs
             markType={Mark.Seen}
-            folder={mailboxContext.getCurrentMailbox().folder}
+            folder={getCurrentMailbox().folder}
             isUnmark={true}
         >
             <Icon name="unseen" />
@@ -108,25 +109,25 @@
         {/if}
     {/if}
     <Context.Separator />
-    {#if isStandardFolder(mailboxContext.getCurrentMailbox().folder, Folder.Archive)}
+    {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
         <MoveTo sourceFolder={Folder.Archive} destinationFolder={Folder.Inbox}>
             <Icon name="inbox" />
             <span>Move to Inbox</span>
         </MoveTo>
     {:else}
         <MoveTo
-            sourceFolder={mailboxContext.getCurrentMailbox().folder}
+            sourceFolder={getCurrentMailbox().folder}
             destinationFolder={Folder.Archive}
         >
             <Icon name="archive" />
             <span>Archive</span>
         </MoveTo>
     {/if}
-    <DeleteFrom folder={mailboxContext.getCurrentMailbox().folder}>
+    <DeleteFrom folder={getCurrentMailbox().folder}>
         <Icon name="trash" />
         <span>
             {isStandardFolder(
-                mailboxContext.getCurrentMailbox().folder,
+                getCurrentMailbox().folder,
                 Folder.Trash,
             )
                 ? "Delete Completely"

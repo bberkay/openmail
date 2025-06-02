@@ -46,7 +46,6 @@
 
 <script lang="ts">
     import Icon from "$lib/ui/Components/Icon";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import { isStandardFolder } from "$lib/utils";
     import MarkAs from "./Operations/MarkAs.svelte";
     import MoveTo from "./Operations/MoveTo.svelte";
@@ -58,6 +57,7 @@
     import Others from "./Operations/Others.svelte";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
     import * as Button from "$lib/ui/Components/Button";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     interface Props {
         account: Account;
@@ -66,8 +66,6 @@
     }
 
     let { account, email, currentOffset }: Props = $props();
-
-    const mailboxContext = getMailboxContext();
 </script>
 
 <div class="operations">
@@ -87,7 +85,7 @@
                 {account}
                 {email}
                 markType={Mark.Flagged}
-                folder={mailboxContext.getCurrentMailbox().folder}
+                folder={getCurrentMailbox().folder}
             >
                 <Icon name="flag" />
             </MarkAs>
@@ -96,7 +94,7 @@
                 {account}
                 {email}
                 markType={Mark.Flagged}
-                folder={mailboxContext.getCurrentMailbox().folder}
+                folder={getCurrentMailbox().folder}
                 isUnmark={true}
             >
                 <Icon name="flagged" />
@@ -107,7 +105,7 @@
                 {account}
                 {email}
                 markType={Mark.Seen}
-                folder={mailboxContext.getCurrentMailbox().folder}
+                folder={getCurrentMailbox().folder}
             >
                 <Icon name="seen" />
             </MarkAs>
@@ -116,16 +114,16 @@
                 {account}
                 {email}
                 markType={Mark.Seen}
-                folder={mailboxContext.getCurrentMailbox().folder}
+                folder={getCurrentMailbox().folder}
                 isUnmark={true}
             >
                 <Icon name="unseen" />
             </MarkAs>
         {/if}
-        {#if isStandardFolder(mailboxContext.getCurrentMailbox().folder, Folder.Archive)}
+        {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
             <MoveTo
                 {account}
-                sourceFolder={mailboxContext.getCurrentMailbox().folder}
+                sourceFolder={getCurrentMailbox().folder}
                 destinationFolder={Folder.Inbox}
                 {email}
                 {currentOffset}
@@ -135,7 +133,7 @@
         {:else}
             <MoveTo
                 {account}
-                sourceFolder={mailboxContext.getCurrentMailbox().folder}
+                sourceFolder={getCurrentMailbox().folder}
                 destinationFolder={Folder.Archive}
                 {email}
                 {currentOffset}
@@ -145,7 +143,7 @@
         {/if}
         <DeleteFrom
             {account}
-            folder={mailboxContext.getCurrentMailbox().folder}
+            folder={getCurrentMailbox().folder}
             {email}
             {currentOffset}
         >
@@ -156,13 +154,13 @@
     <div class="tool-group">
         <MoveWithSelect
             {account}
-            sourceFolder={mailboxContext.getCurrentMailbox().folder}
+            sourceFolder={getCurrentMailbox().folder}
             {email}
             {currentOffset}
         />
         <CopyWithSelect
             {account}
-            sourceFolder={mailboxContext.getCurrentMailbox().folder}
+            sourceFolder={getCurrentMailbox().folder}
             {email}
         />
     </div>

@@ -8,6 +8,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Icon from "$lib/ui/Components/Icon";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     const mailboxContext = getMailboxContext();
 
@@ -16,7 +17,7 @@
         if (mailboxContext.currentOffset.value <= MAILBOX_LENGTH) return;
         await paginateMailboxBackward(mailboxContext.currentOffset.value);
         mailboxContext.currentOffset.value = Math.min(
-            mailboxContext.getCurrentMailbox().total,
+            getCurrentMailbox().total,
             mailboxContext.currentOffset.value + MAILBOX_LENGTH,
         );
         mailboxContext.emailSelection.value = [];
@@ -25,13 +26,13 @@
     const getNextEmails = async () => {
         if (
             mailboxContext.currentOffset.value >=
-            mailboxContext.getCurrentMailbox().total
+            getCurrentMailbox().total
         )
             return;
         await paginateMailboxForward(mailboxContext.currentOffset.value);
         const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         mailboxContext.currentOffset.value = Math.min(
-            mailboxContext.getCurrentMailbox().total,
+            getCurrentMailbox().total,
             mailboxContext.currentOffset.value + MAILBOX_LENGTH,
         );
         mailboxContext.emailSelection.value = [];
@@ -57,13 +58,13 @@
                 1 +
                 SharedStore.preferences.mailboxLength
             ).toString(),
-            mailboxContext.getCurrentMailbox().total.toString(),
+            getCurrentMailbox().total.toString(),
         )}
     </small>
     <Button.Action
         type="button"
         class="btn-inline {mailboxContext.currentOffset.value >=
-        mailboxContext.getCurrentMailbox().total
+        getCurrentMailbox().total
             ? 'disabled'
             : ''}"
         onclick={getNextEmails}

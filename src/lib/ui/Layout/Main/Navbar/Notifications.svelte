@@ -12,15 +12,12 @@
     import Icon from "$lib/ui/Components/Icon";
     import * as Button from "$lib/ui/Components/Button";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
-    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox"
+    import Mailbox, { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-
-    const mailboxContext = getMailboxContext();
 
     let notificationsContainer: HTMLElement;
     let isNotificationsHidden = $state(true);
@@ -69,7 +66,7 @@
 
         if (
             isStandardFolder(
-                mailboxContext.getCurrentMailbox().folder,
+                getCurrentMailbox().folder,
                 Folder.Inbox,
             )
         )

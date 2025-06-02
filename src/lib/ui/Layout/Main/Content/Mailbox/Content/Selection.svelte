@@ -17,6 +17,7 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { onMount } from "svelte";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     const mailboxContext = getMailboxContext();
 
@@ -38,7 +39,7 @@
         const selectAllButton = event.target as HTMLButtonElement;
         mailboxContext.emailSelection.value = [];
         selectAllButton.innerHTML = getMailboxSelectAllTemplate(
-            mailboxContext.getCurrentMailbox().total.toString(),
+            getCurrentMailbox().total.toString(),
         );
         selectShownCheckbox.checked = false;
     };
@@ -46,7 +47,7 @@
     const emptyTrash = async () => {
         if (
             !isStandardFolder(
-                mailboxContext.getCurrentMailbox().folder,
+                getCurrentMailbox().folder,
                 Folder.Trash,
             )
         )
@@ -78,10 +79,10 @@
     };
 </script>
 
-{#if isStandardFolder(mailboxContext.getCurrentMailbox().folder, Folder.Trash) && mailboxContext.getCurrentMailbox().total > 0}
+{#if isStandardFolder(getCurrentMailbox().folder, Folder.Trash) && getCurrentMailbox().total > 0}
     <div class="email-preview-selection-info">
         <span>
-            {getEmptyTrashTemplate(mailboxContext.getCurrentMailbox().total)}
+            {getEmptyTrashTemplate(getCurrentMailbox().total)}
         </span>
         <Button.Action type="button" class="btn-inline" onclick={emptyTrash}>
             {local.empty_trash[DEFAULT_LANGUAGE]}
@@ -90,7 +91,7 @@
 {:else if mailboxContext.emailSelection.value === "1:*" || mailboxContext.emailSelection.value.length > 0}
     {@const selectionCount = (
         mailboxContext.emailSelection.value === "1:*"
-            ? mailboxContext.getCurrentMailbox().total
+            ? getCurrentMailbox().total
             : mailboxContext.emailSelection.value.length
     ).toString()}
     <div class="email-preview-selection-info">
@@ -105,7 +106,7 @@
                 : selectAllEmails}
         >
             {@html getMailboxSelectAllTemplate(
-                mailboxContext.getCurrentMailbox().total,
+                getCurrentMailbox().total,
             )}
         </Button.Basic>
     </div>

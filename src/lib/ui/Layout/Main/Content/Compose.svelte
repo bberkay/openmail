@@ -24,8 +24,7 @@
     import { onMount } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
     import Form from "$lib/ui/Components/Form";
-    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
+    import Mailbox, { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
@@ -47,8 +46,6 @@
     }
 
     let { originalMessageContext }: Props = $props();
-
-    const mailboxContext = getMailboxContext();
 
     let composeForm: HTMLFormElement | undefined = $state();
     let senderAccount: Account = $state(
@@ -103,7 +100,7 @@
         // at this point.
         if (
             !isStandardFolder(
-                mailboxContext.getCurrentMailbox().folder,
+                getCurrentMailbox().folder,
                 Folder.Sent,
             )
         ) {

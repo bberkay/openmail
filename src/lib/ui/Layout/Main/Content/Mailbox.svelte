@@ -8,32 +8,9 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { sortSelection } from "$lib/utils";
 
-    // Example of EmailSelection:
-    // ["someone1@mail.com,2", "someone1@mail.com,3", "someone1@mail.com,6"]
-    export type EmailSelection = "1:*" | string[];
-
-    // Example of GroupedUidSelection:
-    // [["someone1@mail.com", "2,3,6"], ["someone1@mail.com", "1,4,6"]]
-    export type GroupedUidSelection = [email_address: string, uids: string][];
-
-    // Example of GroupedMessageIdSelection:
-    // [["someone1@mail.com", ["<1A0..>","<4C7..>"]], ["someone1@mail.com", ["<2QX..>","<39A..>"]]]
-    export type GroupedMessageIdSelection = [
-        email_address: string,
-        message_ids: string[],
-    ][];
-
     /**
-     * MailboxContext Initializing
+     * Initialize current mailbox listener.
      */
-    export const CONTEXT_KEY = "MAILBOX";
-    export interface MailboxContext {
-        getCurrentMailbox: () => Mailbox;
-        currentOffset: { value: number };
-        emailSelection: { value: EmailSelection };
-        getGroupedUidSelection: () => GroupedUidSelection;
-    }
-
     let currentMailbox = $derived.by(() => {
         if (SharedStore.currentAccount === "home") {
             let currentMailbox: Mailbox = {
@@ -60,6 +37,37 @@
             ];
         }
     });
+
+    export function getCurrentMailbox() {
+        return currentMailbox;
+    }
+
+    /**
+     * MailboxContext Initializing
+     */
+
+    // Example of EmailSelection:
+    // ["someone1@mail.com,2", "someone1@mail.com,3", "someone1@mail.com,6"]
+    export type EmailSelection = "1:*" | string[];
+
+    // Example of GroupedUidSelection:
+    // [["someone1@mail.com", "2,3,6"], ["someone1@mail.com", "1,4,6"]]
+    export type GroupedUidSelection = [email_address: string, uids: string][];
+
+    // Example of GroupedMessageIdSelection:
+    // [["someone1@mail.com", ["<1A0..>","<4C7..>"]], ["someone1@mail.com", ["<2QX..>","<39A..>"]]]
+    export type GroupedMessageIdSelection = [
+        email_address: string,
+        message_ids: string[],
+    ][];
+
+    export const CONTEXT_KEY = "MAILBOX";
+    export interface MailboxContext {
+        currentOffset: { value: number };
+        emailSelection: { value: EmailSelection };
+        getGroupedUidSelection: () => GroupedUidSelection;
+    }
+
     let currentOffset: { value: number } = $state({ value: 1 });
     let emailSelection: { value: EmailSelection } = $state({ value: [] });
     let groupedUidSelection: GroupedUidSelection = $derived.by(() => {
@@ -263,7 +271,6 @@
     setContext<MailboxContext>(CONTEXT_KEY, {
         currentOffset,
         emailSelection,
-        getCurrentMailbox: () => currentMailbox,
         getGroupedUidSelection: () => groupedUidSelection,
     });
 </script>

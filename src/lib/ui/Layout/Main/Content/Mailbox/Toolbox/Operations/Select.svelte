@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import * as Input from "$lib/ui/Components/Input";
     import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     const mailboxContext = getMailboxContext();
 
@@ -14,7 +15,7 @@
     });
 
     $effect(() => {
-        if (mailboxContext.getCurrentMailbox()) {
+        if (getCurrentMailbox()) {
             shownEmailUids = [];
             document
                 .querySelectorAll<HTMLInputElement>(

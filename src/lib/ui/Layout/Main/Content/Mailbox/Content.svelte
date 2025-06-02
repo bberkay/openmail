@@ -4,9 +4,9 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Selection from "./Content/Selection.svelte";
     import GroupDate from "./Content/GroupDate.svelte";
-    import { getMailboxContext } from "../Mailbox";
     import EmailPreview from "./Content/EmailPreview.svelte";
     import { onMount } from "svelte";
+    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     type DateGroup =
         | (typeof local.today)[typeof DEFAULT_LANGUAGE]
@@ -14,8 +14,6 @@
         | (typeof local.this_week)[typeof DEFAULT_LANGUAGE]
         | (typeof local.this_month)[typeof DEFAULT_LANGUAGE]
         | (typeof local.older)[typeof DEFAULT_LANGUAGE];
-
-    const mailboxContext = getMailboxContext();
 
     let groupedEmailsByDate: Record<DateGroup, TEmail[]> = $derived.by(() => {
         const today = new Date();
@@ -38,7 +36,7 @@
             [local.older[DEFAULT_LANGUAGE]]: [],
         };
 
-        mailboxContext.getCurrentMailbox().emails.current.forEach((email: TEmail) => {
+        getCurrentMailbox().emails.current.forEach((email: TEmail) => {
             const emailDate = new Date(email.date);
             emailDate.setHours(0, 0, 0, 0);
 

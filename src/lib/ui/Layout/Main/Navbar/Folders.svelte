@@ -7,8 +7,7 @@
     import RenameFolder from "$lib/ui/Layout/Main/Navbar/Folders/RenameFolder.svelte";
     import MoveFolder from "$lib/ui/Layout/Main/Navbar/Folders/MoveFolder.svelte";
     import DeleteFolder from "$lib/ui/Layout/Main/Navbar/Folders/DeleteFolder.svelte";
-    import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
-    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox"
+    import Mailbox, { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
     import { show as showMessage } from "$lib/ui/Components/Message";
@@ -17,8 +16,6 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Icon from "$lib/ui/Components/Icon";
     import { isStandardFolder } from "$lib/utils";
-
-    const mailboxContext = getMailboxContext();
 
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
@@ -38,7 +35,7 @@
     const setCurrentFolder = async (
         selectedFolder: string | Folder,
     ): Promise<void> => {
-        if (mailboxContext.getCurrentMailbox().folder !== selectedFolder) {
+        if (getCurrentMailbox().folder !== selectedFolder) {
             const response = await MailboxController.getMailbox(
                 SharedStore.currentAccount as Account,
                 selectedFolder,
@@ -98,11 +95,11 @@
 >
     <Dropdown.Toggle>
         {isStandardFolder(
-            mailboxContext.getCurrentMailbox().folder,
+            getCurrentMailbox().folder,
             Folder.Inbox,
         )
             ? Folder.Inbox
-            : mailboxContext.getCurrentMailbox().folder}
+            : getCurrentMailbox().folder}
     </Dropdown.Toggle>
     <Dropdown.Content>
         <Dropdown.Item onclick={showCreateFolder}>
