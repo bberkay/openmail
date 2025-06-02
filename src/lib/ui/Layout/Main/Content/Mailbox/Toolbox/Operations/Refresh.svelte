@@ -38,7 +38,7 @@
 
 <script lang="ts">
     import type { Snippet } from "svelte";
-    import { getMailboxContext } from "../../../Mailbox";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
 
     interface Props {
         children: Snippet;

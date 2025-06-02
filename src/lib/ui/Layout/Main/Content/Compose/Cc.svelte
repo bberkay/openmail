@@ -12,8 +12,7 @@
     import Collapse from "$lib/ui/Components/Collapse";
     import { FormGroup } from "$lib/ui/Components/Form";
     import Badge from "$lib/ui/Components/Badge";
-    import { getContext } from "svelte";
-    import { type ComposeContext } from "../Compose.svelte";
+    import { triggerDraftChange } from "../Compose.svelte";
 
     interface Props {
         ccList: string[];
@@ -22,11 +21,10 @@
     let { ccList = $bindable() }: Props = $props();
 
     let ccInput: HTMLInputElement | undefined = $state(undefined);
-    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
 
     const addCc = (e: Event) => {
         addEmailToAddressList(e, ccInput!, ccList);
-        flagDraftAsChanged();
+        triggerDraftChange();
     };
 </script>
 

@@ -5,14 +5,14 @@
     } from "$lib/constants";
     import Label from "$lib/ui/Components/Label";
     import { FormGroup } from "$lib/ui/Components/Form";
-    import { getContext, onDestroy, onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
     import { getReplyTemplate, getForwardTemplate } from "$lib/templates";
     import {
         escapeHTML,
     } from "$lib/utils";
     import type { OriginalMessageContext } from "$lib/types";
-    import { type ComposeContext } from "../Compose.svelte";
+    import { triggerDraftChange } from "../Compose.svelte";
 
     interface Props {
         editor?: WYSIWYGEditor;
@@ -24,12 +24,11 @@
         originalMessageContext
     }: Props = $props();
 
-    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
     onMount(() => {
         editor = new WYSIWYGEditor("body");
         editor.init();
         editor.onChange = () => {
-            flagDraftAsChanged();
+            triggerDraftChange();
         };
 
         if (originalMessageContext) {

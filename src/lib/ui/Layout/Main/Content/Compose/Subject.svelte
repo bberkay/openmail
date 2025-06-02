@@ -6,8 +6,7 @@
     import { FormGroup } from "$lib/ui/Components/Form";
     import { onMount } from "svelte";
     import type { OriginalMessageContext } from "$lib/types";
-    import { getContext } from "svelte";
-    import { type ComposeContext } from "../Compose.svelte";
+    import { triggerDraftChange } from "../Compose.svelte";
 
     interface Props {
         value?: string;
@@ -17,7 +16,6 @@
     let { value = $bindable(), originalMessageContext }: Props = $props();
 
     let subjectInput: HTMLInputElement | undefined = $state(undefined);
-    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
 
     onMount(() => {
         if (originalMessageContext) {
@@ -29,7 +27,7 @@
     });
 
     const onChange = () => {
-        flagDraftAsChanged();
+        triggerDraftChange();
     };
 </script>
 

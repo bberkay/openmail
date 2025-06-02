@@ -1,6 +1,8 @@
 <script lang="ts" module>
-    export interface ComposeContext {
-        flagDraftAsChanged: () => void;
+    let isDraftChangedAfterLastSave = false;
+
+    export function triggerDraftChange() {
+        isDraftChangedAfterLastSave = true;
     }
 </script>
 
@@ -19,7 +21,7 @@
         type OriginalMessageContext,
     } from "$lib/types";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { onMount, setContext } from "svelte";
+    import { onMount } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
     import Form from "$lib/ui/Components/Form";
     import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
@@ -64,17 +66,11 @@
     let isSavingDraft: boolean = $state(false);
     let draftAppenduid: string = "";
     let lastDraftSavedTime: string = $state("");
-    let isDraftChangedAfterLastSave = false;
 
     onMount(() => {
         // TODO: Open this later...
         //startAutosaveDraftLoop();
     });
-
-    const flagDraftAsChanged = () => {
-        isDraftChangedAfterLastSave = true;
-    };
-    setContext("compose", { flagDraftAsChanged });
 
     function startAutosaveDraftLoop() {
         const loop = async () => {

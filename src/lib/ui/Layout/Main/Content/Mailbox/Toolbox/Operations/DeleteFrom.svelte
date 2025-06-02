@@ -12,7 +12,7 @@
         fetchUidsByMessageIds,
     } from "../Operations.svelte";
     import { moveTo } from "./MoveTo.svelte";
-    import type { GroupedUidSelection } from "../../../Mailbox.svelte";
+    import type { GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     export async function deleteFrom(
         folder: string | Folder,
@@ -72,7 +72,7 @@
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
     import type { Snippet } from "svelte";
-    import { getMailboxContext } from "../../../Mailbox";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
 
     interface Props {
         children: Snippet;

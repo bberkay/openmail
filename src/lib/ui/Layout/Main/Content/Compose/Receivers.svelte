@@ -14,8 +14,8 @@
     import { FormGroup } from "$lib/ui/Components/Form";
     import Badge from "$lib/ui/Components/Badge";
     import type { OriginalMessageContext } from "$lib/types";
-    import { getContext, onMount } from "svelte";
-    import { type ComposeContext } from "../Compose.svelte";
+    import { onMount } from "svelte";
+    import { triggerDraftChange } from "../Compose.svelte";
 
     interface Props {
         receiverList: string[];
@@ -28,7 +28,6 @@
     }: Props = $props();
 
     let receiverInput: HTMLInputElement | undefined = $state(undefined);
-    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
 
     onMount(() => {
         if (originalMessageContext) {
@@ -40,7 +39,7 @@
 
     const addReceiver = (e: Event) => {
         addEmailToAddressList(e, receiverInput!, receiverList);
-        flagDraftAsChanged();
+        triggerDraftChange();
     };
 </script>
 

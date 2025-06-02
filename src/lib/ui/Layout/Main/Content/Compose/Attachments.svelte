@@ -6,14 +6,13 @@
     import * as Input from "$lib/ui/Components/Input";
     import Label from "$lib/ui/Components/Label";
     import { FormGroup } from "$lib/ui/Components/Form";
-    import { getContext, onMount } from "svelte";
-    import { type ComposeContext } from "../Compose.svelte";
+    import { onMount } from "svelte";
+    import { triggerDraftChange } from "../Compose.svelte";
 
     let attachments: HTMLInputElement | undefined = $state();
-    const flagDraftAsChanged = getContext<ComposeContext>("compose").flagDraftAsChanged;
     onMount(() => {
         attachments!.addEventListener("change", () => {
-            flagDraftAsChanged();
+            triggerDraftChange();
         })
     })
 </script>

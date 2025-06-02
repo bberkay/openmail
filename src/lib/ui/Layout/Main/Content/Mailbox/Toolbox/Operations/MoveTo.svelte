@@ -8,7 +8,7 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { convertUidSelectionToMessageIds, fetchUidsByMessageIds } from "../Operations.svelte";
-    import type { GroupedUidSelection } from "../../../Mailbox.svelte";
+    import type { GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     export async function moveTo(
         sourceFolder: string | Folder,
@@ -76,7 +76,7 @@
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
     import type { Snippet } from "svelte";
-    import { getMailboxContext } from "../../../Mailbox";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
 
     interface Props {
         children: Snippet
