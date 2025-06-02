@@ -3,7 +3,12 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Language } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
-    import { convertToLanguageEnum, convertToRFC5646Format, getEnumKeyByValue, getEnumValueByKey } from "$lib/utils";
+    import {
+        convertToLanguageEnum,
+        convertToRFC5646Format,
+        getEnumKeyByValue,
+        getEnumValueByKey,
+    } from "$lib/utils";
     import { onMount } from "svelte";
     import { DEFAULT_PREFERENCES } from "$lib/constants";
 
@@ -12,7 +17,10 @@
     onMount(() => {
         document.removeEventListener("preferencesSaved", saveLanguageChange);
         document.addEventListener("preferencesSaved", saveLanguageChange);
-        document.removeEventListener("preferencesResetToDefault", resetLanguage);
+        document.removeEventListener(
+            "preferencesResetToDefault",
+            resetLanguage,
+        );
         document.addEventListener("preferencesResetToDefault", resetLanguage);
     });
 
@@ -20,7 +28,10 @@
         SharedStore.preferences.language = newLanguage;
 
         // Check out app.html
-        localStorage.setItem("language", document.documentElement.getAttribute("lang")!);
+        localStorage.setItem(
+            "language",
+            document.documentElement.getAttribute("lang")!,
+        );
     }
 
     function resetLanguage() {
@@ -46,9 +57,9 @@
 
         document.documentElement.setAttribute(
             "lang",
-            convertToRFC5646Format(foundLocale)
+            convertToRFC5646Format(foundLocale),
         );
-    }
+    };
 </script>
 
 <div class="settings-section">

@@ -5,7 +5,7 @@
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
     import {
-        getCurrentMailbox,
+        getMailboxContext,
         paginateMailboxBackward,
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
@@ -26,17 +26,23 @@
         currentOffset = $bindable(),
     }: Props = $props();
 
+    const mailboxContext = getMailboxContext();
+
     const updateShownEmail = async (): Promise<void> => {
-        const uid = getCurrentMailbox().emails.current[currentOffset].uid;
+        const uid =
+            mailboxContext.getCurrentMailbox().emails.current[currentOffset]
+                .uid;
 
         const response = await MailboxController.getEmailContent(
             account,
-            getCurrentMailbox().folder,
+            mailboxContext.getCurrentMailbox().folder,
             uid,
         );
 
         if (!response.success || !response.data) {
-            showMessage({ title: local.error_get_email_content[DEFAULT_LANGUAGE] });
+            showMessage({
+                title: local.error_get_email_content[DEFAULT_LANGUAGE],
+            });
             console.error(response.message);
             return;
         }
@@ -45,8 +51,7 @@
     };
 
     const getPreviousEmail = async () => {
-        if (currentOffset <= 1)
-            return;
+        if (currentOffset <= 1) return;
 
         const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         if (currentOffset - (1 % MAILBOX_LENGTH) == 0) {
@@ -58,8 +63,7 @@
     };
 
     const getNextEmail = async () => {
-        if (currentOffset >= getCurrentMailbox().total)
-            return;
+        if (currentOffset >= mailboxContext.getCurrentMailbox().total) return;
 
         const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
         if (currentOffset + (1 % MAILBOX_LENGTH) == 1) {
@@ -83,12 +87,13 @@
         <small>
             {getEmailPaginationTemplate(
                 (currentOffset + 1).toString(),
-                getCurrentMailbox().total.toString(),
+                mailboxContext.getCurrentMailbox().total.toString(),
             )}
         </small>
         <Button.Action
             type="button"
-            class="btn-inline {currentOffset >= getCurrentMailbox().total
+            class="btn-inline {currentOffset >=
+            mailboxContext.getCurrentMailbox().total
                 ? 'disabled'
                 : ''}"
             onclick={getNextEmail}

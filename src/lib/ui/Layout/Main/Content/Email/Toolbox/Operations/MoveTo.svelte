@@ -1,10 +1,8 @@
 <script lang="ts" module>
-    import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { Folder, type Account, type Email } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
-    import { simpleDeepCopy, sortSelection } from "$lib/utils";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
@@ -69,7 +67,6 @@
 
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
-    import Icon from "$lib/ui/Components/Icon";
     import type { Snippet } from "svelte";
 
     interface Props {

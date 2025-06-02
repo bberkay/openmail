@@ -5,7 +5,7 @@
     import Subject from "./Content/Subject.svelte";
     import Flags from "./Content/Flags.svelte";
     import Sender from "./Content/Sender.svelte";
-    import { getCurrentMailbox } from "../Mailbox.svelte";
+    import { getMailboxContext } from "../Mailbox.svelte";
 
     interface Props {
         account: Account;
@@ -13,6 +13,8 @@
     }
 
     let { account, email }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 </script>
 
 <div class="email-content">
@@ -26,7 +28,7 @@
         <Attachments
             {account}
             {email}
-            folder={getCurrentMailbox().folder}
+            folder={mailboxContext.getCurrentMailbox().folder}
         />
     {/if}
 </div>

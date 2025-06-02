@@ -7,7 +7,7 @@
     import { FileSystem } from "$lib/services/FileSystem";
     import { onMount } from "svelte";
 
-    const saveChanges = async (e: Event): Promise<void> => {
+    const saveChanges = async (): Promise<void> => {
         const fileSystem = await FileSystem.getInstance();
         await fileSystem.savePreferences(SharedStore.preferences);
         document.dispatchEvent(new CustomEvent("preferencesSaved"));

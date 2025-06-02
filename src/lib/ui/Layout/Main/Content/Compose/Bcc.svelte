@@ -8,7 +8,6 @@
     } from "$lib/utils";
     import * as Input from "$lib/ui/Components/Input";
     import * as Button from "$lib/ui/Components/Button";
-    import Label from "$lib/ui/Components/Label";
     import Icon from "$lib/ui/Components/Icon";
     import Collapse from "$lib/ui/Components/Collapse";
     import { FormGroup } from "$lib/ui/Components/Form";

@@ -16,7 +16,7 @@
     let {
         account,
         email
-    } = $props();
+    }: Props = $props();
 </script>
 
 <div class="tool">

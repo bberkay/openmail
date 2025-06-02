@@ -2,29 +2,23 @@
     import { type Account, type Email } from "$lib/types";
     import Toolbox from "./Email/Toolbox.svelte";
     import Content from "./Email/Content.svelte";
-    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     interface Props {
         account: Account;
         email: Email;
     }
 
-    let {
-        account,
-        email,
-    }: Props = $props();
+    let { account, email }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     let currentOffset = $state(
-        getCurrentMailbox().emails.current.findIndex((em) => em.uid === email.uid) + 1
+        mailboxContext
+            .getCurrentMailbox()
+            .emails.current.findIndex((em) => em.uid === email.uid) + 1,
     );
 </script>
 
-<Toolbox
-    {account}
-    bind:email
-    bind:currentOffset
-/>
-<Content
-    {account}
-    {email}
-/>
+<Toolbox {account} bind:email bind:currentOffset />
+<Content {account} {email} />

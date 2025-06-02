@@ -108,7 +108,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Email, Folder } from "$lib/types";
-    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { isStandardFolder } from "$lib/utils";
     import Icon from "$lib/ui/Components/Icon";
@@ -120,69 +120,53 @@
     import MoveWithSelect from "./Operations/MoveWithSelect.svelte";
     import Select from "./Operations/Select.svelte";
 
-    interface Props {
-        groupedUidSelection: GroupedUidSelection;
-        emailSelection: EmailSelection;
-        currentOffset: number;
-    }
-
-    let {
-        groupedUidSelection,
-        emailSelection = $bindable(),
-        currentOffset,
-    }: Props = $props();
+    const mailboxContext = getMailboxContext();
 </script>
 
 <div class="operations">
     <div class="tool-group">
-        <Select bind:emailSelection />
+        <Select />
     </div>
 
-    {#if emailSelection.length > 0}
+    {#if mailboxContext.emailSelection.value.length > 0}
         <div class="tool-group">
             <!-- Standard operations for all accounts -->
-            {#if emailSelection.length > 1 || doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
+            {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Flagged)}
                 <MarkAs
-                    {groupedUidSelection}
                     markType={Mark.Flagged}
-                    folder={getCurrentMailbox().folder}
+                    folder={mailboxContext.getCurrentMailbox().folder}
                 >
                     <Icon name="flag" />
                 </MarkAs>
             {/if}
-            {#if emailSelection.length > 1 || doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
+            {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Flagged)}
                 <MarkAs
-                    {groupedUidSelection}
                     markType={Mark.Flagged}
-                    folder={getCurrentMailbox().folder}
+                    folder={mailboxContext.getCurrentMailbox().folder}
                     isUnmark={true}
                 >
                     <Icon name="flagged"/>
                 </MarkAs>
             {/if}
-            {#if emailSelection.length > 1 || doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
+            {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Seen)}
                 <MarkAs
-                    {groupedUidSelection}
                     markType={Mark.Seen}
-                    folder={getCurrentMailbox().folder}
+                    folder={mailboxContext.getCurrentMailbox().folder}
                 >
                     <Icon name="seen" />
                 </MarkAs>
             {/if}
-            {#if emailSelection.length > 1 || doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
+            {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Seen)}
                 <MarkAs
-                    {groupedUidSelection}
                     markType={Mark.Seen}
-                    folder={getCurrentMailbox().folder}
+                    folder={mailboxContext.getCurrentMailbox().folder}
                     isUnmark={true}
                 >
                     <Icon name="unseen" />
                 </MarkAs>
             {/if}
-            {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
+            {#if isStandardFolder(mailboxContext.getCurrentMailbox().folder, Folder.Archive)}
                 <MoveTo
-                    {groupedUidSelection}
-                    {currentOffset}
                     sourceFolder={Folder.Archive}
                     destinationFolder={Folder.Inbox}
                 >
@@ -190,18 +174,14 @@
                 </MoveTo>
             {:else}
                 <MoveTo
-                    {groupedUidSelection}
-                    {currentOffset}
-                    sourceFolder={getCurrentMailbox().folder}
+                    sourceFolder={mailboxContext.getCurrentMailbox().folder}
                     destinationFolder={Folder.Archive}
                 >
                     <Icon name="archive" />
                 </MoveTo>
             {/if}
             <DeleteFrom
-                {groupedUidSelection}
-                {currentOffset}
-                folder={getCurrentMailbox().folder}
+                folder={mailboxContext.getCurrentMailbox().folder}
             >
                 <Icon name="trash" />
             </DeleteFrom>
@@ -209,15 +189,12 @@
         <div class="tool-group-separator"></div>
         <div class="tool-group">
             <!-- Account related specific operations -->
-            {#if groupedUidSelection.length == 1}
+            {#if mailboxContext.getGroupedUidSelection().length == 1}
                 <CopyWithSelect
-                    {groupedUidSelection}
-                    sourceFolder={getCurrentMailbox().folder}
+                    sourceFolder={mailboxContext.getCurrentMailbox().folder}
                 />
                 <MoveWithSelect
-                    {groupedUidSelection}
-                    {currentOffset}
-                    sourceFolder={getCurrentMailbox().folder}
+                    sourceFolder={mailboxContext.getCurrentMailbox().folder}
                 />
             {/if}
         </div>

@@ -2,14 +2,12 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
     import Label from "$lib/ui/Components/Label";
-    import * as Button from "$lib/ui/Components/Button";
     import * as Select from "$lib/ui/Components/Select";
     import Badge from "$lib/ui/Components/Badge";
     import { FormGroup } from "$lib/ui/Components/Form";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
     import { getSenderAddressTemplate } from "$lib/templates";
-    import { createSenderAddressFromAccount, escapeHTML } from "$lib/utils";
 
     interface Props {
         searchingAccounts: "home" | Account[];

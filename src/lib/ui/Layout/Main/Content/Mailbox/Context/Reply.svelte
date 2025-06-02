@@ -2,24 +2,22 @@
     import { reply } from "../Toolbox/Operations/Reply.svelte";
     import * as Context from "$lib/ui/Components/Context";
     import type { Snippet } from "svelte";
-    import type { EmailSelection, GroupedUidSelection } from "../../Mailbox.svelte";
+    import { getMailboxContext } from "../../Mailbox.svelte";
 
     interface Props {
         children: Snippet;
-        groupedUidSelection: GroupedUidSelection;
-        emailSelection: EmailSelection
     }
 
     let {
         children,
-        groupedUidSelection,
-        emailSelection,
     }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     const replyOnClick = async () => {
         await reply(
-            emailSelection,
-            groupedUidSelection
+            mailboxContext.emailSelection.value,
+            mailboxContext.getGroupedUidSelection()
         );
     }
 </script>

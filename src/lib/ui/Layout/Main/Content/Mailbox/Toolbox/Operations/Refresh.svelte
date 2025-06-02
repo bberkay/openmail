@@ -6,7 +6,6 @@
     import { show as showToast } from "$lib/ui/Components/Toast";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import Icon from "$lib/ui/Components/Icon";
 
     const refresh = async (): Promise<void> => {
         const accounts =
@@ -41,22 +40,18 @@
     import type { Snippet } from "svelte";
 
     interface Props {
-        children: Snippet
+        children: Snippet;
     }
 
-    let { children } = $props();
+    let { children }: Props = $props();
 
     const refreshOnClick = async () => {
         await refresh();
-    }
+    };
 </script>
 
 <div class="tool">
-    <Button.Action
-        type="button"
-        class="btn-inline"
-        onclick={refreshOnClick}
-    >
+    <Button.Action type="button" class="btn-inline" onclick={refreshOnClick}>
         {@render children()}
     </Button.Action>
 </div>

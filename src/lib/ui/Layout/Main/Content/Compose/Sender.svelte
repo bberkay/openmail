@@ -8,7 +8,6 @@
     import { FormGroup } from "$lib/ui/Components/Form";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import type { Account } from "$lib/types";
-    import { createSenderAddress } from "$lib/utils";
     import { getSenderAddressTemplate } from "$lib/templates";
 
     interface Props {

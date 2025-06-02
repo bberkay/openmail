@@ -2,24 +2,22 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder } from "$lib/types";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
-    import { type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { moveTo } from "./MoveTo.svelte";
 
     interface Props {
         sourceFolder: string | Folder;
-        groupedUidSelection: GroupedUidSelection;
-        currentOffset?: number;
     }
 
     let {
         sourceFolder,
-        groupedUidSelection,
-        currentOffset
     }: Props = $props();
 
-    let email_address = $derived(groupedUidSelection[0][0]);
+    const mailboxContext = getMailboxContext();
+
+    let email_address = $derived(mailboxContext.getGroupedUidSelection()[0][0]);
     let isCurrentFolderCustom = $derived.by(() => {
         if (SharedStore.currentAccount == "home") return false;
 
@@ -32,8 +30,8 @@
         await moveTo(
             sourceFolder,
             destinationFolder,
-            groupedUidSelection,
-            currentOffset,
+            mailboxContext.getGroupedUidSelection(),
+            mailboxContext.currentOffset.value,
         );
     }
 </script>

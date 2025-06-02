@@ -11,7 +11,6 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
     import type { Account } from "$lib/types";
-    import { simpleDeepCopy } from "$lib/utils";
     import { onMount } from "svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
     import EditAccountForm from "../EditAccountForm.svelte";

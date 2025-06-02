@@ -1,32 +1,38 @@
 <script lang="ts">
-    import { markEmails, unmarkEmails } from "../Toolbox/Operations/MarkAs.svelte";
+    import {
+        markEmails,
+        unmarkEmails,
+    } from "../Toolbox/Operations/MarkAs.svelte";
     import * as Context from "$lib/ui/Components/Context";
     import { type Mark, Folder } from "$lib/types";
     import type { Snippet } from "svelte";
-    import type { GroupedUidSelection } from "../../Mailbox.svelte";
+    import { getMailboxContext } from "../../Mailbox.svelte";
 
     interface Props {
-        children: Snippet,
-        groupedUidSelection: GroupedUidSelection;
+        children: Snippet;
         markType: Mark;
         folder: string | Folder;
         isUnmark?: boolean;
     }
 
-    let {
-        children,
-        groupedUidSelection,
-        markType,
-        folder,
-        isUnmark = false
-    }: Props = $props();
+    let { children, markType, folder, isUnmark = false }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     const markEmailsOnClick = async () => {
-        await markEmails(groupedUidSelection, markType, folder);
+        await markEmails(
+            mailboxContext.getGroupedUidSelection(),
+            markType,
+            folder,
+        );
     };
 
     const unmarkEmailsOnClick = async () => {
-        await unmarkEmails(groupedUidSelection, markType, folder);
+        await unmarkEmails(
+            mailboxContext.getGroupedUidSelection(),
+            markType,
+            folder,
+        );
     };
 </script>
 

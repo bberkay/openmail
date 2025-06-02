@@ -9,7 +9,6 @@
         extractEmailAddress,
         extractFullname,
     } from "$lib/utils";
-    import * as Button from "$lib/ui/Components/Button";
     import Others from "./Others.svelte";
     import { type Account, type Email } from "$lib/types";
 

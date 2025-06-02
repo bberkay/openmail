@@ -1,16 +1,9 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import * as Input from "$lib/ui/Components/Input";
-    import {
-        getCurrentMailbox,
-        type EmailSelection,
-    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
-    interface Props {
-        emailSelection: EmailSelection;
-    }
-
-    let { emailSelection = $bindable() }: Props = $props();
+    const mailboxContext = getMailboxContext();
 
     let selectShownCheckbox: HTMLInputElement;
     let shownEmailUids: string[] = [];
@@ -21,7 +14,7 @@
     });
 
     $effect(() => {
-        if (getCurrentMailbox()) {
+        if (mailboxContext.getCurrentMailbox()) {
             shownEmailUids = [];
             document
                 .querySelectorAll<HTMLInputElement>(
@@ -32,13 +25,18 @@
                 });
         }
 
-        if (emailSelection.length < 2 && selectShownCheckbox) {
+        if (
+            mailboxContext.emailSelection.value.length < 2 &&
+            selectShownCheckbox
+        ) {
             selectShownCheckbox.checked = false;
         }
     });
 
     const selectShownEmails = () => {
-        emailSelection = selectShownCheckbox.checked ? shownEmailUids : [];
+        mailboxContext.emailSelection.value = selectShownCheckbox.checked
+            ? shownEmailUids
+            : [];
     };
 </script>
 

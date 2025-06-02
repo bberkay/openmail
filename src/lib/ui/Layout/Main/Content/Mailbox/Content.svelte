@@ -1,18 +1,12 @@
 <script lang="ts">
-    import {
-        type Email as TEmail,
-    } from "$lib/types";
-    import { getCurrentMailbox, type EmailSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { type Email as TEmail } from "$lib/types";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Selection from "./Content/Selection.svelte";
     import GroupDate from "./Content/GroupDate.svelte";
+    import { getMailboxContext } from "../Mailbox.svelte";
     import EmailPreview from "./Content/EmailPreview.svelte";
     import { onMount } from "svelte";
-
-    interface Props {
-        emailSelection: EmailSelection;
-    }
 
     type DateGroup =
         | (typeof local.today)[typeof DEFAULT_LANGUAGE]
@@ -21,7 +15,7 @@
         | (typeof local.this_month)[typeof DEFAULT_LANGUAGE]
         | (typeof local.older)[typeof DEFAULT_LANGUAGE];
 
-    let { emailSelection = $bindable() }: Props = $props();
+    const mailboxContext = getMailboxContext();
 
     let groupedEmailsByDate: Record<DateGroup, TEmail[]> = $derived.by(() => {
         const today = new Date();
@@ -44,7 +38,7 @@
             [local.older[DEFAULT_LANGUAGE]]: [],
         };
 
-        getCurrentMailbox().emails.current.forEach((email: TEmail) => {
+        mailboxContext.getCurrentMailbox().emails.current.forEach((email: TEmail) => {
             const emailDate = new Date(email.date);
             emailDate.setHours(0, 0, 0, 0);
 
@@ -81,14 +75,14 @@
 
 <div class="mailbox">
     {#if isSelectShownChecked}
-        <Selection bind:emailSelection />
+        <Selection />
     {/if}
     {#each Object.entries(groupedEmailsByDate) as [groupDate, groupedEmails]}
         {#if groupedEmails.length > 0}
             <GroupDate {groupDate} />
             <div class="email-preview-group">
                 {#each groupedEmails as email}
-                    <EmailPreview bind:emailSelection {email} />
+                    <EmailPreview {email} />
                 {/each}
             </div>
         {/if}

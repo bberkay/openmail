@@ -2,7 +2,7 @@
     import { Folder, Mark } from "$lib/types";
     import Icon from "$lib/ui/Components/Icon";
     import * as Context from "$lib/ui/Components/Context";
-    import { getCurrentMailbox, type EmailSelection, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { isStandardFolder } from "$lib/utils";
     import Forward from "./Context/Forward.svelte";
     import Reply from "./Context/Reply.svelte";
@@ -17,37 +17,33 @@
     import Unsubscribe from "./Context/Unsubscribe.svelte";
     import UnsubscribeAll from "./Context/UnsubscribeAll.svelte";
 
-    interface Props {
-        groupedUidSelection: GroupedUidSelection;
-        emailSelection: EmailSelection
-        currentOffset: number;
-    }
-
-    let {
-        groupedUidSelection,
-        emailSelection = $bindable(),
-        currentOffset,
-    }: Props = $props();
+    const mailboxContext = getMailboxContext();
 
     const selectEmail = (selectedEmail: HTMLElement) => {
-        if (emailSelection === "1:*") return;
-        const selectedEmailCheckbox = selectedEmail.querySelector
-            <HTMLInputElement>(".email-preview-selection")!;
-        if (!selectedEmailCheckbox.checked) emailSelection = [];
+        if (mailboxContext.emailSelection.value === "1:*") return;
+        const selectedEmailCheckbox =
+            selectedEmail.querySelector<HTMLInputElement>(
+                ".email-preview-selection",
+            )!;
+        if (!selectedEmailCheckbox.checked)
+            mailboxContext.emailSelection.value = [];
         const selectedEmailUid = selectedEmailCheckbox.value;
-        if (!emailSelection.includes(selectedEmailUid)) {
-            emailSelection.push(selectedEmailUid);
+        if (!mailboxContext.emailSelection.value.includes(selectedEmailUid)) {
+            mailboxContext.emailSelection.value.push(selectedEmailUid);
         }
     };
 
     const deselectEmail = (lastSelectedEmail: HTMLElement) => {
-        if (emailSelection === "1:*") return;
-        const lastSelectedEmailCheckbox = lastSelectedEmail.querySelector
-            <HTMLInputElement>(".email-preview-selection")!;
+        if (mailboxContext.emailSelection.value === "1:*") return;
+        const lastSelectedEmailCheckbox =
+            lastSelectedEmail.querySelector<HTMLInputElement>(
+                ".email-preview-selection",
+            )!;
         const lastSelectedEmailUid = lastSelectedEmailCheckbox.value;
-        emailSelection = emailSelection.filter(
-            (selection) => selection !== lastSelectedEmailUid,
-        );
+        mailboxContext.emailSelection.value =
+            mailboxContext.emailSelection.value.filter(
+                (selection) => selection !== lastSelectedEmailUid,
+            );
     };
 </script>
 
@@ -56,42 +52,38 @@
     beforeOpen={selectEmail}
     afterClose={deselectEmail}
 >
-    {#if emailSelection.length > 1 || doAllSelectedEmailsLackMark(emailSelection, Mark.Flagged)}
+    {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Flagged)}
         <MarkAs
-            {groupedUidSelection}
             markType={Mark.Flagged}
-            folder={getCurrentMailbox().folder}
+            folder={mailboxContext.getCurrentMailbox().folder}
         >
             <Icon name="flag" />
             <span>Mark as Important</span>
         </MarkAs>
     {/if}
-    {#if emailSelection.length > 1 || doAllSelectedEmailsHaveMark(emailSelection, Mark.Flagged)}
+    {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Flagged)}
         <MarkAs
-            {groupedUidSelection}
             markType={Mark.Flagged}
-            folder={getCurrentMailbox().folder}
+            folder={mailboxContext.getCurrentMailbox().folder}
             isUnmark={true}
         >
             <Icon name="flagged" />
             <span>Unmark as Important</span>
         </MarkAs>
     {/if}
-    {#if emailSelection.length > 1 || doAllSelectedEmailsLackMark(emailSelection, Mark.Seen)}
+    {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Seen)}
         <MarkAs
-            {groupedUidSelection}
             markType={Mark.Seen}
-            folder={getCurrentMailbox().folder}
+            folder={mailboxContext.getCurrentMailbox().folder}
         >
             <Icon name="seen" />
             <span>Mark as seen</span>
         </MarkAs>
     {/if}
-    {#if emailSelection.length > 1 || doAllSelectedEmailsHaveMark(emailSelection, Mark.Seen)}
+    {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Seen)}
         <MarkAs
-            {groupedUidSelection}
             markType={Mark.Seen}
-            folder={getCurrentMailbox().folder}
+            folder={mailboxContext.getCurrentMailbox().folder}
             isUnmark={true}
         >
             <Icon name="unseen" />
@@ -99,66 +91,46 @@
         </MarkAs>
     {/if}
     <Context.Separator />
-    {#if emailSelection.length == 1}
-        <Reply
-            {groupedUidSelection}
-            {emailSelection}
-        >
+    {#if mailboxContext.emailSelection.value.length == 1}
+        <Reply>
             <Icon name="reply" />
             <span>Reply</span>
         </Reply>
-        <Forward
-            {groupedUidSelection}
-            {emailSelection}
-        >
+        <Forward>
             <Icon name="forward" />
             <span>Forward</span>
         </Forward>
         <Context.Separator />
-        <Unsubscribe
-            {groupedUidSelection}
-            {emailSelection}
-        >
-            Unsubscribe
-        </Unsubscribe>
-    {:else if emailSelection.length > 1}
-        {#if doAllSelectedEmailsHaveUnsubscribeOption(groupedUidSelection)}
-            <UnsubscribeAll
-                {groupedUidSelection}
-                {emailSelection}
-            >
-                Unsubscribe All
-            </UnsubscribeAll>
+        <Unsubscribe>Unsubscribe</Unsubscribe>
+    {:else if mailboxContext.emailSelection.value.length > 1}
+        {#if doAllSelectedEmailsHaveUnsubscribeOption(mailboxContext.getGroupedUidSelection())}
+            <UnsubscribeAll>Unsubscribe All</UnsubscribeAll>
         {/if}
     {/if}
     <Context.Separator />
-    {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
-        <MoveTo
-            {groupedUidSelection}
-            sourceFolder={Folder.Archive}
-            destinationFolder={Folder.Inbox}
-        >
+    {#if isStandardFolder(mailboxContext.getCurrentMailbox().folder, Folder.Archive)}
+        <MoveTo sourceFolder={Folder.Archive} destinationFolder={Folder.Inbox}>
             <Icon name="inbox" />
             <span>Move to Inbox</span>
         </MoveTo>
     {:else}
         <MoveTo
-            {groupedUidSelection}
-            sourceFolder={getCurrentMailbox().folder}
+            sourceFolder={mailboxContext.getCurrentMailbox().folder}
             destinationFolder={Folder.Archive}
         >
             <Icon name="archive" />
             <span>Archive</span>
         </MoveTo>
     {/if}
-    <DeleteFrom
-        {groupedUidSelection}
-        {currentOffset}
-        folder={getCurrentMailbox().folder}
-    >
+    <DeleteFrom folder={mailboxContext.getCurrentMailbox().folder}>
         <Icon name="trash" />
-        <span>{isStandardFolder(getCurrentMailbox().folder, Folder.Trash)
-            ? "Delete Completely"
-            : "Move to Trash"}</span>
+        <span>
+            {isStandardFolder(
+                mailboxContext.getCurrentMailbox().folder,
+                Folder.Trash,
+            )
+                ? "Delete Completely"
+                : "Move to Trash"}
+        </span>
     </DeleteFrom>
 </Context.Root>

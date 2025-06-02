@@ -2,7 +2,6 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder, type Account, type Email } from "$lib/types";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
-    import { getCurrentMailbox, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { moveTo } from "./MoveTo.svelte";

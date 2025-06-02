@@ -3,30 +3,28 @@
     import * as Context from "$lib/ui/Components/Context";
     import { Folder } from "$lib/types";
     import type { Snippet } from "svelte";
-    import type { GroupedUidSelection } from "../../Mailbox.svelte";
+    import { getMailboxContext } from "../../Mailbox.svelte";
 
     interface Props {
         children: Snippet
         sourceFolder: string | Folder;
         destinationFolder: string | Folder;
-        groupedUidSelection: GroupedUidSelection;
-        currentOffset?: number;
     }
 
     let {
         children,
         sourceFolder,
         destinationFolder,
-        groupedUidSelection = $bindable(),
-        currentOffset = $bindable()
     }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     const moveEmailsOnClick = async () => {
         await moveTo(
             sourceFolder,
             destinationFolder,
-            groupedUidSelection,
-            currentOffset
+            mailboxContext.getGroupedUidSelection(),
+            mailboxContext.currentOffset.value
         );
     };
 </script>

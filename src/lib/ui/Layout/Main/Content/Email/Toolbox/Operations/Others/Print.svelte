@@ -3,7 +3,6 @@
     import { type Email, type Account } from "$lib/types";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import { show as showMessage } from "$lib/ui/Components/Message";
-    import { show as showToast } from "$lib/ui/Components/Toast";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { getNotImplementedTemplate } from "$lib/templates";
@@ -18,7 +17,7 @@
         children,
         account,
         email
-    } = $props();
+    }: Props = $props();
 </script>
 
 <Dropdown.Item

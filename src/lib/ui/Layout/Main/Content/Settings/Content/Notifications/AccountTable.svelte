@@ -3,7 +3,6 @@
     import Table from "./AccountTable/Table.svelte";
     import Pagination from "./AccountTable/Pagination.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { type Account } from "$lib/types";
 
     interface Props {
         accountsPerPage: number;

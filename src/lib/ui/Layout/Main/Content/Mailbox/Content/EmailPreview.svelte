@@ -1,6 +1,6 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { compactEmailDate, getMonths, isSameDay } from "$lib/utils";
+    import { compactEmailDate } from "$lib/utils";
 
     export function findAccountByEmail(email: TEmail): Account | undefined {
         if (SharedStore.currentAccount !== "home") {
@@ -31,10 +31,7 @@
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Email as TEmail, type Account } from "$lib/types";
     import { extractEmailAddress, extractFullname, truncate } from "$lib/utils";
-    import {
-        getCurrentMailbox,
-        type EmailSelection,
-    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
     import Badge from "$lib/ui/Components/Badge/Badge.svelte";
@@ -47,15 +44,14 @@
     const MAX_BODY_LENGTH = 150;
 
     interface Props {
-        emailSelection: EmailSelection;
         email: TEmail;
     }
 
     let {
-        emailSelection = $bindable(),
         email
     }: Props = $props();
 
+    const mailboxContext = getMailboxContext();
     const account = $state(findAccountByEmail(email)!);
 
     const showEmailContent = async (e: Event): Promise<void> => {
@@ -64,7 +60,7 @@
 
         const response = await MailboxController.getEmailContent(
             account,
-            getCurrentMailbox().folder,
+            mailboxContext.getCurrentMailbox().folder,
             email.uid,
         );
 
@@ -99,7 +95,7 @@
         <Input.Basic
             type="checkbox"
             class="email-preview-selection"
-            bind:group={emailSelection as string[]}
+            bind:group={mailboxContext.emailSelection.value as string[]}
             onclick={deselectAllAccounts}
             value={account.email_address.concat(",", email.uid)}
         />

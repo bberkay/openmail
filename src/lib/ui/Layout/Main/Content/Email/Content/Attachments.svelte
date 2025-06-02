@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Account, type Email, Folder } from "$lib/types";
     import { getAttachmentTemplate } from "$lib/templates";

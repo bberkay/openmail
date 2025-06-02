@@ -10,7 +10,6 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import { SharedStore } from "$lib/stores/shared.svelte";
 
     interface Props {
         account: Account;

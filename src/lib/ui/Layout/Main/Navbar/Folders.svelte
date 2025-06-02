@@ -8,7 +8,7 @@
     import MoveFolder from "$lib/ui/Layout/Main/Navbar/Folders/MoveFolder.svelte";
     import DeleteFolder from "$lib/ui/Layout/Main/Navbar/Folders/DeleteFolder.svelte";
     import Mailbox, {
-        getCurrentMailbox,
+        getMailboxContext,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showModal } from "$lib/ui/Components/Modal";
@@ -18,6 +18,8 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Icon from "$lib/ui/Components/Icon";
     import { isStandardFolder } from "$lib/utils";
+
+    const mailboxContext = getMailboxContext();
 
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"
@@ -37,7 +39,7 @@
     const setCurrentFolder = async (
         selectedFolder: string | Folder,
     ): Promise<void> => {
-        if (getCurrentMailbox().folder !== selectedFolder) {
+        if (mailboxContext.getCurrentMailbox().folder !== selectedFolder) {
             const response = await MailboxController.getMailbox(
                 SharedStore.currentAccount as Account,
                 selectedFolder,
@@ -60,19 +62,19 @@
 
     const showCreateSubfolder = (parentFolderName: string) => {
         showModal(CreateFolder, { parentFolderName });
-    }
+    };
 
     const showRenameFolder = (folderName: string) => {
         showModal(RenameFolder, { folderName });
-    }
+    };
 
     const showMoveFolder = (folderName: string) => {
         showModal(MoveFolder, { folderName });
-    }
+    };
 
     const showDeleteFolder = (folderName: string) => {
-        showModal(DeleteFolder, { folderName })
-    }
+        showModal(DeleteFolder, { folderName });
+    };
 
     const refreshFolders = async () => {
         const response = await MailboxController.getFolders(
@@ -96,9 +98,12 @@
     disabled={SharedStore.currentAccount === "home"}
 >
     <Dropdown.Toggle>
-        {isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)
+        {isStandardFolder(
+            mailboxContext.getCurrentMailbox().folder,
+            Folder.Inbox,
+        )
             ? Folder.Inbox
-            : getCurrentMailbox().folder}
+            : mailboxContext.getCurrentMailbox().folder}
     </Dropdown.Toggle>
     <Dropdown.Content>
         <Dropdown.Item onclick={showCreateFolder}>
@@ -109,13 +114,13 @@
         </Dropdown.Item>
         <Dropdown.Separator title="Standard" />
         {#each standardFolders as standardFolder}
-            {@const [folderTag, ] = standardFolder.split(":")}
+            {@const [folderTag] = standardFolder.split(":")}
             <Dropdown.Item onclick={() => setCurrentFolder(folderTag)}>
                 {folderTag}
             </Dropdown.Item>
         {/each}
         {#if customFolders.length > 0}
-            <Dropdown.Separator title="Custom"/>
+            <Dropdown.Separator title="Custom" />
         {/if}
         {#each customFolders as customFolder}
             <Dropdown.Item onclick={() => setCurrentFolder(customFolder)}>
@@ -125,16 +130,24 @@
                         <Icon name="ellipsis" />
                     </Dropdown.Toggle>
                     <Dropdown.Content>
-                        <Dropdown.Item onclick={() => showCreateSubfolder(customFolder)}>
+                        <Dropdown.Item
+                            onclick={() => showCreateSubfolder(customFolder)}
+                        >
                             {local.create_subfolder[DEFAULT_LANGUAGE]}
                         </Dropdown.Item>
-                        <Dropdown.Item onclick={() => showRenameFolder(customFolder)}>
+                        <Dropdown.Item
+                            onclick={() => showRenameFolder(customFolder)}
+                        >
                             {local.rename_folder[DEFAULT_LANGUAGE]}
                         </Dropdown.Item>
-                        <Dropdown.Item onclick={() => showMoveFolder(customFolder)}>
+                        <Dropdown.Item
+                            onclick={() => showMoveFolder(customFolder)}
+                        >
                             {local.move_folder[DEFAULT_LANGUAGE]}
                         </Dropdown.Item>
-                        <Dropdown.Item onclick={() => showDeleteFolder(customFolder)}>
+                        <Dropdown.Item
+                            onclick={() => showDeleteFolder(customFolder)}
+                        >
                             {local.delete_folder[DEFAULT_LANGUAGE]}
                         </Dropdown.Item>
                     </Dropdown.Content>
@@ -149,13 +162,13 @@
         nav {
             & .folders {
                 & > .dropdown-content {
-                    max-height: 80vh!important;
+                    max-height: 80vh !important;
                     overflow-y: scroll;
                     overflow-x: hidden;
                 }
 
                 & .dropdown-container.inline .dropdown-toggle {
-                    padding: var(--spacing-2xs)!important;
+                    padding: var(--spacing-2xs) !important;
 
                     & svg {
                         width: var(--font-size-sm);

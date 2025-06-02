@@ -23,7 +23,7 @@
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
     import Form from "$lib/ui/Components/Form";
     import Mailbox, {
-        getCurrentMailbox,
+        getMailboxContext,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
@@ -46,6 +46,8 @@
     }
 
     let { originalMessageContext }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     let composeForm: HTMLFormElement | undefined = $state();
     let senderAccount: Account = $state(
@@ -94,10 +96,7 @@
     }
 
     async function deleteDraft() {
-        await MailboxController.deleteDraft(
-            senderAccount,
-            draftAppenduid,
-        );
+        await MailboxController.deleteDraft(senderAccount, draftAppenduid);
     }
 
     async function showSentMailbox() {
@@ -107,7 +106,12 @@
 
         // Show sent folder of sender which must be the currentAccount
         // at this point.
-        if (!isStandardFolder(getCurrentMailbox().folder, Folder.Sent)) {
+        if (
+            !isStandardFolder(
+                mailboxContext.getCurrentMailbox().folder,
+                Folder.Sent,
+            )
+        ) {
             const response = await MailboxController.getMailbox(
                 SharedStore.currentAccount,
                 Folder.Sent,
@@ -234,11 +238,7 @@
 </script>
 
 <div class="compose">
-    <Button.Basic
-        type="button"
-        class="btn-inline"
-        onclick={backToDefault}
-    >
+    <Button.Basic type="button" class="btn-inline" onclick={backToDefault}>
         <Icon name="back" />
     </Button.Basic>
 
@@ -255,7 +255,12 @@
         <Subject bind:value={subject} {originalMessageContext} />
         <Body bind:editor={body} {originalMessageContext} />
         <Attachments />
-        <Action bind:isSendingEmail bind:isSavingDraft {saveDraft} {deleteDraft} />
+        <Action
+            bind:isSendingEmail
+            bind:isSavingDraft
+            {saveDraft}
+            {deleteDraft}
+        />
     </Form>
     {#if lastDraftSavedTime}
         <span class="draft-saved-feedback">

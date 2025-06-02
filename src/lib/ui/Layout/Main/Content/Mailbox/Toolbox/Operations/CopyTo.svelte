@@ -11,14 +11,15 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { convertUidSelectionToMessageIds, fetchUidsByMessageIds } from "../Operations.svelte";
+    import type { GroupedUidSelection } from "../../../Mailbox.svelte";
 
     export async function copyTo(
         sourceFolder: string | Folder,
         destinationFolder: string | Folder,
-        selection: GroupedUidSelection,
+        groupedUidSelection: GroupedUidSelection,
         isUndo: boolean = false,
     ): Promise<void> {
-        const currentSelection = simpleDeepCopy(selection);
+        const currentSelection = simpleDeepCopy(groupedUidSelection);
         const messageIdsOfSelection =
             convertUidSelectionToMessageIds(currentSelection);
 
@@ -74,30 +75,29 @@
 
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
-    import Icon from "$lib/ui/Components/Icon";
     import { deleteFrom } from "./DeleteFrom.svelte";
-    import type { GroupedUidSelection } from "../../../Mailbox.svelte";
+    import { getMailboxContext } from "../../../Mailbox.svelte";
     import type { Snippet } from "svelte";
 
     interface Props {
         children: Snippet;
         sourceFolder: string | Folder;
         destinationFolder: string | Folder;
-        groupedUidSelection: GroupedUidSelection;
     }
 
     let {
         children,
         sourceFolder,
         destinationFolder,
-        groupedUidSelection,
     }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     const copyEmailsOnClick = async () => {
         await copyTo(
             sourceFolder,
             destinationFolder,
-            groupedUidSelection
+            mailboxContext.getGroupedUidSelection()
         );
     };
 </script>

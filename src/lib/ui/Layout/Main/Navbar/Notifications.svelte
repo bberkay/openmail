@@ -13,13 +13,15 @@
     import * as Button from "$lib/ui/Components/Button";
     import Compose from "$lib/ui/Layout/Main/Content/Compose.svelte";
     import Mailbox, {
-        getCurrentMailbox,
+        getMailboxContext,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import Email from "$lib/ui/Layout/Main/Content/Email.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
+
+    const mailboxContext = getMailboxContext();
 
     let notificationsContainer: HTMLElement;
     let isNotificationsHidden = $state(true);
@@ -66,7 +68,13 @@
             (acc) => acc.email_address == receiverEmailAddress,
         )!;
 
-        if (isStandardFolder(getCurrentMailbox().folder, Folder.Inbox)) return;
+        if (
+            isStandardFolder(
+                mailboxContext.getCurrentMailbox().folder,
+                Folder.Inbox,
+            )
+        )
+            return;
 
         const response = await MailboxController.getMailbox(
             SharedStore.currentAccount,
@@ -157,7 +165,7 @@
 
             if (failed.length > 0) {
                 showMessage({
-                    title: local.error_show_home[DEFAULT_LANGUAGE]
+                    title: local.error_show_home[DEFAULT_LANGUAGE],
                 });
                 failed.forEach((f) => console.error(f.reason));
                 return;
@@ -206,7 +214,10 @@
     };
 
     const closeWhenClickedOutside = (e: Event) => {
-        if (!isNotificationsHidden && !notificationsContainer.contains(e.target as HTMLElement)) {
+        if (
+            !isNotificationsHidden &&
+            !notificationsContainer.contains(e.target as HTMLElement)
+        ) {
             isNotificationsHidden = true;
         }
     };
@@ -242,10 +253,16 @@
                         <div
                             class="notification-item"
                             onclick={() => {
-                                showEmailContent(email_address, recentEmail.uid);
+                                showEmailContent(
+                                    email_address,
+                                    recentEmail.uid,
+                                );
                             }}
                             onkeydown={() => {
-                                showEmailContent(email_address, recentEmail.uid);
+                                showEmailContent(
+                                    email_address,
+                                    recentEmail.uid,
+                                );
                             }}
                             tabindex="0"
                             role="button"
@@ -290,9 +307,7 @@
                         </div>
                     {/each}
                 {:else}
-                    <div class="empty">
-                        All clear!
-                    </div>
+                    <div class="empty">All clear!</div>
                 {/each}
             </div>
             <div class="notifications-footer">

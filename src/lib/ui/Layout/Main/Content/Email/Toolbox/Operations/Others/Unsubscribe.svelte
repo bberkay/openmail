@@ -1,11 +1,9 @@
 <script lang="ts" module>
-    import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
-    import { Folder, type Account, type Email } from "$lib/types";
+    import { type Account, type Email } from "$lib/types";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";
-    import { getCurrentMailbox, type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
 
@@ -46,7 +44,7 @@
         children,
         account,
         email
-    } = $props();
+    }: Props = $props();
 
     const unsubscribeOnClick = async () => {
         await unsubscribe(

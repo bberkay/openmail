@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getRangePaginationTemplate } from "$lib/templates";
     import {
-        getCurrentMailbox,
+        getMailboxContext,
         paginateMailboxBackward,
         paginateMailboxForward,
     } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
@@ -9,29 +9,29 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Icon from "$lib/ui/Components/Icon";
 
-    interface Props {
-        currentOffset: number;
-    }
-
-    let { currentOffset = $bindable() }: Props = $props();
+    const mailboxContext = getMailboxContext();
 
     const getPreviousEmails = async () => {
         const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
-        if (currentOffset <= MAILBOX_LENGTH) return;
-        await paginateMailboxBackward(currentOffset);
-        currentOffset = Math.min(
-            getCurrentMailbox().total,
-            currentOffset + MAILBOX_LENGTH,
+        if (mailboxContext.currentOffset.value <= MAILBOX_LENGTH) return;
+        await paginateMailboxBackward(mailboxContext.currentOffset.value);
+        mailboxContext.currentOffset.value = Math.min(
+            mailboxContext.getCurrentMailbox().total,
+            mailboxContext.currentOffset.value + MAILBOX_LENGTH,
         );
     };
 
     const getNextEmails = async () => {
-        if (currentOffset >= getCurrentMailbox().total) return;
-        await paginateMailboxForward(currentOffset);
+        if (
+            mailboxContext.currentOffset.value >=
+            mailboxContext.getCurrentMailbox().total
+        )
+            return;
+        await paginateMailboxForward(mailboxContext.currentOffset.value);
         const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
-        currentOffset = Math.min(
-            getCurrentMailbox().total,
-            currentOffset + MAILBOX_LENGTH,
+        mailboxContext.currentOffset.value = Math.min(
+            mailboxContext.getCurrentMailbox().total,
+            mailboxContext.currentOffset.value + MAILBOX_LENGTH,
         );
     };
 </script>
@@ -39,7 +39,8 @@
 <div class="pagination">
     <Button.Action
         type="button"
-        class="btn-inline {currentOffset <= SharedStore.preferences.mailboxLength
+        class="btn-inline {mailboxContext.currentOffset.value <=
+        SharedStore.preferences.mailboxLength
             ? 'disabled'
             : ''}"
         onclick={getPreviousEmails}
@@ -48,14 +49,19 @@
     </Button.Action>
     <small>
         {getRangePaginationTemplate(
-            currentOffset.toString(),
-            (currentOffset - 1 + SharedStore.preferences.mailboxLength).toString(),
-            getCurrentMailbox().total.toString(),
+            mailboxContext.currentOffset.value.toString(),
+            (
+                mailboxContext.currentOffset.value -
+                1 +
+                SharedStore.preferences.mailboxLength
+            ).toString(),
+            mailboxContext.getCurrentMailbox().total.toString(),
         )}
     </small>
     <Button.Action
         type="button"
-        class="btn-inline {currentOffset >= getCurrentMailbox().total
+        class="btn-inline {mailboxContext.currentOffset.value >=
+        mailboxContext.getCurrentMailbox().total
             ? 'disabled'
             : ''}"
         onclick={getNextEmails}

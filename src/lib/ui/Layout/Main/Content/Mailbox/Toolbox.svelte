@@ -1,29 +1,11 @@
 <script lang="ts">
     import Operations from "$lib/ui/Layout/Main/Content/Mailbox/Toolbox/Operations.svelte";
     import Pagination from "$lib/ui/Layout/Main/Content/Mailbox/Toolbox/Pagination.svelte";
-    import type { EmailSelection, GroupedUidSelection } from "../Mailbox.svelte";
-
-    interface Props {
-        groupedUidSelection: GroupedUidSelection;
-        emailSelection: EmailSelection;
-        currentOffset: number;
-    }
-
-    let {
-        groupedUidSelection,
-        emailSelection = $bindable(),
-        currentOffset = $bindable()
-    }: Props = $props();
-
 </script>
 
 <div class="toolbox">
-    <Operations
-        {groupedUidSelection}
-        bind:emailSelection
-        {currentOffset}
-    />
-    <Pagination bind:currentOffset />
+    <Operations />
+    <Pagination />
 </div>
 
 <style>

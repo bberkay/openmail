@@ -9,10 +9,7 @@
         getMailboxSelectAllTemplate,
         getMailboxSelectionInfoTemplate,
     } from "$lib/templates";
-    import {
-        getCurrentMailbox,
-        type EmailSelection,
-    } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import * as Button from "$lib/ui/Components/Button";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showConfirm } from "$lib/ui/Components/Confirm";
@@ -21,11 +18,7 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { onMount } from "svelte";
 
-    interface Props {
-        emailSelection: EmailSelection;
-    }
-
-    let { emailSelection = $bindable() }: Props = $props();
+    const mailboxContext = getMailboxContext();
 
     let selectShownCheckbox: HTMLInputElement;
     onMount(() => {
@@ -36,22 +29,28 @@
 
     const selectAllEmails = (event: Event) => {
         const selectAllButton = event.target as HTMLButtonElement;
-        emailSelection = "1:*";
+        mailboxContext.emailSelection.value = "1:*";
         selectAllButton.innerHTML = getMailboxClearSelectionTemplate();
         selectShownCheckbox.checked = true;
     };
 
     const deselectAllEmails = (event: Event) => {
         const selectAllButton = event.target as HTMLButtonElement;
-        emailSelection = [];
+        mailboxContext.emailSelection.value = [];
         selectAllButton.innerHTML = getMailboxSelectAllTemplate(
-            getCurrentMailbox().total.toString(),
+            mailboxContext.getCurrentMailbox().total.toString(),
         );
         selectShownCheckbox.checked = false;
     };
 
     const emptyTrash = async () => {
-        if (!isStandardFolder(getCurrentMailbox().folder, Folder.Trash)) return;
+        if (
+            !isStandardFolder(
+                mailboxContext.getCurrentMailbox().folder,
+                Folder.Trash,
+            )
+        )
+            return;
 
         const emptyTrashWrapper = async () => {
             const response = await MailboxController.deleteEmails(
@@ -78,20 +77,20 @@
     };
 </script>
 
-{#if isStandardFolder(getCurrentMailbox().folder, Folder.Trash) && getCurrentMailbox().total > 0}
+{#if isStandardFolder(mailboxContext.getCurrentMailbox().folder, Folder.Trash) && mailboxContext.getCurrentMailbox().total > 0}
     <div class="email-preview-selection-info">
         <span>
-            {getEmptyTrashTemplate(getCurrentMailbox().total)}
+            {getEmptyTrashTemplate(mailboxContext.getCurrentMailbox().total)}
         </span>
         <Button.Action type="button" class="btn-inline" onclick={emptyTrash}>
             {local.empty_trash[DEFAULT_LANGUAGE]}
         </Button.Action>
     </div>
-{:else if emailSelection === "1:*" || emailSelection.length > 0}
+{:else if mailboxContext.emailSelection.value === "1:*" || mailboxContext.emailSelection.value.length > 0}
     {@const selectionCount = (
-        emailSelection === "1:*"
-            ? getCurrentMailbox().total
-            : emailSelection.length
+        mailboxContext.emailSelection.value === "1:*"
+            ? mailboxContext.getCurrentMailbox().total
+            : mailboxContext.emailSelection.value.length
     ).toString()}
     <div class="email-preview-selection-info">
         <span>
@@ -100,11 +99,13 @@
         <Button.Basic
             type="button"
             class="btn-inline"
-            onclick={emailSelection === "1:*"
+            onclick={mailboxContext.emailSelection.value === "1:*"
                 ? deselectAllEmails
                 : selectAllEmails}
         >
-            {@html getMailboxSelectAllTemplate(getCurrentMailbox().total)}
+            {@html getMailboxSelectAllTemplate(
+                mailboxContext.getCurrentMailbox().total,
+            )}
         </Button.Basic>
     </div>
 {/if}

@@ -7,7 +7,6 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
     import { adjustSizes, concatValueAndUnit, convertSizeToBytes } from "$lib/utils";
-    import { onMount } from "svelte";
 
     interface Props {
         searchCriteria: SearchCriteria,

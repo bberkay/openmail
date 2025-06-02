@@ -11,16 +11,20 @@
     } from "$lib/utils";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import { convertUidSelectionToMessageIds, fetchUidsByMessageIds } from "../Operations.svelte";
+    import {
+        convertUidSelectionToMessageIds,
+        fetchUidsByMessageIds,
+    } from "../Operations.svelte";
     import { moveTo } from "./MoveTo.svelte";
+    import type { GroupedUidSelection } from "../../../Mailbox.svelte";
 
     export async function deleteFrom(
         folder: string | Folder,
-        selection: GroupedUidSelection,
+        groupedUidSelection: GroupedUidSelection,
         currentOffset?: number,
         isUndo: boolean = false,
     ): Promise<void> {
-        const currentSelection = simpleDeepCopy(selection);
+        const currentSelection = simpleDeepCopy(groupedUidSelection);
         const messageIdsOfSelection =
             convertUidSelectionToMessageIds(currentSelection);
 
@@ -29,13 +33,7 @@
                 Folder.Trash,
                 messageIdsOfSelection,
             );
-            await moveTo(
-                Folder.Trash,
-                folder,
-                newUids,
-                undefined,
-                true
-            );
+            await moveTo(Folder.Trash, folder, newUids, undefined, true);
         };
 
         const results = await Promise.allSettled(
@@ -72,33 +70,28 @@
                 onUndo: undo,
             });
         }
-    };
+    }
 </script>
 
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
     import type { Snippet } from "svelte";
-    import type { GroupedUidSelection } from "../../../Mailbox.svelte";
+    import { getMailboxContext } from "../../../Mailbox.svelte";
 
     interface Props {
         children: Snippet;
         folder: string | Folder;
-        groupedUidSelection: GroupedUidSelection;
-        currentOffset?: number;
     }
 
-    let {
-        children,
-        folder,
-        groupedUidSelection,
-        currentOffset
-    }: Props = $props();
+    let { children, folder }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     const deleteEmailsOnClick = async () => {
         await deleteFrom(
             folder,
-            groupedUidSelection,
-            currentOffset
+            mailboxContext.getGroupedUidSelection(),
+            mailboxContext.currentOffset.value,
         );
     };
 </script>

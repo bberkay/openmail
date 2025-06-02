@@ -2,7 +2,7 @@
     import { DEFAULT_PREFERENCES } from "$lib/constants";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { ToggleSwitch } from "$lib/ui/Components/Input";
-    import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
+    import { enable, isEnabled, disable } from "@tauri-apps/plugin-autostart";
     import { onMount } from "svelte";
 
     let newAutostartStatus = $state(SharedStore.preferences.isAutostartEnabled);
@@ -10,7 +10,10 @@
     onMount(() => {
         document.removeEventListener("preferencesSaved", saveAutostartChange);
         document.addEventListener("preferencesSaved", saveAutostartChange);
-        document.removeEventListener("preferencesResetToDefault", resetAutostart);
+        document.removeEventListener(
+            "preferencesResetToDefault",
+            resetAutostart,
+        );
         document.addEventListener("preferencesResetToDefault", resetAutostart);
     });
 
@@ -40,6 +43,6 @@
         <small class="muted">Change your autostart settings</small>
     </div>
     <div class="settings-section-body">
-        <ToggleSwitch bind:checked={newAutostartStatus}/>
+        <ToggleSwitch bind:checked={newAutostartStatus} />
     </div>
 </div>

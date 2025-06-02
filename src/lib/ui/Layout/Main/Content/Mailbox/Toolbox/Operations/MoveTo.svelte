@@ -11,15 +11,16 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { convertUidSelectionToMessageIds, fetchUidsByMessageIds } from "../Operations.svelte";
+    import type { GroupedUidSelection } from "../../../Mailbox.svelte";
 
     export async function moveTo(
         sourceFolder: string | Folder,
         destinationFolder: string | Folder,
-        selection: GroupedUidSelection,
+        groupedUidSelection: GroupedUidSelection,
         currentOffset?: number,
         isUndo: boolean = false,
     ): Promise<void> {
-        const currentSelection = simpleDeepCopy(selection);
+        const currentSelection = simpleDeepCopy(groupedUidSelection);
         const messageIdsOfSelection =
             convertUidSelectionToMessageIds(currentSelection);
 
@@ -78,30 +79,28 @@
 <script lang="ts">
     import * as Button from "$lib/ui/Components/Button";
     import type { Snippet } from "svelte";
-    import type { GroupedUidSelection } from "../../../Mailbox.svelte";
+    import { getMailboxContext } from "../../../Mailbox.svelte";
 
     interface Props {
         children: Snippet
         sourceFolder: string | Folder;
         destinationFolder: string | Folder;
-        groupedUidSelection: GroupedUidSelection;
-        currentOffset?: number;
     }
 
     let {
         children,
         sourceFolder,
         destinationFolder,
-        groupedUidSelection,
-        currentOffset
     }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 
     const moveEmailsOnClick = async () => {
         await moveTo(
             sourceFolder,
             destinationFolder,
-            groupedUidSelection,
-            currentOffset,
+            mailboxContext.getGroupedUidSelection(),
+            mailboxContext.currentOffset.value,
             false,
         );
     };

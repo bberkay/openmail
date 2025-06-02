@@ -26,7 +26,7 @@
     export async function fetchUidByMessageId(
         account: Account,
         folder: string | Folder,
-        message_id: string
+        message_id: string,
     ): Promise<string | undefined> {
         const searchResult = await MailboxController.searchEmails(
             account,
@@ -46,7 +46,7 @@
 
 <script lang="ts">
     import Icon from "$lib/ui/Components/Icon";
-    import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { isStandardFolder } from "$lib/utils";
     import MarkAs from "./Operations/MarkAs.svelte";
     import MoveTo from "./Operations/MoveTo.svelte";
@@ -66,6 +66,8 @@
     }
 
     let { account, email, currentOffset }: Props = $props();
+
+    const mailboxContext = getMailboxContext();
 </script>
 
 <div class="operations">
@@ -85,7 +87,7 @@
                 {account}
                 {email}
                 markType={Mark.Flagged}
-                folder={getCurrentMailbox().folder}
+                folder={mailboxContext.getCurrentMailbox().folder}
             >
                 <Icon name="flag" />
             </MarkAs>
@@ -94,7 +96,7 @@
                 {account}
                 {email}
                 markType={Mark.Flagged}
-                folder={getCurrentMailbox().folder}
+                folder={mailboxContext.getCurrentMailbox().folder}
                 isUnmark={true}
             >
                 <Icon name="flagged" />
@@ -105,7 +107,7 @@
                 {account}
                 {email}
                 markType={Mark.Seen}
-                folder={getCurrentMailbox().folder}
+                folder={mailboxContext.getCurrentMailbox().folder}
             >
                 <Icon name="seen" />
             </MarkAs>
@@ -114,16 +116,16 @@
                 {account}
                 {email}
                 markType={Mark.Seen}
-                folder={getCurrentMailbox().folder}
+                folder={mailboxContext.getCurrentMailbox().folder}
                 isUnmark={true}
             >
                 <Icon name="unseen" />
             </MarkAs>
         {/if}
-        {#if isStandardFolder(getCurrentMailbox().folder, Folder.Archive)}
+        {#if isStandardFolder(mailboxContext.getCurrentMailbox().folder, Folder.Archive)}
             <MoveTo
                 {account}
-                sourceFolder={getCurrentMailbox().folder}
+                sourceFolder={mailboxContext.getCurrentMailbox().folder}
                 destinationFolder={Folder.Inbox}
                 {email}
                 {currentOffset}
@@ -133,7 +135,7 @@
         {:else}
             <MoveTo
                 {account}
-                sourceFolder={getCurrentMailbox().folder}
+                sourceFolder={mailboxContext.getCurrentMailbox().folder}
                 destinationFolder={Folder.Archive}
                 {email}
                 {currentOffset}
@@ -143,7 +145,7 @@
         {/if}
         <DeleteFrom
             {account}
-            folder={getCurrentMailbox().folder}
+            folder={mailboxContext.getCurrentMailbox().folder}
             {email}
             {currentOffset}
         >
@@ -154,13 +156,13 @@
     <div class="tool-group">
         <MoveWithSelect
             {account}
-            sourceFolder={getCurrentMailbox().folder}
+            sourceFolder={mailboxContext.getCurrentMailbox().folder}
             {email}
             {currentOffset}
         />
         <CopyWithSelect
             {account}
-            sourceFolder={getCurrentMailbox().folder}
+            sourceFolder={mailboxContext.getCurrentMailbox().folder}
             {email}
         />
     </div>
