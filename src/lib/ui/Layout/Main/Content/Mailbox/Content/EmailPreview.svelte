@@ -94,7 +94,7 @@
     tabindex="0"
     role="button"
 >
-    <div class="email-preview-select">
+    <div class="email-preview-selection-container">
         <Input.Basic
             type="checkbox"
             class="email-preview-selection"
@@ -111,19 +111,21 @@
             {local.new[DEFAULT_LANGUAGE]}
         </div>
     {/if}
-    <div class="email-preview-message">
+    <div class="email-preview-content">
         {#if Object.hasOwn(email, "attachments") && email.attachments!.length > 0}
             <div class="attachment-icon">
                 <Icon name="attachment" />
             </div>
         {/if}
-        <div class="email-preview-message-text">
-            <div class="email-preview-subject">
-                {email.subject}
-            </div>
-            <span class="subject-body-separator">---</span>
-            <div class="email-preview-body">
-                {truncate(email.body, MAX_BODY_LENGTH)}
+        <div class="email-preview-message-container">
+            <div class="email-preview-message">
+                <div class="email-preview-subject">
+                    {email.subject}
+                </div>
+                <span class="subject-body-separator">---</span>
+                <div class="email-preview-body">
+                    {truncate(email.body, MAX_BODY_LENGTH)}
+                </div>
             </div>
         </div>
         <div class="tags email-preview-tags">
@@ -167,6 +169,7 @@
                 cursor: pointer;
                 font-size: var(--font-size-sm);
                 align-items: center;
+                width: 100%;
 
                 &:has(.email-preview-selection:checked) {
                     background-color: var(--color-border-subtle);
@@ -176,19 +179,18 @@
                     background-color: var(--color-hover);
                 }
 
-                & .email-preview-select {
+                & .email-preview-selection-container {
                     display: flex;
-                }
-
-                & .email-preview-selection {
-                    margin-right: 15px;
+                    width: 2%;
+                    margin-right: 1%;
                 }
 
                 & .email-preview-sender {
-                    width: 25vh;
+                    width: 15%;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
+                    margin-right: 2%;
                 }
 
                 & .new-message-icon {
@@ -200,35 +202,39 @@
                     font-weight: var(--font-weight-bold);
                 }
 
-                & .email-preview-message {
-                    width: 100%;
-                    margin-left: 3%;
-                    margin-right: 3%;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-
-                    & .email-preview-message-text {
-                        display: flex;
-                        flex-direction: row;
-                        align-items: center;
-                        gap: var(--spacing-xs);
-                        margin-top: 4px;
-                    }
-
-                    & .subject-body-separator {
-                        color: var(--color-text-secondary);
-                    }
-
-                    & .email-preview-body {
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        color: var(--color-text-secondary);
-                    }
+                & .email-preview-content {
+                    display: flex;
+                    width: 75%;
+                    gap: var(--spacing-md);
 
                     & .attachment-icon {
                         margin-left: calc(-1 * var(--spacing-lg));
+                    }
+
+                    & .email-preview-message-container {
+                        width: 100%;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+
+                        & .email-preview-message {
+                            display: flex;
+                            flex-direction: row;
+                            align-items: center;
+                            gap: var(--spacing-xs);
+                            margin-top: 4px;
+
+                            & .subject-body-separator {
+                                color: var(--color-text-secondary);
+                            }
+
+                            & .email-preview-body {
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                color: var(--color-text-secondary);
+                            }
+                        }
                     }
                 }
 
@@ -236,6 +242,7 @@
                     text-align: right;
                     color: var(--color-text-secondary);
                     white-space: nowrap;
+                    width: 8%;
                 }
             }
         }
