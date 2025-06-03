@@ -157,13 +157,13 @@
                     if (waitPrev) {
                         clearInterval(waitPrev);
                         waitPrev = null;
-                        resolve();
                     }
                 };
 
                 if (currentMailbox.emails.prev.length > 0) {
                     shiftEmailPagesBackward();
                     clearWaitPrevInterval();
+                    resolve();
                 } else {
                     const startTime = Date.now();
                     waitPrev = setInterval(() => {
@@ -172,10 +172,12 @@
                             WAIT_FOR_EMAILS_TIMEOUT_MS
                         ) {
                             clearWaitPrevInterval();
+                            resolve();
                         }
                         if (currentMailbox.emails.prev.length > 0) {
                             shiftEmailPagesBackward();
                             clearWaitPrevInterval();
+                            resolve();
                         }
                     }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
                 }
@@ -235,13 +237,13 @@
                     if (waitNext) {
                         clearInterval(waitNext);
                         waitNext = null;
-                        resolve();
                     }
                 };
 
                 if (currentMailbox.emails.next.length > 0) {
                     shiftEmailPagesForward();
                     clearWaitNextInterval();
+                    resolve();
                 } else {
                     const startTime = Date.now();
                     waitNext = setInterval(() => {
@@ -250,10 +252,12 @@
                             WAIT_FOR_EMAILS_TIMEOUT_MS
                         ) {
                             clearWaitNextInterval();
+                            resolve();
                         }
                         if (currentMailbox.emails.next.length > 0) {
                             shiftEmailPagesForward();
                             clearWaitNextInterval();
+                            resolve();
                         }
                     }, PAGINATE_MAILBOX_CHECK_DELAY_MS);
                 }
