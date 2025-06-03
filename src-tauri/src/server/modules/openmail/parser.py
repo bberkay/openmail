@@ -117,6 +117,15 @@ LINK_PATTERN = re.compile(r'https?://[^\s]+|\([^\)]+\)', re.DOTALL)
 BRACKET_PATTERN = re.compile(r'\[.*?\]')
 SPACE_PATTERN = re.compile(r'\s+')
 SRC_PATTERN = re.compile(r'(<img\s+[^>]*src=")(.*?)(")')
+INVISIBLE_CHARS = [
+    '\u034F',
+    '\u2007',
+    '\u00AD',
+    '\u00A0',
+    '\u200B',
+    '\u200C',
+    '\u200D'
+]
 
 class MessageParser:
     """
@@ -844,6 +853,7 @@ class MessageDecoder:
             message = MessageDecoder.base64_message(message)
 
         if sanitize:
+            message = ''.join(c for c in message if c not in INVISIBLE_CHARS)
             message = LINK_PATTERN.sub(' ', message)
             message = BRACKET_PATTERN.sub(' ', message)
             message = SPECIAL_CHAR_PATTERN.sub(' ', message)
