@@ -175,12 +175,15 @@ export function isStandardFolder(
     targetStandardFolder?: Folder,
 ) {
     return (
-        targetStandardFolder ? [targetStandardFolder] : Object.values(Folder)
-    ).some(
-        (standardFolder) =>
-            folderName.startsWith(standardFolder + ":") ||
-            folderName === standardFolder,
-    );
+        targetStandardFolder
+            ? [targetStandardFolder]
+            : Object.values(Folder)
+    ).some((standardFolder) => {
+        folderName = folderName.toLowerCase();
+        standardFolder = standardFolder.toLowerCase() as Folder;
+        return folderName.startsWith(standardFolder + ":") ||
+            folderName === standardFolder;
+    });
 }
 
 export function removeTrailingDelimiter(

@@ -15,7 +15,7 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import Icon from "$lib/ui/Components/Icon";
-    import { isStandardFolder } from "$lib/utils";
+    import { capitalize, isStandardFolder } from "$lib/utils";
 
     let standardFolders: string[] = $derived(
         SharedStore.currentAccount !== "home"

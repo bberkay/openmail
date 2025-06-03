@@ -323,6 +323,7 @@
     :global {
         .notifications-container {
             position: relative;
+            z-index: var(--z-index-dropdown);
 
             & .notification-btn {
                 & svg {

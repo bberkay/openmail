@@ -65,7 +65,9 @@
             email.uid,
         );
 
+        target.removeAttribute("disabled");
         mailboxContext.emailSelection.value = [];
+
         if (!response.success || !response.data) {
             showMessage({
                 title: local.error_get_email_content[DEFAULT_LANGUAGE],
@@ -74,7 +76,6 @@
             return;
         }
 
-        target.removeAttribute("disabled");
         showContent(Email, {
             account: account,
             email: response.data,

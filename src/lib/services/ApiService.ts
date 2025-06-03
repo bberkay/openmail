@@ -259,7 +259,7 @@ export class ApiService {
                         removeFalsyParamsAndEmptyLists(params.queryParams),
                     ).toString();
 
-        return queryString;
+        return encodeURI(queryString);
     }
 
     static createGetQueryString<T extends GetRoutes>(params: GetQueryParams[T]): string {

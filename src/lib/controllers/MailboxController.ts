@@ -131,7 +131,7 @@ export class MailboxController {
         const folderAll = SharedStore.folders[
             account.email_address
         ].standard.find((f) => isStandardFolder(f, folder2));
-        if (!folderAll) throw new Error("");
+        if (!folderAll) throw new Error("Unexpected error, folder could not found!");
 
         return folderAll.split(":")[1] as Folder;
     }
