@@ -44,16 +44,12 @@ from .types import SearchCriteria, Attachment, Mailbox, Email, Flags, Mark, Fold
 """
 Exceptions
 """
-
-
 class IMAPManagerException(Exception):
     """Custom exception for IMAPManager class."""
-
 
 class IMAPManagerLoggedOutException(IMAPManagerException):
     """Custom exception for when the IMAPManager is logged out
     while trying to perform an action that requires authentication."""
-
 
 """
 Types, that are only used in this module
@@ -149,8 +145,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
     @dataclass
     class SearchedEmails:
         """Dataclass for storing searched emails."""
-
         uids: List[str]
+        count: int
         folder: str
         search_query: str
 
@@ -1566,6 +1562,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 ),
                 search_query=search_query,
                 uids=uids,
+                count=len(uids)
             )
 
         if not folder:
@@ -1639,35 +1636,35 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         return self._is_sequence_set_valid(sequence_set, data[0].decode().split(" "))
 
-    @handle_idle
-    def get_emails(
-        self, offset_start: int | None = None, offset_end: int | None = None
-    ) -> Mailbox:
+    def _resolve_offsets(self,
+        offset_start: int | None = None,
+        offset_end: int | None = None
+    ):
         """
-        Fetch emails from a list of uids.
+        Validate search results and prepare offset parameters for email pagination.
 
         Args:
-            offset_start (int, optional): Starting index of the emails to fetch. Defaults to 1.
-            offset_end (int, optional): Ending index of the emails to fetch. Defaults to 10.
+           offset_start (int, optional): Starting position for email range (1-based). Defaults to configured value.
+           offset_end (int, optional): Ending position for email range (1-based). Defaults to configured value.
 
         Returns:
-            Mailbox: Dataclass containing the fetched emails, folder, and total number of emails.
+           tuple[int, int]: Validated and normalized offset values (0-based start index, 1-based end index).
+
+        Raises:
+           IMAPManagerException: If no emails have been searched yet.
+           SearchedEmailsEmptyException: If search returned no results.
+           ValueError: If offset parameters are invalid.
 
         Example:
-            >>> get_emails(1, 2)
-            Mailbox(folder='INBOX', emails=[Email(uid="1", sender="a@gmail.com", ...),
-            Email(uid="2", sender="b@gmail.com", ...)], total=2)
+           >>> validate_and_prepare_offsets(1, 5)
+           (0, 5)
+           >>> validate_and_prepare_offsets(100, 110)  # If only 50 emails found
+           (49, 50)
         """
-        if (
-            not self._searched_emails
-            or not self._searched_emails.uids
-            or not self._searched_emails.uids[0]
-        ):
+        if not self._searched_emails:
             raise IMAPManagerException(
                 "No emails have been searched yet. Call `search_emails` first."
             )
-
-        uids_len = len(self._searched_emails.uids)
 
         if offset_start and offset_end and offset_start > offset_end:
             raise ValueError(
@@ -1688,19 +1685,48 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 f"Invalid `offset_end`: {offset_end}. `offset_end` must be greater than or equal to 1."
             )
 
-        if uids_len == 0:
+        uids_len = self._searched_emails.count
+        offset_start = (
+            uids_len - 1 if offset_start >= uids_len else offset_start
+        ) - 1
+        offset_end = uids_len if offset_end >= uids_len else offset_end
+        return offset_start, offset_end
+
+    @handle_idle
+    def get_emails(self,
+        offset_start: int | None = None,
+        offset_end: int | None = None
+    ) -> Mailbox:
+        """
+        Fetch emails from a list of uids.
+
+        Args:
+            offset_start (int, optional): Starting index of the emails to fetch. Defaults to 1.
+            offset_end (int, optional): Ending index of the emails to fetch. Defaults to 10.
+
+        Returns:
+            Mailbox: Dataclass containing the fetched emails, folder, and total number of emails.
+
+        Example:
+            >>> get_emails(1, 2)
+            Mailbox(folder='INBOX', emails=[Email(uid="1", sender="a@gmail.com", ...),
+            Email(uid="2", sender="b@gmail.com", ...)], total=2)
+        """
+        if not self._searched_emails:
+            raise IMAPManagerException(
+                "No emails have been searched yet. Call `search_emails` first."
+            )
+
+        if self._searched_emails.count == 0:
             return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
+
+        offset_start, offset_end = self._resolve_offsets(offset_start, offset_end)
 
         # Fetching emails
         sequence_set = ""
         messages = []
         emails = []
         try:
-            offset_start = (
-                uids_len - 1 if offset_start >= uids_len else offset_start
-            ) - 1
-            offset_end = uids_len if offset_end >= uids_len else offset_end
-
             sequence_set = ",".join(
                 map(str, self._searched_emails.uids[offset_start:offset_end][::-1])
             )
@@ -1795,7 +1821,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     emails[email_uid_map[uids[index]]].body = body
         except Exception as e:
             fetched_email_count = len(emails)
-            del emails
             raise IMAPManagerException(
                 f"Error while fetching emails `{sequence_set}` in folder `{self._searched_emails.folder}`, fetched email length was `{fetched_email_count}`"
             ) from e
@@ -1803,7 +1828,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             del messages
 
         return Mailbox(
-            folder=self._searched_emails.folder, emails=emails, total=uids_len
+            folder=self._searched_emails.folder, emails=emails, total=self._searched_emails.count
         )
 
     def any_new_email(self) -> bool:
