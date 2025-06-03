@@ -29,14 +29,14 @@
             return;
 
         eventTrigger.disabled = true;
-        const temp = eventTrigger.innerText;
-        eventTrigger.innerText = "";
+        const temp = eventTrigger.innerHTML;
+        eventTrigger.innerHTML = "";
         const loader = mount(Spinner, { target: eventTrigger });
 
         await onclick(e);
 
         eventTrigger.disabled = false;
-        eventTrigger.innerText = temp;
+        eventTrigger.innerHTML = temp;
         unmount(loader);
     }
 </script>

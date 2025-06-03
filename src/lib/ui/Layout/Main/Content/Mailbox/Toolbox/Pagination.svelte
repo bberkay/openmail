@@ -18,7 +18,7 @@
         await paginateMailboxBackward(mailboxContext.currentOffset.value);
         mailboxContext.currentOffset.value = Math.min(
             getCurrentMailbox().total,
-            mailboxContext.currentOffset.value + MAILBOX_LENGTH,
+            mailboxContext.currentOffset.value - MAILBOX_LENGTH,
         );
         mailboxContext.emailSelection.value = [];
     };
