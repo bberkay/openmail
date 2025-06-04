@@ -795,17 +795,12 @@ class MessageDecoder:
         if isinstance(message, bytes):
             message = message.decode()
 
-        decoded_message = ""
-        for line in LINE_PATTERN.split(message):
-            line = line.strip()
-            if "=?UTF-8" in line or "=?utf-8" in line:
-                decoded_lines = decode_header(line)
-                for decoded_line in decoded_lines:
-                    decoded_message += decoded_line[0].decode("utf-8") + " "
-            else:
-                decoded_message += line + " "
-
-        return decoded_message.strip()
+        decoded_parts = decode_header(message)
+        decoded_string = ''.join([
+            part.decode(encoding or 'utf-8') if isinstance(part, bytes) else part
+            for part, encoding in decoded_parts
+        ])
+        return decoded_string
 
     @staticmethod
     def filename(message: str | bytes) -> str:
