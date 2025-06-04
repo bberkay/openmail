@@ -201,7 +201,11 @@ class MessageParser:
         return grouped
 
     @staticmethod
-    def get_part(message: bytes, keywords: list[str]) -> str | None:
+    def get_part(
+        message: bytes,
+        keywords: list[str],
+        case_sensitive = False
+    ) -> str | None:
         """
         Extracts the part number from the BODYSTRUCTURE of an email message that matches the provided keywords.
 
@@ -211,6 +215,7 @@ class MessageParser:
         Args:
             message (bytes): Raw BODYSTRUCTURE message in bytes, typically from an IMAP fetch response.
             keywords (list[str]): List of keywords to match within the BODYSTRUCTURE, e.g., MIME types or filenames.
+            case_sensitive (bool): If True, matching will be case sensitive. Defaults to False.
 
         Returns:
             str | None: The part number of the message matching the keywords, formatted as a string (e.g., "1", "2.1").
@@ -247,11 +252,19 @@ class MessageParser:
             ... )
             "1"
         """
-        message = BODYSTRUCTURE_PATTERN.search(message.decode("utf-8")) # type: ignore
-        if not message:
+        message = message.decode("utf-8") # type: ignore
+        match = BODYSTRUCTURE_PATTERN.search(message) # type: ignore
+        if not match:
             return None
 
-        message = message.group(1) # type: ignore
+        message = match.group(1)
+        if not match:
+            return None
+
+        if not case_sensitive:
+            message = message.lower()
+            keywords = [k.lower() for k in keywords]
+
         if message[1] != "(":
             if  all(True if keyword in message else False for keyword in keywords): # type: ignore
                 return "1"
@@ -259,7 +272,7 @@ class MessageParser:
                 return None
 
         i = 0
-        block: str = ""
+        block = b""
         stack = []
         is_found = False
         start = 0
@@ -270,9 +283,9 @@ class MessageParser:
                 if not stack:
                     return None
                 start = stack.pop()
-                block = message[start: i + 1] # type: ignore
+                block = message[start: i + 1]
                 if block:
-                    if all(True if keyword in block else False for keyword in keywords):
+                    if all(True if keyword in block else False for keyword in keywords): # type: ignore
                         is_found = True
                         break
             i += 1
