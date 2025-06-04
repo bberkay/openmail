@@ -19,6 +19,7 @@ from html.parser import HTMLParser as BuiltInHTMLParser
 """
 General Fetch Constants
 """
+GROUP_PATTERN = re.compile(rb'^\d+ \(UID \d+')
 UID_PATTERN = re.compile(rb"UID\s+(\d+)")
 APPENDUID_PATTERN = re.compile(br'\[APPENDUID \d+ (\d+)\]')
 SIZE_PATTERN = re.compile(rb"RFC822\.SIZE (\d+)")
@@ -139,7 +140,7 @@ class MessageParser:
     """
 
     @staticmethod
-    def group_messages(message_list: list[bytes]) -> list[list[bytes]]:
+    def group_messages(raw_message: list[bytes | tuple[bytes]]) -> list[list[bytes]]:
         """
         Group messages of fetch queries like this `(BODY.PEEK[HEADER.FIELDS
         (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)`
@@ -147,11 +148,11 @@ class MessageParser:
 
         This function processes a list of raw message bytes and groups them
         into sublists. Each sublist contains related message components,
-        ending with the byte `b')'` and if it is not found [message_list]
+        starting with the byte `b' %d (UID %d` and if it is not found [raw_message]
         will be returned.
 
         Args:
-            message_list (list[bytes]): A list of raw message byte strings
+            raw_message (list[bytes | tuple[bytes]]): A list of raw message byte strings
             representing the components of messages.
 
         Returns:
@@ -161,12 +162,10 @@ class MessageParser:
 
         Example:
             >>> raw = [
-            ...     b'2394 (UID 2651 FLAGS ... )',
-            ...     b'BODY[HEADER.FIELDS]\\r\\nFrom:a@domain.com',
-            ...     b')',
-            ...     b'2395 (UID 2652 FLAGS ... )',
-            ...     b'BODY[HEADER.FIELDS]\\r\\nFrom:b@domain.com',
-            ...     b')'
+            ...     (b'2394 (UID 2651 FLAGS ... )',
+            ...     b'BODY[HEADER.FIELDS]\\r\\nFrom:a@domain.com'),
+            ...     (b'2395 (UID 2652 FLAGS ... )',
+            ...     b'BODY[HEADER.FIELDS]\\r\\nFrom:b@domain.com'),
             ... ]
             >>> messages(raw)
             [
@@ -180,24 +179,26 @@ class MessageParser:
                 ]
             ]
         """
-        result = []
-        sublist = []
+        grouped = []
+        current = []
 
-        if b')' not in message_list:
-            return [message_list]
-
-        for item in message_list:
-            if item == b')':
-                if sublist:
-                    result.append(sublist)
-                    sublist = []
+        for part in raw_message:
+            if isinstance(part, tuple):
+                for part_item in part:
+                    if GROUP_PATTERN.match(part_item):
+                        if current:
+                            grouped.append(current)
+                            current = []
+                        current = [part_item]
+                    else:
+                        current.append(part_item)
             else:
-                sublist.extend(item)
+                current.append(part)
 
-        if sublist:
-            result.append(sublist)
+        if current:
+            grouped.append(current)
 
-        return result
+        return grouped
 
     @staticmethod
     def get_part(message: bytes, keywords: list[str]) -> str | None:
