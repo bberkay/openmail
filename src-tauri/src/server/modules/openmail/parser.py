@@ -235,7 +235,7 @@ class MessageParser:
 
     @staticmethod
     def get_part(
-        message: bytes,
+        grouped_message: GroupedMessage,
         keywords: list[str],
         case_sensitive = False
     ) -> str | None:
@@ -285,13 +285,15 @@ class MessageParser:
             ... )
             "1"
         """
-        message = message.decode("utf-8") # type: ignore
-        match = BODYSTRUCTURE_PATTERN.search(message) # type: ignore
-        if not match:
-            return None
+        message = ""
+        for g_message in grouped_message.sorted():
+            message = g_message.decode("utf-8")
+            match = BODYSTRUCTURE_PATTERN.search(message)
+            if match:
+                message = match.group(1)
+                break
 
-        message = match.group(1)
-        if not match:
+        if not message:
             return None
 
         if not case_sensitive:
@@ -299,7 +301,7 @@ class MessageParser:
             keywords = [k.lower() for k in keywords]
 
         if message[1] != "(":
-            if  all(True if keyword in message else False for keyword in keywords): # type: ignore
+            if  all(True if keyword in message else False for keyword in keywords):
                 return "1"
             else:
                 return None
@@ -318,7 +320,7 @@ class MessageParser:
                 start = stack.pop()
                 block = message[start: i + 1]
                 if block:
-                    if all(True if keyword in block else False for keyword in keywords): # type: ignore
+                    if all(True if keyword in block else False for keyword in keywords):
                         is_found = True
                         break
             i += 1
@@ -369,7 +371,7 @@ class MessageParser:
             '272'
         """
         uid_match = ""
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             if b"APPENDUID" in message:
                 uid_match = APPENDUID_PATTERN.search(message)
             else:
@@ -397,7 +399,7 @@ class MessageParser:
             >>> get_size(b'1430 (UID 1534 RFC822.SIZE 42742)')
             42742
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             match = SIZE_PATTERN.search(message)
             if not match:
                 continue
@@ -421,7 +423,7 @@ class MessageParser:
             >>> get_size(b'* 12 EXISTS')
             12
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             match = EXISTS_SIZE_PATTERN.search(message)
             if not match:
                 continue
@@ -447,7 +449,7 @@ class MessageParser:
             >>> get_hierarchy_delimiter("b'(("" ".")) NIL NIL'")
             '.'
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             delimiter_match = HIERARCHY_DELIMITER_PATTERN.search(message)
             if not delimiter_match:
                 continue
@@ -472,7 +474,7 @@ class MessageParser:
             ... INLINE (FILENAME \"banner.jpg\") b')
             [("file.txt", 1029, "bcida...", "application/pdf")]
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             attachment_list = ATTACHMENT_LIST_PATTERN.findall(message.decode())
             if not attachment_list or not attachment_list[0]:
                 continue
@@ -505,7 +507,7 @@ class MessageParser:
             ... INLINE (FILENAME \"banner.jpg\") b')
             [("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             inline_attachment_list = INLINE_ATTACHMENT_LIST_PATTERN.findall(message.decode())
             if not inline_attachment_list or not inline_attachment_list[0]:
                 continue
@@ -544,7 +546,7 @@ class MessageParser:
             >>> get_content_type_encoding(message)
             ('text/plain', 'quoted-printable')
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             content_type_match = CONTENT_TYPE_PATTERN.search(message)
             encoding_match = CONTENT_TRANSFER_ENCODING_PATTERN.search(message)
             if not content_type_match and not encoding_match:
@@ -576,7 +578,7 @@ class MessageParser:
             >>> get_text_plain_body(message)
             (42, 74, b"test_send_email_with_attachment_and_inline_attachment")
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             offset_and_encoding_match = BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN.search(message)
             if not offset_and_encoding_match:
                 continue
@@ -634,7 +636,7 @@ class MessageParser:
                 </html>"
             )
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             offset_and_encoding_match = BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN.search(message)
             if not offset_and_encoding_match:
                 continue
@@ -682,7 +684,7 @@ class MessageParser:
                 ("2b07dc3482f143180e8e78d5f9428d67", "iVBORw0KGgoAAAANSUhEUgAAAnQAAAFxCAYAAAD6TDXhAAAABHNC..."),
             ]
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             cid_and_data_match = INLINE_ATTACHMENT_CID_AND_DATA_PATTERN.findall(message)
             if not cid_and_data_match:
                 continue
@@ -716,7 +718,7 @@ class MessageParser:
             >>> get_inline_attachment_sources(message)
             [(10, "image1.jpg", 19), (22, "image2.jpg", 29), (32, "image3.jpg", 39)]
         """
-        # TODO: Change message param type to bytes
+        # TODO: This method shouldn't be in MessageParser
         inline_attachment_sources = SRC_PATTERN.finditer(message)
         if not inline_attachment_sources:
             return []
@@ -738,7 +740,7 @@ class MessageParser:
             >>> get_flags(b'(UID ... FLAGS (\\Seen \\Flagged) ... b')
             ['\\Seen', '\\Flagged']
         """
-        for message in grouped_message:
+        for message in grouped_message.sorted():
             flags = FLAGS_PATTERN.findall(message)
             if not flags:
                 continue
@@ -782,7 +784,7 @@ class MessageParser:
         }
 
         message_index_contains_headers = 0
-        for i, message in enumerate(grouped_message):
+        for i, message in enumerate(grouped_message.sorted()):
             if HEADERS_PATTERN.search(message):
                 message_index_contains_headers = i + 1
 
