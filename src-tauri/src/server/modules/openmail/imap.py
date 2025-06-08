@@ -1746,7 +1746,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if not messages or not messages[0]:
                 return Mailbox(folder=self._searched_emails.folder, emails=[], total=0)
 
-            messages = MessageParser.group_messages(messages)[::-1]
+            grouped_messages = MessageParser.group_messages(messages)[::-1]
             fetchs = {}
             """
             `fetchs` will be something like this:
@@ -1760,16 +1760,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
             S: ...
             """
             email_uid_map = {}
-            for index, message in enumerate(messages):
-                uid = MessageParser.get_uid(message[0])
+            # TODO: Implemented Group Message in here....
+            for index, grouped_message in enumerate(grouped_messages):
+                uid = MessageParser.get_uid(grouped_message)
                 email_uid_map[uid] = index
-                headers = MessageParser.get_headers(message[1])
+                headers = MessageParser.get_headers(grouped_message)
                 emails.append(
                     Email(
                         **headers,
                         uid=uid,
                         body="",  # Temporary until body is fetched.
-                        flags=MessageParser.get_flags(message[0]),
+                        flags=MessageParser.get_flags(grouped_message),
                         attachments=[
                             Attachment(
                                 name=attachment[0],
@@ -1777,16 +1778,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
                                 cid=attachment[2],
                                 type=attachment[3],
                             )
-                            for attachment in MessageParser.get_attachment_list(
-                                message[0]
-                            )
+                            for attachment in MessageParser.get_attachment_list(grouped_message)
                         ],
                     )
                 )
 
-                body_part = MessageParser.get_part(message[0], ["TEXT", "PLAIN"])
+                body_part = MessageParser.get_part(grouped_message, ["TEXT", "PLAIN"])
                 if not body_part:
-                    body_part = MessageParser.get_part(message[0], ["TEXT", "HTML"])
+                    body_part = MessageParser.get_part(grouped_message, ["TEXT", "HTML"])
                     if not body_part:
                         body_part = "1"
 
