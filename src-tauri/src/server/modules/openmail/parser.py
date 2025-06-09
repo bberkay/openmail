@@ -13,11 +13,10 @@ from __future__ import annotations
 import base64
 import re
 import quopri
-from typing import Iterator, NotRequired, TypedDict, cast
+from typing import NotRequired, TypedDict
 from email.header import decode_header
 from html.parser import HTMLParser as BuiltInHTMLParser
 from collections.abc import MutableSequence
-from itertools import tee
 
 """
 General Fetch Constants
@@ -132,41 +131,15 @@ INVISIBLE_CHARS = [
     '\u200D'
 ]
 
-class UnsupportedMatchTypeError(Exception):
-    def __init__(self, msg: str = "Match must be either re.Match or Iterator[re.Match]", *args, **kwargs):
-        super().__init__(msg, *args, **kwargs)
-
-class MatchTypeMismatchError(Exception):
-    def __init__(self, msg: str = "Match must be either re.Match or Iterator[re.Match]", *args, **kwargs):
-        super().__init__(msg, *args, **kwargs)
-
-class MatchUtils:
-    @staticmethod
-    def peek_iter(match_to_cache: Iterator[re.Match]) -> tuple[re.Match, Iterator[re.Match]]:
-        original_match, peek_iter = tee(match_to_cache)
-        first_match = next(peek_iter)
-        return first_match, original_match
-
-class MatchFactory:
-    @staticmethod
-    def create(re_match: re.Match | Iterator[re.Match] | None) -> re.Match | Iterator[re.Match] | None:
-        if isinstance(re_match, re.Match):
-            return re_match if bool(re_match) else None
-        elif isinstance(re_match, Iterator):
-            first_match, original_match = MatchUtils.peek_iter(re_match)
-            re_match = original_match
-            return re_match if bool(first_match) else None
-        elif re_match is None:
-            return None
-        raise UnsupportedMatchTypeError
-
 class GroupedMessage(MutableSequence):
     data: list[bytes]
+    _last_empty_index: int
     _sorted_indexes: list[tuple[int, int]] # [index, len]
-    _matched_parts: list[tuple[int, re.Match | Iterator[re.Match]]] # [index, match]
 
     def __init__(self, data: list[bytes]):
         self.data = list(data)
+        self._last_empty_index = len(self.data)
+        self._sorted_indexes = []
         self._update_sorted()
 
     def __getitem__(self, index):
@@ -174,12 +147,11 @@ class GroupedMessage(MutableSequence):
 
     def __setitem__(self, index, value):
         self.data[index] = value
-        self._adjust_match_indexes(index)
         self._update_sorted()
 
     def __delitem__(self, index):
         del self.data[index]
-        self._adjust_match_indexes(index)
+        self._last_empty_index -= 1
         self._update_sorted()
 
     def __len__(self):
@@ -187,44 +159,15 @@ class GroupedMessage(MutableSequence):
 
     def insert(self, index, value):
         self.data.insert(index, value)
-        self._adjust_match_indexes(index)
+        self._last_empty_index += 1
+        self._update_sorted()
+
+    def append(self, value):
+        self.data.insert(self._last_empty_index, value)
+        self._last_empty_index += 1
         self._update_sorted()
 
     # Special methods
-
-    def save_match(self, part: int, match_to_cache: re.Match | Iterator[re.Match]):
-        self._matched_parts.append((part, match_to_cache))
-
-    def _find_pattern(self, match_to_cache: re.Match | Iterator[re.Match]):
-        if isinstance(match_to_cache, Iterator):
-            first_match, original_match = MatchUtils.peek_iter(match_to_cache)
-            match_to_cache = original_match
-            return first_match.re.pattern
-        elif isinstance(match_to_cache, re.Match):
-            return match_to_cache.re.pattern
-        else:
-            raise UnsupportedMatchTypeError
-
-    def get_match(self, pattern: re.Pattern) -> tuple[int, re.Match | Iterator[re.Match]] | tuple[None, None]:
-        for part, curr_match in self._matched_parts:
-            if self._find_pattern(curr_match) == pattern:
-                return (part, curr_match)
-        return None, None
-
-    def delete_match(self, pattern_obj: re.Pattern):
-        self._matched_parts = [
-            matched_part for matched_part in self._matched_parts
-            if not (
-                self._find_pattern(matched_part[1]) == pattern_obj.pattern
-            )
-        ]
-
-    def _adjust_match_indexes(self, part: int):
-        self._matched_parts = [
-            (matched_part[0] + (1 if matched_part[0] > part else 0), matched_part[1])
-            for matched_part in self._matched_parts
-            if matched_part[0] != part
-        ]
 
     def sorted(self) -> list[bytes]:
         return [self.data[i] for i, _ in self._sorted_indexes]
@@ -233,18 +176,25 @@ class GroupedMessage(MutableSequence):
         self._sorted_indexes = [(0, -1)]
         i = 0
         data_len = len(self.data)
+        size_for_next_data = None
         while i < data_len:
-            data_size_found = DATA_SIZE_PATTERN.search(self.data[i])
-            data_size = int(data_size_found.group(1)) if data_size_found else len(self.data[i])
+            data_size = size_for_next_data
+            size_for_next_data = None
+            if not data_size:
+                data_size = len(self.data[i])
+                size_for_next_data_match = DATA_SIZE_PATTERN.search(self.data[i])
+                if size_for_next_data_match:
+                    size_for_next_data = int(size_for_next_data_match.group(1))
+
             i += 1
             j = 0
             while j <= i:
                 reverse = -1 * (j + 1)
                 if data_size >= self._sorted_indexes[reverse][1]:
-                    self._sorted_indexes.insert(reverse + i + 1, (i, data_size))
+                    self._sorted_indexes.insert(reverse + i + 1, (i - 1, data_size))
                     break
                 if j + 1 == i:
-                    self._sorted_indexes.insert(0, (i, data_size))
+                    self._sorted_indexes.insert(0, (i - 1, data_size))
                 j += 1
         self._sorted_indexes.pop(0)
 
@@ -371,20 +321,12 @@ class MessageParser:
             ... )
             "1"
         """
-        _, bodystructure_match = grouped_message.get_match(BODYSTRUCTURE_PATTERN)
-        if not bodystructure_match:
-            for part, part_msg in enumerate(grouped_message.sorted()):
-                bodystructure_match = MatchFactory.create(
-                    BODYSTRUCTURE_PATTERN.search(part_msg.decode("utf-8"))
-                )
-                if bodystructure_match:
-                    grouped_message.save_match(part, bodystructure_match)
-                    break
-
-        if not bodystructure_match:
-            return None
-
-        message = cast(re.Match, bodystructure_match).group(1)
+        message = ""
+        for part, part_msg in enumerate(grouped_message.sorted()):
+            body_structure_match = BODYSTRUCTURE_PATTERN.search(part_msg.decode("utf-8"))
+            if body_structure_match:
+                message = body_structure_match.group(1)
+                break
 
         if not case_sensitive:
             message = message.lower()
@@ -460,18 +402,15 @@ class MessageParser:
             >>> get_uid("b'[APPENDUID 6 272] (Success)'")
             '272'
         """
-        # TODO: Needs new implementation...
         uid_match = ""
-        for part, message in enumerate(grouped_message.sorted()):
+        for message in grouped_message.sorted():
             if b"APPENDUID" in message:
                 uid_match = APPENDUID_PATTERN.search(message)
             else:
                 uid_match = UID_PATTERN.search(message)
 
-            if not uid_match:
-                continue
-
-            return uid_match.group(1).decode()
+            if uid_match:
+                return uid_match.group(1).decode()
 
         return ""
 
@@ -490,17 +429,12 @@ class MessageParser:
             >>> get_size(b'1430 (UID 1534 RFC822.SIZE 42742)')
             42742
         """
-        _, size_match = grouped_message.get_match(SIZE_PATTERN)
-        if not size_match:
-            for part, message in enumerate(grouped_message.sorted()):
-                size_match = MatchFactory.create(
-                    SIZE_PATTERN.search(message)
-                )
-                if size_match:
-                    grouped_message.save_match(part, size_match)
-                    break
+        for message in grouped_message.sorted():
+            size_match = SIZE_PATTERN.search(message)
+            if size_match:
+                return int(size_match.group(1))
 
-        return int(cast(re.Match, size_match).group(1)) if size_match else - 1
+        return -1
 
     @staticmethod
     def get_exists_size(grouped_message: GroupedMessage) -> int:
@@ -517,17 +451,12 @@ class MessageParser:
             >>> get_size(b'* 12 EXISTS')
             12
         """
-        _, exists_size_match = grouped_message.get_match(EXISTS_SIZE_PATTERN)
-        if not exists_size_match:
-            for part, message in enumerate(grouped_message.sorted()):
-                exists_size_match = MatchFactory.create(
-                    EXISTS_SIZE_PATTERN.search(message)
-                )
-                if exists_size_match:
-                    grouped_message.save_match(part, exists_size_match)
-                    break
+        for message in grouped_message.sorted():
+            exists_size_match = EXISTS_SIZE_PATTERN.search(message)
+            if exists_size_match:
+                return int(exists_size_match.group(1))
 
-        return int(cast(re.Match, exists_size_match).group(1)) if exists_size_match else - 1
+        return -1
 
     @staticmethod
     def get_hierarchy_delimiter(grouped_message: GroupedMessage) -> str:
@@ -546,17 +475,12 @@ class MessageParser:
             >>> get_hierarchy_delimiter("b'(("" ".")) NIL NIL'")
             '.'
         """
-        _, hierarchy_delimiter_match = grouped_message.get_match(HIERARCHY_DELIMITER_PATTERN)
-        if not hierarchy_delimiter_match:
-            for part, message in enumerate(grouped_message.sorted()):
-                hierarchy_delimiter_match = MatchFactory.create(
-                    HIERARCHY_DELIMITER_PATTERN.search(message)
-                )
-                if hierarchy_delimiter_match:
-                    grouped_message.save_match(part, hierarchy_delimiter_match)
-                    break
+        for message in grouped_message.sorted():
+            hier_del_match = HIERARCHY_DELIMITER_PATTERN.search(message)
+            if hier_del_match:
+                return hier_del_match.group(1).decode()
 
-        return cast(re.Match, hierarchy_delimiter_match).group(1).decode() if hierarchy_delimiter_match else ""
+        return ""
 
     @staticmethod
     def get_attachment_list(grouped_message: GroupedMessage) -> list[tuple[str, int, str, str]]:
@@ -574,25 +498,24 @@ class MessageParser:
             ... INLINE (FILENAME \"banner.jpg\") b')
             [("file.txt", 1029, "bcida...", "application/pdf")]
         """
-        _, attachment_list_match = grouped_message.get_match(ATTACHMENT_LIST_PATTERN)
-        if not attachment_list_match:
-            for part, message in enumerate(grouped_message.sorted()):
-                attachment_list_match = MatchFactory.create(
-                    ATTACHMENT_LIST_PATTERN.finditer(message.decode())
-                )
-                if attachment_list_match:
-                    grouped_message.save_match(part, attachment_list_match)
-                    break
+        attachment_list = []
+        for message in grouped_message.sorted():
+            attach_list_match = ATTACHMENT_LIST_PATTERN.finditer(message.decode())
+            for attach_match in attach_list_match:
+                try:
+                    attachment_list.append(
+                        (
+                            attach_match.group(5),
+                            int(attach_match.group(4)),
+                            TAG_CLEANING_PATTERN.sub('', attach_match.group(3)),
+                            f"{attach_match.group(1)}/{attach_match.group(2)}".lower()
+                        )
+                    )
+                except (IndexError, ValueError):
+                    #print("Attachment could not parsed, skipping...")
+                    continue
 
-        return [
-            (
-                attachment_match.group(5),
-                int(attachment_match.group(4)),
-                TAG_CLEANING_PATTERN.sub('', attachment_match.group(3)),
-                f"{attachment_match.group(1)}/{attachment_match.group(2)}".lower()
-            )
-            for attachment_match in attachment_list_match
-        ] if attachment_list_match else []
+        return attachment_list
 
     @staticmethod
     def get_inline_attachment_list(grouped_message: GroupedMessage) -> list[tuple[str, int, str, str]]:
@@ -610,25 +533,20 @@ class MessageParser:
             ... INLINE (FILENAME \"banner.jpg\") b')
             [("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
         """
-        _, inline_attachment_list_match = grouped_message.get_match(INLINE_ATTACHMENT_LIST_PATTERN)
-        if not inline_attachment_list_match:
-            for part, message in enumerate(grouped_message.sorted()):
-                inline_attachment_list_match = MatchFactory.create(
-                    INLINE_ATTACHMENT_LIST_PATTERN.finditer(message.decode())
+        inline_attachment_list = []
+        for message in grouped_message.sorted():
+            attach_list_match = INLINE_ATTACHMENT_LIST_PATTERN.finditer(message.decode())
+            for attach_match in attach_list_match:
+                inline_attachment_list.append(
+                    (
+                        attach_match.group(5),
+                        int(attach_match.group(4)),
+                        TAG_CLEANING_PATTERN.sub('', attach_match.group(3)),
+                        f"{attach_match.group(1)}/{attach_match.group(2)}".lower()
+                    )
                 )
-                if inline_attachment_list_match:
-                    grouped_message.save_match(part, inline_attachment_list_match)
-                    break
 
-        return [
-            (
-                inline_attachment_match.group(5),
-                int(inline_attachment_match.group(4)),
-                TAG_CLEANING_PATTERN.sub('', inline_attachment_match.group(3)),
-                f"{inline_attachment_match.group(1)}/{inline_attachment_match.group(2)}".lower()
-            )
-            for inline_attachment_match in inline_attachment_list_match
-        ] if inline_attachment_list_match else []
+        return inline_attachment_list
 
     @staticmethod
     def get_content_type_and_encoding(grouped_message: GroupedMessage) -> tuple[str, str]:
@@ -652,30 +570,18 @@ class MessageParser:
             >>> get_content_type_encoding(message)
             ('text/plain', 'quoted-printable')
         """
-        _, content_type_match = grouped_message.get_match(CONTENT_TYPE_PATTERN)
-        _, encoding_match = grouped_message.get_match(CONTENT_TRANSFER_ENCODING_PATTERN)
-        if not content_type_match or not encoding_match:
-            for part, message in enumerate(grouped_message.sorted()):
-                if not content_type_match:
-                    content_type_match = MatchFactory.create(
-                        CONTENT_TYPE_PATTERN.search(message)
-                    )
-                    if content_type_match:
-                        grouped_message.save_match(part, content_type_match)
+        for message in grouped_message.sorted():
+            content_type_match = CONTENT_TYPE_PATTERN.search(message)
+            encoding_match = CONTENT_TRANSFER_ENCODING_PATTERN.search(message)
+            if not content_type_match and not encoding_match:
+                continue
 
-                if not encoding_match:
-                    encoding_match = MatchFactory.create(
-                        CONTENT_TRANSFER_ENCODING_PATTERN.search(message)
-                    )
-                    if encoding_match:
-                        grouped_message.save_match(part, encoding_match)
+            content_type = content_type_match.group(1) if content_type_match else b""
+            encoding = encoding_match.group(1) if encoding_match else b""
+            return content_type.decode(), encoding.decode()
 
-                if content_type_match and encoding_match:
-                    break
+        return "", ""
 
-        content_type = cast(re.Match, content_type_match).group(1) if content_type_match else b""
-        encoding = cast(re.Match, encoding_match).group(1) if encoding_match else b""
-        return content_type.decode(), encoding.decode()
 
     @staticmethod
     def get_text_plain_body(grouped_message: GroupedMessage) -> tuple[int, int, str] | None:
@@ -697,36 +603,25 @@ class MessageParser:
             >>> get_text_plain_body(message)
             (42, 74, b"test_send_email_with_attachment_and_inline_attachment")
         """
-        _, offset_and_encoding_match = grouped_message.get_match(BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN)
-        _, data_match = grouped_message.get_match(BODY_TEXT_PLAIN_DATA_PATTERN)
-        if not offset_and_encoding_match or not data_match:
-            encoding_start = None
-            for part, message in enumerate(grouped_message.sorted()):
-                offset_and_encoding_match = MatchFactory.create(
-                    BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN.search(message)
-                )
-                if not offset_and_encoding_match:
-                    continue
-                grouped_message.save_match(part, offset_and_encoding_match)
+        for message in grouped_message.sorted():
+            offset_and_encoding_match = BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN.search(message)
+            if not offset_and_encoding_match:
+                continue
 
-                encoding_start = cast(re.Match, offset_and_encoding_match).start()
-                data_match = MatchFactory.create(
-                    BODY_TEXT_PLAIN_DATA_PATTERN.search(message[encoding_start:])
-                )
-                if not data_match:
-                    offset_and_encoding_match = None
-                    continue
+            encoding_start = offset_and_encoding_match.start()
+            if not encoding_start:
+                continue
 
-                grouped_message.save_match(part, data_match)
-                encoding = cast(re.Match, offset_and_encoding_match).group(1) or cast(re.Match, offset_and_encoding_match).group(2) or b""
-                return (
-                    *(cast(re.Match, data_match).span()),
-                    MessageDecoder.body(
-                        cast(re.Match, data_match).group(1),
-                        encoding=encoding.decode(),
-                        sanitize=True
-                    )
-                )
+            data_match = BODY_TEXT_PLAIN_DATA_PATTERN.search(message[encoding_start:])
+            if not data_match:
+                continue
+
+            encoding = offset_and_encoding_match.group(1) or offset_and_encoding_match.group(2) or b""
+            return (
+                *data_match.span(),
+                MessageDecoder.body(data_match.group(1), encoding=encoding.decode(), sanitize=True)
+            )
+
         return None
 
     @staticmethod
@@ -766,35 +661,25 @@ class MessageParser:
                 </html>"
             )
         """
-        _, offset_and_encoding_match = grouped_message.get_match(BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN)
-        _, data_match = grouped_message.get_match(BODY_TEXT_HTML_DATA_PATTERN)
-        if not offset_and_encoding_match or not data_match:
-            encoding_start = None
-            for part, message in enumerate(grouped_message.sorted()):
-                offset_and_encoding_match = MatchFactory.create(
-                    BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN.search(message)
-                )
-                if not offset_and_encoding_match:
-                    continue
-                grouped_message.save_match(part, offset_and_encoding_match)
+        for message in grouped_message.sorted():
+            offset_and_encoding_match = BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN.search(message)
+            if not offset_and_encoding_match:
+                continue
 
-                encoding_start = cast(re.Match, offset_and_encoding_match).start()
-                data_match = MatchFactory.create(
-                    BODY_TEXT_HTML_DATA_PATTERN.search(message[encoding_start:])
-                )
-                if not data_match:
-                    offset_and_encoding_match = None
-                    continue
+            encoding_start = offset_and_encoding_match.start()
+            if not encoding_start:
+                continue
 
-                grouped_message.save_match(part, data_match)
-                encoding = cast(re.Match, offset_and_encoding_match).group(1) or cast(re.Match, offset_and_encoding_match).group(2)
-                return (
-                    *(cast(re.Match, data_match).span()),
-                    MessageDecoder.body(
-                        cast(re.Match, data_match).group(1),
-                        encoding=encoding.decode()
-                    )
-                )
+            data_match = BODY_TEXT_HTML_DATA_PATTERN.search(message[encoding_start:])
+            if not data_match:
+                continue
+
+            encoding = offset_and_encoding_match.group(1) or offset_and_encoding_match.group(2)
+            return (
+                *data_match.span(),
+                MessageDecoder.body(data_match.group(1), encoding=encoding.decode())
+            )
+
         return None
 
     @staticmethod
@@ -824,23 +709,18 @@ class MessageParser:
                 ("2b07dc3482f143180e8e78d5f9428d67", "iVBORw0KGgoAAAANSUhEUgAAAnQAAAFxCAYAAAD6TDXhAAAABHNC..."),
             ]
         """
-        _, cid_and_data_matches = grouped_message.get_match(INLINE_ATTACHMENT_CID_AND_DATA_PATTERN)
-        if not cid_and_data_matches:
-            for part, message in enumerate(grouped_message.sorted()):
-                cid_and_data_matches = MatchFactory.create(
-                    INLINE_ATTACHMENT_CID_AND_DATA_PATTERN.finditer(message)
+        cid_data_list = []
+        for message in grouped_message.sorted():
+            cid_data_list_match = INLINE_ATTACHMENT_CID_AND_DATA_PATTERN.finditer(message)
+            for cid_data_match in cid_data_list_match:
+                cid_data_list.append(
+                    (
+                        cid_data_match.group(1).decode(),
+                        cid_data_match.group(2).decode()
+                    )
                 )
-                if cid_and_data_matches:
-                    grouped_message.save_match(part, cid_and_data_matches)
-                    break
 
-        return [
-            (
-                cid_data_match.group(1).decode(),
-                cid_data_match.group(2).decode()
-            )
-            for cid_data_match in cid_and_data_matches
-        ] if cid_and_data_matches else []
+        return cid_data_list
 
     @staticmethod
     def get_inline_attachment_sources(message: str) -> list[tuple[int, str, int]]:
@@ -896,18 +776,12 @@ class MessageParser:
             >>> get_flags(b'(UID ... FLAGS (\\Seen \\Flagged) ... b')
             ['\\Seen', '\\Flagged']
         """
-        _, flag_matches = grouped_message.get_match(FLAGS_PATTERN)
-        if not flag_matches:
-            for part, message in enumerate(grouped_message.sorted()):
-                flag_matches = MatchFactory.create(
-                    FLAGS_PATTERN.finditer(message)
-                )
-                if flag_matches:
-                    grouped_message.save_match(part, flag_matches)
-                    break
+        for message in grouped_message.sorted():
+            flag_matches = next(FLAGS_PATTERN.finditer(message), None)
+            if flag_matches:
+                return flag_matches.group(1).decode().strip().split(" ")
 
-        flags = next(cast(Iterator, flag_matches)).group(1).decode().strip()
-        return flags.split(" ") if flags else []
+        return []
 
     @staticmethod
     def get_headers(grouped_message: GroupedMessage) -> MessageHeaders:
@@ -943,37 +817,17 @@ class MessageParser:
         }
 
         message_index_contains_headers = 0
-        part, headers_match = grouped_message.get_match(HEADERS_PATTERN)
-        if part and headers_match:
-            message_index_contains_headers = part + 1
-        else:
-            for part, message in enumerate(grouped_message.sorted()):
-                headers_match = MatchFactory.create(
-                    HEADERS_PATTERN.search(message)
-                )
-                if headers_match:
-                    grouped_message.save_match(part, headers_match)
-                    message_index_contains_headers = part + 1
-                    break
+        for part, message in enumerate(grouped_message.sorted()):
+            if HEADERS_PATTERN.search(message):
+                message_index_contains_headers = part + 1
 
         for field_type, field_pattern in MESSAGE_HEADER_PATTERN_MAP.items():
-            _, field_match = grouped_message.get_match(grouped_message[message_index_contains_headers])
-            if not field_match:
-                field_match = MatchFactory.create(
-                    field_pattern.search(
-                        grouped_message[message_index_contains_headers]
-                    )
-                )
-                if field_match:
-                    grouped_message.save_match(message_index_contains_headers, field_match)
-                else:
-                    headers[field_type] = ""
-                    continue
-
-            field = cast(re.Match, field_match).group(1).decode()
-            field = MessageDecoder.utf8_header(field)
-            field = SPACE_PATTERN.sub(" ", field)
-            field = field.strip()
+            field = field_pattern.search(grouped_message[message_index_contains_headers])
+            field = field.group(1).decode() if field else ""
+            field = SPACE_PATTERN.sub(
+                " ",
+                MessageDecoder.utf8_header(field)
+            ).strip()
 
             # Special cases
             if field_type in ["sender", "receivers", "cc", "bcc"]:
