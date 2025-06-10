@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 
-from .parser import MessageDecoder, MessageParser, HTMLParser
+from .parser import MessageDecoder, MessageParser
 from .utils import (
     add_quotes_if_str,
     convert_to_imap_date,
@@ -324,19 +324,17 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """Find the hierarchy delimiter from NAMESPACE and set it.
         Raises an error if not found. Typically used right after login."""
         # https://datatracker.ietf.org/doc/html/rfc9051#name-namespace-command
-        namespace_result = self.namespace()
-        if namespace_result[0] != "OK":
+        status, message = self.namespace()
+        if status != "OK":
             raise IMAPManagerException(
-                f"Could not receive namespace response to find hierarchy delimiter: {namespace_result[1]}"
+                f"Could not receive namespace response to find hierarchy delimiter: {message}"
             )
 
         self._hierarchy_delimiter = MessageParser.get_hierarchy_delimiter(
-            namespace_result[1][0]
+            MessageParser.group_messages(message)[0]
         )
         if not self._hierarchy_delimiter:
-            raise IMAPManagerException(
-                f"Could not parse hierarchy delimiter: {namespace_result[1]}"
-            )
+            raise IMAPManagerException("Could not parse hierarchy delimiter")
 
         return True
 
@@ -1049,7 +1047,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         """
         print(f"'EXISTS' message of server catched at {datetime.now()}.")
         self._wait_response = IMAPManager.WaitResponse.EXISTS
-        size = MessageParser.get_exists_size(response)
+        size = MessageParser.get_exists_size(
+            MessageParser.group_messages(response)[0]
+        )
         if size > self._previous_mailbox_size:
             # Use of timedelta to account for potential server delays or discrepancies
             # in message arrival times.
@@ -1438,7 +1438,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
             if isinstance(value, int):
                 value = str(value)
-            elif isinstance(value, list):
+            elif isinstance(value, List):
                 if criteria == "":
                     # value=["Flagged", "Seen", "Answered"]
                     return f" {' '.join([i.strip().upper() for i in value])}"
@@ -1760,7 +1760,6 @@ class IMAPManager(imaplib.IMAP4_SSL):
             S: ...
             """
             email_uid_map = {}
-            # TODO: Implemented Group Message in here....
             for index, grouped_message in enumerate(grouped_messages):
                 uid = MessageParser.get_uid(grouped_message)
                 email_uid_map[uid] = index
@@ -1783,11 +1782,11 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     )
                 )
 
-                body_part = MessageParser.get_part(grouped_message, ["TEXT", "PLAIN"])
-                if not body_part:
-                    body_part = MessageParser.get_part(grouped_message, ["TEXT", "HTML"])
-                    if not body_part:
-                        body_part = "1"
+                body_part = (
+                    MessageParser.get_part(grouped_message, ["TEXT", "PLAIN"]) or
+                    MessageParser.get_part(grouped_message, ["TEXT", "HTML"]) or
+                    "1"
+                )
 
                 if body_part in fetchs:
                     fetchs[body_part].append(uid)
@@ -1806,18 +1805,15 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     print(f"Could not found bodies in emails {uids}")
                     continue
 
-                bodies = MessageParser.group_messages(bodies)
-                for index, body in enumerate(bodies):
-                    content_type, encoding = (
-                        MessageParser.get_content_type_and_encoding(body[3])
+                body_group_messages = MessageParser.group_messages(bodies)
+                for index, body_grouped_message in enumerate(body_group_messages):
+                    content_type, encoding = MessageParser.get_content_type_and_encoding(body_grouped_message)
+                    emails[email_uid_map[uids[index]]].body = MessageDecoder.body(
+                        MessageParser.get_body(body_grouped_message),
+                        encoding=encoding,
+                        sanitize="html" not in content_type,
+                        parse="html" in content_type
                     )
-                    body = MessageDecoder.body(
-                        body[1], encoding=encoding, sanitize="html" not in content_type
-                    )
-                    if "html" in content_type:
-                        body = HTMLParser.parse(body)
-
-                    emails[email_uid_map[uids[index]]].body = body
         except Exception as e:
             fetched_email_count = len(emails)
             raise IMAPManagerException(
@@ -1929,10 +1925,10 @@ class IMAPManager(imaplib.IMAP4_SSL):
             if not message or not message[0]:
                 raise ValueError(f"No email found with given {uid} uid.")
 
-            message = MessageParser.group_messages(message)[0]
-            headers = MessageParser.get_headers(message[1])
-            flags = MessageParser.get_flags(message[0])
-            for attachment in MessageParser.get_inline_attachment_list(message[0]):
+            grouped_message = MessageParser.group_messages(message)[0]
+            headers = MessageParser.get_headers(grouped_message)
+            flags = MessageParser.get_flags(grouped_message)
+            for attachment in MessageParser.get_inline_attachment_list(grouped_message):
                 inline_attachments.append(
                     Attachment(
                         name=attachment[0],
@@ -1942,37 +1938,28 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     )
                 )
 
-            body_part = MessageParser.get_part(message[0], ["TEXT", "HTML"])
-            if not body_part:
-                body_part = "1"
+            body_part = (
+                MessageParser.get_part(grouped_message, ["TEXT", "HTML"]) or
+                "1"
+            )
 
-            start, end, body = -1, -1, ""
+            body = ""
             status, body_raw = self.uid(
                 "FETCH",
                 uid,
                 f"(BODY.PEEK[{body_part}] BODY.PEEK[{body_part}.MIME])",
             )
             if status != "OK":
-                print(f"Could not found any body in email {uid}")
-                body = body_raw = ""
+                print(f"There is no body in email {uid}")
             else:
-                body = MessageParser.group_messages(body_raw)[0]
-                body_raw = body[1]
-                _, encoding = MessageParser.get_content_type_and_encoding(body[3])
-                start, end, body = (
-                    MessageParser.get_text_html_body(body_raw)
-                    or MessageParser.get_text_plain_body(body_raw)
-                    or (-1, -1, MessageDecoder.body(body_raw, encoding=encoding))
+                body_grouped_message = MessageParser.group_messages(body_raw)[0]
+                _, encoding = MessageParser.get_content_type_and_encoding(body_grouped_message)
+                body = MessageDecoder.body(
+                    MessageParser.get_body(body_grouped_message),
+                    encoding=encoding
                 )
-
-            if start >= 0 and end >= 0:
                 try:
-                    for (
-                        cid,
-                        data,
-                    ) in MessageParser.get_cid_and_data_of_inline_attachments(
-                        body_raw[:start] + body_raw[end:]
-                    ):
+                    for cid, data in MessageParser.get_cid_and_data_of_inline_attachments(body_grouped_message):
                         i = 0
                         while i < len(inline_attachments):
                             if inline_attachments[i].cid == cid:
@@ -2007,7 +1994,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     cid=attachment[2],
                     type=attachment[3],
                 )
-                for attachment in MessageParser.get_attachment_list(message[0])
+                for attachment in MessageParser.get_attachment_list(grouped_message)
             ],
         )
 
@@ -2055,12 +2042,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     f"Error while fetching flags of email `{sequence_set}`: `{status}`"
                 )
 
-            message = MessageParser.group_messages(message)[0]
-            for part in message:
+            grouped_messages = MessageParser.group_messages(message)
+            for grouped_message in grouped_messages:
                 flags_list.append(
                     Flags(
-                        uid=MessageParser.get_uid(part),
-                        flags=MessageParser.get_flags(part),
+                        uid=MessageParser.get_uid(grouped_message),
+                        flags=MessageParser.get_flags(grouped_message),
                     )
                 )
         except Exception as e:
@@ -2092,7 +2079,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 f"Error while getting size of the `{uid}` email in folder `{folder}`: `{status}`"
             )
 
-        return MessageParser.get_size(messages[0])
+        return MessageParser.get_size(
+            MessageParser.group_messages(messages)[0]
+        )
 
     @handle_idle
     def download_attachment(
@@ -2132,7 +2121,8 @@ class IMAPManager(imaplib.IMAP4_SSL):
                 f"No attachment found in `{uid}` uid in `{folder}` folder with given `{name}` and `{cid}` cid."
             )
 
-        attachment_list = MessageParser.get_attachment_list(message[0])
+        grouped_message = MessageParser.group_messages(message)[0]
+        attachment_list = MessageParser.get_attachment_list(grouped_message)
         target_attachment = [
             attachment for attachment in attachment_list if attachment[0] == name
         ][0]
@@ -2145,7 +2135,7 @@ class IMAPManager(imaplib.IMAP4_SSL):
 
         try:
             target_part = MessageParser.get_part(
-                message[0], ["FILENAME", '"' + name + '"', cid]
+                grouped_message, ["FILENAME", '"' + name + '"', cid]
             )
             if not target_part:
                 raise IMAPManagerException(
@@ -2158,7 +2148,12 @@ class IMAPManager(imaplib.IMAP4_SSL):
                     f"Error while fetching attachment part of the `{uid}` email in folder `{folder}`: `{status}`"
                 )
 
-            target_attachment.data = message[0][1].decode()
+            body_grouped_message = MessageParser.group_messages(message)[0]
+            content_type, encoding = MessageParser.get_content_type_and_encoding(body_grouped_message)
+            target_attachment.data = MessageDecoder.body(
+                MessageParser.get_body(body_grouped_message),
+                encoding=encoding,
+            )
         except:
             raise IMAPManagerException(
                 f"Error while fetching attachment part of the `{uid}` email in folder `{folder}`: `{status}`"
@@ -2196,7 +2191,9 @@ class IMAPManager(imaplib.IMAP4_SSL):
         if not status:
             raise IMAPManagerException(f"Error while saving email as draft: `{status}`")
 
-        return MessageParser.get_uid(data[0])
+        return MessageParser.get_uid(
+            MessageParser.group_messages(data)[0]
+        )
 
     @handle_idle
     def _mark_email(

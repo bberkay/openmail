@@ -13,10 +13,10 @@ from __future__ import annotations
 import base64
 import re
 import quopri
-from typing import NotRequired, TypedDict
+from typing import NotRequired, TypedDict, Any
 from email.header import decode_header
 from html.parser import HTMLParser as BuiltInHTMLParser
-from collections.abc import MutableSequence
+from collections.abc import MutableSequence, Iterable
 
 """
 General Fetch Constants
@@ -79,31 +79,12 @@ MESSAGE_HEADER_PATTERN_MAP = {
 """
 Body Constants
 """
+BODY_PATTERN = re.compile(rb"BODY\[.*?{\d+}", re.DOTALL | re.IGNORECASE)
 CONTENT_TYPE_PATTERN = re.compile(
     rb'(?:(?:^|\r\n)Content-Type:\s*([\w\/\-]+))', re.DOTALL | re.IGNORECASE
 )
 CONTENT_TRANSFER_ENCODING_PATTERN = re.compile(
     rb'(?:(?:^|\r\n)Content-Transfer-Encoding:\s*([\w\/\-]+))', re.DOTALL | re.IGNORECASE
-)
-BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:(?:^|\r\n)Content-Type:\s*text/plain(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
-    rb'(?:(?:^|\r\n)Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Type:\s*text/plain)|' \
-    rb'(?:(?:^|\r\n)Content-Type:\s*text/plain)',
-    re.DOTALL | re.IGNORECASE
-)
-BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN = re.compile(
-    rb'(?:(?:^|\r\n)Content-Type:\s*text/html(?:(?!\r\n\r\n).)*?\r\nContent-Transfer-Encoding:\s*([\w\-]+))|' \
-    rb'(?:(?:^|\r\n)Content-Transfer-Encoding:\s*([\w\-]+)(?:(?!\r\n\r\n).)*?\r\nContent-Type:\s*text/html)|' \
-    rb'(?:(?:^|\r\n)Content-Type:\s*text/html)',
-    re.DOTALL | re.IGNORECASE
-)
-BODY_TEXT_PLAIN_DATA_PATTERN = re.compile(
-    rb'(?:^|\r\n)Content-Type:\s*text/plain.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
-    re.DOTALL | re.IGNORECASE
-)
-BODY_TEXT_HTML_DATA_PATTERN = re.compile(
-    rb'(?:^|\r\n)Content-Type:\s*text/html.*?\r\n\r\n(.*?)(?=\r\n\r\n|$)',
-    re.DOTALL | re.IGNORECASE
 )
 INLINE_ATTACHMENT_CID_AND_DATA_PATTERN = re.compile(
     rb'(?:^|\r\n)Content-ID: <(.*?)>.*?\r\n\r\n(.*?)\r\n\r\n',
@@ -210,7 +191,7 @@ class MessageParser:
     """
 
     @staticmethod
-    def group_messages(raw_message: list[bytes | tuple[bytes]]) -> list[GroupedMessage]:
+    def group_messages(raw_message: Any) -> list[GroupedMessage]:
         """
         Group messages of fetch queries like this `(BODY.PEEK[HEADER.FIELDS
         (FROM TO SUBJECT DATE)] BODY.PEEK[TEXT]<0.1024> FLAGS BODYSTRUCTURE)`
@@ -222,8 +203,7 @@ class MessageParser:
         will be returned.
 
         Args:
-            raw_message (list[bytes | tuple[bytes]]): A list of raw message byte strings
-            representing the components of messages.
+            raw_message (Any): A list of raw message byte strings representing the components of messages.
 
         Returns:
             list[GroupedMessage]: A list of grouped message components. Each
@@ -252,6 +232,9 @@ class MessageParser:
         grouped: list[GroupedMessage] = []
         current: GroupedMessage = GroupedMessage([])
 
+        if not isinstance(raw_message, Iterable):
+            return [raw_message]
+
         for part in raw_message:
             if isinstance(part, tuple):
                 for part_item in part:
@@ -268,6 +251,249 @@ class MessageParser:
             grouped.append(current)
 
         return grouped
+
+    @staticmethod
+    def get_uid(grouped_message: GroupedMessage) -> str:
+        """
+        Get UID from FETCH or APPEND command result.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            str: UID string.
+
+        Example:
+            >>> get_uid("b'2394 (UID 2651 FLAGS ... )'")
+            '2651'
+            >>> get_uid("b'[APPENDUID 6 272] (Success)'")
+            '272'
+        """
+        uid_match = ""
+        for _, message in grouped_message.sorted():
+            if b"APPENDUID" in message:
+                uid_match = APPENDUID_PATTERN.search(message)
+            else:
+                uid_match = UID_PATTERN.search(message)
+
+            if uid_match:
+                return uid_match.group(1).decode()
+
+        return ""
+
+    @staticmethod
+    def get_size(grouped_message: GroupedMessage) -> int:
+        """
+        Get size from `RFC822.SIZE` fetch result.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            int: Size as bytes.
+
+        Example:
+            >>> get_size(b'1430 (UID 1534 RFC822.SIZE 42742)')
+            42742
+        """
+        for _, message in grouped_message.sorted():
+            size_match = SIZE_PATTERN.search(message)
+            if size_match:
+                return int(size_match.group(1))
+
+        return -1
+
+    @staticmethod
+    def get_exists_size(grouped_message: GroupedMessage) -> int:
+        """
+        Get size from `EXISTS` server response.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            int: Size as bytes.
+
+        Example:
+            >>> get_size(b'* 12 EXISTS')
+            12
+        """
+        for _, message in grouped_message.sorted():
+            exists_size_match = EXISTS_SIZE_PATTERN.search(message)
+            if exists_size_match:
+                return int(exists_size_match.group(1))
+
+        return -1
+
+    @staticmethod
+    def get_hierarchy_delimiter(grouped_message: GroupedMessage) -> str:
+        """
+        Get hierarchy delimiter from `NAMESPACE` server response.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            str: Delimiter.
+
+        Example:
+            >>> get_hierarchy_delimiter("b'(("" "/")) NIL NIL'")
+            '/'
+            >>> get_hierarchy_delimiter("b'(("" ".")) NIL NIL'")
+            '.'
+        """
+        for _, message in grouped_message.sorted():
+            hier_del_match = HIERARCHY_DELIMITER_PATTERN.search(message)
+            if hier_del_match:
+                return hier_del_match.group(1).decode()
+
+        return ""
+
+    @staticmethod
+    def get_flags(grouped_message: GroupedMessage) -> list[str]:
+        """
+        Get flags from `FLAGS` fetch result.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            list[str]: List of flags.
+
+        Example:
+            >>> get_flags(b'(UID ... FLAGS (\\Seen \\Flagged) ... b')
+            ['\\Seen', '\\Flagged']
+        """
+        for _, message in grouped_message.sorted():
+            flag_matches = next(FLAGS_PATTERN.finditer(message), None)
+            if flag_matches:
+                return flag_matches.group(1).decode().strip().split(" ")
+
+        return []
+
+    @staticmethod
+    def get_headers(grouped_message: GroupedMessage) -> MessageHeaders:
+        """
+        Get headers from `BODY.PEEK[BODY[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID
+        IN-REPLY-TO REFERENCES)]]`
+        fetch result.
+
+        Args:
+            message (bytes): Raw message bytes.
+
+        Returns:
+            MessageHeaders: Dictionary of headers.
+
+        Example:
+            >>> headers_from_message(b'(UID ... FLAGS (\\Seen) ... To: a@gmail.com\r\n Subject: Hello
+            ... \r\nDate: 2023-01-01\r\n From: b@gmail.com\\r\\n...) ... b')
+            {
+                "content_type": "text/plain; charset=utf-8",
+                'subject': 'Hello',
+                'sender': 'a@gmail.com',
+                'receivers': 'b@gmail.com',
+                ...
+                'message_id': '<caef..@dom.com>',
+                'references': '<5121..@dom.com>'
+            }
+        """
+        headers: MessageHeaders = {
+            "subject": "",
+            "sender": "",
+            "receivers": "",
+            "date": ""
+        }
+
+        message_index_contains_headers = -1
+
+        for part, message in grouped_message.sorted():
+            if HEADERS_PATTERN.search(message):
+                message_index_contains_headers = part + 1
+
+        if message_index_contains_headers < 0:
+            return headers
+
+        for field_type, field_pattern in MESSAGE_HEADER_PATTERN_MAP.items():
+            field = field_pattern.search(grouped_message[message_index_contains_headers])
+            field = field.group(1).decode() if field else ""
+            field = SPACE_PATTERN.sub(
+                " ",
+                MessageDecoder.utf8_header(field)
+            ).strip()
+
+            # Special cases
+            if field_type in ["sender", "receivers", "cc", "bcc"]:
+                field = field.replace('"', '')
+
+            headers[field_type] = field
+
+        return headers
+
+    @staticmethod
+    def get_attachment_list(grouped_message: GroupedMessage) -> list[tuple[str, int, str, str]]:
+        """
+        Get attachments from `BODYSTRUCTURE` fetch result.
+
+        Args:
+            message (str): Raw message bytes.
+
+        Returns:
+            list[tuple[str, int, str, str]]: List of attachments as (filename, size, cid, mimetype/subtype)
+
+        Example:
+            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.pdf\")
+            ... INLINE (FILENAME \"banner.jpg\") b')
+            [("file.txt", 1029, "bcida...", "application/pdf")]
+        """
+        attachment_list = []
+        for _, message in grouped_message.sorted():
+            attach_list_match = ATTACHMENT_LIST_PATTERN.finditer(message.decode())
+            for attach_match in attach_list_match:
+                try:
+                    attachment_list.append(
+                        (
+                            attach_match.group(5),
+                            int(attach_match.group(4)),
+                            TAG_CLEANING_PATTERN.sub('', attach_match.group(3)),
+                            f"{attach_match.group(1)}/{attach_match.group(2)}".lower()
+                        )
+                    )
+                except (IndexError, ValueError):
+                    #print("Attachment could not parsed, skipping...")
+                    continue
+
+        return attachment_list
+
+    @staticmethod
+    def get_inline_attachment_list(grouped_message: GroupedMessage) -> list[tuple[str, int, str, str]]:
+        """
+        Get inline attachments from `BODYSTRUCTURE` fetch result.
+
+        Args:
+            message (str): Raw message bytes.
+
+        Returns:
+            list[tuple[str, int, str, str]]: List of inline attachments as (filename, size, cid, mimetype/subtype)
+
+        Example:
+            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\")
+            ... INLINE (FILENAME \"banner.jpg\") b')
+            [("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
+        """
+        inline_attachment_list = []
+        for _, message in grouped_message.sorted():
+            attach_list_match = INLINE_ATTACHMENT_LIST_PATTERN.finditer(message.decode())
+            for attach_match in attach_list_match:
+                inline_attachment_list.append(
+                    (
+                        attach_match.group(5),
+                        int(attach_match.group(4)),
+                        TAG_CLEANING_PATTERN.sub('', attach_match.group(3)),
+                        f"{attach_match.group(1)}/{attach_match.group(2)}".lower()
+                    )
+                )
+
+        return inline_attachment_list
 
     @staticmethod
     def get_part(
@@ -386,169 +612,6 @@ class MessageParser:
         return part
 
     @staticmethod
-    def get_uid(grouped_message: GroupedMessage) -> str:
-        """
-        Get UID from FETCH or APPEND command result.
-
-        Args:
-            message (bytes): Raw message bytes.
-
-        Returns:
-            str: UID string.
-
-        Example:
-            >>> get_uid("b'2394 (UID 2651 FLAGS ... )'")
-            '2651'
-            >>> get_uid("b'[APPENDUID 6 272] (Success)'")
-            '272'
-        """
-        uid_match = ""
-        for _, message in grouped_message.sorted():
-            if b"APPENDUID" in message:
-                uid_match = APPENDUID_PATTERN.search(message)
-            else:
-                uid_match = UID_PATTERN.search(message)
-
-            if uid_match:
-                return uid_match.group(1).decode()
-
-        return ""
-
-    @staticmethod
-    def get_size(grouped_message: GroupedMessage) -> int:
-        """
-        Get size from `RFC822.SIZE` fetch result.
-
-        Args:
-            message (bytes): Raw message bytes.
-
-        Returns:
-            int: Size as bytes.
-
-        Example:
-            >>> get_size(b'1430 (UID 1534 RFC822.SIZE 42742)')
-            42742
-        """
-        for _, message in grouped_message.sorted():
-            size_match = SIZE_PATTERN.search(message)
-            if size_match:
-                return int(size_match.group(1))
-
-        return -1
-
-    @staticmethod
-    def get_exists_size(grouped_message: GroupedMessage) -> int:
-        """
-        Get size from `EXISTS` server response.
-
-        Args:
-            message (bytes): Raw message bytes.
-
-        Returns:
-            int: Size as bytes.
-
-        Example:
-            >>> get_size(b'* 12 EXISTS')
-            12
-        """
-        for _, message in grouped_message.sorted():
-            exists_size_match = EXISTS_SIZE_PATTERN.search(message)
-            if exists_size_match:
-                return int(exists_size_match.group(1))
-
-        return -1
-
-    @staticmethod
-    def get_hierarchy_delimiter(grouped_message: GroupedMessage) -> str:
-        """
-        Get hierarchy delimiter from `NAMESPACE` server response.
-
-        Args:
-            message (bytes): Raw message bytes.
-
-        Returns:
-            str: Delimiter.
-
-        Example:
-            >>> get_hierarchy_delimiter("b'(("" "/")) NIL NIL'")
-            '/'
-            >>> get_hierarchy_delimiter("b'(("" ".")) NIL NIL'")
-            '.'
-        """
-        for _, message in grouped_message.sorted():
-            hier_del_match = HIERARCHY_DELIMITER_PATTERN.search(message)
-            if hier_del_match:
-                return hier_del_match.group(1).decode()
-
-        return ""
-
-    @staticmethod
-    def get_attachment_list(grouped_message: GroupedMessage) -> list[tuple[str, int, str, str]]:
-        """
-        Get attachments from `BODYSTRUCTURE` fetch result.
-
-        Args:
-            message (str): Raw message bytes.
-
-        Returns:
-            list[tuple[str, int, str, str]]: List of attachments as (filename, size, cid, mimetype/subtype)
-
-        Example:
-            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.pdf\")
-            ... INLINE (FILENAME \"banner.jpg\") b')
-            [("file.txt", 1029, "bcida...", "application/pdf")]
-        """
-        attachment_list = []
-        for _, message in grouped_message.sorted():
-            attach_list_match = ATTACHMENT_LIST_PATTERN.finditer(message.decode())
-            for attach_match in attach_list_match:
-                try:
-                    attachment_list.append(
-                        (
-                            attach_match.group(5),
-                            int(attach_match.group(4)),
-                            TAG_CLEANING_PATTERN.sub('', attach_match.group(3)),
-                            f"{attach_match.group(1)}/{attach_match.group(2)}".lower()
-                        )
-                    )
-                except (IndexError, ValueError):
-                    #print("Attachment could not parsed, skipping...")
-                    continue
-
-        return attachment_list
-
-    @staticmethod
-    def get_inline_attachment_list(grouped_message: GroupedMessage) -> list[tuple[str, int, str, str]]:
-        """
-        Get inline attachments from `BODYSTRUCTURE` fetch result.
-
-        Args:
-            message (str): Raw message bytes.
-
-        Returns:
-            list[tuple[str, int, str, str]]: List of inline attachments as (filename, size, cid, mimetype/subtype)
-
-        Example:
-            >>> attachments_from_message(b'(BODYSTRUCTURE ... ATTACHMENT (FILENAME \"file.txt\")
-            ... INLINE (FILENAME \"banner.jpg\") b')
-            [("banner.jpg", 10290, "bcida...", "IMAGE/JPG")]
-        """
-        inline_attachment_list = []
-        for _, message in grouped_message.sorted():
-            attach_list_match = INLINE_ATTACHMENT_LIST_PATTERN.finditer(message.decode())
-            for attach_match in attach_list_match:
-                inline_attachment_list.append(
-                    (
-                        attach_match.group(5),
-                        int(attach_match.group(4)),
-                        TAG_CLEANING_PATTERN.sub('', attach_match.group(3)),
-                        f"{attach_match.group(1)}/{attach_match.group(2)}".lower()
-                    )
-                )
-
-        return inline_attachment_list
-
-    @staticmethod
     def get_content_type_and_encoding(grouped_message: GroupedMessage) -> tuple[str, str]:
         """
         Extracts the Content-Type and Content-Transfer-Encoding headers from an email message.
@@ -582,9 +645,8 @@ class MessageParser:
 
         return "", ""
 
-
     @staticmethod
-    def get_text_plain_body(grouped_message: GroupedMessage) -> tuple[int, int, str] | None:
+    def get_body(grouped_message: GroupedMessage) -> str | bytes:
         """
         Get plain text from `BODY.PEEK[1]`, `RFC822`, `BODY[TEXT]` etc. fetch results.
 
@@ -592,95 +654,26 @@ class MessageParser:
             message(bytes): Raw message bytes.
 
         Returns:
-            tuple[int, int, str]: Plain text as (start offset, end offset, decoded text)
+            str | bytes: Body content as str or bytes.
 
         Example:
             >>> message = b'''
-            ...     ...Content-Type: text/plain; charset="utf-8"
-            ...     \r\n...\r\n\r\ntest_send_email_with_attachment
-            ...     _and_inline_attachment\r\n\r\nContent-Type...
+            ...     \r\n\r\ntest_send_email_with_attachment
+            ...     _and_inline_attachment\r\n_still_continue\r\n\r\n...
             ... '''
-            >>> get_text_plain_body(message)
-            (42, 74, b"test_send_email_with_attachment_and_inline_attachment")
+            >>> get_body(message)
+            (b"test_send_email_with_attachment_and_inline_attachment_still_continue")
         """
-        for _, message in grouped_message.sorted():
-            offset_and_encoding_match = BODY_TEXT_PLAIN_OFFSET_AND_ENCODING_PATTERN.search(message)
-            if not offset_and_encoding_match:
-                continue
+        message_index_contains_body = -1
 
-            encoding_start = offset_and_encoding_match.start()
-            if not encoding_start:
-                continue
+        for part, message in grouped_message.sorted():
+            if BODY_PATTERN.search(message):
+                message_index_contains_body = part + 1
 
-            data_match = BODY_TEXT_PLAIN_DATA_PATTERN.search(message[encoding_start:])
-            if not data_match:
-                continue
+        if message_index_contains_body < 0:
+            return ""
 
-            encoding = offset_and_encoding_match.group(1) or offset_and_encoding_match.group(2) or b""
-            return (
-                *data_match.span(),
-                MessageDecoder.body(data_match.group(1), encoding=encoding.decode(), sanitize=True)
-            )
-
-        return None
-
-    @staticmethod
-    def get_text_html_body(grouped_message: GroupedMessage) -> tuple[int, int, str] | None:
-        """
-        Get html text from `BODY.PEEK[1]`, `RFC822`, `BODY[TEXT]` etc. fetch results.
-
-        Args:
-            message(bytes): Raw message bytes.
-
-        Returns:
-            tuple[int, int, bytes]: HTML text as (start offset, end offset, decoded text)
-
-        Example:
-            >>> message = b'''
-            ...     ...Content-Type: text/html; charset="utf-8"...\r\n\r\n
-            ...     <html>\r\n<head></head>\r\n<body>\r\n<hr/>\r\n<i>test_s
-            ...     end_email_with_attachment_and_inline_attachment<=\r\n/i>\r
-            ...     \n<br>\r\n<img src=3D"cid:b89e7b1f7436a0727acf307413310f92"/>
-            ...     \r\n<img src=3D"cid:2b07dc3482f143180e8e78d5f9428d67"/>\r\n<hr
-            ...     />\r\n</body>\r\n</html>\r\n\r\n\r\b...
-            ... '''
-            >>> get_text_html_body(message)
-            (
-                42,
-                74,
-                b"<html>
-                    <head></head>
-                    <body>
-                        <hr/>
-                        <i>test_send_email_with_attachment_and_inline_attachment</i>
-                        <br>
-                        <img src=3D"cid:b89e7b1f7436a0727acf307413310f92"/>
-                        <img src=3D"cid:2b07dc3482f143180e8e78d5f9428d67"/>
-                        <hr/>
-                    </body>
-                </html>"
-            )
-        """
-        for _, message in grouped_message.sorted():
-            offset_and_encoding_match = BODY_TEXT_HTML_OFFSET_AND_ENCODING_PATTERN.search(message)
-            if not offset_and_encoding_match:
-                continue
-
-            encoding_start = offset_and_encoding_match.start()
-            if not encoding_start:
-                continue
-
-            data_match = BODY_TEXT_HTML_DATA_PATTERN.search(message[encoding_start:])
-            if not data_match:
-                continue
-
-            encoding = offset_and_encoding_match.group(1) or offset_and_encoding_match.group(2)
-            return (
-                *data_match.span(),
-                MessageDecoder.body(data_match.group(1), encoding=encoding.decode())
-            )
-
-        return None
+        return grouped_message[message_index_contains_body]
 
     @staticmethod
     def get_cid_and_data_of_inline_attachments(grouped_message: GroupedMessage) -> list[tuple[str, str]]:
@@ -760,84 +753,6 @@ class MessageParser:
             )
             for source_match in inline_attachment_sources
         ]
-
-    @staticmethod
-    def get_flags(grouped_message: GroupedMessage) -> list[str]:
-        """
-        Get flags from `FLAGS` fetch result.
-
-        Args:
-            message (bytes): Raw message bytes.
-
-        Returns:
-            list[str]: List of flags.
-
-        Example:
-            >>> get_flags(b'(UID ... FLAGS (\\Seen \\Flagged) ... b')
-            ['\\Seen', '\\Flagged']
-        """
-        for _, message in grouped_message.sorted():
-            flag_matches = next(FLAGS_PATTERN.finditer(message), None)
-            if flag_matches:
-                return flag_matches.group(1).decode().strip().split(" ")
-
-        return []
-
-    @staticmethod
-    def get_headers(grouped_message: GroupedMessage) -> MessageHeaders:
-        """
-        Get headers from `BODY.PEEK[BODY[HEADER.FIELDS (FROM TO SUBJECT DATE CC BCC MESSAGE-ID
-        IN-REPLY-TO REFERENCES)]]`
-        fetch result.
-
-        Args:
-            message (bytes): Raw message bytes.
-
-        Returns:
-            MessageHeaders: Dictionary of headers.
-
-        Example:
-            >>> headers_from_message(b'(UID ... FLAGS (\\Seen) ... To: a@gmail.com\r\n Subject: Hello
-            ... \r\nDate: 2023-01-01\r\n From: b@gmail.com\\r\\n...) ... b')
-            {
-                "content_type": "text/plain; charset=utf-8",
-                'subject': 'Hello',
-                'sender': 'a@gmail.com',
-                'receivers': 'b@gmail.com',
-                ...
-                'message_id': '<caef..@dom.com>',
-                'references': '<5121..@dom.com>'
-            }
-        """
-        headers: MessageHeaders = {
-            "subject": "",
-            "sender": "",
-            "receivers": "",
-            "date": ""
-        }
-
-        message_index_contains_headers = 0
-
-        for part, message in grouped_message.sorted():
-            if HEADERS_PATTERN.search(message):
-                message_index_contains_headers = part + 1
-
-        for field_type, field_pattern in MESSAGE_HEADER_PATTERN_MAP.items():
-            field = field_pattern.search(grouped_message[message_index_contains_headers])
-            field = field.group(1).decode() if field else ""
-            field = SPACE_PATTERN.sub(
-                " ",
-                MessageDecoder.utf8_header(field)
-            ).strip()
-
-            # Special cases
-            if field_type in ["sender", "receivers", "cc", "bcc"]:
-                field = field.replace('"', '')
-
-            headers[field_type] = field
-
-        return headers
-
 
 class MessageDecoder:
     """
@@ -951,7 +866,7 @@ class MessageDecoder:
             return message
 
     @staticmethod
-    def body(message: str | bytes, /, *, encoding: str = "", sanitize: bool = False) -> str:
+    def body(message: str | bytes, /, *, encoding: str = "", sanitize: bool = False, parse: bool = False) -> str:
         """
         Decode and optionally sanitize the message body.
 
@@ -966,6 +881,8 @@ class MessageDecoder:
                 "quoted-printable", "base64", or an empty string for plain text. Defaults to "".
             sanitize (bool, optional): If `True`, applies sanitization to remove unnecessary
                 characters such as links, brackets, and special symbols. Defaults to `False`.
+            parse (bool, optional): If `True`, parses the message as HTML content using an HTML parser
+                to extract meaningful text. Cannot be used together with `sanitize`. Defaults to `False`.
 
         Returns:
             str: Decoded (and optionally sanitized) message content.
@@ -977,6 +894,9 @@ class MessageDecoder:
             >>> body(b"Visit our site: https://example.com", sanitize=True)
             'Visit our site'
         """
+        if sanitize and parse:
+            raise ValueError("Only one of 'parse' or 'sanitize' can be True at a time.")
+
         if isinstance(message, bytes):
             message = message.decode()
 
@@ -992,6 +912,8 @@ class MessageDecoder:
             message = SPECIAL_CHAR_PATTERN.sub(' ', message)
             message = SPACE_PATTERN.sub(' ', message)
             message = message.strip()
+        elif parse:
+            message = HTMLParser.parse(message)
 
         return message
 
