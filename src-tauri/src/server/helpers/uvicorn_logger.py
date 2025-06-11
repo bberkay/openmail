@@ -1,8 +1,9 @@
 import sys
 import json
+import re
 
 import logging
-from typing import Any
+from typing import Any, Mapping
 from logging.handlers import RotatingFileHandler
 
 from fastapi import WebSocket, Request
@@ -20,6 +21,13 @@ MAX_BACKUP_COUNT = 5
 MAX_SUMMARIZED_DATA_LENGTH = 256
 DATA_PREVIEW_LENGTH = 5
 CENSOR_TRACE_LENGTH = 10
+
+"""
+Sensitive Data Masking Patterns
+"""
+SENSITIVE_PATTERNS = [
+    re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'),  # Email pattern
+]
 
 class UvicornLogger(logging.Logger):
     def __init__(self):
@@ -44,24 +52,24 @@ class UvicornLogger(logging.Logger):
         self.addHandler(stream_handler)
         self.addHandler(file_handler)
 
-    def _censor(self, data: Any) -> dict | str:
-        def mask(data: str):
-            return f"{data}{"*" * CENSOR_TRACE_LENGTH}"
+    def _mask(self, text: str) -> str:
+        return f"{text[1:DATA_PREVIEW_LENGTH]}{"*" * CENSOR_TRACE_LENGTH}"
 
+    def _censor(self, data: Any) -> dict | str:
         if not data:
             return ""
 
         if isinstance(data, dict):
             return {
-                key: f"{mask(json.dumps(value)[:DATA_PREVIEW_LENGTH])}" if value else ""
+                key: f"{self._mask(json.dumps(value))}" if value else ""
                 for key, value in data.items()
             }
         elif isinstance(data, list):
-            return f"[{mask(str(data)[1:DATA_PREVIEW_LENGTH])}]" if data[0] else "[]"
+            return f"[{self._mask(str(data))}]" if data[0] else "[]"
         elif isinstance(data, str):
-            return f"{mask(data[:DATA_PREVIEW_LENGTH])}"
+            return f"{self._mask(data)}"
 
-        return "`response_data` could not censored properly."
+        return "`data` could not censored properly."
 
     def _summarize(self, data: Any) -> dict | str:
         if isinstance(data, dict):
@@ -113,3 +121,81 @@ class UvicornLogger(logging.Logger):
 
         except Exception as e:
             self.error("Error while logging request and response: %s" % str(e))
+
+    def _find_sensitive_keywords(self, msg: str) -> str:
+        for pattern in SENSITIVE_PATTERNS:
+            matches = pattern.findall(msg)
+            for match in matches:
+                masked = self._mask(match)
+                msg = msg.replace(match, masked)
+        return msg
+
+    def info(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: logging._ExcInfoType = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None
+    ) -> None:
+        if isinstance(msg, str):
+            msg = self._find_sensitive_keywords(msg)
+        super().info(msg, *args, exc_info=exc_info, stack_info=stack_info,
+                     stacklevel=stacklevel, extra=extra)
+
+    def debug(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: logging._ExcInfoType = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None
+    ) -> None:
+        if isinstance(msg, str):
+            msg = self._find_sensitive_keywords(msg)
+        super().debug(msg, *args, exc_info=exc_info, stack_info=stack_info,
+                      stacklevel=stacklevel, extra=extra)
+
+    def warning(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: logging._ExcInfoType = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None
+    ) -> None:
+        if isinstance(msg, str):
+            msg = self._find_sensitive_keywords(msg)
+        super().warning(msg, *args, exc_info=exc_info, stack_info=stack_info,
+                        stacklevel=stacklevel, extra=extra)
+
+    def error(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: logging._ExcInfoType = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None
+    ) -> None:
+        if isinstance(msg, str):
+            msg = self._find_sensitive_keywords(msg)
+        super().error(msg, *args, exc_info=exc_info, stack_info=stack_info,
+                      stacklevel=stacklevel, extra=extra)
+
+    def critical(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: logging._ExcInfoType = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None
+    ) -> None:
+        if isinstance(msg, str):
+            msg = self._find_sensitive_keywords(msg)
+        super().critical(msg, *args, exc_info=exc_info, stack_info=stack_info,
+                         stacklevel=stacklevel, extra=extra)
