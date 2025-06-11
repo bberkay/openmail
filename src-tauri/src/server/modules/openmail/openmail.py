@@ -10,9 +10,9 @@ Dependencies:
 Author: <berkaykayaforbusiness@outlook.com>
 """
 
+import threading
 from .imap import IMAPManager, IMAPManagerException
 from .smtp import SMTPManager, SMTPManagerException
-
 
 class Openmail:
     """
@@ -83,43 +83,86 @@ class Openmail:
             tuple[bool, str]: A tuple containing connection status (True/False)
                                and a status message
         """
-        self._imap = IMAPManager(
-            email_address,
-            password,
-            imap_host,
-            imap_port,
-            ssl_context=imap_ssl_context,
-            timeout=timeout,
-            enable_idle_optimization=imap_enable_idle_optimization,
-            listen_new_messages=imap_listen_new_messages,
-        )
-        self._smtp = SMTPManager(
-            email_address, password, smtp_host, smtp_port, smtp_local_hostname, timeout
-        )
+        def setup_imap():
+            self._imap = IMAPManager(
+                email_address,
+                password,
+                imap_host,
+                imap_port,
+                ssl_context=imap_ssl_context,
+                timeout=timeout,
+                enable_idle_optimization=imap_enable_idle_optimization,
+                listen_new_messages=imap_listen_new_messages,
+            )
+
+        def setup_smtp():
+            self._smtp = SMTPManager(
+                email_address, password, smtp_host, smtp_port, smtp_local_hostname, timeout
+            )
+
+        imap_thread = threading.Thread(target=setup_imap)
+        smtp_thread = threading.Thread(target=setup_smtp)
+
+        imap_thread.start()
+        smtp_thread.start()
+
+        imap_thread.join()
+        smtp_thread.join()
+
         return True, "Connected successfully"
 
     def disconnect(self) -> tuple[bool, str]:
         """
-        Close both IMAP and SMTP connections.
+        Close both IMAP and SMTP connections in parallel using threads.
         """
         imap_stat = smtp_stat = True
-        try:
-            if self.imap:
-                imap_stat, _ = self.imap.logout()
-            if self.smtp:
-                smtp_stat, _ = self.smtp.logout()
-        except IMAPManagerException as e:
-            imap_stat = "timeout" in str(e).lower()
-        except SMTPManagerException as e:
-            smtp_stat = "timeout" in str(e).lower()
-        except Exception:
-            imap_stat = smtp_stat = False
+        imap_error = smtp_error = None
 
+        def disconnect_imap():
+            nonlocal imap_stat, imap_error
+            try:
+                if self.imap:
+                    imap_stat, _ = self.imap.logout()
+            except IMAPManagerException as e:
+                imap_stat = "timeout" in str(e).lower()
+                imap_error = str(e)
+            except Exception as e:
+                imap_stat = False
+                imap_error = str(e)
+
+        def disconnect_smtp():
+            nonlocal smtp_stat, smtp_error
+            try:
+                if self.smtp:
+                    smtp_stat, _ = self.smtp.logout()
+            except SMTPManagerException as e:
+                smtp_stat = "timeout" in str(e).lower()
+                smtp_error = str(e)
+            except Exception as e:
+                smtp_stat = False
+                smtp_error = str(e)
+
+        # Thread'leri başlat
+        imap_thread = threading.Thread(target=disconnect_imap)
+        smtp_thread = threading.Thread(target=disconnect_smtp)
+
+        imap_thread.start()
+        smtp_thread.start()
+
+        imap_thread.join()
+        smtp_thread.join()
+
+        # Hata mesajı oluştur
         disconnect_msg = ""
         if not imap_stat:
-            disconnect_msg = "IMAP connection could not terminated properly."
+            disconnect_msg = "IMAP connection could not be terminated properly."
+            if imap_error:
+                disconnect_msg += f" Reason: {imap_error}"
         if not smtp_stat:
-            disconnect_msg += "SMTP connection could not terminated properly."
+            disconnect_msg += "\nSMTP connection could not be terminated properly."
+            if smtp_error:
+                disconnect_msg += f" Reason: {smtp_error}"
+
         if disconnect_msg:
             return False, disconnect_msg
 
