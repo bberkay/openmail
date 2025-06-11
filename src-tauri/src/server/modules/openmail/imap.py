@@ -938,14 +938,14 @@ class IMAPManager(imaplib.IMAP4_SSL):
         self._release_readline_for_imap4(True)
         print(f"DONE for {temp_tag} handled. IDLE terminated.")
 
-    def _release_readline_for_imap4(self, force: bool = True):
+    def _release_readline_for_imap4(self, force: bool = False):
         """
         Sets the readline event in the idle manager, allowing methods like select, uid
         and list in the parent class (IMAP4_SSL) to retrieve messages instead of IMAPManager.
 
         Args:
             force (bool): If force is True then send NOOP even readline_event is already
-            set.
+            set. Defaults to False
         """
         if not self._readline_event.is_set():
             self._readline_event.set()
