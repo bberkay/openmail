@@ -134,7 +134,7 @@ class UvicornLogger(logging.Logger):
         self,
         msg: object,
         *args: object,
-        exc_info: logging._ExcInfoType = None,
+        exc_info: Any = None,
         stack_info: bool = False,
         stacklevel: int = 1,
         extra: Mapping[str, object] | None = None
@@ -148,7 +148,7 @@ class UvicornLogger(logging.Logger):
         self,
         msg: object,
         *args: object,
-        exc_info: logging._ExcInfoType = None,
+        exc_info: Any = None,
         stack_info: bool = False,
         stacklevel: int = 1,
         extra: Mapping[str, object] | None = None
@@ -162,7 +162,7 @@ class UvicornLogger(logging.Logger):
         self,
         msg: object,
         *args: object,
-        exc_info: logging._ExcInfoType = None,
+        exc_info: Any = None,
         stack_info: bool = False,
         stacklevel: int = 1,
         extra: Mapping[str, object] | None = None
@@ -176,7 +176,7 @@ class UvicornLogger(logging.Logger):
         self,
         msg: object,
         *args: object,
-        exc_info: logging._ExcInfoType = None,
+        exc_info: Any = None,
         stack_info: bool = False,
         stacklevel: int = 1,
         extra: Mapping[str, object] | None = None
@@ -190,7 +190,7 @@ class UvicornLogger(logging.Logger):
         self,
         msg: object,
         *args: object,
-        exc_info: logging._ExcInfoType = None,
+        exc_info: Any = None,
         stack_info: bool = False,
         stacklevel: int = 1,
         extra: Mapping[str, object] | None = None
