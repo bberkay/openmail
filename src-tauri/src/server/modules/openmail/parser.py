@@ -367,7 +367,9 @@ class MessageParser:
         for _, message in grouped_message.sorted():
             flag_matches = next(FLAGS_PATTERN.finditer(message), None)
             if flag_matches:
-                return flag_matches.group(1).decode().strip().split(" ")
+                flag_matches = flag_matches.group(1).decode().strip()
+                if flag_matches:
+                    return flag_matches.split(" ")
 
         return []
 
