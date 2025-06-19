@@ -103,86 +103,86 @@
             width: 100%;
 
             &.error {
-                background-color: var(--color-error-bg);
-                border: 1px solid var(--color-error-border);
-                border-left: 2px solid var(--color-error-text);
-                color: var(--color-error-text);
+                background-color: var(--color-bg-error);
+                border: 1px solid var(--color-border-error);
+                border-left: 2px solid var(--color-text-error);
+                color: var(--color-text-error);
 
                 & .alert-manage {
-                    border-color: var(--color-error-border);
-                    color: var(--color-error-text);
-                    background-color: var(--color-error-bg);
+                    border-color: var(--color-border-error);
+                    color: var(--color-text-error);
+                    background-color: var(--color-bg-error);
                 }
 
                 & .separator {
-                    background-color: var(--color-error-border);
+                    background-color: var(--color-border-error);
                 }
 
                 & svg {
-                    fill: var(--color-error-text);
+                    fill: var(--color-text-error);
                 }
             }
 
             &.warning {
-                background-color: var(--color-warning-bg);
-                border: 1px solid var(--color-warning-border);
-                border-left: 2px solid var(--color-warning-text);
-                color: var(--color-warning-text);
+                background-color: var(--color-bg-warning);
+                border: 1px solid var(--color-border-warning);
+                border-left: 2px solid var(--color-text-warning);
+                color: var(--color-text-warning);
 
                 & .alert-manage {
-                    border-color: var(--color-warning-border);
-                    color: var(--color-warning-text);
-                    background-color: var(--color-warning-bg);
+                    border-color: var(--color-border-warning);
+                    color: var(--color-text-warning);
+                    background-color: var(--color-bg-warning);
                 }
 
                 & .separator {
-                    background-color: var(--color-warning-border);
+                    background-color: var(--color-border-warning);
                 }
 
                 & svg {
-                    fill: var(--color-warning-text);
+                    fill: var(--color-text-warning);
                 }
             }
 
             &.info {
-                background-color: var(--color-info-bg);
-                border: 1px solid var(--color-info-border);
-                border-left: 2px solid var(--color-info-text);
-                color: var(--color-info-text);
+                background-color: var(--color-bg-info);
+                border: 1px solid var(--color-border-info);
+                border-left: 2px solid var(--color-text-info);
+                color: var(--color-text-info);
 
                 & .alert-manage {
-                    border-color: var(--color-info-border);
-                    color: var(--color-info-text);
-                    background-color: var(--color-info-bg);
+                    border-color: var(--color-border-info);
+                    color: var(--color-text-info);
+                    background-color: var(--color-bg-info);
                 }
 
                 & .separator {
-                    background-color: var(--color-info-border);
+                    background-color: var(--color-border-info);
                 }
 
                 & svg {
-                    fill: var(--color-info-text);
+                    fill: var(--color-text-info);
                 }
             }
 
             &.success {
-                background-color: var(--color-success-bg);
-                border: 1px solid var(--color-success-border);
-                border-left: 2px solid var(--color-success-text);
-                color: var(--color-success-text);
+                background-color: var(--color-bg-success);
+                border: 1px solid var(--color-border-success);
+                border-left: 2px solid var(--color-text-success);
+                color: var(--color-text-success);
 
                 & .alert-manage {
-                    border-color: var(--color-success-border);
-                    color: var(--color-success-text);
-                    background-color: var(--color-success-bg);
+                    border-color: var(--color-border-success);
+                    color: var(--color-text-success);
+                    background-color: var(--color-bg-success);
                 }
 
                 & .separator {
-                    background-color: var(--color-success-border);
+                    background-color: var(--color-border-success);
                 }
 
                 & svg {
-                    fill: var(--color-success-text);
+                    fill: var(--color-text-success);
                 }
             }
 
