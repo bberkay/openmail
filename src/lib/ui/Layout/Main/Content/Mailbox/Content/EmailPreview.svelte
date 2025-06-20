@@ -28,9 +28,10 @@
 </script>
 
 <script lang="ts">
+    import { onMount } from "svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Email as TEmail, type Account } from "$lib/types";
-    import { extractEmailAddress, extractFullname, truncate } from "$lib/utils";
+    import { extractEmailAddress, extractFullname, truncate, createDomElement, generateHash } from "$lib/utils";
     import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
@@ -41,7 +42,8 @@
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
-
+    import { GravatarService } from "$lib/services/GravatarService";
+  
     const MAX_BODY_LENGTH = 150;
 
     interface Props {
@@ -54,6 +56,20 @@
 
     const mailboxContext = getMailboxContext();
     const account = $state(findAccountByEmail(email)!);
+
+    let isAvatarShown = $state(true);
+    let emailAvatar: HTMLElement;
+
+    onMount(() => {
+        setupEmailAvatars();
+    });
+
+    async function setupEmailAvatars() {
+        const sender = email.sender;
+        const avatar = await GravatarService.getAvatar(sender);
+        avatar.classList.add("avatar");
+        emailAvatar.appendChild(avatar);
+    }
 
     const showEmailContent = async (e: Event): Promise<void> => {
         const target = (e.target as HTMLElement).closest(".email-preview") as HTMLElement;
@@ -91,13 +107,18 @@
     class="email-preview"
     onclick={showEmailContent}
     onkeydown={showEmailContent}
+    onmouseenter={() => isAvatarShown = false}
+    onmouseleave={() => isAvatarShown = true}
+    onfocus={() => isAvatarShown = false}
+    onblur={() => isAvatarShown = true}
     tabindex="0"
     role="button"
 >
     <div class="email-preview-selection-container">
+        <div class="email-preview-avatar-container {isAvatarShown ? "" : "hidden"}" bind:this={emailAvatar}></div>
         <Input.Basic
             type="checkbox"
-            class="email-preview-selection"
+            class="email-preview-selection {isAvatarShown ? "hidden" : ""}"
             bind:group={mailboxContext.emailSelection.value as string[]}
             onclick={deselectAllAccounts}
             value={account.email_address.concat(",", email.uid)}
@@ -181,8 +202,18 @@
 
                 & .email-preview-selection-container {
                     display: flex;
-                    width: 2%;
-                    margin-right: 1%;
+                    width: 35px;
+
+                    & .email-preview-avatar-container .avatar {
+                        width: 20px;
+                        height: 20px;
+                        border-radius: 5px;
+                        margin-bottom: -2px;
+                    }
+
+                    & .email-preview-selection {
+                        margin-left: 2px;
+                    }
                 }
 
                 & .email-preview-sender {
