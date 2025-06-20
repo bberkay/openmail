@@ -432,10 +432,10 @@ export const local = {
         en: "Notifications",
     },
     refresh_folders: {
-        en: "Refresh folders",
+        en: "Refresh",
     },
     create_folder: {
-        en: "Create Folder",
+        en: "Create",
     },
     create_subfolder: {
         en: "Create Subfolder",

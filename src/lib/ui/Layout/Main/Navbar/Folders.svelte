@@ -102,12 +102,6 @@
             : getCurrentMailbox().folder}
     </Dropdown.Toggle>
     <Dropdown.Content>
-        <Dropdown.Item onclick={showCreateFolder}>
-            {local.create_folder[DEFAULT_LANGUAGE]}
-        </Dropdown.Item>
-        <Dropdown.Item onclick={refreshFolders}>
-            {local.refresh_folders[DEFAULT_LANGUAGE]}
-        </Dropdown.Item>
         <Dropdown.Separator title="Standard" />
         {#each standardFolders as standardFolder}
             {@const [folderTag] = standardFolder.split(":")}
@@ -117,6 +111,12 @@
         {/each}
         {#if customFolders.length > 0}
             <Dropdown.Separator title="Custom" />
+            <Dropdown.Item onclick={showCreateFolder}>
+                {local.create_folder[DEFAULT_LANGUAGE]}
+            </Dropdown.Item>
+            <Dropdown.Item onclick={refreshFolders}>
+                {local.refresh_folders[DEFAULT_LANGUAGE]}
+            </Dropdown.Item>
         {/if}
         {#each customFolders as customFolder}
             <Dropdown.Item onclick={() => setCurrentFolder(customFolder)}>
@@ -157,6 +157,8 @@
     :global {
         nav {
             & .folders {
+                width: 170px!important;
+
                 & > .dropdown-content {
                     max-height: 80vh !important;
                     overflow-y: scroll;
