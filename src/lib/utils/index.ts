@@ -125,6 +125,16 @@ export function simpleDeepCopy<T>(source: T): T {
     return JSON.parse(JSON.stringify(source));
 }
 
+export async function generateHash(data: any, algorithm?: AlgorithmIdentifier) {
+    algorithm ??= 'SHA-256';
+    const encoder = new TextEncoder();
+    const dataBytes = encoder.encode(data);
+
+    const hashBuffer = await window.crypto.subtle.digest(algorithm, dataBytes);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function combine(...strings: any[]): string {
     return strings.filter((str) => str !== undefined && str !== null).join(" ");
 }
