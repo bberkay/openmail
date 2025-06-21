@@ -1,7 +1,14 @@
 import { createDomElement, extractEmailAddress, extractFullname, generateHash } from "$lib/utils";
 
+const LOCAL_AVATAR_CSS = `
+    background-color: {bg};
+    color: {fg};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
 const LOCAL_AVATAR_TEMPLATE = `
-    <div style="background-color:{bg};color:{fg};text-align:center;">
+    <div style="${LOCAL_AVATAR_CSS}">
         {shortenedName}
     </div>
 `;
