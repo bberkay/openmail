@@ -54,14 +54,19 @@
 </script>
 
 <div data-tauri-drag-region class="titlebar">
-    <div class="titlebar-button" id="titlebar-minimize">
-        <Icon name="minimize" />
+    <div class="titlebar-left">
+        <span class="title">Openmail | Home </span>
     </div>
-    <div class="titlebar-button" id="titlebar-maximize">
-        <Icon name="maximize" />
-    </div>
-    <div class="titlebar-button" id="titlebar-close">
-        <Icon name="close" />
+    <div class="titlebar-right">
+        <div class="titlebar-button" id="titlebar-minimize">
+            <Icon name="minimize" />
+        </div>
+        <div class="titlebar-button" id="titlebar-maximize">
+            <Icon name="maximize" />
+        </div>
+        <div class="titlebar-button" id="titlebar-close">
+            <Icon name="close" />
+        </div>
     </div>
 </div>
 
@@ -69,10 +74,10 @@
     :global {
         .titlebar {
             height: var(--titlebar-height);
-            background: transparent;
+            background: var(--color-bg-titlebar);
             user-select: none;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             position: fixed;
             top: 0;
             left: 0;
@@ -81,6 +86,11 @@
             border-top-left-radius: var(--titlebar-radius);
             border-top-right-radius: var(--titlebar-radius);
             z-index: var(--z-index-titlebar);
+
+            & .title {
+                margin-left: 10px;
+                font-size: 13px;
+            }
 
             & .titlebar-button {
                 display: inline-flex;
