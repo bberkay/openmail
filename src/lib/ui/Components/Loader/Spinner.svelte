@@ -7,7 +7,7 @@
     }
 
     let {
-        size = "medium",
+        size = "small",
         ...attributes
     }: Props = $props();
 
@@ -24,18 +24,17 @@
     .spinner {
         border: 2px solid var(--color-border);
         border-radius: 50%;
-        border-top: 2px solid var(--color-text-primary);
+        border-top: 2px solid transparent;
         -webkit-animation: spin 2s linear infinite;
         animation: spin 2s linear infinite;
         display: inline-block;
-        margin-right: var(--spacing-2xs);
 
         &.small {
             width: var(--font-size-xs);
             height: var(--font-size-xs);
             border-width: 2px;
-            -webkit-animation-duration: 2s;
-            animation-duration: 2s;
+            -webkit-animation-duration: 1s;
+            animation-duration: 1s;
         }
 
         &.medium {

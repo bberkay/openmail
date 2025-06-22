@@ -13,13 +13,13 @@ export const show: Action<HTMLElement, string | unknown> = (
     node: HTMLElement,
     content: string | unknown,
 ) => {
-    content = content || node.innerText;
+    const contentText = typeof content === "string" ? content : node.innerText;
 
     function mountTooltip() {
         const mountWrapper = () => {
             mountedTooltip = mount(Tooltip, {
                 target: node,
-                props: { content },
+                props: { content: contentText },
                 intro: true
             });
             speedUpNextTooltip = true;
@@ -48,6 +48,10 @@ export const show: Action<HTMLElement, string | unknown> = (
             }, HOVER_TIME_MS)
         }
     }
+
+    node.style.whiteSpace = "nowrap";
+    node.style.overflow = "hidden";
+    node.style.textOverflow = "ellipsis";
 
     node.addEventListener("mouseenter", mountTooltip);
     node.addEventListener("mouseleave", unmountTooltip);
