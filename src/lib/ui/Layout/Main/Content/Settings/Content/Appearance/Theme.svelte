@@ -14,10 +14,10 @@
     let newTheme: Theme = $state(SharedStore.preferences.theme);
 
     onMount(() => {
-        document.removeEventListener("preferencesSaved", saveThemeChange);
-        document.addEventListener("preferencesSaved", saveThemeChange);
-        document.removeEventListener("preferencesResetToDefault", resetTheme);
-        document.addEventListener("preferencesResetToDefault", resetTheme);
+        document.removeEventListener("preferences-saved", saveThemeChange);
+        document.addEventListener("preferences-saved", saveThemeChange);
+        document.removeEventListener("preferences-reset-to-default", resetTheme);
+        document.addEventListener("preferences-reset-to-default", resetTheme);
     });
 
     function saveThemeChange() {

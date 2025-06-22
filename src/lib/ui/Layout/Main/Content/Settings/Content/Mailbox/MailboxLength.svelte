@@ -10,10 +10,10 @@
     let newMailboxLength: MailboxLength = $state(SharedStore.preferences.mailboxLength);
 
     onMount(() => {
-        document.removeEventListener("preferencesSaved", saveMailboxLengthChange);
-        document.addEventListener("preferencesSaved", saveMailboxLengthChange);
-        document.removeEventListener("preferencesResetToDefault", resetMailboxLength);
-        document.addEventListener("preferencesResetToDefault", resetMailboxLength);
+        document.removeEventListener("preferences-saved", saveMailboxLengthChange);
+        document.addEventListener("preferences-saved", saveMailboxLengthChange);
+        document.removeEventListener("preferences-reset-to-default", resetMailboxLength);
+        document.addEventListener("preferences-reset-to-default", resetMailboxLength);
     });
 
     async function saveMailboxLengthChange() {

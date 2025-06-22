@@ -8,13 +8,13 @@
     let newAutostartStatus = $state(SharedStore.preferences.isAutostartEnabled);
 
     onMount(() => {
-        document.removeEventListener("preferencesSaved", saveAutostartChange);
-        document.addEventListener("preferencesSaved", saveAutostartChange);
+        document.removeEventListener("preferences-saved", saveAutostartChange);
+        document.addEventListener("preferences-saved", saveAutostartChange);
         document.removeEventListener(
-            "preferencesResetToDefault",
+            "preferences-reset-to-default",
             resetAutostart,
         );
-        document.addEventListener("preferencesResetToDefault", resetAutostart);
+        document.addEventListener("preferences-reset-to-default", resetAutostart);
     });
 
     async function saveAutostartChange() {

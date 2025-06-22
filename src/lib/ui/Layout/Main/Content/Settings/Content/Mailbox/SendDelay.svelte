@@ -7,10 +7,10 @@
     let newSendDelayStatus = $state(SharedStore.preferences.isSendDelayEnabled);
 
     onMount(() => {
-        document.removeEventListener("preferencesSaved", saveSendDelayChange);
-        document.addEventListener("preferencesSaved", saveSendDelayChange);
-        document.removeEventListener("preferencesResetToDefault", resetSendDelay);
-        document.addEventListener("preferencesResetToDefault", resetSendDelay);
+        document.removeEventListener("preferences-saved", saveSendDelayChange);
+        document.addEventListener("preferences-saved", saveSendDelayChange);
+        document.removeEventListener("preferences-reset-to-default", resetSendDelay);
+        document.addEventListener("preferences-reset-to-default", resetSendDelay);
     });
 
     function saveSendDelayChange() {

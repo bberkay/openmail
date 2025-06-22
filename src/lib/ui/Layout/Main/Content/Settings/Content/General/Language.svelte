@@ -15,13 +15,13 @@
     let newLanguage: Language = $state(SharedStore.preferences.language);
 
     onMount(() => {
-        document.removeEventListener("preferencesSaved", saveLanguageChange);
-        document.addEventListener("preferencesSaved", saveLanguageChange);
+        document.removeEventListener("preferences-saved", saveLanguageChange);
+        document.addEventListener("preferences-saved", saveLanguageChange);
         document.removeEventListener(
-            "preferencesResetToDefault",
+            "preferences-reset-to-default",
             resetLanguage,
         );
-        document.addEventListener("preferencesResetToDefault", resetLanguage);
+        document.addEventListener("preferences-reset-to-default", resetLanguage);
     });
 
     function saveLanguageChange() {

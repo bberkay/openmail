@@ -28,7 +28,7 @@
         SharedStore.preferences = DEFAULT_PREFERENCES;
         const fileSystem = await FileSystem.getInstance();
         await fileSystem.savePreferences(SharedStore.preferences);
-        document.dispatchEvent(new CustomEvent("preferencesResetToDefault"));
+        document.dispatchEvent(new CustomEvent("preferences-reset-to-default"));
     }
 </script>
 

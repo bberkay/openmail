@@ -10,7 +10,7 @@
     const saveChanges = async (): Promise<void> => {
         const fileSystem = await FileSystem.getInstance();
         await fileSystem.savePreferences(SharedStore.preferences);
-        document.dispatchEvent(new CustomEvent("preferencesSaved"));
+        document.dispatchEvent(new CustomEvent("preferences-saved"));
     };
 
     onMount(() => {

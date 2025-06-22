@@ -9,6 +9,7 @@
     import type { Account, NotificationStatus } from "$lib/types";
     import { onMount } from "svelte";
     import { NotificationHandler } from "$lib/services/NotificationHandler";
+    import { GravatarService } from "$lib/services/GravatarService";
 
     interface Props {
         shownAccounts: Account[];
@@ -32,16 +33,16 @@
             "select-shown-checkbox",
         ) as HTMLInputElement;
         document.removeEventListener(
-            "preferencesSaved",
+            "preferences-saved",
             saveNotificationChange,
         );
-        document.addEventListener("preferencesSaved", saveNotificationChange);
+        document.addEventListener("preferences-saved", saveNotificationChange);
         document.removeEventListener(
-            "preferencesResetToDefault",
+            "preferences-reset-to-default",
             resetNotificationChange,
         );
         document.addEventListener(
-            "preferencesResetToDefault",
+            "preferences-reset-to-default",
             resetNotificationChange,
         );
     });
@@ -167,10 +168,16 @@
                         />
                     </Table.Cell>
                     <Table.Cell class="body-cell">
-                        <span>{account.fullname}</span>
-                        <small class="muted">
-                            &lt;{account.email_address}&gt;
-                        </small>
+                        <span>
+                            {@html GravatarService.renderAvatarData(account.avatar)}
+                        </span>
+                        <span>
+                            {account.fullname}
+                            <br>
+                            <small class="muted">
+                                &lt;{account.email_address}&gt;
+                            </small>
+                        </span>
                     </Table.Cell>
                     <Table.Cell class="action-cell">
                         <div class="action-buttons">
