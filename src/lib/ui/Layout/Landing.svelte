@@ -78,7 +78,7 @@
             }
 
             & .landing-body {
-                width: var(--container-sm);
+                width: var(--container-md);
             }
 
             & .landing-body-footer {

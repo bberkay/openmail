@@ -491,19 +491,14 @@ export function createSenderAddressFromAccount(account: Account): string {
 }
 
 export function extractFullname(sender: string): string {
-    return (
-        sender.includes("<") && sender.includes("@") ? sender.split("<")[0] : ""
-    ).trim();
+    const match = sender.match(/^(.*?)<.*@.*>$/);
+    return match ? match[1].trim() : "";
 }
 
 export function extractEmailAddress(sender: string): string {
-    return (
-        sender.includes("<")
-            ? sender.split("<")[1].replace(">", "")
-            : sender.includes("@")
-              ? sender
-              : ""
-    ).trim();
+    const match = sender.match(/<(.+@.+)>/);
+    if (match) return match[1].trim();
+    return sender.includes("@") ? sender.trim() : "";
 }
 
 export function addEmailToAddressList(

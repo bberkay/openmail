@@ -18,6 +18,7 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { createSenderAddressFromAccount } from "$lib/utils";
     import { show as showTooltip } from "$lib/ui/Components/Tooltip";
+    import { GravatarService } from "$lib/services/GravatarService";
 
     const setCurrentAccountAsHome = async () => {
         await setCurrentAccount("home");
@@ -68,13 +69,16 @@
     };
 </script>
 
-<Dropdown.Root class="dropdown-sm accounts">
-    <Dropdown.Toggle>
-        <span use:showTooltip>
-            {SharedStore.currentAccount === "home"
-                ? local.home[DEFAULT_LANGUAGE]
-                : SharedStore.currentAccount.email_address}
-        </span>
+<Dropdown.Root class="dropdown-sm account-dropdown">
+    <Dropdown.Toggle class="account-dropdown-toggle">
+        {#if SharedStore.currentAccount === "home"}
+            <span>{local.home[DEFAULT_LANGUAGE]}</span>
+        {:else}
+            <div>
+                {@html GravatarService.renderAvatarData(SharedStore.currentAccount.avatar)}
+            </div>
+            <span use:showTooltip>{SharedStore.currentAccount.email_address}</span>
+        {/if}
     </Dropdown.Toggle>
     <Dropdown.Content>
         <Dropdown.Item onclick={setCurrentAccountAsHome}>
@@ -102,3 +106,13 @@
         </Dropdown.Item>
     </Dropdown.Content>
 </Dropdown.Root>
+
+<style>
+    :global {
+        .account-dropdown-toggle .dropdown-toggle-content {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2xs);
+        }
+    }
+</style>

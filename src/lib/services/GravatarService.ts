@@ -1,23 +1,53 @@
-import { createDomElement, extractEmailAddress, extractFullname, generateHash } from "$lib/utils";
+import { generateHash } from "$lib/utils";
+import { type Gravatar, type LocalAvatar } from "$lib/types";
+import { SharedStore } from "$lib/stores/shared.svelte";
 
-const LOCAL_AVATAR_CSS = `
-    background-color: {bg};
-    color: {fg};
+const GRAVATAR_URL = "https://gravatar.com/avatar/";
+
+const BASE_AVATAR_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-`;
-const LOCAL_AVATAR_TEMPLATE = `
-    <div style="${LOCAL_AVATAR_CSS}">
-        {shortenedName}
-    </div>
-`;
-const GRAVATAR_IMAGE_TEMPLATE = `
-    <img src="{gravatarUrl}" alt="Avatar of {fullname}">
+    width: var(--font-size-lg);
+    height: var(--font-size-lg);
+    border-radius: var(--radius-sm);
 `;
 
-type ColorPair = { bg: string, fg: string };
-const AVATAR_COLORS: ColorPair[] = [
+const LOCAL_AVATAR_TEMPLATE = `
+    <div
+        class="local-avatar"
+        style="
+            ${BASE_AVATAR_CSS}
+            background-color: {bg};
+            color: {fg};
+        "
+    >
+        {initials}
+    </div>
+`;
+const GRAVATAR_TEMPLATE = `
+    <img
+        class="gravatar"
+        src="{gravatarUrlWithHash}"
+        alt="{fullname}"
+        style="
+            ${BASE_AVATAR_CSS}
+        "
+    />
+`;
+const SKELETON_AVATAR_TEMPLATE = `
+    <div
+        class="skeleton-avatar"
+        style="
+            ${BASE_AVATAR_CSS}
+            background-color: #c2cdca;
+        "
+    >
+    </div>
+`;
+
+type AvatarColorPair = { bg: string; fg: string };
+const AVATAR_COLORS: AvatarColorPair[] = [
     { bg: "#e583ce", fg: "#471033" },
     { bg: "#c8daf5", fg: "#20284b" },
     { bg: "#f4ff77", fg: "#4c2500" },
@@ -31,79 +61,136 @@ const AVATAR_COLORS: ColorPair[] = [
     { bg: "#f8d2e2", fg: "#4b0c1b" },
     { bg: "#dad3ff", fg: "#290a6b" },
     { bg: "#fcd6cc", fg: "#43180c" },
+    { bg: "#c2cdca", fg: "#171c1c" },
 ];
 
-type AvatarCache = { [senderAddress: string]: string };
-const storedAvatars: AvatarCache = {};
+type EmailAddress = string;
+const MAX_CACHE_LENGTH = 100;
+const storedAvatars: Map<EmailAddress, Gravatar | LocalAvatar> = new Map();
 
 export class GravatarService {
-    public static getCachedAvatar(senderAddress: string): HTMLElement | undefined {
-        const isAvatarStored = Object.hasOwn(storedAvatars, senderAddress);
-        if (isAvatarStored) {
-            return createDomElement(storedAvatars[senderAddress]);
-        }
-
-        return undefined;
+    private static _getCachedAvatar(
+        email_address: string,
+    ): Gravatar | LocalAvatar | undefined {
+        return storedAvatars.get(email_address);
     }
 
-    public static getRandomAvatarColor(): ColorPair {
+    private static _checkCacheSize(): void {
+        if (storedAvatars.size > MAX_CACHE_LENGTH) {
+            const iterator = storedAvatars.keys();
+            const reducedLength = Math.max(
+                storedAvatars.size - SharedStore.preferences.mailboxLength,
+                0,
+            );
+            for (let i = 0; i < reducedLength; i++) {
+                const next = iterator.next();
+                if (next.done) break;
+                storedAvatars.delete(next.value);
+            }
+        }
+    }
+
+    private static _saveToCache(
+        email_address: string,
+        avatar: Gravatar | LocalAvatar,
+    ) {
+        GravatarService._checkCacheSize();
+        storedAvatars.set(email_address, avatar);
+    }
+
+    private static _getRandomAvatarColor(): AvatarColorPair {
         return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
     }
 
-    public static getAvatarInitials(senderAddress: string): string {
-        let shortenedName = extractFullname(senderAddress);
-        if (!shortenedName) {
-            const emailAddress = extractEmailAddress(senderAddress);
-            shortenedName = emailAddress.split("@")[0];
-        }
-
-        shortenedName = shortenedName.split(" ")[0][0].toUpperCase();
-        return shortenedName;
+    private static _getAvatarInitials(
+        email_address: string,
+        fullname?: string,
+    ): string {
+        return (fullname || email_address).split(" ")[0][0].toUpperCase();
     }
 
-    public static createLocalAvatar(senderAddress: string) {
-        const shortenedName = GravatarService.getAvatarInitials(senderAddress);
-        const { bg,  fg } = GravatarService.getRandomAvatarColor();
-        return createDomElement(
-            LOCAL_AVATAR_TEMPLATE
-                .replace("{shortenedName}", shortenedName)
-                .replace("{bg}", bg)
-                .replace("{fg}", fg)
+    private static _createLocalAvatar(
+        email_address: string,
+        fullname?: string,
+    ): LocalAvatar {
+        const initials = GravatarService._getAvatarInitials(
+            fullname || email_address,
         );
+        const { bg, fg } = GravatarService._getRandomAvatarColor();
+        const localAvatar = { bg, fg, initials };
+        GravatarService._saveToCache(email_address, localAvatar);
+        return localAvatar;
     }
 
-    public static async fetchGravatar(senderAddress: string): Promise<HTMLElement | undefined> {
-        const fullname = extractFullname(senderAddress);
-        const emailAddress = extractEmailAddress(senderAddress);
-
-        const hash = await generateHash(emailAddress.trim().toLowerCase());
-        const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=404`;
+    private static async _fetchGravatar(
+        email_address: string,
+        fullname?: string,
+    ): Promise<Gravatar | undefined> {
+        const hash = await generateHash(email_address.trim().toLowerCase());
+        const gravatarUrlWithHash = GRAVATAR_URL + hash;
         try {
-            const response = await fetch(gravatarUrl);
-
-            if (response.status !== 200) {
-                return undefined;
-            }
-
-            return createDomElement(
-                GRAVATAR_IMAGE_TEMPLATE
-                    .replace("{gravatarUrl}", gravatarUrl)
-                    .replace("{fullname}", fullname)
-            )
+            const response = await fetch(gravatarUrlWithHash + "?d=404");
+            if (response.status !== 200) return undefined;
+            const gravatar = { hash, fullname };
+            GravatarService._saveToCache(email_address, gravatar);
+            return gravatar;
         } catch {
             return undefined;
         }
     }
 
-    public static async getAvatar(senderAddress: string): Promise<HTMLElement> {
-        let avatar = GravatarService.getCachedAvatar(senderAddress);
+    public static renderLocalAvatar(localAvatar: LocalAvatar): string {
+        return LOCAL_AVATAR_TEMPLATE.replace("{initials}", localAvatar.initials)
+            .replace("{bg}", localAvatar.bg)
+            .replace("{fg}", localAvatar.fg);
+    }
+
+    public static renderGravatar(gravatar: Gravatar): string {
+        return GRAVATAR_TEMPLATE.replace(
+            "{gravatarUrlWithHash}",
+            GRAVATAR_URL + gravatar.hash,
+        ).replace("{fullname}", gravatar.fullname || "");
+    }
+
+    public static renderSkeletonAvatar(): string {
+        return SKELETON_AVATAR_TEMPLATE;
+    }
+
+    public static renderAvatarData(
+        avatarData: Gravatar | LocalAvatar,
+    ): string {
+        if (!Object.hasOwn(avatarData, "initials")) {
+            const gravatar = avatarData as Gravatar;
+            return GravatarService.renderGravatar(gravatar);
+        } else {
+            const localAvatar = avatarData as LocalAvatar;
+            return GravatarService.renderLocalAvatar(localAvatar);
+        }
+    }
+
+    public static async createAvatarData(
+        email_address: string,
+        fullname?: string,
+    ): Promise<Gravatar | LocalAvatar> {
+        let avatar = GravatarService._getCachedAvatar(email_address);
         if (avatar) return avatar;
 
-        avatar = await GravatarService.fetchGravatar(senderAddress);
+        avatar = await GravatarService._fetchGravatar(email_address, fullname);
         if (!avatar) {
-            avatar = GravatarService.createLocalAvatar(senderAddress);
+            avatar = GravatarService._createLocalAvatar(email_address, fullname);
         }
-        storedAvatars[senderAddress] = avatar.innerHTML;
+
         return avatar;
+    }
+
+    public static async getAvatarHTML(
+        email_address: string,
+        fullname?: string,
+    ): Promise<string> {
+        const avatarData = await GravatarService.createAvatarData(
+            email_address,
+            fullname,
+        );
+        return GravatarService.renderAvatarData(avatarData);
     }
 }

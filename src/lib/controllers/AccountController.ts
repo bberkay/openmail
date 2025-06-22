@@ -10,14 +10,16 @@ import {
 import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 import type { Account } from "$lib/types";
 import { NotificationHandler } from "$lib/services/NotificationHandler";
+import { GravatarService } from "$lib/services/GravatarService";
 
 export class AccountController {
     public static async init(): Promise<BaseResponse> {
         const response = await AccountController.list();
         if (response.success && response.data) {
-            SharedStore.currentAccount = response.data.connected[0]; // TODO: Change this to "home"
             SharedStore.accounts = response.data.connected;
             SharedStore.failedAccounts = response.data.failed;
+            SharedStore.currentAccount = SharedStore.accounts[0]; // TODO: Change this to "home"
+            AccountController._cacheAccountAvatars();
         }
 
         return {
@@ -28,6 +30,18 @@ export class AccountController {
         };
     }
 
+    private static async _cacheAccountAvatars() {
+        // Since accounts avatar coming from the server, they won't be stored in gravatar cache.
+        // So we have to manually store them into GravatarService's cache.
+        SharedStore.accounts.map(async (acc) => {
+            // @ts-ignore
+            GravatarService._saveToCache(
+                acc.email_address,
+                acc.avatar,
+            );
+        });
+    }
+
     public static async list(): Promise<GetResponse<GetRoutes.GET_ACCOUNTS>> {
         return await ApiService.get(GetRoutes.GET_ACCOUNTS);
     }
@@ -36,7 +50,8 @@ export class AccountController {
         const acc = SharedStore.accounts.find(
             (acc) => acc.email_address === email_address,
         )!;
-        SharedStore.notificationChannels[email_address] = new NotificationHandler(acc);
+        SharedStore.notificationChannels[email_address] =
+            new NotificationHandler(acc);
 
         if (SharedStore.preferences.notificationStatus instanceof Object) {
             SharedStore.preferences.notificationStatus[email_address] = true;
@@ -52,7 +67,14 @@ export class AccountController {
         const encryptor = new RSAEncryptor();
         const encryptedPassword =
             await encryptor.encryptPassword(plain_password);
+
+        const avatarData = await GravatarService.createAvatarData(
+            email_address,
+            fullname ?? undefined,
+        );
+
         const response = await ApiService.post(PostRoutes.ADD_ACCOUNT, {
+            avatar: avatarData,
             email_address: email_address,
             fullname: fullname || undefined,
             encrypted_password: encryptedPassword,
@@ -60,6 +82,7 @@ export class AccountController {
 
         if (response.success) {
             SharedStore.accounts.push({
+                avatar: avatarData,
                 email_address,
                 ...(fullname && { fullname }),
             });
@@ -87,7 +110,13 @@ export class AccountController {
         const encryptedPassword =
             await encryptor.encryptPassword(plain_password);
 
+        const avatarData = await GravatarService.createAvatarData(
+            email_address,
+            fullname ?? undefined,
+        );
+
         const response = await ApiService.post(PostRoutes.EDIT_ACCOUNT, {
+            avatar: avatarData,
             email_address: email_address,
             fullname: fullname || undefined,
             encrypted_password: encryptedPassword,
@@ -99,6 +128,7 @@ export class AccountController {
             );
 
             SharedStore.accounts[target] = {
+                avatar: avatarData,
                 email_address: email_address,
                 ...(fullname && { fullname }),
             };
@@ -109,13 +139,12 @@ export class AccountController {
 
             AccountController._reinitializeNotifications(email_address);
         } else {
-            if (
-                SharedStore.failedAccounts.find(
-                    (account: Account) =>
-                        account.email_address !== email_address,
-                )
-            ) {
+            const isAlreadyInFailed = SharedStore.failedAccounts.find(
+                (account: Account) => account.email_address === email_address,
+            );
+            if (!isAlreadyInFailed) {
                 SharedStore.failedAccounts.push({
+                    avatar: avatarData,
                     email_address: email_address,
                     ...(fullname && { fullname }),
                 });
@@ -142,9 +171,7 @@ export class AccountController {
         }
     }
 
-    public static async remove(
-        email_address: string,
-    ): Promise<PostResponse> {
+    public static async remove(email_address: string): Promise<PostResponse> {
         const response = await ApiService.post(PostRoutes.REMOVE_ACCOUNT, {
             account: email_address,
         });
@@ -167,9 +194,7 @@ export class AccountController {
 
         if (response.success) {
             SharedStore.accounts.forEach((acc) =>
-                AccountController._terminateNotifications(
-                    acc.email_address,
-                ),
+                AccountController._terminateNotifications(acc.email_address),
             );
             SharedStore.accounts = [];
         }

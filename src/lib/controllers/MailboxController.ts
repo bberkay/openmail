@@ -20,7 +20,9 @@ import {
     type SearchCriteria,
 } from "$lib/types";
 import {
+    extractEmailAddress,
     extractFolderName,
+    extractFullname,
     isExactFolderMatch,
     isStandardFolder,
     isSubfolderOrMatch,
@@ -30,6 +32,7 @@ import {
     replaceFolderName,
     roundUpToMultiple,
 } from "$lib/utils";
+import { GravatarService } from "$lib/services/GravatarService";
 
 export class MailboxController {
     public static async init(
@@ -217,6 +220,30 @@ export class MailboxController {
         });
     }
 
+    private static async _preloadEmailAvatarsSequentially(
+        account: Account,
+        folder: string | Folder,
+        emails: Email[]
+    ) {
+        // We deliberately preload avatar data **before** the email preview components are mounted.
+        // This is because components are mounted in parallel, which causes simultaneous access to
+        // the GravatarService cache. Without this preload step, the cache can fail to resolve
+        // avatars consistently, leading to race conditions where some components don't receive
+        // avatar data in time.
+        for (const email of emails) {
+            const sender = email.sender;
+            await GravatarService.createAvatarData(
+                extractEmailAddress(sender),
+                extractFullname(sender)
+            );
+            // Trigger email preview component to change skeleton avatars to
+            // actual avatars.
+            document.dispatchEvent(new CustomEvent("email-avatar-loaded", {
+                detail: { account, folder, uid: email.uid }
+            }));
+        }
+    }
+
     public static async getMailbox(
         account: Account,
         folder?: Folder | string,
@@ -264,6 +291,12 @@ export class MailboxController {
                 },
                 folder: response.data[account.email_address].folder,
             };
+
+            MailboxController._preloadEmailAvatarsSequentially(
+                account,
+                SharedStore.mailboxes[account.email_address].folder,
+                SharedStore.mailboxes[account.email_address].emails.current
+            );
 
             if (offsetStart > 1) {
                 MailboxController.paginateEmails(
@@ -320,8 +353,18 @@ export class MailboxController {
                 Number(currentEmails[currentEmails.length - 1].uid)
             ) {
                 currentMailbox.emails.next = mailbox.emails;
+                MailboxController._preloadEmailAvatarsSequentially(
+                    account,
+                    currentMailbox.folder,
+                    currentMailbox.emails.next
+                );
             } else {
                 currentMailbox.emails.prev = mailbox.emails;
+                MailboxController._preloadEmailAvatarsSequentially(
+                    account,
+                    currentMailbox.folder,
+                    currentMailbox.emails.prev
+                );
             }
         }
 

@@ -79,6 +79,7 @@
     import * as Pagination from "$lib/ui/Components/Pagination";
     import { getSenderAddressTemplate } from "$lib/templates";
     import Modal from "$lib/ui/Components/Modal";
+    import { GravatarService } from "$lib/services/GravatarService";
 
     const ACCOUNT_COUNT_FOR_EACH_PAGE = 10;
 
@@ -128,7 +129,14 @@
                 onclick={async () => await setCurrentAccount("home") }
                 type={SharedStore.currentAccount === "home" ? "active" : undefined}
             >
-                Home
+                <div class="account-selection-item-container">
+                    <div class="account-selection-item">
+                        <div class="account-avatar-container home">
+                            <Icon name="home" style="width:18px;height:18px;"/>
+                        </div>
+                        <span>Home</span>
+                    </div>
+                </div>
             </List.Item>
         </List.Root>
         <List.Root>
@@ -138,18 +146,27 @@
                     onclick={async () => await setCurrentAccount(account) }
                     type={isSelectedAccount ? "active" : undefined}
                 >
-                    {#if isSelectedAccount}
-                        <Icon name="success" />
-                    {/if}
-                    {@html getSenderAddressTemplate(
-                        account.email_address,
-                        account.fullname,
-                    )}
+                    <div class="account-selection-item-container">
+                        <div class="account-selection-item">
+                            <div class="account-avatar-container">
+                                {@html GravatarService.renderAvatarData(account.avatar)}
+                            </div>
+                            <span>
+                                {@html getSenderAddressTemplate(
+                                    account.email_address,
+                                    account.fullname,
+                                )}
+                            </span>
+                        </div>
+                        {#if isSelectedAccount}
+                            <Icon name="success" style="stroke-width:0px;fill:white;"/>
+                        {/if}
+                    </div>
                 </List.Item>
             {/each}
         </List.Root>
         {#if allAccounts.length > ACCOUNT_COUNT_FOR_EACH_PAGE}
-            <div class="account-selection-pagination-container" style="margin-top: var(--spacing-md)">
+            <div class="account-selection-pagination-container">
                 <Pagination.Pages
                     total={SharedStore.accounts.length}
                     offsetStep={ACCOUNT_COUNT_FOR_EACH_PAGE}
@@ -159,3 +176,35 @@
         {/if}
     </div>
 </Modal>
+
+<style>
+    .account-selection-pagination-container {
+        margin-top: var(--spacing-md);
+    }
+
+    .account-selection-item-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        & .account-selection-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+
+            & .account-avatar-container {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 25px;
+                width: 25px;
+
+                &.home {
+                    background-color: var(--color-bg-secondary);
+                    border-radius: var(--radius-sm);
+                    border: 1px solid var(--color-border);
+                }
+            }
+        }
+    }
+</style>

@@ -19,6 +19,7 @@ Enums, Types
 """
 class Account(BaseModel):
     email_address: str
+    avatar: Optional[dict] = None
     fullname: Optional[str] = None
 
 class AccountWithPassword(Account):

@@ -15,6 +15,7 @@
     import { show as showModal } from "$lib/ui/Components/Modal";
     import EditAccountForm from "../EditAccountForm.svelte";
     import type { PostResponse, PostRoutes } from "$lib/services/ApiService";
+    import { GravatarService } from "$lib/services/GravatarService";
 
     interface Props {
         shownAccounts: Account[];
@@ -163,10 +164,16 @@
                         {#if index < failedAccountLength}
                             <Icon name="warning" />
                         {/if}
-                        <span>{account.fullname}</span>
-                        <small class="muted">
-                            &lt;{account.email_address}&gt;
-                        </small>
+                        <span>
+                            {@html GravatarService.renderAvatarData(account.avatar)}
+                        </span>
+                        <span>
+                            {account.fullname}
+                            <br>
+                            <small class="muted">
+                                &lt;{account.email_address}&gt;
+                            </small>
+                        </span>
                     </Table.Cell>
                     <Table.Cell class="action-cell">
                         <div class="action-buttons">

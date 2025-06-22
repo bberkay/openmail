@@ -6,7 +6,8 @@ import type {
     Draft,
     RawMailbox,
     OpenmailTaskResults,
-    Preferences,
+    Gravatar,
+    LocalAvatar,
 } from "$lib/types";
 import { removeFalsyParamsAndEmptyLists } from "$lib/utils";
 
@@ -136,11 +137,13 @@ interface PostQueryParams {
 
 interface PostBody {
     [PostRoutes.ADD_ACCOUNT]: {
+        avatar: Gravatar | LocalAvatar;
         email_address: string;
         encrypted_password: string;
         fullname?: string;
     };
     [PostRoutes.EDIT_ACCOUNT]: {
+        avatar: Gravatar | LocalAvatar;
         email_address: string;
         encrypted_password: string;
         fullname?: string;

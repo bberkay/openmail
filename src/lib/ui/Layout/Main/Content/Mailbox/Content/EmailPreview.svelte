@@ -1,6 +1,6 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { compactEmailDate } from "$lib/utils";
+    import { compactEmailDate, createDomElement } from "$lib/utils";
 
     export function findAccountByEmail(email: TEmail): Account | undefined {
         if (SharedStore.currentAccount !== "home") {
@@ -28,10 +28,10 @@
 </script>
 
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { mount, onMount, unmount } from "svelte";
     import { MailboxController } from "$lib/controllers/MailboxController";
     import { type Email as TEmail, type Account } from "$lib/types";
-    import { extractEmailAddress, extractFullname, truncate, createDomElement, generateHash } from "$lib/utils";
+    import { extractEmailAddress, extractFullname, truncate } from "$lib/utils";
     import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import * as Input from "$lib/ui/Components/Input";
     import Icon from "$lib/ui/Components/Icon";
@@ -43,37 +43,68 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { GravatarService } from "$lib/services/GravatarService";
-  
+    import { Spinner } from "$lib/ui/Components/Loader";
+
     const MAX_BODY_LENGTH = 150;
 
     interface Props {
         email: TEmail;
     }
 
-    let {
-        email
-    }: Props = $props();
+    let { email }: Props = $props();
 
     const mailboxContext = getMailboxContext();
-    const account = $state(findAccountByEmail(email)!);
+    const account = findAccountByEmail(email)!;
+    const folder = getCurrentMailbox().folder;
 
-    let isAvatarShown = $state(true);
+    let emailPreviewWrapper: HTMLElement;
     let emailAvatar: HTMLElement;
+    let isAvatarShown = $state(true);
 
     onMount(() => {
-        setupEmailAvatars();
+        createEmailAvatar();
     });
 
-    async function setupEmailAvatars() {
-        const sender = email.sender;
-        const avatar = await GravatarService.getAvatar(sender);
-        avatar.classList.add("avatar");
-        emailAvatar.appendChild(avatar);
+    async function createEmailAvatar() {
+        const skeletonAvatar = createDomElement(
+            GravatarService.renderSkeletonAvatar(),
+        );
+        const skeletonSpinner = mount(Spinner, { target: skeletonAvatar });
+        emailAvatar.appendChild(skeletonAvatar);
+
+        const updateEmailAvatar = async (event: CustomEvent) => {
+            if (
+                event.detail.account === account &&
+                event.detail.folder === folder &&
+                event.detail.uid === email.uid
+            ) {
+                document.removeEventListener(
+                    "email-avatar-loaded",
+                    updateEmailAvatar,
+                );
+                const sender = email.sender;
+                const avatar = createDomElement(
+                    await GravatarService.getAvatarHTML(
+                        extractEmailAddress(sender),
+                        extractFullname(sender),
+                    ),
+                );
+                unmount(skeletonSpinner);
+                skeletonAvatar.remove();
+                emailAvatar.appendChild(avatar);
+            }
+        };
+
+        document.removeEventListener("email-avatar-loaded", updateEmailAvatar);
+        document.addEventListener("email-avatar-loaded", updateEmailAvatar);
     }
 
+    const deselectAllAccounts = (e: Event) => {
+        e.stopPropagation();
+    };
+
     const showEmailContent = async (e: Event): Promise<void> => {
-        const target = (e.target as HTMLElement).closest(".email-preview") as HTMLElement;
-        target.setAttribute("disabled", "true");
+        emailPreviewWrapper.setAttribute("disabled", "true");
 
         const response = await MailboxController.getEmailContent(
             account,
@@ -81,7 +112,7 @@
             email.uid,
         );
 
-        target.removeAttribute("disabled");
+        emailPreviewWrapper.removeAttribute("disabled");
         mailboxContext.emailSelection.value = [];
 
         if (!response.success || !response.data) {
@@ -98,27 +129,47 @@
         });
     };
 
-    const deselectAllAccounts = (e: Event) => {
-        e.stopPropagation();
+    function isEmailChecked() {
+        return mailboxContext.emailSelection.value === "1:*" || mailboxContext.emailSelection.value.length > 0;
+    }
+
+    const showEmailAvatar = () => {
+        isAvatarShown = true;
     };
+
+    const hideEmailAvatar = () => {
+        isAvatarShown = false;
+    };
+
+    $effect(() => {
+        if (isEmailChecked()) {
+            hideEmailAvatar();
+        } else {
+            showEmailAvatar();
+        }
+    })
 </script>
 
 <div
+    bind:this={emailPreviewWrapper}
     class="email-preview"
     onclick={showEmailContent}
     onkeydown={showEmailContent}
-    onmouseenter={() => isAvatarShown = false}
-    onmouseleave={() => isAvatarShown = true}
-    onfocus={() => isAvatarShown = false}
-    onblur={() => isAvatarShown = true}
+    onmouseenter={hideEmailAvatar}
+    onmouseleave={!isEmailChecked() ? showEmailAvatar : () => {}}
+    onfocus={hideEmailAvatar}
+    onblur={!isEmailChecked() ? showEmailAvatar : () => {}}
     tabindex="0"
     role="button"
 >
     <div class="email-preview-selection-container">
-        <div class="email-preview-avatar-container {isAvatarShown ? "" : "hidden"}" bind:this={emailAvatar}></div>
+        <div
+            bind:this={emailAvatar}
+            class="email-preview-avatar-container {isAvatarShown ? "" : "hidden"}">
+        </div>
         <Input.Basic
             type="checkbox"
-            class="email-preview-selection {isAvatarShown ? "hidden" : ""}"
+            class="email-preview-selection {isAvatarShown ? 'hidden' : ''}"
             bind:group={mailboxContext.emailSelection.value as string[]}
             onclick={deselectAllAccounts}
             value={account.email_address.concat(",", email.uid)}
@@ -165,10 +216,10 @@
 <style>
     :global {
         .mailbox:has(.email-preview[disabled]) {
-            cursor: wait!important;
+            cursor: wait !important;
 
             & .email-preview {
-                pointer-events: none!important;
+                pointer-events: none !important;
             }
         }
 
@@ -204,13 +255,6 @@
                     display: flex;
                     width: 35px;
 
-                    & .email-preview-avatar-container .avatar {
-                        width: 20px;
-                        height: 20px;
-                        border-radius: 5px;
-                        margin-bottom: -2px;
-                    }
-
                     & .email-preview-selection {
                         margin-left: 2px;
                     }
@@ -235,6 +279,7 @@
 
                 & .email-preview-content {
                     display: flex;
+                    align-items: center;
                     width: 75%;
                     gap: var(--spacing-md);
 
@@ -253,7 +298,6 @@
                             flex-direction: row;
                             align-items: center;
                             gap: var(--spacing-xs);
-                            margin-top: 4px;
 
                             & .subject-body-separator {
                                 color: var(--color-text-secondary);
@@ -267,6 +311,10 @@
                             }
                         }
                     }
+                }
+
+                & .email-preview-tags {
+                    margin-top: calc(-1 * var(--spacing-2xs));
                 }
 
                 & .email-preview-date {

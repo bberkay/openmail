@@ -6,6 +6,17 @@ export type OpenmailTaskResults<T> = {
     [email_address: string]: T;
 };
 
+export interface LocalAvatar {
+    bg: string;
+    fg: string;
+    initials: string;
+}
+
+export interface Gravatar {
+    hash: string;
+    fullname?: string;
+}
+
 export interface INotificationHandler {
     account: Account;
     initialize(): void;
@@ -16,6 +27,7 @@ export interface INotificationHandler {
 }
 
 export interface Account {
+    avatar: Gravatar | LocalAvatar;
     email_address: string;
     fullname?: string;
 }
@@ -23,13 +35,17 @@ export interface Account {
 export interface Email {
     message_id: string;
     uid: string;
-    sender: string; // Name Surname <namesurname@domain.com> or namesurname@domain.com
-    receivers: string; // mail addresses separated by comma
+    // Either Name Surname <namesurname@domain.com> or namesurname@domain.com
+    sender: string;
+    // mail addresses separated by comma
+    receivers: string;
     date: string;
     subject: string;
     body: string;
-    cc?: string; // mail addresses separated by comma
-    bcc?: string; // mail addresses separated by comma
+    // mail addresses separated by comma
+    cc?: string;
+    // mail addresses separated by comma
+    bcc?: string;
     flags?: string[];
     attachments?: Attachment[];
     in_reply_to?: string;
@@ -65,7 +81,8 @@ export interface Attachment {
 }
 
 export interface Draft {
-    sender: string; // Name Surname <namesurname@domain.com> or namesurname@domain.com
+    // Either Name Surname <namesurname@domain.com> or namesurname@domain.com
+    sender: string;
     receivers: string | string[];
     //date: string;
     subject: string;
