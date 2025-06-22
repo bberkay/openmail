@@ -8,11 +8,11 @@
 
 <nav>
     <div class="nav-section">
+        <!--<h1 class="app-title">Openmail</h1>-->
         <Folders />
-        <Search />
     </div>
     <div class="nav-section">
-        <h1 class="logo">Openmail</h1>
+        <Search />
     </div>
     <div class="nav-section">
         <Compose />
@@ -27,11 +27,15 @@
             display: flex;
             flex-direction: row;
             justify-content: space-between;
-            align-items: center;
+            align-items: stretch;
             width: 100%;
-            padding: var(--spacing-lg);
-            font-size: var(--font-size-xs);
-            height: 14vh;
+
+            & .app-title {
+                font-family: 'Inter', sans-serif;
+                font-size: var(--font-size-xl);
+                font-weight: var(--font-weight-bold);
+                color: var(--color-text-primary);
+            }
 
             & .nav-section {
                 display: flex;
