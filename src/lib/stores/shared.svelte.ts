@@ -10,7 +10,6 @@ import {
 
 export enum SharedStoreKeys {
     server = "server",
-    isAppLoaded = "isAppLoaded",
     preferences = "preferences",
     accounts = "accounts",
     currentAccount = "currentAccount",
@@ -26,7 +25,6 @@ export enum SharedStoreKeys {
 
 interface ISharedStore {
     [SharedStoreKeys.server]: string;
-    [SharedStoreKeys.isAppLoaded]: boolean;
     [SharedStoreKeys.preferences]: Preferences;
     [SharedStoreKeys.accounts]: Account[];
     [SharedStoreKeys.currentAccount]: "home" | Account;
@@ -45,7 +43,6 @@ interface ISharedStore {
 
 export let SharedStore: { [K in SharedStoreKeys]: ISharedStore[K] } = $state({
     [SharedStoreKeys.server]: "",
-    [SharedStoreKeys.isAppLoaded]: false,
     [SharedStoreKeys.preferences]: DEFAULT_PREFERENCES,
     [SharedStoreKeys.accounts]: [],
     [SharedStoreKeys.currentAccount]: "home",

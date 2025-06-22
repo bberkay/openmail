@@ -1,4 +1,5 @@
 <script lang="ts">
+    import "$lib/assets/style.css";
     import { onMount } from "svelte";
     import Layout from "$lib/ui/Layout/Layout.svelte";
     import Loading from "$lib/ui/Layout/Loading.svelte";
@@ -7,10 +8,11 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { getCurrentWindow } from '@tauri-apps/api/window';
 
+    const appWindow = getCurrentWindow();
+
     let { children } = $props();
 
-    let isAppLoaded = $derived(SharedStore.isAppLoaded);
-    const appWindow = getCurrentWindow();
+    let isAppLoaded = $state(false);
 
     onMount(() => {
         appWindow.onThemeChanged(async ({ payload: theme }) => {
@@ -20,6 +22,13 @@
                 localStorage.setItem("theme", newTheme);
             }
         });
+
+        const listenIsAppLoaded = () => {
+            document.removeEventListener("app-loaded", listenIsAppLoaded);
+            isAppLoaded = true;
+        }
+        document.removeEventListener("app-loaded", listenIsAppLoaded);
+        document.addEventListener("app-loaded", listenIsAppLoaded);
     });
 
     /* TODO: Remove this later */
