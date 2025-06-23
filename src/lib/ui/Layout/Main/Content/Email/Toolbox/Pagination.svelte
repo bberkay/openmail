@@ -51,7 +51,7 @@
     const getPreviousEmail = async () => {
         if (currentOffset <= 1) return;
 
-        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
         if (currentOffset - (1 % MAILBOX_LENGTH) == 0) {
             await paginateMailboxBackward(currentOffset - 1);
         }
@@ -63,7 +63,7 @@
     const getNextEmail = async () => {
         if (currentOffset >= getCurrentMailbox().total) return;
 
-        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
         if (currentOffset + (1 % MAILBOX_LENGTH) == 1) {
             await paginateMailboxForward(currentOffset + 1);
         }

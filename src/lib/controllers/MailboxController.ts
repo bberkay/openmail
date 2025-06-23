@@ -258,7 +258,7 @@ export class MailboxController {
                 Folder.All,
             );
 
-        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
         offsetStart = Math.max(1, offsetStart ?? 1);
         offsetEnd = Math.max(1, offsetEnd ?? offsetStart - 1 + MAILBOX_LENGTH);
 
@@ -523,7 +523,7 @@ export class MailboxController {
             return response;
         }
 
-        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
         // Delete emails from current mailbox and update total count.
         const countBeforeDelete = currentMailbox.emails.current.length;
         const wasFullBeforeDelete = countBeforeDelete >= MAILBOX_LENGTH;
@@ -657,7 +657,7 @@ export class MailboxController {
             return response;
         }
 
-        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
         const countBeforeMove = currentMailbox.emails.current.length;
         const wasFullBeforeMove = countBeforeMove >= MAILBOX_LENGTH;
         currentMailbox.emails.current = currentMailbox.emails.current.filter(

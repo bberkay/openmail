@@ -116,7 +116,7 @@
     export async function paginateMailboxBackward(
         currentOffset: number,
     ): Promise<void> {
-        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
         if (currentOffset <= MAILBOX_LENGTH) return;
 
         return new Promise((resolve) => {
@@ -194,7 +194,7 @@
 
         return new Promise((resolve) => {
             if (!waitNext) {
-                const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+                const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
 
                 const emailAddrs =
                     SharedStore.currentAccount !== "home"

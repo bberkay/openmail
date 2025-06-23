@@ -13,7 +13,7 @@
     const mailboxContext = getMailboxContext();
 
     const getPreviousEmails = async () => {
-        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
         if (mailboxContext.currentOffset.value <= MAILBOX_LENGTH) return;
         await paginateMailboxBackward(mailboxContext.currentOffset.value);
         mailboxContext.currentOffset.value = Math.min(
@@ -30,7 +30,7 @@
         )
             return;
         await paginateMailboxForward(mailboxContext.currentOffset.value);
-        const MAILBOX_LENGTH = SharedStore.preferences.mailboxLength;
+        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
         mailboxContext.currentOffset.value = Math.min(
             getCurrentMailbox().total,
             mailboxContext.currentOffset.value + MAILBOX_LENGTH,
@@ -43,7 +43,7 @@
     <Button.Action
         type="button"
         class="btn-inline {mailboxContext.currentOffset.value <=
-        SharedStore.preferences.mailboxLength
+        Number(SharedStore.preferences.mailboxLength)
             ? 'disabled'
             : ''}"
         onclick={getPreviousEmails}
@@ -56,7 +56,7 @@
             (
                 mailboxContext.currentOffset.value -
                 1 +
-                SharedStore.preferences.mailboxLength
+                Number(SharedStore.preferences.mailboxLength)
             ).toString(),
             getCurrentMailbox().total.toString(),
         )}

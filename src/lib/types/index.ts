@@ -173,9 +173,9 @@ export enum Theme {
 }
 
 export enum MailboxLength {
-    Fast = 10,
-    Standard = 50,
-    Compact = 100
+    Fast = "10",
+    Standard = "50",
+    Compact = "100"
 }
 
 export type NotificationStatus = true | false | { [email_address: string]: boolean };
