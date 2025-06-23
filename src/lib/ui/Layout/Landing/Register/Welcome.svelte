@@ -10,7 +10,7 @@
     import Accounts from "$lib/ui/Layout/Landing/Register/Accounts.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import Language from "./Welcome/Language.svelte";
-    import Theme from "./Welcome/Language.svelte";
+    import Theme from "./Welcome/Theme.svelte";
 
     onMount(() => {
         showAlert("info-change-alert-container", {
@@ -30,7 +30,7 @@
         localStorage.setItem(
             "language",
             convertToRFC5646Format(
-                getEnumKeyByValue(Language, SharedStore.preferences.language)!,
+                SharedStore.preferences.language,
             )
         );
 

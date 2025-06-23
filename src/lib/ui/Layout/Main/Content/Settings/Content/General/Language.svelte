@@ -45,7 +45,7 @@
             selectedLanguage as keyof typeof Language,
         );
 
-        let foundLocale = "";
+        let foundLocale: Language = Language.System;
         if (newLanguage === Language.System) {
             const preferredLocale = await locale();
             foundLocale = preferredLocale
@@ -55,10 +55,8 @@
             foundLocale = newLanguage;
         }
 
-        document.documentElement.setAttribute(
-            "lang",
-            convertToRFC5646Format(foundLocale),
-        );
+        const legalLocale = convertToRFC5646Format(foundLocale);
+        document.documentElement.setAttribute("lang", legalLocale);
     };
 </script>
 

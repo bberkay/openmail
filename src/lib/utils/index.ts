@@ -524,8 +524,10 @@ export function addEmailToAddressList(
     input.value = "";
 }
 
-export function convertToRFC5646Format(enumKey: string): string {
-    const [lang, region] = enumKey.split("_");
+export function convertToRFC5646Format(languageEnum: Language): string {
+    const languageEnumKey = getEnumKeyByValue(Language, languageEnum);
+    if (!languageEnumKey) return "";
+    const [lang, region] = languageEnumKey.split("_");
     return `${lang.toLowerCase()}-${region.toUpperCase()}`;
 }
 

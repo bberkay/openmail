@@ -13,7 +13,7 @@
             selectedLanguage as keyof typeof Language,
         );
 
-        let foundLocale = "";
+        let foundLocale: Language = Language.System;
         if (SharedStore.preferences.language === Language.System) {
             const preferredLocale = await locale();
             foundLocale = preferredLocale
@@ -23,10 +23,8 @@
             foundLocale = SharedStore.preferences.language;
         }
 
-        document.documentElement.setAttribute(
-            "lang",
-            convertToRFC5646Format(foundLocale)
-        );
+        const legalLocale = convertToRFC5646Format(foundLocale);
+        document.documentElement.setAttribute("lang", legalLocale);
     }
 </script>
 
