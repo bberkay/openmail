@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { DEFAULT_PREFERENCES } from "$lib/constants";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { AppController } from "$lib/controllers/AppController";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { MailboxLength } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
@@ -17,13 +16,11 @@
     });
 
     async function saveMailboxLengthChange() {
-        SharedStore.preferences.mailboxLength = newMailboxLength;
-        await MailboxController.init();
+        await AppController.changeMailboxLength(newMailboxLength);
     }
 
     async function resetMailboxLength() {
-        newMailboxLength = DEFAULT_PREFERENCES.mailboxLength;
-        await saveMailboxLengthChange();
+        await AppController.resetMailboxLength();
     }
 
     const updateMailboxLength = (selectedLength: string) => {

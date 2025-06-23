@@ -1,8 +1,7 @@
 <script lang="ts">
-    import { DEFAULT_PREFERENCES } from "$lib/constants";
+    import { AppController } from "$lib/controllers/AppController";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { ToggleSwitch } from "$lib/ui/Components/Input";
-    import { enable, isEnabled, disable } from "@tauri-apps/plugin-autostart";
     import { onMount } from "svelte";
 
     let newAutostartStatus = $state(SharedStore.preferences.isAutostartEnabled);
@@ -18,22 +17,11 @@
     });
 
     async function saveAutostartChange() {
-        // Set new status
-        SharedStore.preferences.isAutostartEnabled = newAutostartStatus;
-        if (newAutostartStatus) {
-            await enable();
-        } else {
-            disable();
-        }
-
-        // Check again to make sure and show if it is really enabled/disabled.
-        SharedStore.preferences.isAutostartEnabled = await isEnabled();
-        newAutostartStatus = SharedStore.preferences.isAutostartEnabled;
+        await AppController.changeAutostart(newAutostartStatus);
     }
 
     async function resetAutostart() {
-        newAutostartStatus = DEFAULT_PREFERENCES.isAutostartEnabled;
-        await saveAutostartChange();
+        await AppController.resetAutostart();
     }
 </script>
 

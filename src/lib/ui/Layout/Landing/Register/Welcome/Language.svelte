@@ -4,27 +4,11 @@
     import { FormGroup } from "$lib/ui/Components/Form";
     import * as Select from "$lib/ui/Components/Select";
     import Label from "$lib/ui/Components/Label";
-    import { convertToLanguageEnum, convertToRFC5646Format, getEnumKeyByValue, getEnumValueByKey } from "$lib/utils";
-    import { locale } from "@tauri-apps/plugin-os";
+    import { getEnumKeyByValue } from "$lib/utils";
+    import { AppController } from "$lib/controllers/AppController";
 
     const selectLanguage = async (selectedLanguage: string) => {
-        SharedStore.preferences.language = getEnumValueByKey(
-            Language,
-            selectedLanguage as keyof typeof Language,
-        );
-
-        let foundLocale: Language = Language.System;
-        if (SharedStore.preferences.language === Language.System) {
-            const preferredLocale = await locale();
-            foundLocale = preferredLocale
-                ? convertToLanguageEnum(preferredLocale) || Language.EN_US
-                : Language.EN_US;
-        } else {
-            foundLocale = SharedStore.preferences.language;
-        }
-
-        const legalLocale = convertToRFC5646Format(foundLocale);
-        document.documentElement.setAttribute("lang", legalLocale);
+        await AppController.changeLanguage(selectedLanguage as Language);
     }
 </script>
 

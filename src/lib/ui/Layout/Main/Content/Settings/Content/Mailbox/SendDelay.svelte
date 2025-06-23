@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { DEFAULT_PREFERENCES } from "$lib/constants";
+    import { AppController } from "$lib/controllers/AppController";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { ToggleSwitch } from "$lib/ui/Components/Input";
     import { onMount } from "svelte";
@@ -14,12 +14,11 @@
     });
 
     function saveSendDelayChange() {
-        SharedStore.preferences.isSendDelayEnabled = newSendDelayStatus;
+        AppController.changeSendDelay(newSendDelayStatus);
     }
 
     function resetSendDelay() {
-        newSendDelayStatus = DEFAULT_PREFERENCES.isSendDelayEnabled;
-        saveSendDelayChange();
+        AppController.resetSendDelay();
     }
 </script>
 

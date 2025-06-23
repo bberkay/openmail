@@ -4,26 +4,11 @@
     import { FormGroup } from "$lib/ui/Components/Form";
     import * as Select from "$lib/ui/Components/Select";
     import Label from "$lib/ui/Components/Label";
-    import { convertToThemeEnum, getEnumKeyByValue, getEnumValueByKey } from "$lib/utils";
-    import { getCurrentWindow } from "@tauri-apps/api/window";
+    import { getEnumKeyByValue } from "$lib/utils";
+    import { AppController } from "$lib/controllers/AppController";
 
     const selectTheme = async (selectedTheme: string) => {
-        SharedStore.preferences.theme = getEnumValueByKey(
-            Theme,
-            selectedTheme as keyof typeof Theme,
-        );
-
-        let foundTheme = "";
-        if(SharedStore.preferences.theme === Theme.System) {
-            const preferredTheme = await getCurrentWindow().theme();
-            foundTheme = (preferredTheme
-                ? convertToThemeEnum(preferredTheme) || Theme.Dark
-                : Theme.Dark).toLowerCase();
-        } else {
-            foundTheme = SharedStore.preferences.theme.toLowerCase();
-        }
-
-        document.documentElement.setAttribute("data-color-scheme", foundTheme);
+        await AppController.changeTheme(selectedTheme as Theme);
     }
 </script>
 

@@ -8,10 +8,9 @@
     import About from "./Content/About.svelte";
     import { showThis as showContent } from "./Content.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { DEFAULT_PREFERENCES } from "$lib/constants";
-    import { FileSystem } from "$lib/services/FileSystem";
     import Icon from "$lib/ui/Components/Icon";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
+    import { AppController } from "$lib/controllers/AppController";
 
     const highlightSelectedMenu = (e: Event) => {
         document.querySelector(".settings-title-btn.shown")?.classList.remove("shown");
@@ -25,9 +24,7 @@
     }
 
     const resetToDefault = async () => {
-        SharedStore.preferences = DEFAULT_PREFERENCES;
-        const fileSystem = await FileSystem.getInstance();
-        await fileSystem.savePreferences(SharedStore.preferences);
+        await AppController.resetToDefault();
         document.dispatchEvent(new CustomEvent("preferences-reset-to-default"));
     }
 </script>
@@ -99,6 +96,9 @@
         >
             Reset to default
         </Button.Action>
+
+        <!-- Does not have onclick because, will submit Form in
+        Settings.svelte -->
         <Button.Action
             type="submit"
             class="btn-outline btn-md"
