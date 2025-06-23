@@ -66,37 +66,53 @@
     });
 
     async function createEmailAvatar() {
-        const skeletonAvatar = createDomElement(
-            GravatarService.renderSkeletonAvatar(),
-        );
-        const skeletonSpinner = mount(Spinner, { target: skeletonAvatar });
-        emailAvatar.appendChild(skeletonAvatar);
+        const sender = email.sender;
+        const email_address = extractEmailAddress(sender);
+        const fullname = extractFullname(sender);
 
-        const updateEmailAvatar = async (event: CustomEvent) => {
+        let removeSkeletonAvatar: () => void;
+        const showSkeletonAvatar = () => {
+            const skeletonAvatar = createDomElement(
+                GravatarService.renderSkeletonAvatar(),
+            );
+            const skeletonSpinner = mount(Spinner, { target: skeletonAvatar });
+            emailAvatar.appendChild(skeletonAvatar);
+            removeSkeletonAvatar = () => {
+                unmount(skeletonSpinner);
+                skeletonAvatar.remove();
+            }
+        }
+
+        const updateEmailAvatar = async () => {
+            const avatar = await GravatarService.getAvatarHTML(
+                email_address,
+                fullname
+            );
+            console.log(email_address, avatar);
+            if (removeSkeletonAvatar) removeSkeletonAvatar();
+            emailAvatar.innerHTML = avatar;
+        };
+
+        const isEmailAvatarLoaded = (event: CustomEvent) => {
             if (
                 event.detail.account === account &&
                 event.detail.folder === folder &&
                 event.detail.uid === email.uid
             ) {
-                document.removeEventListener(
-                    "email-avatar-loaded",
-                    updateEmailAvatar,
-                );
-                const sender = email.sender;
-                const avatar = createDomElement(
-                    await GravatarService.getAvatarHTML(
-                        extractEmailAddress(sender),
-                        extractFullname(sender),
-                    ),
-                );
-                unmount(skeletonSpinner);
-                skeletonAvatar.remove();
-                emailAvatar.appendChild(avatar);
+                document.removeEventListener("email-avatar-loaded", isEmailAvatarLoaded);
+                if (GravatarService.getCachedAvatar(email_address)) {
+                    updateEmailAvatar();
+                }
             }
-        };
+        }
 
-        document.removeEventListener("email-avatar-loaded", updateEmailAvatar);
-        document.addEventListener("email-avatar-loaded", updateEmailAvatar);
+        if (!GravatarService.getCachedAvatar(email_address)) {
+            showSkeletonAvatar();
+            document.removeEventListener("email-avatar-loaded", isEmailAvatarLoaded);
+            document.addEventListener("email-avatar-loaded", isEmailAvatarLoaded);
+        } else {
+            updateEmailAvatar();
+        }
     }
 
     const deselectAllAccounts = (e: Event) => {

@@ -69,7 +69,7 @@ const MAX_CACHE_LENGTH = 100;
 const storedAvatars: Map<EmailAddress, Gravatar | LocalAvatar> = new Map();
 
 export class GravatarService {
-    private static _getCachedAvatar(
+    public static getCachedAvatar(
         email_address: string,
     ): Gravatar | LocalAvatar | undefined {
         return storedAvatars.get(email_address);
@@ -79,7 +79,7 @@ export class GravatarService {
         if (storedAvatars.size > MAX_CACHE_LENGTH) {
             const iterator = storedAvatars.keys();
             const reducedLength = Math.max(
-                storedAvatars.size - SharedStore.preferences.mailboxLength,
+                storedAvatars.size - Number(SharedStore.preferences.mailboxLength),
                 0,
             );
             for (let i = 0; i < reducedLength; i++) {
@@ -172,7 +172,7 @@ export class GravatarService {
         email_address: string,
         fullname?: string,
     ): Promise<Gravatar | LocalAvatar> {
-        let avatar = GravatarService._getCachedAvatar(email_address);
+        let avatar = GravatarService.getCachedAvatar(email_address);
         if (avatar) return avatar;
 
         avatar = await GravatarService._fetchGravatar(email_address, fullname);
