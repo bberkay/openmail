@@ -94,7 +94,6 @@
         .alert {
             color: var(--color-text-primary);
             padding: var(--spacing-md);
-            padding-bottom: 0;
             border-radius: var(--radius-md);
             font-size: var(--font-size-sm);
             opacity: 0;
