@@ -12,7 +12,7 @@
 
     let { children } = $props();
 
-    let isAppLoaded = $state(false);
+    let isAppLoaded = $derived(SharedStore.isAppLoaded);
 
     onMount(() => {
         appWindow.onThemeChanged(async ({ payload: theme }) => {
@@ -22,13 +22,6 @@
                 localStorage.setItem("theme", newTheme);
             }
         });
-
-        const listenIsAppLoaded = () => {
-            document.removeEventListener("app-loaded", listenIsAppLoaded);
-            isAppLoaded = true;
-        }
-        document.removeEventListener("app-loaded", listenIsAppLoaded);
-        document.addEventListener("app-loaded", listenIsAppLoaded);
     });
 
     /* TODO: Remove this later */

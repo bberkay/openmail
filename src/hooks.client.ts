@@ -40,6 +40,6 @@ export const init: ClientInit = async () => {
     const fsReady = initializeFileSystem();
     const serverReady = connectToLocalServer().then(async () => await loadAccounts());
     Promise.all([fsReady, serverReady]).then(() => {
-        document.dispatchEvent(new CustomEvent("app-loaded"));
+        SharedStore.isAppLoaded = true;
     });
 };
