@@ -35,7 +35,7 @@ function IsPreferencesLoaded(
 
     const method = value ? "value" : "get";
     descriptor[method] = function (...args: any[]) {
-        if (_isPreferencesInitialized())
+        if (!_isPreferencesInitialized())
             throw new Error(
                 "Preferences are not loaded. Please use `init()` before calling any other `PreferenceManager` method.",
             );
