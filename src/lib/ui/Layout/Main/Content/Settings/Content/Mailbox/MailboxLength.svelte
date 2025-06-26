@@ -16,7 +16,6 @@
         <small class="muted">Change your mailbox length</small>
     </div>
     <div class="settings-section-body">
-        <span>{Object.entries(MailboxLength)}</span>
         <Select.Root
             id="language"
             class="select-sm"
