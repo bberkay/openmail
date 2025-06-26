@@ -33,12 +33,12 @@
 /* Varibles */
 :root {
     /* Theme */
-    --color-bg-primary: light-dark(#ffffff, #000000);
+    --color-bg-primary: light-dark(#ffffff, #181818);
     --color-bg-secondary: light-dark(#fafafa, #09090b);
-    --color-text-primary: light-dark(#000000, #ffffff);
+    --color-text-primary: light-dark(#000000, #d2d2d2);
     --color-text-secondary: light-dark(#666666, #a0a0a0);
-    --color-border: light-dark(#e0e0e0, #303030);
-    --color-border-subtle: light-dark(#dbdbdb, #1a1a1a);
+    --color-border: light-dark(#e0e0e0, #383838);
+    --color-border-subtle: light-dark(#dbdbdb, #282828);
     --color-hover: light-dark(#f9f9f9, #121212);
     --color-link: light-dark(#0084d1, #0084d1);
     --color-text-error: light-dark(#c20e4d, #f54180);
@@ -61,6 +61,8 @@
     --color-important: light-dark(#ffc300, #fca311);
     --color-bg-drop-area: light-dark(#4a90e20d, #4a90e20d);
     --color-border-drop-area: light-dark(#4a90e2, #4a90e2);
+    --color-bg-titlebar: light-dark(#ffffff, #222222);
+    --color-text-titlebar: light-dark(#ffffff, #d2d2d2);
 
     /* Typography */
     --font-family-primary: 'OpenSans', sans-serif;
@@ -192,13 +194,6 @@ a {
 }
 
 /* Utilities */
-.logo {
-    font-family: 'Inter', sans-serif;
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--color-text-primary);
-}
-
 .tags {
     display: flex;
     gap: var(--spacing-2xs);
