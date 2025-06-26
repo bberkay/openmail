@@ -5,6 +5,7 @@
     import Label from "$lib/ui/Components/Label";
     import { getEnumKeyByValue } from "$lib/utils";
     import { PreferenceManager } from "$lib/managers/PreferenceManager";
+    import { PreferencesStore } from "$lib/stores/PreferencesStore";
 
     const selectTheme = async (selectedTheme: string) => {
         await PreferenceManager.changeTheme(selectedTheme as Theme);
@@ -16,7 +17,7 @@
     <Select.Root
         id="theme"
         placeholder="Theme"
-        value={getEnumKeyByValue(Theme, PreferenceManager.theme)}
+        value={getEnumKeyByValue(Theme, PreferencesStore.theme)}
         onchange={selectTheme}
         style="width:100%"
     >
