@@ -10,7 +10,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Icon from "$lib/ui/Components/Icon";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
-    import { AppController } from "$lib/controllers/AppController";
+    import { PreferenceManager } from "$lib/managers/PreferenceManager";
 
     const highlightSelectedMenu = (e: Event) => {
         document.querySelector(".settings-title-btn.shown")?.classList.remove("shown");
@@ -24,8 +24,7 @@
     }
 
     const resetToDefault = async () => {
-        await AppController.resetToDefault();
-        document.dispatchEvent(new CustomEvent("preferences-reset-to-default"));
+        await PreferenceManager.resetToDefault();
     }
 </script>
 

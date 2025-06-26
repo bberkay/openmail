@@ -4,12 +4,13 @@
     import * as Input from "$lib/ui/Components/Input";
     import * as Table from "$lib/ui/Components/Table";
     import Icon from "$lib/ui/Components/Icon";
-    import { DEFAULT_LANGUAGE, DEFAULT_PREFERENCES } from "$lib/constants";
+    import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
     import type { Account, NotificationStatus } from "$lib/types";
     import { onMount } from "svelte";
-    import { NotificationHandler } from "$lib/services/NotificationHandler";
     import { GravatarService } from "$lib/services/GravatarService";
+    import { PreferenceManager } from "$lib/managers/PreferenceManager";
+    import { PreferencesStore } from "$lib/stores/PreferencesStore";
 
     interface Props {
         shownAccounts: Account[];
@@ -23,80 +24,12 @@
         accountSelectionType = $bindable(),
     }: Props = $props();
 
-    let newNotificationStatus: NotificationStatus = $state(
-        SharedStore.preferences.notificationStatus,
-    );
-
     let selectShownCheckbox: HTMLInputElement;
     onMount(() => {
         selectShownCheckbox = document.getElementById(
             "select-shown-checkbox",
         ) as HTMLInputElement;
-        document.removeEventListener(
-            "preferences-saved",
-            saveNotificationChange,
-        );
-        document.addEventListener("preferences-saved", saveNotificationChange);
-        document.removeEventListener(
-            "preferences-reset-to-default",
-            resetNotificationChange,
-        );
-        document.addEventListener(
-            "preferences-reset-to-default",
-            resetNotificationChange,
-        );
     });
-
-    function saveNotificationChange() {
-        if (newNotificationStatus instanceof Boolean) {
-            SharedStore.preferences.notificationStatus = newNotificationStatus;
-            if (newNotificationStatus === false) {
-                Object.values(SharedStore.notificationChannels).forEach(ch => ch.terminate());
-                SharedStore.notificationChannels = {};
-            } else {
-                SharedStore.accounts.forEach((acc) => {
-                    if (!Object.hasOwn(SharedStore.notificationChannels, acc.email_address)) {
-                        SharedStore.notificationChannels[acc.email_address] = new NotificationHandler(acc);
-                    } else {
-                        SharedStore.notificationChannels[acc.email_address].reinitialize();
-                    }
-                });
-            }
-        } else {
-            Object.entries(newNotificationStatus).forEach(([email_address, status]) => {
-                const isNotificationEnabled = (newNotificationStatus as {[email_address]: boolean})[email_address];
-                (SharedStore.preferences.notificationStatus as Record<string, boolean>)[email_address] = status;
-                if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
-                    if (isNotificationEnabled) {
-                        SharedStore.notificationChannels[email_address].reinitialize();
-                    } else {
-                        SharedStore.notificationChannels[email_address].terminate();
-                        delete SharedStore.notificationChannels[email_address];
-                    }
-                } else {
-                    if (isNotificationEnabled) {
-                        const acc = SharedStore.accounts.find(acc => acc.email_address === email_address)!;
-                        SharedStore.notificationChannels[email_address] = new NotificationHandler(acc);
-                    }
-                }
-            });
-        }
-    }
-
-    function resetNotificationChange() {
-        newNotificationStatus = DEFAULT_PREFERENCES.notificationStatus;
-        saveNotificationChange();
-    }
-
-    function isNotificationAllowed(account: Account): boolean {
-        if (!(SharedStore.preferences.notificationStatus instanceof Object))
-            return SharedStore.preferences.notificationStatus;
-
-        return Object.hasOwn(
-            SharedStore.preferences.notificationStatus,
-            account.email_address,
-        );
-    }
 
     const selectShownAccounts = () => {
         accountSelectionType =
@@ -113,15 +46,12 @@
         selectShownCheckbox.checked = false;
     };
 
+    const changeNotificationStatus = (newNotificationStatus: NotificationStatus) => {
+        PreferenceManager.changeNotificationStatus(newNotificationStatus);
+    }
+
     const toggleNotification = async (account: Account, toggle: boolean) => {
-        if (!(newNotificationStatus instanceof Object))
-            newNotificationStatus = {};
-
-        newNotificationStatus[account.email_address] = toggle;
-    };
-
-    const toggleNotifications = async (checked: boolean) => {
-        newNotificationStatus = checked;
+        PreferenceManager.changeNotificationStatus({[account.email_address]: toggle});
     };
 </script>
 
@@ -149,9 +79,8 @@
                     <Input.ToggleSwitch
                         class={accountSelection.length === 0 ? "invisible" : ""}
                         disabled={accountSelection.length === 0}
-                        onchange={toggleNotifications}
-                        defaultChecked={!!SharedStore.preferences
-                            .notificationStatus}
+                        onchange={changeNotificationStatus}
+                        checked={!!PreferencesStore.notificationStatus}
                     />
                 </Table.Head>
             </Table.Row>
@@ -182,9 +111,12 @@
                     <Table.Cell class="action-cell">
                         <div class="action-buttons">
                             <Input.ToggleSwitch
-                                onchange={(checked) =>
-                                    toggleNotification(account, checked)}
-                                defaultChecked={isNotificationAllowed(account)}
+                                onchange={(checked) => {
+                                    toggleNotification(account, checked)
+                                }}
+                                checked={PreferenceManager.checkNotificationStatus(
+                                    account.email_address
+                                )}
                             />
                         </div>
                     </Table.Cell>

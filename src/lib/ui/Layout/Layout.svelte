@@ -47,9 +47,9 @@
 <style>
     :global {
         .layout-container{
-            margin-top: calc(var(--titlebar-height) + var(--spacing-md));
-            height: calc(100vh - var(--titlebar-height));
+            height: 100vh;
             padding: 0 var(--spacing-lg);
+            padding-top: var(--spacing-2xl);
         }
 
         .alert-container {

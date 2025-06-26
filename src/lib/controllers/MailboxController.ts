@@ -33,15 +33,29 @@ import {
     roundUpToMultiple,
 } from "$lib/utils";
 import { GravatarService } from "$lib/services/GravatarService";
+import { PreferencesStore } from "$lib/stores/PreferencesStore";
 
 export class MailboxController {
     public static async init(
         failedOnly: boolean = false,
     ): Promise<BaseResponse> {
-        let response = {
-            success: false,
-            message: "Initialize does not finished.",
+        const folderResult = await MailboxController.initFolders(failedOnly);
+        if (!folderResult.success) return folderResult;
+
+        const mailboxResult = await MailboxController.initMailboxes(failedOnly);
+        if (!mailboxResult.success) return mailboxResult;
+
+        return {
+            success: true,
+            message: "MailboxController initialized.",
         };
+    }
+
+    public static async initFolders(failedOnly: boolean = false) {
+        let response: BaseResponse = {
+            success: false,
+            message: "Folders are not initialized yet."
+        }
 
         const folderResults = await Promise.allSettled(
             (failedOnly
@@ -70,18 +84,14 @@ export class MailboxController {
             }
         });
 
-        //if (SharedStore.accounts.length > SharedStore.accountsWithFailedFolders.length) {
-        //    await Promise.allSettled(
-        //        (failedOnly ? SharedStore.accountsWithFailedFolders : SharedStore.accounts).map(
-        //            async (account) => {
-        //                return {
-        //                    account: account,
-        //                    response: await MailboxController.getFolders(account),
-        //                };
-        //            },
-        //        ),
-        //    );
-        //}
+        return response;
+    }
+
+    public static async initMailboxes(failedOnly: boolean = false) {
+        let response: BaseResponse = {
+            success: false,
+            message: "Mailboxes are not initialized yet."
+        }
 
         const mailboxResults = await Promise.allSettled(
             (failedOnly
@@ -113,12 +123,7 @@ export class MailboxController {
             }
         });
 
-        if (!response.success) return response;
-
-        return {
-            success: true,
-            message: "Mailbox Controller Initialized",
-        };
+        return response;
     }
 
     private static _resolveStandardFolder(
@@ -258,7 +263,7 @@ export class MailboxController {
                 Folder.All,
             );
 
-        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
         offsetStart = Math.max(1, offsetStart ?? 1);
         offsetEnd = Math.max(1, offsetEnd ?? offsetStart - 1 + MAILBOX_LENGTH);
 
@@ -523,7 +528,8 @@ export class MailboxController {
             return response;
         }
 
-        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+
         // Delete emails from current mailbox and update total count.
         const countBeforeDelete = currentMailbox.emails.current.length;
         const wasFullBeforeDelete = countBeforeDelete >= MAILBOX_LENGTH;
@@ -657,7 +663,8 @@ export class MailboxController {
             return response;
         }
 
-        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+
         const countBeforeMove = currentMailbox.emails.current.length;
         const wasFullBeforeMove = countBeforeMove >= MAILBOX_LENGTH;
         currentMailbox.emails.current = currentMailbox.emails.current.filter(

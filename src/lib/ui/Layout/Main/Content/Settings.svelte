@@ -3,14 +3,11 @@
     import Content, { backToDefault as showDefaultSettings } from "./Settings/Content.svelte";
     import General from "./Settings/Content/General.svelte";
     import Form from "$lib/ui/Components/Form";
-    import { SharedStore } from "$lib/stores/shared.svelte";
-    import { FileSystem } from "$lib/services/FileSystem";
     import { onMount } from "svelte";
+    import { PreferenceManager } from "$lib/managers/PreferenceManager";
 
     const saveChanges = async (): Promise<void> => {
-        const fileSystem = await FileSystem.getInstance();
-        await fileSystem.savePreferences(SharedStore.preferences);
-        document.dispatchEvent(new CustomEvent("preferences-saved"));
+        await PreferenceManager.savePreferences();
     };
 
     onMount(() => {

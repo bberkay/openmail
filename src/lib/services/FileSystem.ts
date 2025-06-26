@@ -9,7 +9,6 @@ import {
 } from "@tauri-apps/plugin-fs";
 import * as path from '@tauri-apps/api/path';
 import type { Preferences } from "$lib/types";
-import { SharedStore } from "$lib/stores/shared.svelte";
 import { PUBLIC_APP_NAME } from "$env/static/public";
 
 class FileNotFoundError extends Error {
@@ -266,13 +265,12 @@ export class FileSystem {
     public async readPreferences(): Promise<Preferences> {
         const prefsFile = this.getPreferences();
         const content = await prefsFile.read();
-
         return JSON.parse(content);
     }
 
-    public async savePreferences(data: Partial<Preferences>): Promise<void> {
-        SharedStore.preferences = { ...SharedStore.preferences, ...data };
+    public async savePreferences(newPreferences: Partial<Preferences>): Promise<void> {
         const prefsFile = this.getPreferences();
-        await prefsFile.write(JSON.stringify(SharedStore.preferences, null, 2));
+        const oldPreferences = await this.readPreferences();
+        await prefsFile.write(JSON.stringify({ ...oldPreferences, ...newPreferences }, null, 2));
     }
 }

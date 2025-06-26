@@ -9,11 +9,12 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Icon from "$lib/ui/Components/Icon";
     import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
+    import { PreferenceManager } from "$lib/managers/PreferenceManager";
 
     const mailboxContext = getMailboxContext();
 
     const getPreviousEmails = async () => {
-        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferenceManager.mailboxLength);
         if (mailboxContext.currentOffset.value <= MAILBOX_LENGTH) return;
         await paginateMailboxBackward(mailboxContext.currentOffset.value);
         mailboxContext.currentOffset.value = Math.min(
@@ -30,7 +31,7 @@
         )
             return;
         await paginateMailboxForward(mailboxContext.currentOffset.value);
-        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferenceManager.mailboxLength);
         mailboxContext.currentOffset.value = Math.min(
             getCurrentMailbox().total,
             mailboxContext.currentOffset.value + MAILBOX_LENGTH,
@@ -43,7 +44,7 @@
     <Button.Action
         type="button"
         class="btn-inline {mailboxContext.currentOffset.value <=
-        Number(SharedStore.preferences.mailboxLength)
+        Number(PreferenceManager.mailboxLength)
             ? 'disabled'
             : ''}"
         onclick={getPreviousEmails}
@@ -56,7 +57,7 @@
             (
                 mailboxContext.currentOffset.value -
                 1 +
-                Number(SharedStore.preferences.mailboxLength)
+                Number(PreferenceManager.mailboxLength)
             ).toString(),
             getCurrentMailbox().total.toString(),
         )}

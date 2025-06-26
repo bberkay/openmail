@@ -4,13 +4,12 @@
     import Form from "$lib/ui/Components/Form";
     import * as Button from "$lib/ui/Components/Button";
     import { show as showAlert } from "$lib/ui/Components/Alert";
-    import { FileSystem } from "$lib/services/FileSystem";
-    import { convertToRFC5646Format, getEnumKeyByValue } from "$lib/utils";
     import AddAccountForm from "$lib/ui/Layout/Landing/Register/AddAccountForm.svelte";
     import Accounts from "$lib/ui/Layout/Landing/Register/Accounts.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import Language from "./Welcome/Language.svelte";
     import Theme from "./Welcome/Theme.svelte";
+    import { PreferenceManager } from "$lib/managers/PreferenceManager";
 
     onMount(() => {
         showAlert("info-change-alert-container", {
@@ -20,20 +19,7 @@
     });
 
     const saveInitialPreferences = async (e: Event): Promise<void> => {
-        const fileSystem = await FileSystem.getInstance();
-        await fileSystem.savePreferences({
-            language: SharedStore.preferences.language,
-            theme: SharedStore.preferences.theme,
-        });
-
-        localStorage.setItem("theme", SharedStore.preferences.theme.toLowerCase());
-        localStorage.setItem(
-            "language",
-            convertToRFC5646Format(
-                SharedStore.preferences.language,
-            )
-        );
-
+        await PreferenceManager.savePreferences();
         showContent(
             SharedStore.accounts.length > 0 ||
                 SharedStore.failedAccounts.length > 0

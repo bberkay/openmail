@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { SharedStore } from "$lib/stores/shared.svelte";
     import { AccountController } from "$lib/controllers/AccountController";
     import { type Account } from "$lib/types";
     import Form from "$lib/ui/Components/Form";

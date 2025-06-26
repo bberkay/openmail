@@ -3,7 +3,7 @@
     import { ToggleSwitch } from "$lib/ui/Components/Input";
 
     // TODO: Implement this after updater plugin is added.
-    const checkForUpdates = () => {
+    const checkForUpdates = async () => {
 
     }
 </script>

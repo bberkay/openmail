@@ -9,8 +9,8 @@ import {
 } from "$lib/services/ApiService";
 import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 import type { Account } from "$lib/types";
-import { NotificationHandler } from "$lib/services/NotificationHandler";
 import { GravatarService } from "$lib/services/GravatarService";
+import { PreferenceManager } from "$lib/managers/PreferenceManager";
 
 export class AccountController {
     public static async init(): Promise<BaseResponse> {
@@ -46,18 +46,6 @@ export class AccountController {
         return await ApiService.get(GetRoutes.GET_ACCOUNTS);
     }
 
-    private static async _initializeNotifications(email_address: string) {
-        const acc = SharedStore.accounts.find(
-            (acc) => acc.email_address === email_address,
-        )!;
-        SharedStore.notificationChannels[email_address] =
-            new NotificationHandler(acc);
-
-        if (SharedStore.preferences.notificationStatus instanceof Object) {
-            SharedStore.preferences.notificationStatus[email_address] = true;
-        }
-    }
-
     public static async add(
         email_address: string,
         plain_password: string,
@@ -81,24 +69,20 @@ export class AccountController {
         });
 
         if (response.success) {
-            SharedStore.accounts.push({
+            const account = {
                 avatar: avatarData,
                 email_address,
                 ...(fullname && { fullname }),
-            });
+            };
+
+            SharedStore.accounts.push(account);
 
             if (initializeNotifications) {
-                AccountController._initializeNotifications(email_address);
+                PreferenceManager.changeNotificationStatus({ [email_address]: true });
             }
         }
 
         return response;
-    }
-
-    private static async _reinitializeNotifications(email_address: string) {
-        if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
-            SharedStore.notificationChannels[email_address].reinitialize();
-        }
     }
 
     public static async edit(
@@ -136,8 +120,6 @@ export class AccountController {
             SharedStore.failedAccounts = SharedStore.failedAccounts.filter(
                 (account: Account) => account.email_address !== email_address,
             );
-
-            AccountController._reinitializeNotifications(email_address);
         } else {
             const isAlreadyInFailed = SharedStore.failedAccounts.find(
                 (account: Account) => account.email_address === email_address,
@@ -154,30 +136,13 @@ export class AccountController {
         return response;
     }
 
-    private static async _terminateNotifications(email_address: string) {
-        if (Object.hasOwn(SharedStore.notificationChannels, email_address)) {
-            SharedStore.notificationChannels[email_address].terminate();
-            delete SharedStore.notificationChannels[email_address];
-        }
-
-        if (
-            SharedStore.preferences.notificationStatus instanceof Object &&
-            Object.hasOwn(
-                SharedStore.preferences.notificationStatus,
-                email_address,
-            )
-        ) {
-            delete SharedStore.preferences.notificationStatus[email_address];
-        }
-    }
-
     public static async remove(email_address: string): Promise<PostResponse> {
         const response = await ApiService.post(PostRoutes.REMOVE_ACCOUNT, {
             account: email_address,
         });
 
         if (response.success) {
-            AccountController._terminateNotifications(email_address);
+            PreferenceManager.changeNotificationStatus({ [email_address]: false }, true);
             SharedStore.accounts = SharedStore.accounts.filter(
                 (item: Account) => item.email_address !== email_address,
             );
@@ -194,7 +159,7 @@ export class AccountController {
 
         if (response.success) {
             SharedStore.accounts.forEach((acc) =>
-                AccountController._terminateNotifications(acc.email_address),
+                PreferenceManager.changeNotificationStatus({ [acc.email_address]: false }, true)
             );
             SharedStore.accounts = [];
         }

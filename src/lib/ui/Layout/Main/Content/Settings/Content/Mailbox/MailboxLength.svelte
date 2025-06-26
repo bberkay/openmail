@@ -1,30 +1,12 @@
 <script lang="ts">
-    import { AppController } from "$lib/controllers/AppController";
-    import { SharedStore } from "$lib/stores/shared.svelte";
+    import { PreferenceManager } from "$lib/managers/PreferenceManager";
+    import { PreferencesStore } from "$lib/stores/PreferencesStore";
     import { MailboxLength } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import { getEnumKeyByValue } from "$lib/utils";
-    import { onMount } from "svelte";
 
-    let newMailboxLength: MailboxLength = $state(SharedStore.preferences.mailboxLength);
-
-    onMount(() => {
-        document.removeEventListener("preferences-saved", saveMailboxLengthChange);
-        document.addEventListener("preferences-saved", saveMailboxLengthChange);
-        document.removeEventListener("preferences-reset-to-default", resetMailboxLength);
-        document.addEventListener("preferences-reset-to-default", resetMailboxLength);
-    });
-
-    async function saveMailboxLengthChange() {
-        await AppController.changeMailboxLength(newMailboxLength);
-    }
-
-    async function resetMailboxLength() {
-        await AppController.resetMailboxLength();
-    }
-
-    const updateMailboxLength = (selectedLength: string) => {
-        newMailboxLength = selectedLength as MailboxLength;
+    const changeMailboxLength = async (selectedLength: string) => {
+        await PreferenceManager.changeMailboxLength(selectedLength as MailboxLength);
     };
 </script>
 
@@ -41,9 +23,9 @@
             placeholder="Language"
             value={getEnumKeyByValue(
                 MailboxLength,
-                SharedStore.preferences.mailboxLength,
+                PreferencesStore.mailboxLength,
             )}
-            onchange={updateMailboxLength}
+            onchange={changeMailboxLength}
             disableClearButton={true}
         >
             {#each Object.entries(MailboxLength) as [mailboxLengthName, mailboxLengthId]}

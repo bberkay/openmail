@@ -8,8 +8,8 @@
     %sveltekit.head%
     <script>
         /* To prevent FOUC: https://en.m.wikipedia.org/wiki/Flash_of_unstyled_content */
-        document.documentElement.setAttribute("data-color-scheme", localStorage.getItem("theme"));
-        document.documentElement.setAttribute("lang", localStorage.getItem("language"));
+        document.documentElement.setAttribute("data-color-scheme", localStorage.getItem("data-color-scheme"));
+        document.documentElement.setAttribute("lang", localStorage.getItem("lang"));
     </script>
 </head>
 <body data-sveltekit-preload-data="hover">

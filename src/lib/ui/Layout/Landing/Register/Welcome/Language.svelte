@@ -1,14 +1,13 @@
 <script lang="ts">
-    import { SharedStore } from "$lib/stores/shared.svelte";
     import { Language } from "$lib/types";
     import { FormGroup } from "$lib/ui/Components/Form";
     import * as Select from "$lib/ui/Components/Select";
     import Label from "$lib/ui/Components/Label";
     import { getEnumKeyByValue } from "$lib/utils";
-    import { AppController } from "$lib/controllers/AppController";
+    import { PreferenceManager } from "$lib/managers/PreferenceManager";
 
     const selectLanguage = async (selectedLanguage: string) => {
-        await AppController.changeLanguage(selectedLanguage as Language);
+        await PreferenceManager.changeLanguage(selectedLanguage as Language);
     }
 </script>
 
@@ -17,10 +16,7 @@
     <Select.Root
         id="language"
         placeholder="Language"
-        value={getEnumKeyByValue(
-            Language,
-            SharedStore.preferences.language,
-        )}
+        value={getEnumKeyByValue(Language, PreferenceManager.language)}
         onchange={selectLanguage}
         style="width:100%"
     >

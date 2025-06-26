@@ -5,6 +5,7 @@ import { SharedStore } from "$lib/stores/shared.svelte";
 import { ApiService } from "$lib/services/ApiService";
 import { FileSystem } from "$lib/services/FileSystem";
 import { AccountController } from "$lib/controllers/AccountController";
+import { PreferenceManager } from "$lib/managers/PreferenceManager";
 
 const SERVER_CONNECTION_TRY_SLEEP_MS = 500;
 
@@ -32,8 +33,7 @@ async function connectToLocalServer(): Promise<void> {
 async function initializeFileSystem(): Promise<void> {
     const fileSystem = await FileSystem.getInstance();
     const savedPreferences = await fileSystem.readPreferences();
-    SharedStore.preferences = { ...SharedStore.preferences,  ...savedPreferences};
-    await fileSystem.savePreferences(SharedStore.preferences);
+    PreferenceManager.init(savedPreferences);
 }
 
 export const init: ClientInit = async () => {

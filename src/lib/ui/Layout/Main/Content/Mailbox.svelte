@@ -116,7 +116,7 @@
     export async function paginateMailboxBackward(
         currentOffset: number,
     ): Promise<void> {
-        const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
         if (currentOffset <= MAILBOX_LENGTH) return;
 
         return new Promise((resolve) => {
@@ -194,7 +194,7 @@
 
         return new Promise((resolve) => {
             if (!waitNext) {
-                const MAILBOX_LENGTH = Number(SharedStore.preferences.mailboxLength);
+                const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
 
                 const emailAddrs =
                     SharedStore.currentAccount !== "home"
@@ -271,6 +271,8 @@
     import Toolbox from "$lib/ui/Layout/Main/Content/Mailbox/Toolbox.svelte";
     import Content from "$lib/ui/Layout/Main/Content/Mailbox/Content.svelte";
     import { setContext } from "svelte";
+    import { PreferenceManager } from "$lib/managers/PreferenceManager";
+    import { PreferencesStore } from "$lib/stores/PreferencesStore";
 
     setContext<MailboxContext>(CONTEXT_KEY, {
         currentOffset,
