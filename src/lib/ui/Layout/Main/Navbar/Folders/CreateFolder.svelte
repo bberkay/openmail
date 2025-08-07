@@ -1,6 +1,6 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { type Account } from "$lib/types";
     import Form, { FormGroup } from "$lib/ui/Components/Form";
     import Modal from "$lib/ui/Components/Modal";

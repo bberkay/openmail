@@ -727,7 +727,13 @@ class IMAPManager(imaplib.IMAP4_SSL):
         try:
             if self.is_idle() or self.is_idle_activation_countdown_continue():
                 return False
-            return super().noop()[0] != "OK"
+            start_time = time.time()
+            print("calling noop at ", start_time)
+            noop_response = super().noop()[0] != "OK"
+            end_time = time.time()
+            print("noop response at ", end_time)
+            print("total time: ", end_time - start_time)
+            return noop_response
         except Exception:
             return True
 

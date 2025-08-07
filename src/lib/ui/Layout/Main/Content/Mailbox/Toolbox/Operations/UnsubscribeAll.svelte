@@ -1,5 +1,5 @@
 <script lang="ts" module>
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { type GroupedUidSelection } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { show as showMessage } from "$lib/ui/Components/Message";

@@ -1,12 +1,6 @@
 import { DEFAULT_PREFERENCES } from "$lib/constants";
-import { FileSystem } from "$lib/services/FileSystem";
-import {
-    Language,
-    MailboxLength,
-    Theme,
-    type NotificationStatus,
-    type Preferences,
-} from "$lib/types";
+import { FileSystem } from "$lib/internal/FileSystem";
+import { Theme, Language, MailboxLength, type NotificationStatus, type Preferences } from "./types";
 import { enable, disable } from "@tauri-apps/plugin-autostart";
 import {
     convertToLanguageEnum,
@@ -17,11 +11,11 @@ import {
 } from "$lib/utils";
 import { locale } from "@tauri-apps/plugin-os";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { NotificationManager } from "./NotificationManager";
+import { NotificationManager } from "$lib/notifications";
 import { SharedStore } from "$lib/stores/shared.svelte";
-import { PreferencesStore } from "$lib/stores/PreferencesStore";
-import { MailboxController } from "$lib/controllers/MailboxController";
-import { _getPreferences, _initPreferences, _isPreferencesInitialized, _updatePreferences } from "../internal/preferences.internal";
+import { PreferenceStore } from "$lib/preferences";
+import { MailboxController } from "$lib/mailbox/MailboxController";
+import { _getPreferences, _initPreferences, _isPreferencesInitialized, _updatePreferences } from "./preferences.internal";
 
 let saveOperationQueue: ((() => Promise<void>) | (() => void))[] = [];
 
@@ -46,7 +40,7 @@ function IsPreferencesLoaded(
 
 export class PreferenceManager {
     public static init(preferences: Preferences) {
-        _initPreferences(preferences)
+        _initPreferences({ ...DEFAULT_PREFERENCES, ...preferences });
     }
 
     @IsPreferencesLoaded
@@ -160,7 +154,7 @@ export class PreferenceManager {
 
     @IsPreferencesLoaded
     public static checkNotificationStatus(email_address: string): boolean {
-        const notificationStatus = PreferencesStore.notificationStatus;
+        const notificationStatus = PreferenceStore.notificationStatus;
         if (typeof notificationStatus === "boolean")
             return notificationStatus;
 
@@ -190,7 +184,7 @@ export class PreferenceManager {
                 return;
             }
 
-            let currentNotificationStatus = simpleDeepCopy(PreferencesStore.notificationStatus);
+            let currentNotificationStatus = simpleDeepCopy(PreferenceStore.notificationStatus);
 
             if (typeof currentNotificationStatus === "boolean") {
                 const originalStatus = currentNotificationStatus;

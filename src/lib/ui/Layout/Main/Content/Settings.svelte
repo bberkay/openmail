@@ -4,7 +4,7 @@
     import General from "./Settings/Content/General.svelte";
     import Form from "$lib/ui/Components/Form";
     import { onMount } from "svelte";
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
+    import { PreferenceManager } from "$lib/preferences";
 
     const saveChanges = async (): Promise<void> => {
         await PreferenceManager.savePreferences();

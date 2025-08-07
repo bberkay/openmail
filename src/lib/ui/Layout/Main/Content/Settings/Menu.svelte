@@ -10,7 +10,7 @@
     import { SharedStore } from "$lib/stores/shared.svelte";
     import Icon from "$lib/ui/Components/Icon";
     import { backToDefault } from "$lib/ui/Layout/Main/Content.svelte";
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
+    import { PreferenceManager } from "$lib/preferences";
 
     const highlightSelectedMenu = (e: Event) => {
         document.querySelector(".settings-title-btn.shown")?.classList.remove("shown");

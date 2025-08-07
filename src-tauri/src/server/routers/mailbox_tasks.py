@@ -22,13 +22,14 @@ OpenmailTaskResults = dict[str, T]
 NEW_EMAIL_CHECK_INTERVAL_SEC = 60
 
 router = APIRouter(
-    tags=["Emails"]
+    tags=["Mailbox"]
 )
 
 def check_openmail_connection_availability(
     account: str,
     for_new_messages: bool = False
 ) -> Response | bool:
+    print("Checking for connection availability: ", account)
     connection_result = client_handler.is_connection_available(account, for_new_messages)
     if isinstance(connection_result, bool) and connection_result:
         return True

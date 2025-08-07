@@ -1,6 +1,6 @@
 <script lang="ts">
     import Modal from "$lib/ui/Components/Modal";
-    import { AccountController } from "$lib/controllers/AccountController";
+    import { AccountController } from "$lib/account";
     import { type Account } from "$lib/types";
     import Form from "$lib/ui/Components/Form";
     import { FormGroup } from "$lib/ui/Components/Form";

@@ -29,7 +29,7 @@
 
 <script lang="ts">
     import { mount, onMount, unmount } from "svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { type Email as TEmail, type Account } from "$lib/types";
     import { extractEmailAddress, extractFullname, truncate } from "$lib/utils";
     import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";

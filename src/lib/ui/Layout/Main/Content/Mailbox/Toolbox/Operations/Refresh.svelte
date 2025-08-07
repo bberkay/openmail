@@ -1,6 +1,6 @@
 <script lang="ts" module>
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import * as Button from "$lib/ui/Components/Button";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";

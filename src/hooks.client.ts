@@ -3,9 +3,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { TauriCommand } from "$lib/types";
 import { SharedStore } from "$lib/stores/shared.svelte";
 import { ApiService } from "$lib/services/ApiService";
-import { FileSystem } from "$lib/services/FileSystem";
-import { AccountController } from "$lib/controllers/AccountController";
-import { PreferenceManager } from "$lib/managers/PreferenceManager";
+import { FileSystem } from "$lib/internal/FileSystem";
+import { AccountController } from "$lib/account";
+import { PreferenceManager } from "$lib/preferences";
 
 const SERVER_CONNECTION_TRY_SLEEP_MS = 500;
 

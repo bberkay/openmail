@@ -1,6 +1,6 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import {
         getFailedAccountsTemplate,
         getFailedItemTemplate,
@@ -16,7 +16,7 @@
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import AddAccountForm from "./AddAccountForm.svelte";
     import AccountTable from "./Accounts/AccountTable.svelte";
-    import { NotificationHandler } from "$lib/handlers/NotificationHandler";
+    import { NotificationHandler } from "$lib/notifications";
 
     const ACCOUNT_COUNT_PER_PAGE = 5;
 

@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
     import { Theme } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import {
@@ -22,7 +21,7 @@
             id="theme"
             class="select-sm"
             placeholder="Theme"
-            value={getEnumKeyByValue(Theme, PreferencesStore.theme)}
+            value={getEnumKeyByValue(Theme, PreferenceStore.theme)}
             onchange={changeTheme}
             disableClearButton={true}
         >

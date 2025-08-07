@@ -1,4 +1,4 @@
-import type { Preferences } from "$lib/types";
+import type { Preferences } from "./types";
 
 let _currentPreferences: Preferences | null = null;
 

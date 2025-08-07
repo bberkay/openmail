@@ -10,7 +10,7 @@ import {
 import { RSAEncryptor } from "$lib/services/RSAEncryptor";
 import type { Account } from "$lib/types";
 import { GravatarService } from "$lib/services/GravatarService";
-import { PreferenceManager } from "$lib/managers/PreferenceManager";
+import { PreferenceManager } from "$lib/preferences";
 
 export class AccountController {
     public static async init(): Promise<BaseResponse> {

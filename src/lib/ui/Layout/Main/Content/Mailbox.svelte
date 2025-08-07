@@ -5,7 +5,7 @@
         PAGINATE_MAILBOX_CHECK_DELAY_MS,
         WAIT_FOR_EMAILS_TIMEOUT_MS,
     } from "$lib/constants";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { sortSelection } from "$lib/utils";
 
     /**
@@ -116,7 +116,7 @@
     export async function paginateMailboxBackward(
         currentOffset: number,
     ): Promise<void> {
-        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferenceStore.mailboxLength);
         if (currentOffset <= MAILBOX_LENGTH) return;
 
         return new Promise((resolve) => {
@@ -194,7 +194,7 @@
 
         return new Promise((resolve) => {
             if (!waitNext) {
-                const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+                const MAILBOX_LENGTH = Number(PreferenceStore.mailboxLength);
 
                 const emailAddrs =
                     SharedStore.currentAccount !== "home"
@@ -271,8 +271,7 @@
     import Toolbox from "$lib/ui/Layout/Main/Content/Mailbox/Toolbox.svelte";
     import Content from "$lib/ui/Layout/Main/Content/Mailbox/Content.svelte";
     import { setContext } from "svelte";
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
 
     setContext<MailboxContext>(CONTEXT_KEY, {
         currentOffset,

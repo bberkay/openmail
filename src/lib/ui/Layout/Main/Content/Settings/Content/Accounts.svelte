@@ -3,7 +3,7 @@
     import { show as showAlert } from "$lib/ui/Components/Alert";
     import { getFailedAccountsTemplate, getFailedItemTemplate, getFailedMailboxOrFoldersTemplate } from "$lib/templates";
     import { createSenderAddress } from "$lib/utils";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import AccountTable from "./Accounts/AccountTable.svelte";

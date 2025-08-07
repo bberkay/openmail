@@ -20,7 +20,7 @@
         type Account,
         type OriginalMessageContext,
     } from "$lib/types";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { onMount } from "svelte";
     import { WYSIWYGEditor } from "@bberkay/wysiwygeditor";
     import Form from "$lib/ui/Components/Form";

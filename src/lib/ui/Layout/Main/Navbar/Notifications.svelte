@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { type Email as TEmail, type Account, Folder } from "$lib/types";
     import { getNewMessageTemplate } from "$lib/templates";
     import {

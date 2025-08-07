@@ -1,6 +1,6 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { type Account, Folder } from "$lib/types";
     import { isStandardFolder } from "$lib/utils";
     import {

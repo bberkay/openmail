@@ -1,5 +1,5 @@
 <script lang="ts" module>
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { type Account, type Email } from "$lib/types";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import { show as showMessage } from "$lib/ui/Components/Message";

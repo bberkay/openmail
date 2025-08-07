@@ -1,7 +1,7 @@
-import { _getPreferences } from "../internal/preferences.internal";
-import { type Preferences } from "$lib/types";
+import { _getPreferences } from "./preferences.internal";
+import { type Preferences } from "./types";
 
-export class PreferencesStore {
+export class PreferenceStore {
     public static get theme(): Preferences["theme"] {
         return _getPreferences().theme;
     }
@@ -10,8 +10,8 @@ export class PreferencesStore {
         return _getPreferences().language;
     }
 
-    public static get mailboxLength(): Preferences["mailboxLength"] {
-        return _getPreferences().mailboxLength;
+    public static get mailboxLength(): number {
+        return Number(_getPreferences().mailboxLength);
     }
 
     public static get isAutostartEnabled(): Preferences["isAutostartEnabled"] {

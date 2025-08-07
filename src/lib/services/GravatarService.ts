@@ -1,6 +1,6 @@
 import { generateHash } from "$lib/utils";
 import { type Gravatar, type LocalAvatar } from "$lib/types";
-import { PreferencesStore } from "$lib/stores/PreferencesStore";
+import { PreferenceStore } from "$lib/preferences";
 
 const GRAVATAR_URL = "https://gravatar.com/avatar/";
 
@@ -79,7 +79,7 @@ export class GravatarService {
         if (storedAvatars.size > MAX_CACHE_LENGTH) {
             const iterator = storedAvatars.keys();
             const reducedLength = Math.max(
-                storedAvatars.size - Number(PreferencesStore.mailboxLength),
+                storedAvatars.size - Number(PreferenceStore.mailboxLength),
                 0,
             );
             for (let i = 0; i < reducedLength; i++) {

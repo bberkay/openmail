@@ -8,7 +8,7 @@ import { type Account, type Email, Folder, type INotificationHandler } from "$li
 import { DEFAULT_LANGUAGE } from "$lib/constants";
 import { local } from "$lib/locales";
 import { isStandardFolder } from "$lib/utils";
-import { MailboxController } from "$lib/controllers/MailboxController";
+import { MailboxController } from "$lib/mailbox";
 
 export class NotificationHandler implements INotificationHandler {
     private _permissionGranted: boolean;

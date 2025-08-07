@@ -1,5 +1,5 @@
 <script lang="ts" module>
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import {
         getErrorMarkEmailsTemplate,
     } from "$lib/templates";

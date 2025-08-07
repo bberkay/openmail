@@ -5,7 +5,7 @@
     import { show as showModal } from "$lib/ui/Components/Modal";
     import Settings from "$lib/ui/Layout/Main/Content/Settings.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";
-    import { AccountController } from "$lib/controllers/AccountController";
+    import { AccountController } from "$lib/account";
     import {
         getNotLoggedOutFromTemplate,
     } from "$lib/templates";

@@ -8,17 +8,35 @@
     import * as Button from "$lib/ui/Components/Button";
     import Icon from "$lib/ui/Components/Icon";
     import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceStore } from "$lib/preferences";
 
     const mailboxContext = getMailboxContext();
 
+    let currentEmailLength = $derived(getCurrentMailbox().emails.current.length);
+
+    let pageInfo = $derived(getRangePaginationTemplate(
+        mailboxContext.currentOffset.value.toString(),
+        (
+            mailboxContext.currentOffset.value -
+            1 + currentEmailLength
+        ).toString(),
+        getCurrentMailbox().total.toString(),
+    ));
+
+    let isPrevBtnDisabled = $derived(
+        mailboxContext.currentOffset.value <= currentEmailLength
+    );
+
+    let isNextBtnDisabled = $derived(
+        mailboxContext.currentOffset.value >= getCurrentMailbox().total
+    );
+
     const getPreviousEmails = async () => {
-        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
-        if (mailboxContext.currentOffset.value <= MAILBOX_LENGTH) return;
+        if (mailboxContext.currentOffset.value <= currentEmailLength) return;
         await paginateMailboxBackward(mailboxContext.currentOffset.value);
         mailboxContext.currentOffset.value = Math.min(
             getCurrentMailbox().total,
-            mailboxContext.currentOffset.value - MAILBOX_LENGTH,
+            mailboxContext.currentOffset.value - currentEmailLength,
         );
         mailboxContext.emailSelection.value = [];
     };
@@ -29,11 +47,13 @@
             getCurrentMailbox().total
         )
             return;
+        // TODO: Convert this to the paginateEmails.
+        // TODO: Also why doesnt emails.next comes as empty list, fetch next
+        // emails as soon as app starts.
         await paginateMailboxForward(mailboxContext.currentOffset.value);
-        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
         mailboxContext.currentOffset.value = Math.min(
             getCurrentMailbox().total,
-            mailboxContext.currentOffset.value + MAILBOX_LENGTH,
+            mailboxContext.currentOffset.value + currentEmailLength,
         );
         mailboxContext.emailSelection.value = [];
     };
@@ -42,31 +62,17 @@
 <div class="pagination">
     <Button.Action
         type="button"
-        class="btn-inline {mailboxContext.currentOffset.value <=
-        Number(PreferencesStore.mailboxLength)
-            ? 'disabled'
-            : ''}"
+        class="btn-inline {isPrevBtnDisabled ? 'disabled' : ''}"
         onclick={getPreviousEmails}
     >
         <Icon name="prev" />
     </Button.Action>
     <small>
-        {getRangePaginationTemplate(
-            mailboxContext.currentOffset.value.toString(),
-            (
-                mailboxContext.currentOffset.value -
-                1 +
-                Number(PreferencesStore.mailboxLength)
-            ).toString(),
-            getCurrentMailbox().total.toString(),
-        )}
+        {pageInfo}
     </small>
     <Button.Action
         type="button"
-        class="btn-inline {mailboxContext.currentOffset.value >=
-        getCurrentMailbox().total
-            ? 'disabled'
-            : ''}"
+        class="btn-inline {isNextBtnDisabled ? 'disabled' : ''}"
         onclick={getNextEmails}
     >
         <Icon name="next" />

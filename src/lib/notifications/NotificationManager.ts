@@ -1,4 +1,4 @@
-import { NotificationHandler } from "$lib/handlers/NotificationHandler";
+import { NotificationHandler } from "./NotificationHandler";
 import type { Account, INotificationHandler, OpenmailTaskResults } from "$lib/types";
 
 let notificationChannels: OpenmailTaskResults<INotificationHandler> = {};

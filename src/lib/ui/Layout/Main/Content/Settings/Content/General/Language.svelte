@@ -4,8 +4,7 @@
     import {
         getEnumKeyByValue,
     } from "$lib/utils";
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
 
     const changeLanguage = async (selectedLanguage: string) => {
         await PreferenceManager.changeLanguage(selectedLanguage as Language);
@@ -24,7 +23,7 @@
             placeholder="Language"
             value={getEnumKeyByValue(
                 Language,
-                PreferencesStore.language,
+                PreferenceStore.language,
             )}
             onchange={changeLanguage}
             disableClearButton={true}

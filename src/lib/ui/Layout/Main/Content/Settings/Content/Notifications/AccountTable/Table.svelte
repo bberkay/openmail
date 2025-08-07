@@ -9,8 +9,7 @@
     import type { Account, NotificationStatus } from "$lib/types";
     import { onMount } from "svelte";
     import { GravatarService } from "$lib/services/GravatarService";
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
 
     interface Props {
         shownAccounts: Account[];
@@ -80,7 +79,7 @@
                         class={accountSelection.length === 0 ? "invisible" : ""}
                         disabled={accountSelection.length === 0}
                         onchange={changeNotificationStatus}
-                        checked={!!PreferencesStore.notificationStatus}
+                        checked={!!PreferenceStore.notificationStatus}
                     />
                 </Table.Head>
             </Table.Row>

@@ -7,7 +7,7 @@
     import { Theme } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { getCurrentWindow } from '@tauri-apps/api/window';
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceStore } from "$lib/preferences";
 
     const appWindow = getCurrentWindow();
 
@@ -17,7 +17,7 @@
 
     onMount(() => {
         appWindow.onThemeChanged(async ({ payload: theme }) => {
-            if (PreferencesStore.theme === Theme.System) {
+            if (PreferenceStore.theme === Theme.System) {
                 const newTheme = theme.toLowerCase();
                 document.documentElement.setAttribute("data-color-scheme", newTheme);
                 localStorage.setItem("theme", newTheme);

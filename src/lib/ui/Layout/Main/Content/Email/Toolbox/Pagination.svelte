@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { type Account, type Email } from "$lib/types";
     import { getEmailPaginationTemplate } from "$lib/templates";
     import * as Button from "$lib/ui/Components/Button";
@@ -12,7 +12,7 @@
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
     import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceStore } from "$lib/preferences";
 
     interface Props {
         account: Account;
@@ -51,7 +51,7 @@
     const getPreviousEmail = async () => {
         if (currentOffset <= 1) return;
 
-        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferenceStore.mailboxLength);
         if (currentOffset - (1 % MAILBOX_LENGTH) == 0) {
             await paginateMailboxBackward(currentOffset - 1);
         }
@@ -63,7 +63,7 @@
     const getNextEmail = async () => {
         if (currentOffset >= getCurrentMailbox().total) return;
 
-        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferenceStore.mailboxLength);
         if (currentOffset + (1 % MAILBOX_LENGTH) == 1) {
             await paginateMailboxForward(currentOffset + 1);
         }

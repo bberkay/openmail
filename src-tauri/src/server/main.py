@@ -15,7 +15,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from internal.client_handler import ClientHandler
 from internal.account_manager import AccountManager
 from internal.file_system import FileSystem
-from routers import account_tasks, email_tasks
+from routers import account_tasks, mailbox_tasks
 from helpers.uvicorn_logger import UvicornLogger
 from helpers.port_scanner import PortScanner
 
@@ -50,7 +50,7 @@ app.add_middleware(
 )
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
 app.include_router(account_tasks.router)
-app.include_router(email_tasks.router)
+app.include_router(mailbox_tasks.router)
 
 
 @app.middleware("http")

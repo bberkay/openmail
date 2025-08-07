@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { AccountController } from "$lib/controllers/AccountController";
+    import { AccountController } from "$lib/account";
     import Form from "$lib/ui/Components/Form";
     import { FormGroup } from "$lib/ui/Components/Form";
     import * as Input from "$lib/ui/Components/Input";

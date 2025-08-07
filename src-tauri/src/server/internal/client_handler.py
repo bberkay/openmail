@@ -71,6 +71,7 @@ class ClientHandler:
             openmail_clients_for_new_messages if for_new_messages else openmail_clients
         )
 
+        print(f"Checking {account} whether is logged out or not...")
         if not target_openmail_clients[account].imap.is_logged_out():
             print(f"No need to reconnect for {account}")
             return True

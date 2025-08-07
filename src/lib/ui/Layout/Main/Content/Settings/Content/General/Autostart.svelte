@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
     import { ToggleSwitch } from "$lib/ui/Components/Input";
 
     const changeAutostart = async (newAutostartStatus: boolean) => {
@@ -16,7 +15,7 @@
     <div class="settings-section-body">
         <ToggleSwitch
             onchange={changeAutostart}
-            checked={PreferencesStore.isAutostartEnabled}
+            checked={PreferenceStore.isAutostartEnabled}
         />
     </div>
 </div>

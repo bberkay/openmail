@@ -1,5 +1,5 @@
 <script lang="ts" module>
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { Folder, type Account, type Email } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { show as showToast } from "$lib/ui/Components/Toast";

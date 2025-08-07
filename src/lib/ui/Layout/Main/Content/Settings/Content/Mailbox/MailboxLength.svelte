@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
     import { MailboxLength } from "$lib/types";
     import * as Select from "$lib/ui/Components/Select";
     import { getEnumKeyByValue } from "$lib/utils";
@@ -22,7 +21,7 @@
             placeholder="Language"
             value={getEnumKeyByValue(
                 MailboxLength,
-                PreferencesStore.mailboxLength,
+                PreferenceStore.mailboxLength,
             )}
             onchange={changeMailboxLength}
             disableClearButton={true}

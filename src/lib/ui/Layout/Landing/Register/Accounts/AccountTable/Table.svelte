@@ -1,6 +1,6 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { AccountController } from "$lib/controllers/AccountController";
+    import { AccountController } from "$lib/account";
     import { getSelectedAccountTemplate } from "$lib/templates";
     import * as Button from "$lib/ui/Components/Button";
     import * as Input from "$lib/ui/Components/Input";

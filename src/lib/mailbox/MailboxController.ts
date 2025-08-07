@@ -33,7 +33,7 @@ import {
     roundUpToMultiple,
 } from "$lib/utils";
 import { GravatarService } from "$lib/services/GravatarService";
-import { PreferencesStore } from "$lib/stores/PreferencesStore";
+import { PreferenceStore } from "$lib/preferences";
 
 export class MailboxController {
     public static async init(
@@ -263,7 +263,7 @@ export class MailboxController {
                 Folder.All,
             );
 
-        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferenceStore.mailboxLength);
         offsetStart = Math.max(1, offsetStart ?? 1);
         offsetEnd = Math.max(1, offsetEnd ?? offsetStart - 1 + MAILBOX_LENGTH);
 
@@ -311,9 +311,8 @@ export class MailboxController {
                 );
             }
 
-            if (
-                offsetEnd < SharedStore.mailboxes[account.email_address].total
-            ) {
+            if (offsetEnd < SharedStore.mailboxes[account.email_address].total) {
+                console.log("11123 12 werwe da d");
                 MailboxController.paginateEmails(
                     account,
                     offsetEnd + 1,
@@ -528,7 +527,7 @@ export class MailboxController {
             return response;
         }
 
-        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferenceStore.mailboxLength);
 
         // Delete emails from current mailbox and update total count.
         const countBeforeDelete = currentMailbox.emails.current.length;
@@ -663,7 +662,7 @@ export class MailboxController {
             return response;
         }
 
-        const MAILBOX_LENGTH = Number(PreferencesStore.mailboxLength);
+        const MAILBOX_LENGTH = Number(PreferenceStore.mailboxLength);
 
         const countBeforeMove = currentMailbox.emails.current.length;
         const wasFullBeforeMove = countBeforeMove >= MAILBOX_LENGTH;

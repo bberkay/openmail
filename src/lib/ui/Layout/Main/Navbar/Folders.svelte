@@ -1,7 +1,7 @@
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
     import { Folder, type Account } from "$lib/types";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import * as Dropdown from "$lib/ui/Components/Dropdown";
     import CreateFolder from "$lib/ui/Layout/Main/Navbar/Folders/CreateFolder.svelte";
     import RenameFolder from "$lib/ui/Layout/Main/Navbar/Folders/RenameFolder.svelte";

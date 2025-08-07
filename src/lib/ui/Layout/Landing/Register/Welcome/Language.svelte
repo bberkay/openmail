@@ -4,8 +4,7 @@
     import * as Select from "$lib/ui/Components/Select";
     import Label from "$lib/ui/Components/Label";
     import { getEnumKeyByValue } from "$lib/utils";
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
-    import { PreferencesStore } from "$lib/stores/PreferencesStore";
+    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
 
     const selectLanguage = async (selectedLanguage: string) => {
         await PreferenceManager.changeLanguage(selectedLanguage as Language);
@@ -17,7 +16,7 @@
     <Select.Root
         id="language"
         placeholder="Language"
-        value={getEnumKeyByValue(Language, PreferencesStore.language)}
+        value={getEnumKeyByValue(Language, PreferenceStore.language)}
         onchange={selectLanguage}
         style="width:100%"
     >

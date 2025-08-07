@@ -1,7 +1,7 @@
 <script lang="ts" module>
     import { Folder, type Account } from "$lib/types";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { isStandardFolder } from "$lib/utils";
     import Mailbox from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
     import { showThis as showContent } from "$lib/ui/Layout/Main/Content.svelte";

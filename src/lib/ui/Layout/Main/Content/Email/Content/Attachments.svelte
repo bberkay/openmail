@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { type Account, type Email, Folder } from "$lib/types";
     import { getAttachmentTemplate } from "$lib/templates";
     import { makeSizeHumanReadable } from "$lib/utils";
@@ -7,7 +7,7 @@
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { local } from "$lib/locales";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
-    import { FileSystem } from "$lib/services/FileSystem";
+    import { FileSystem } from "$lib/internal/FileSystem";
 
     interface Props {
         account: Account;

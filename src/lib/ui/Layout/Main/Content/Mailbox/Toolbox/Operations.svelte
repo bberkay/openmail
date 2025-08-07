@@ -106,7 +106,7 @@
 
 <script lang="ts">
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { MailboxController } from "$lib/controllers/MailboxController";
+    import { MailboxController } from "$lib/mailbox";
     import { type Email, Folder } from "$lib/types";
     import { getMailboxContext } from "$lib/ui/Layout/Main/Content/Mailbox";
     import { show as showMessage } from "$lib/ui/Components/Message";

@@ -9,7 +9,7 @@
     import { showThis as showContent } from "$lib/ui/Layout/Landing/Register.svelte";
     import Language from "./Welcome/Language.svelte";
     import Theme from "./Welcome/Theme.svelte";
-    import { PreferenceManager } from "$lib/managers/PreferenceManager";
+    import { PreferenceManager } from "$lib/preferences";
 
     onMount(() => {
         showAlert("info-change-alert-container", {
