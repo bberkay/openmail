@@ -312,7 +312,6 @@ export class MailboxController {
             }
 
             if (offsetEnd < SharedStore.mailboxes[account.email_address].total) {
-                console.log("11123 12 werwe da d");
                 MailboxController.paginateEmails(
                     account,
                     offsetEnd + 1,
