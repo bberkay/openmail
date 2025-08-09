@@ -50,6 +50,8 @@
             height: 100vh;
             padding: 0 var(--spacing-lg);
             padding-top: var(--spacing-2xl);
+            border: 1px solid var(--color-border);
+            border-radius: var(--titlebar-radius);
         }
 
         .alert-container {

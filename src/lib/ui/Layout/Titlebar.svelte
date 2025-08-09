@@ -82,7 +82,8 @@
             top: 0;
             left: 0;
             right: 0;
-            border: none;
+            border: 1px solid var(--color-border);
+            border-bottom: none;
             border-top-left-radius: var(--titlebar-radius);
             border-top-right-radius: var(--titlebar-radius);
             z-index: var(--z-index-titlebar);
@@ -100,6 +101,7 @@
                 height: var(--titlebar-height);
                 user-select: none;
                 -webkit-user-select: none;
+                border-radius: 50%;
 
                 & svg {
                     width: var(--font-size-md);
@@ -107,7 +109,7 @@
                 }
 
                 &:hover {
-                    background: var(--color-hover);
+                    background: var(--color-border);
                 }
             }
         }

@@ -8,7 +8,7 @@ import {
     BaseDirectory
 } from "@tauri-apps/plugin-fs";
 import * as path from '@tauri-apps/api/path';
-import type { Preferences } from "$lib/types";
+import type { Preferences } from "$lib/preferences";
 import { PUBLIC_APP_NAME } from "$env/static/public";
 
 class FileNotFoundError extends Error {

@@ -1,10 +1,9 @@
 <script lang="ts">
-    import { Theme } from "$lib/types";
     import { FormGroup } from "$lib/ui/Components/Form";
     import * as Select from "$lib/ui/Components/Select";
     import Label from "$lib/ui/Components/Label";
     import { getEnumKeyByValue } from "$lib/utils";
-    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
+    import { PreferenceManager, PreferenceStore, Theme } from "$lib/preferences";
 
     const selectTheme = async (selectedTheme: string) => {
         await PreferenceManager.changeTheme(selectedTheme as Theme);

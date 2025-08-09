@@ -1,10 +1,9 @@
 <script lang="ts">
-    import { Language } from "$lib/types";
     import { FormGroup } from "$lib/ui/Components/Form";
     import * as Select from "$lib/ui/Components/Select";
     import Label from "$lib/ui/Components/Label";
     import { getEnumKeyByValue } from "$lib/utils";
-    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
+    import { PreferenceManager, PreferenceStore, Language } from "$lib/preferences";
 
     const selectLanguage = async (selectedLanguage: string) => {
         await PreferenceManager.changeLanguage(selectedLanguage as Language);

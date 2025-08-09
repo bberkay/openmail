@@ -1,4 +1,4 @@
-import { Language } from "$lib/types";
+import { Language } from "$lib/preferences";
 import { SharedStore } from "$lib/stores/shared.svelte";
 
 export const local = {

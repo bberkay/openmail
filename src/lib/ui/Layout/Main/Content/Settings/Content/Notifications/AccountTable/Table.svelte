@@ -6,10 +6,10 @@
     import Icon from "$lib/ui/Components/Icon";
     import { DEFAULT_LANGUAGE } from "$lib/constants";
     import { local } from "$lib/locales";
-    import type { Account, NotificationStatus } from "$lib/types";
+    import type { Account } from "$lib/types";
     import { onMount } from "svelte";
     import { GravatarService } from "$lib/services/GravatarService";
-    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
+    import { PreferenceManager, PreferenceStore, type NotificationStatus } from "$lib/preferences";
 
     interface Props {
         shownAccounts: Account[];

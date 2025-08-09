@@ -1,4 +1,3 @@
-import { DEFAULT_PREFERENCES } from "$lib/constants";
 import { FileSystem } from "$lib/internal/FileSystem";
 import { Theme, Language, MailboxLength, type NotificationStatus, type Preferences } from "./types";
 import { enable, disable } from "@tauri-apps/plugin-autostart";
@@ -16,6 +15,7 @@ import { SharedStore } from "$lib/stores/shared.svelte";
 import { PreferenceStore } from "$lib/preferences";
 import { MailboxController } from "$lib/mailbox/MailboxController";
 import { _getPreferences, _initPreferences, _isPreferencesInitialized, _updatePreferences } from "./preferences.internal";
+import { DEFAULT_PREFERENCES } from "./config";
 
 let saveOperationQueue: ((() => Promise<void>) | (() => void))[] = [];
 

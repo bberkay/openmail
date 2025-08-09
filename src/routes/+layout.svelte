@@ -4,10 +4,9 @@
     import Layout from "$lib/ui/Layout/Layout.svelte";
     import Loading from "$lib/ui/Layout/Loading.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { Theme } from "$lib/types";
     import { show as showMessage } from "$lib/ui/Components/Message";
     import { getCurrentWindow } from '@tauri-apps/api/window';
-    import { PreferenceStore } from "$lib/preferences";
+    import { PreferenceStore, Theme } from "$lib/preferences";
 
     const appWindow = getCurrentWindow();
 

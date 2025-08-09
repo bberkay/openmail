@@ -1,4 +1,4 @@
-import { Language, Theme } from "$lib/types";
+import { Language, Theme } from "$lib/preferences";
 import { capitalize } from ".";
 
 /**

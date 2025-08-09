@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { PreferenceManager, PreferenceStore } from "$lib/preferences";
-    import { Theme } from "$lib/types";
+    import { PreferenceManager, PreferenceStore, Theme } from "$lib/preferences";
     import * as Select from "$lib/ui/Components/Select";
     import {
         getEnumKeyByValue,
