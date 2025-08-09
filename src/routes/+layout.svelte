@@ -4,7 +4,7 @@
     import Layout from "$lib/ui/Layout/Layout.svelte";
     import Loading from "$lib/ui/Layout/Loading.svelte";
     import { SharedStore } from "$lib/stores/shared.svelte";
-    import { show as showMessage } from "$lib/ui/Components/Message";
+    import { show as showConfirm } from "$lib/ui/Components/Confirm";
     import { getCurrentWindow } from '@tauri-apps/api/window';
     import { PreferenceStore, Theme } from "$lib/preferences";
 
@@ -28,9 +28,12 @@
     const handleShortcuts = (e: KeyboardEvent) => {
         if (e.ctrlKey && e.code === "Space") {
             e.preventDefault();
-            showMessage({
+            const sharedStoreString = JSON.stringify(SharedStore, null, 4)
+            showConfirm({
                 title: "Variables",
-                details: `<pre>${JSON.stringify(SharedStore, null, 4)}</pre>`
+                onConfirmText: "Copy",
+                onConfirm: () => navigator.clipboard.writeText(sharedStoreString),
+                details: `<pre>${sharedStoreString}</pre>`
             });
         }
     };
