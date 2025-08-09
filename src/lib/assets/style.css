@@ -94,7 +94,7 @@
     --radius-sm: 4px;
     --radius-md: 7px;
     --radius-lg: 10px;
-    --titlebar-radius: 7px;
+    --titlebar-radius: 10px;
 
     /* Animation */
     --transition-fast: 150ms;
