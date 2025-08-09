@@ -1,0 +1,16 @@
+[project]
+name = "openmail"
+version = "0.1.0"
+description = "Self hosted email client"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "cryptography>=45.0.6",
+    "fastapi>=0.116.1",
+    "keyring>=25.6.0",
+    "pydantic>=2.11.7",
+    "python-dotenv>=1.1.1",
+    "python-multipart>=0.0.20",
+    "uvicorn>=0.35.0",
+    "websockets>=15.0.1",
+]
