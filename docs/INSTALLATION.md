@@ -1,0 +1,2 @@
+# Openmail - Installation
+Coming soon

@@ -1,0 +1,2 @@
+# Openmail - App
+Coming soon

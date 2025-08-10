@@ -1,0 +1,2 @@
+# Openmail - Server
+Coming soon
