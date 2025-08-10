@@ -5,10 +5,13 @@
 Current status of the openmail development.
 
 ## IMAP Support
-- [x] ~~IMAP support with threaded idle capability~~
+- [x] ~~Idle capability with threading~~
+- [x] ~~Download attachments separately~~
 
 ## SMTP Support
-- [x] ~~SMTP support~~
+- [x] ~~Duplicate file detection~~
+- [x] ~~Cc, Bcc in Headers~~
+- [] Improve compatibility so providers recognize replies and forwards properly.
 
 ## User Interface
-- [ ] *Compose page redesign (in progress)*
+- [ ] Compose page redesign (in progress)
