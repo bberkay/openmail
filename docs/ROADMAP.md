@@ -11,7 +11,7 @@ Current status of the openmail development.
 ## SMTP Support
 - [x] ~~Duplicate file detection~~
 - [x] ~~Cc, Bcc in Headers~~
-- [] Improve compatibility so providers recognize replies and forwards properly.
+- [ ] Improve compatibility so providers recognize replies and forwards properly.
 
 ## User Interface
 - [ ] Compose page redesign (in progress)
