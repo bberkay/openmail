@@ -5,10 +5,10 @@
 Current status of the openmail development.
 
 ## IMAP Support
-- [x] IMAP support with threaded idle capability
+- [x] ~~IMAP support with threaded idle capability~~
 
 ## SMTP Support
-- [x] SMTP support
+- [x] ~~SMTP support~~
 
 ## User Interface
-- [ ] Compose page redesign (in progess)
+- [ ] *Compose page redesign (in progress)*
