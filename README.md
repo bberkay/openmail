@@ -22,9 +22,9 @@ Some of the features that are already developed.
 - **Self-Hosting:** Fully run the client on your own server or local machine — no third-party dependencies for privacy and control.
 - **Provider Support:** Compatible with popular email providers (tested with Gmail, Yahoo, Yandex) via IMAP/SMTP.
 - **Multiple Accounts:** Connect and manage as many accounts as you need, switching seamlessly between them.
+- **Bulk Operations:** Perform bulk actions across multiple accounts at once like archive, delete, mark as read, send, unsubscribe.
 - **Unified Inbox:** View and manage new emails from all connected accounts in a single, organized home page.
 - **Advanced Search:** Search across all accounts using filters for sender, subject, date, keywords and more...
-- **One-Click Unsubscribe:** Unsubscribe from multiple newsletters and senders across multiple accounts at once.
 - **Undo Actions:** Quickly revert recent operations (delete, archive, mark as read) to avoid accidental changes.
 
 ## Installation
