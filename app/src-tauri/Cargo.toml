@@ -2,7 +2,7 @@
 name = "Openmail"
 version = "0.1.0"
 description = "Self hosted email client"
-authors = ["berkaykayaforbusiness@outlook.com"]
+authors = ["berkaykayaforbusiness@gmail.com"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
