@@ -1,0 +1,9 @@
+.DS_Store
+/.vscode
+/package
+.env
+.env.*
+!.env.example
+**/__pycache__/
+**/.venv/
+**/credentials.json
