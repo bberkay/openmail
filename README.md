@@ -1,9 +1,12 @@
-<h1 align="center">Openmail - Self Hosted Email Client</h1>
-
 > [!WARNING]
 > This project is still under active development and design. Expect breaking changes.
 
+<h1 align="center">Openmail - Self Hosted Email Client</h1>
+
 Private, fast, secure, self hosted email client with latest technologies.
+
+> [!IMPORTANT]
+> These designs are mostly for testing purposes and are likely to change as development continues.
 
 | ![Accounts](docs/screenshots/login.png)              |        ![Home](docs/screenshots/home.png)                 |
 | :------------------------------------------------------: | :-------------------------------------------------------------: |
@@ -12,9 +15,6 @@ Private, fast, secure, self hosted email client with latest technologies.
 |                      _Compose_                      |                       _Simple Search_                       |
 | ![Settings](docs/screenshots/settings.png)              |        ![Advanced Search](docs/screenshots/advanced-search.png)                 |
 |                      _Settings_                      |                          _Advanced Search_                           |
-
-> [!IMPORTANT]
-> These designs are mostly for testing purposes and are likely to change as development continues.
 
 ## Current Features
 
