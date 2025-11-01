@@ -122,6 +122,8 @@
     import { getCurrentMailbox } from "$lib/ui/Layout/Main/Content/Mailbox.svelte";
 
     const mailboxContext = getMailboxContext();
+    let selectedEmails = $derived(mailboxContext.emailSelection.value);
+    let selectedEmailCount = $derived(mailboxContext.emailSelection.value.length);
 </script>
 
 <div class="operations">
@@ -129,10 +131,11 @@
         <Select />
     </div>
 
-    {#if mailboxContext.emailSelection.value.length > 0}
+    {#if selectedEmailCount > 0}
+        {@const atLeastOneEmailSelected = selectedEmailCount > 1}
         <div class="tool-group">
             <!-- Standard operations for all accounts -->
-            {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Flagged)}
+            {#if atLeastOneEmailSelected || doAllSelectedEmailsLackMark(selectedEmails, Mark.Flagged)}
                 <MarkAs
                     markType={Mark.Flagged}
                     folder={getCurrentMailbox().folder}
@@ -140,7 +143,7 @@
                     <Icon name="flag" />
                 </MarkAs>
             {/if}
-            {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Flagged)}
+            {#if atLeastOneEmailSelected || doAllSelectedEmailsHaveMark(selectedEmails, Mark.Flagged)}
                 <MarkAs
                     markType={Mark.Flagged}
                     folder={getCurrentMailbox().folder}
@@ -149,7 +152,7 @@
                     <Icon name="flagged"/>
                 </MarkAs>
             {/if}
-            {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsLackMark(mailboxContext.emailSelection.value, Mark.Seen)}
+            {#if atLeastOneEmailSelected || doAllSelectedEmailsLackMark(selectedEmails, Mark.Seen)}
                 <MarkAs
                     markType={Mark.Seen}
                     folder={getCurrentMailbox().folder}
@@ -157,7 +160,7 @@
                     <Icon name="seen" />
                 </MarkAs>
             {/if}
-            {#if mailboxContext.emailSelection.value.length > 1 || doAllSelectedEmailsHaveMark(mailboxContext.emailSelection.value, Mark.Seen)}
+            {#if atLeastOneEmailSelected || doAllSelectedEmailsHaveMark(selectedEmails, Mark.Seen)}
                 <MarkAs
                     markType={Mark.Seen}
                     folder={getCurrentMailbox().folder}
