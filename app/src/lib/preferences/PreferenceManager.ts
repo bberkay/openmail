@@ -16,6 +16,7 @@ import { PreferenceStore } from "$lib/preferences";
 import { MailboxController } from "$lib/mailbox/MailboxController";
 import { _getPreferences, _initPreferences, _isPreferencesInitialized, _updatePreferences } from "./preferences.internal";
 import { DEFAULT_PREFERENCES } from "./config";
+import { connectToServer } from "$lib/internal/Server";
 
 let saveOperationQueue: ((() => Promise<void>) | (() => void))[] = [];
 
@@ -41,6 +42,20 @@ function IsPreferencesLoaded(
 export class PreferenceManager {
     public static init(preferences: Preferences) {
         _initPreferences({ ...DEFAULT_PREFERENCES, ...preferences });
+    }
+
+    @IsPreferencesLoaded
+    public static async changeServerURL(targetServerURL: string): Promise<boolean> {
+        const onSave = () => {
+            _updatePreferences({ serverURL: targetServerURL });
+        }
+        saveOperationQueue.push(onSave);
+
+        return await connectToServer(targetServerURL);
+    }
+
+    public static async resetServerURL() {
+        await PreferenceManager.changeServerURL(DEFAULT_PREFERENCES.serverURL);
     }
 
     @IsPreferencesLoaded

@@ -616,6 +616,15 @@ export const local = {
     },
     undo_done: {
         en: "Operation undone."
+    },
+    server_url: {
+        en: "Server URL",
+    },
+    server_url_example: {
+        en: "http://127.0.0.1:8000",
+    },
+    error_change_server_url: {
+        en: "Could not change server url"
     }
 };
 

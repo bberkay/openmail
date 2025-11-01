@@ -2,6 +2,10 @@ import { _getPreferences } from "./preferences.internal";
 import { type Preferences } from "./types";
 
 export class PreferenceStore {
+    public static get serverURL(): Preferences["serverURL"] {
+        return _getPreferences().serverURL;
+    }
+
     public static get theme(): Preferences["theme"] {
         return _getPreferences().theme;
     }

@@ -8,7 +8,9 @@
     import Register from "$lib/ui/Layout/Landing/Register.svelte";
     import Welcome from "$lib/ui/Layout/Landing/Register/Welcome.svelte";
     import Accounts from "$lib/ui/Layout/Landing/Register/Accounts.svelte";
+    import SetupServer from "$lib/ui/Layout/Landing/Register/SetupServer.svelte";
 
+    let isConnectedToServer = $derived(SharedStore.server.length > 0);
     let isAnyAccountFound = $derived(SharedStore.accounts.length > 0 || SharedStore.failedAccounts.length > 0);
     let isMailboxInitialized = $derived(Object.keys(SharedStore.mailboxes).length > 0 && getCurrentMailbox());
 </script>
@@ -25,8 +27,10 @@
         <Register>
             {#if isAnyAccountFound}
                 <Accounts />
-            {:else}
+            {:else if isConnectedToServer}
                 <Welcome/>
+            {:else}
+                <SetupServer/>
             {/if}
         </Register>
     </Landing>

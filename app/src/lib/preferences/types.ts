@@ -24,6 +24,7 @@ export enum MailboxLength {
 export type NotificationStatus = true | false | { [email_address: string]: boolean };
 
 export interface Preferences {
+    serverURL: string;
     theme: Theme;
     language: Language;
     mailboxLength: MailboxLength;
