@@ -40,7 +40,7 @@ jobs:
       - name: Build server executable
         working-directory: server
         run: |
-          pyinstaller --onefile --name openmail-server main.py
+          uv tool run pyinstaller --onefile --name openmail-server main.py
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
