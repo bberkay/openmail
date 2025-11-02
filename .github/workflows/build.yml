@@ -1,0 +1,67 @@
+name: Build and Release Server
+
+on:
+  workflow_dispatch: # Optional manual trigger
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            ext: ""
+          - os: windows-latest
+            ext: ".exe"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/.python-version"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        working-directory: server
+        run: |
+          uv sync
+          uv tool install pyinstaller
+
+      - name: Build server executable
+        working-directory: server
+        run: |
+          pyinstaller --onefile --name openmail-server main.py
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openmail-server-${{ matrix.os }}
+          path: server/dist/openmail-server${{ matrix.ext }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-artifacts/**/*
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
