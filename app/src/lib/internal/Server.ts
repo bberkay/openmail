@@ -1,6 +1,5 @@
 import { SharedStore } from "$lib/stores/shared.svelte";
 import { ApiService } from "$lib/services/ApiService";
-import { PUBLIC_SERVER_URL } from "$env/static/public";
 import { AccountController } from "$lib/account";
 
 const SERVER_CONNECTION_TRY_SLEEP_MS = 500;
@@ -13,7 +12,11 @@ async function loadAccounts(): Promise<void> {
     await AccountController.init();
 }
 
-export async function connectToServer(targetServerURL: string = PUBLIC_SERVER_URL): Promise<boolean> {
+export async function connectToServer(targetServerURL: string): Promise<boolean> {
+    console.log("wa a: ", targetServerURL);
+    if (targetServerURL.length < 3)
+        return false;
+    console.log("1231 a: ", targetServerURL);
     for (let i = 0; i < MAX_RETRY_COUNT; i++) {
         await new Promise(resolve => setTimeout(resolve, SERVER_CONNECTION_TRY_SLEEP_MS));
         try {

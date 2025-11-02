@@ -45,17 +45,21 @@ export class PreferenceManager {
     }
 
     @IsPreferencesLoaded
-    public static async changeServerURL(targetServerURL: string): Promise<boolean> {
+    public static async changeServerURL(targetServerURL: string, checkServer: boolean = true): Promise<boolean> {
         const onSave = () => {
             _updatePreferences({ serverURL: targetServerURL });
         }
         saveOperationQueue.push(onSave);
 
-        return await connectToServer(targetServerURL);
+        if (checkServer) {
+            return await connectToServer(targetServerURL);
+        }
+
+        return true;
     }
 
     public static async resetServerURL() {
-        await PreferenceManager.changeServerURL(DEFAULT_PREFERENCES.serverURL);
+        await PreferenceManager.changeServerURL("", false);
     }
 
     @IsPreferencesLoaded

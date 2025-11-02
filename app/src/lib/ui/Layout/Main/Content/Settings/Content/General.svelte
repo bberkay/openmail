@@ -2,6 +2,7 @@
     import Autostart from "./General/Autostart.svelte";
     import AutoUpdate from "./General/AutoUpdate.svelte";
     import Language from "./General/Language.svelte";
+    import SetupServer from "./General/SetupServer.svelte";
 </script>
 
 <div class="settings-content-header">
@@ -12,4 +13,5 @@
     <Autostart />
     <AutoUpdate />
     <Language />
+    <SetupServer/>
 </div>

@@ -290,6 +290,12 @@ export const local = {
     are_you_certain_subject_is_empty: {
         en: "The subject field is empty. Are you sure you want to send the email without a subject?"
     },
+    confirm_reset_server_url: {
+        en: "This will clear your server URL and restart the app. You can set it up again once it restarts."
+    },
+    yes_restart: {
+        en: "Yes, restart the app"
+    },
     are_you_certain_body_is_empty: {
         en: "The message body is empty. Are you sure you want to send the email without any content?"
     },
