@@ -1,4 +1,8 @@
+// TODO: Check out here later...
+
+export const APP_NAME = "Openmail";
 export const DEFAULT_LANGUAGE = "en"; // TODO: Remove this later.
+export const SERVER_URL = "http://127.0.0.1:8000";
 
 export const MIN_MAILBOX_LENGTH = 10;
 export const MAX_MAILBOX_LENGTH = 100;

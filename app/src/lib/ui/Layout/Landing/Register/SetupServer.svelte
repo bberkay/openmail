@@ -8,9 +8,8 @@
     import { FormGroup } from "$lib/ui/Components/Form";
     import Label from "$lib/ui/Components/Label";
     import { PreferenceManager } from "$lib/preferences";
-    import { PUBLIC_SERVER_URL } from "$env/static/public";
     import { local } from "$lib/locales";
-    import { DEFAULT_LANGUAGE } from "$lib/constants";
+    import { DEFAULT_LANGUAGE, SERVER_URL } from "$lib/constants";
     import * as Input from "$lib/ui/Components/Input";
     import { show as showMessage } from "$lib/ui/Components/Message";
 
@@ -54,7 +53,7 @@
             name="server_url"
             id="server_url"
             placeholder={local.server_url_example[DEFAULT_LANGUAGE]}
-            value={PUBLIC_SERVER_URL}
+            value={SERVER_URL}
             autocomplete="off"
             autofocus
             required

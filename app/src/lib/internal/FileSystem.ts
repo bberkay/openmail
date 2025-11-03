@@ -9,7 +9,7 @@ import {
 } from "@tauri-apps/plugin-fs";
 import * as path from '@tauri-apps/api/path';
 import type { Preferences } from "$lib/preferences";
-import { PUBLIC_APP_NAME } from "$env/static/public";
+import { APP_NAME } from "$lib/constants";
 
 class FileNotFoundError extends Error {
     constructor(message: string = "File could not found.") {
@@ -147,7 +147,7 @@ async function setupFileSystem(): Promise<DirObject> {
     // Check out src-tauri/capabilities/default.json to set permissions of
     // current structure.
     const home = await path.homeDir();
-    const rootDir = await path.join(home, '.' + PUBLIC_APP_NAME.toLowerCase(), "client");
+    const rootDir = await path.join(home, '.' + APP_NAME.toLowerCase(), "client");
 
     return new DirObject(
         rootDir,

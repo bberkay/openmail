@@ -78,12 +78,23 @@ async def hello() -> Response:
     return Response(success=True, message="Hello, Server is ready for you!")
 
 def main():
-    port = PortScanner.find_free_port(PORT_RANGE[0], PORT_RANGE[1])
-    pid = str(os.getpid())
-    FileSystem().get_uvicorn_info().write(f"URL=http://{HOST}:{str(port)}\nPID={pid}\n")
+    host = str(input(f"Give an HOST to app run on (e.g. {HOST}): ") or HOST)
 
-    uvicorn_logger.info("Starting server at http://%s:%d | PID: %s", HOST, port, pid)
-    uvicorn.run(app, host=HOST, port=port)
+    while True:
+        try:
+            port_start_range = int(input(f"Port start range (e.g. {PORT_RANGE[0]}): ") or PORT_RANGE[0])
+            port_end_range = int(input(f"Port end range (e.g. {PORT_RANGE[1]}): ") or PORT_RANGE[1])
+            print(f"Finding free port between {port_start_range}-{port_end_range}")
+            port = PortScanner.find_free_port(host, port_start_range, port_end_range)
+            break
+        except RuntimeError:
+            pass
+
+    pid = str(os.getpid())
+    FileSystem().get_uvicorn_info().write(f"URL=http://{host}:{str(port)}\nPID={pid}\n")
+
+    uvicorn_logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
+    uvicorn.run(app, host=host, port=port)
 
 
 if __name__ == "__main__":
