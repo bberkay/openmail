@@ -1,5 +1,6 @@
 # Openmail - Roadmap:
 
+> [!INFO]
 > The roadmap is still a work in progress and will be updated frequently.
 
 Current status of the openmail development.
@@ -18,7 +19,7 @@ Current status of the openmail development.
 ### User Interface
 - [ ] Server monitoring dashboard
 
-## Client
+## App
 
 ### User Interface
 - [ ] Compose page redesign (in progress)
