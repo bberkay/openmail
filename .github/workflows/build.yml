@@ -45,7 +45,7 @@ jobs:
       - name: Upload server artifact
         uses: actions/upload-artifact@v4
         with:
-          name: openmail-server-${{ matrix.os }}
+          name: Openmail-Server_${{ env.VERSION }}
           path: server/dist/openmail-server${{ matrix.ext }}
 
   build-client:
@@ -147,7 +147,25 @@ jobs:
         run: |
           tag=${GITHUB_REF_NAME}
           echo "Creating release for $tag"
+          notes_file=$(mktemp)
+
+          {
+            echo "## Release $tag"
+            echo ""
+            echo "### Changes since last release"
+            echo ""
+            echo "${{ steps.changelog.outputs.log }}"
+            echo ""
+            echo "### Client builds"
+            echo "- Windows: Openmail_<version>_x64-setup.exe"
+            echo "- Linux: Openmail_<version>_amd64.AppImage"
+            echo ""
+            echo "### Server builds"
+            echo "- Windows: openmail-server.exe"
+            echo "- Linux: openmail-server"
+          } > "$notes_file"
+
           gh release create "$tag" \
             --title "Release $tag" \
-            --notes "## Changes since last release\n\n${{ steps.changelog.outputs.log }}" \
+            --notes-file "$notes_file" \
             artifacts/**/*
