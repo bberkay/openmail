@@ -188,7 +188,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag=${GITHUB_REF_NAME}
-          echo "Creating release for $tag"
+          echo "Creating DRAFT release for $tag"
           notes_file=$(mktemp)
 
           {
@@ -199,7 +199,9 @@ jobs:
             echo ""
           } > "$notes_file"
 
+          # Add the --draft flag here to prevent immediate publishing
           gh release create "$tag" \
             --title "Release $tag" \
             --notes-file "$notes_file" \
+            --draft \
             artifacts/**/*
