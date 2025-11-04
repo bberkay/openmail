@@ -6,6 +6,9 @@ on:
       - "v*"  # e.g. v1.0.0
   workflow_dispatch:
 
+env:
+  VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'dev-build' }}
+
 jobs:
   build-server:
     name: Build Server (${{ matrix.os }})
@@ -15,8 +18,10 @@ jobs:
         include:
           - os: ubuntu-latest
             ext: ""
+            simple_os: linux
           - os: windows-latest
             ext: ".exe"
+            simple_os: windows
 
     steps:
       - uses: actions/checkout@v5
@@ -45,7 +50,7 @@ jobs:
       - name: Upload server artifact
         uses: actions/upload-artifact@v4
         with:
-            name: Openmail-Server_${{ env.VERSION }}_${{ matrix.os }}
+            name: Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}
             path: server/dist/openmail-server${{ matrix.ext }}
 
   build-client:
@@ -99,14 +104,14 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: openmail-client-linux
+          name: Openmail_${{ env.VERSION }}_linux
           path: app/src-tauri/target/release/bundle/appimage/*.AppImage
 
       - name: Upload client artifact (Windows)
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: openmail-client-windows
+          name: Openmail_${{ env.VERSION }}_windows
           path: app/src-tauri/target/release/bundle/nsis/*.exe
 
   release:
@@ -150,19 +155,11 @@ jobs:
           notes_file=$(mktemp)
 
           {
-            echo "## Release $tag"
             echo ""
             echo "### Changes since last release"
             echo ""
             echo "${{ steps.changelog.outputs.log }}"
             echo ""
-            echo "### Client builds"
-            echo "- Windows: Openmail_<version>_x64-setup.exe"
-            echo "- Linux: Openmail_<version>_amd64.AppImage"
-            echo ""
-            echo "### Server builds"
-            echo "- Windows: openmail-server.exe"
-            echo "- Linux: openmail-server"
           } > "$notes_file"
 
           gh release create "$tag" \
