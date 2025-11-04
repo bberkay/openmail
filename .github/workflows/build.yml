@@ -45,8 +45,8 @@ jobs:
       - name: Upload server artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Openmail-Server_${{ env.VERSION }}
-          path: server/dist/openmail-server${{ matrix.ext }}
+            name: Openmail-Server_${{ env.VERSION }}_${{ matrix.os }}
+            path: server/dist/openmail-server${{ matrix.ext }}
 
   build-client:
     name: Build Client (${{ matrix.os }})
