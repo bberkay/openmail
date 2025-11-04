@@ -182,4 +182,5 @@ jobs:
             --title "Release $tag" \
             --notes-file "$notes_file" \
             --draft \
+            --prerelease \
             $(find artifacts -type f)
