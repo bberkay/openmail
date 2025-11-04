@@ -182,4 +182,4 @@ jobs:
             --title "Release $tag" \
             --notes-file "$notes_file" \
             --draft \
-            artifacts/**
+            $(find artifacts -type f)
