@@ -1,12 +1,11 @@
 import time
 import unittest
-import json
 from typing import cast
 
-from classes.tests.utils.name_generator import NameGenerator
-from classes.secure_storage import *
-from classes.secure_storage import SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST
-from classes.secure_storage import SECURE_STORAGE_KEY_LIST
+from .utils.name_generator import NameGenerator
+from src.internal.secure_storage import MAX_KEYRING_CHUNK_LIMIT, SecureStorage, SecureStorageKey, SecureStorageKeyValueType, InvalidSecureStorageKeyError, IllegalSecureStorageKeyError, InvalidSecureStorageKeyValueTypeError, RSACipher, NoPublicPemFoundError, NoPrivatePemFoundError
+from src.internal.secure_storage import SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST
+from src.internal.secure_storage import SECURE_STORAGE_KEY_LIST
 
 class TestSecureStorage(unittest.TestCase):
     @classmethod
@@ -178,7 +177,7 @@ class TestSecureStorage(unittest.TestCase):
         print("test_get_invalid_key_value...")
         with self.assertRaises(InvalidSecureStorageKeyError):
             self.__class__._secure_storage.get_key_value(
-                "invalidkey",
+                "invalidkey", # type: ignore[arg-type]
             )
 
     def test_get_illegal_key_value(self):
@@ -209,11 +208,32 @@ class TestSecureStorage(unittest.TestCase):
 
         self.check_cache()
 
+    def test_add_key_very_long(self):
+        print("test_add_key_very_long...")
+        test_key_value = {
+            "value": "A" * (MAX_KEYRING_CHUNK_LIMIT * 10),
+            "type": SecureStorageKeyValueType.AESGCMEncrypted
+        }
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            test_key_value["value"],
+            test_key_value["type"],
+        )
+
+        found_key_value = self.__class__._secure_storage.get_key_value(SecureStorageKey.TestKey, use_cache=False)
+        if not found_key_value:
+            self.fail(f"{SecureStorageKey.TestKey}'s value could not found.")
+
+        self.assertEqual(found_key_value["value"], test_key_value["value"])
+        self.assertEqual(found_key_value["type"], test_key_value["type"])
+
+        self.check_cache()
+
     def test_add_invalid_key(self):
         print("test_add_invalid_key...")
         with self.assertRaises(InvalidSecureStorageKeyError):
             self.__class__._secure_storage.add_key(
-                "invalidkey",
+                "invalidkey", # type: ignore[arg-type]
                 NameGenerator.email_address()[0],
                 SecureStorageKeyValueType.AESGCMEncrypted,
             )
@@ -233,7 +253,7 @@ class TestSecureStorage(unittest.TestCase):
             self.__class__._secure_storage.add_key(
                 SecureStorageKey.TestKey,
                 NameGenerator.email_address()[0],
-                "invalidkeyvaluetype",
+                "invalidkeyvaluetype", # type: ignore[arg-type]
             )
 
     def test_override_by_add(self):
@@ -295,6 +315,7 @@ class TestSecureStorage(unittest.TestCase):
             decrypt=False,
             use_cache=False
         )
+        print("enc HOP: ", encrypted_key_value)
         if not encrypted_key_value:
             self.fail(f"{SecureStorageKey.TestKey}'s `decrypt=False` value could not found.")
         self.assertNotEqual(
@@ -408,7 +429,7 @@ class TestSecureStorage(unittest.TestCase):
 
         with self.assertRaises(InvalidSecureStorageKeyError):
             self.__class__._secure_storage.update_key(
-                "invalidkey",
+                "invalidkey", # type: ignore[arg-type]
                 NameGenerator.email_address()[0],
                 SecureStorageKeyValueType.AESGCMEncrypted,
             )
@@ -444,7 +465,7 @@ class TestSecureStorage(unittest.TestCase):
             self.__class__._secure_storage.update_key(
                 SecureStorageKey.TestKey,
                 NameGenerator.email_address()[0],
-                "invalidkeyvaluetype",
+                "invalidkeyvaluetype", # type: ignore[arg-type]
             )
 
     def test_aesgcm_encryption_decryption_on_update(self):
@@ -577,10 +598,30 @@ class TestSecureStorage(unittest.TestCase):
         ]
         self.assertTrue(all(value is None for value in key_values))
 
+    def test_delete_very_long_key(self):
+        print("test_delete_very_long_key...")
+        self.__class__._secure_storage.add_key(
+            SecureStorageKey.TestKey,
+            "A" * (MAX_KEYRING_CHUNK_LIMIT * 10),
+            SecureStorageKeyValueType.AESGCMEncrypted,
+        )
+
+        self.__class__._secure_storage.delete_key(SecureStorageKey.TestKey)
+        found_key_value = self.__class__._secure_storage.get_key_value(SecureStorageKey.TestKey)
+        self.assertIsNone(found_key_value)
+
+        # Check cache
+        key_values = [
+            self.__class__._secure_storage.get_key_value(SecureStorageKey.TestKey),
+            self.__class__._secure_storage.get_key_value(SecureStorageKey.TestKey, use_cache=False),
+            self.__class__._secure_storage._cache.get(SecureStorageKey.TestKey),
+        ]
+        self.assertTrue(all(value is None for value in key_values))
+
     def test_delete_invalid_key(self):
         print("test_delete_invalid_key...")
         with self.assertRaises(InvalidSecureStorageKeyError):
-            self.__class__._secure_storage.delete_key("invalidkey")
+            self.__class__._secure_storage.delete_key("invalidkey") # type: ignore[arg-type]
 
     def test_delete_illegal_key(self):
         print("test_delete_illegal_key...")
@@ -880,6 +921,10 @@ class TestSecureStorage(unittest.TestCase):
                 post_rotation_private_pem["value"]
             )
         )
+
+    def tearDown(self):
+        print("Cleaning up after method...")
+        self.__class__._secure_storage.delete_key(SecureStorageKey.TestKey)
 
     @classmethod
     def cleanup(cls):

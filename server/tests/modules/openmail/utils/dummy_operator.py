@@ -5,7 +5,7 @@ from modules.openmail import Openmail
 from modules.openmail.smtp import SMTPManagerException
 from modules.openmail.imap import IMAPManagerException
 from modules.openmail.types import Draft, SearchCriteria, Folder
-from modules.openmail.tests.utils.name_generator import NameGenerator
+from .name_generator import NameGenerator
 
 class DummyOperator:
     """Dummy operator for testing purposes."""

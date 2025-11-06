@@ -3,8 +3,8 @@ import time
 import unittest
 from email.message import EmailMessage
 
-from modules.openmail import Openmail
-from modules.openmail.imap import Mark, Folder
+from src.modules.openmail import Openmail
+from src.modules.openmail.imap import Mark, Folder
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
 

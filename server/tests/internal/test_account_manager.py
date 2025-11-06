@@ -1,12 +1,8 @@
 import unittest
-import json
 
-from typing import cast
-
-from classes.account_manager import AccountAlreadyExists, AccountDoesNotExists
-from classes.tests.utils.name_generator import NameGenerator
-from classes.account_manager import *
-from classes.secure_storage import NoPublicPemFoundError, RSACipher, SecureStorage, SecureStorageKey
+from .utils.name_generator import NameGenerator
+from src.internal.account_manager import Account, AccountManager, AccountWithPassword, AccountAlreadyExists, AccountDoesNotExists
+from src.internal.secure_storage import NoPublicPemFoundError, RSACipher, SecureStorage, SecureStorageKey
 
 class TestAccountManager(unittest.TestCase):
     @classmethod
@@ -104,7 +100,7 @@ class TestAccountManager(unittest.TestCase):
         test_account = self.__class__._TEST_ACCOUNTS[0]
         self.__class__._account_manager.add(test_account)
 
-        new_fullname = NameGenerator().fullname()
+        new_fullname = NameGenerator().fullname()[0]
         self.__class__._account_manager.edit(Account(
             email_address=test_account.email_address,
             fullname=new_fullname
@@ -157,7 +153,7 @@ class TestAccountManager(unittest.TestCase):
         print("test_remove_nonexists...")
         self.__class__._account_manager.remove_all()
         test_account = self.__class__._TEST_ACCOUNTS[0]
-        self.__class__._account_manager.remove(test_account)
+        self.__class__._account_manager.remove(test_account.email_address)
 
     @classmethod
     def cleanup(cls):

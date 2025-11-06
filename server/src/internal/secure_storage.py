@@ -12,8 +12,8 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 
-from utils import generate_random_id, safe_json_loads
-from consts import APP_NAME
+from ..utils import generate_random_id, safe_json_loads
+from ..consts import APP_NAME
 
 """
 Exceptions
@@ -93,7 +93,10 @@ class SecureStorageKeyValue(TypedDict):
 """
 Constants
 """
+SECURE_STORAGE_KEY_TEMPLATE = "{secure_storage_key}#{part}"
 MAX_BACKUP_COUNT = 5
+MAX_KEYRING_LENGTH = 512
+MAX_KEYRING_CHUNK_LIMIT = 999
 SECURE_STORAGE_KEY_LIST = SecureStorageKey.keys()
 SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST = [
     SecureStorageKey.AESGCMCipherKey,
@@ -121,6 +124,9 @@ class SecureStorage:
 
     def __del__(self):
         self.clear()
+
+    def _create_key(self, secure_storage_key: SecureStorageKey, part: int = 1):
+        return SECURE_STORAGE_KEY_TEMPLATE.replace("{secure_storage_key}", secure_storage_key).replace("{part}", str(part))
 
     def _is_key_value_type_valid(self, key_value_type: SecureStorageKeyValueType):
         if key_value_type not in SecureStorageKeyValueType.keys():
@@ -154,19 +160,43 @@ class SecureStorage:
 
     def _get_password(self, key: SecureStorageKey) -> SecureStorageKeyValue | None:
         self._is_key_valid(key)
-        return self._parse_key_value_dict(keyring.get_password(APP_NAME, key) or "") or None
+
+        curr = 1
+        complete_value = ""
+        while curr < MAX_KEYRING_CHUNK_LIMIT:
+            try:
+                curr_key = self._create_key(key, curr)
+                curr_value = keyring.get_password(APP_NAME, curr_key)
+                if not curr_value:
+                   break
+                complete_value += curr_value
+                curr += 1
+            except InvalidSecureStorageKeyError:
+                pass
+
+        return self._parse_key_value_dict(complete_value) or None
 
     def _set_password(self, key: SecureStorageKey, value: SecureStorageKeyValue) -> None:
         self._is_key_valid(key)
-        keyring.set_password(APP_NAME, key, self._serialize_key_value_dict(value))
+        serialized_value = self._serialize_key_value_dict(value)
+        chunks = [serialized_value[i:i+MAX_KEYRING_LENGTH] for i in range(0, len(serialized_value), MAX_KEYRING_LENGTH)]
+        for index, chunk in enumerate(chunks, start=1):
+            curr_key = self._create_key(key, index)
+            keyring.set_password(APP_NAME, curr_key, chunk)
+        serialized_value = ""
 
     def _delete_password(self, key: SecureStorageKey) -> None:
-        try:
-            self._is_key_valid(key)
-            keyring.delete_password(APP_NAME, key)
-        except keyring.errors.PasswordDeleteError:
-            print(f"`{key}` could not found in keyring to delete. Skipping...")
-            pass
+        self._is_key_valid(key)
+
+        curr = 1
+        while curr < MAX_KEYRING_CHUNK_LIMIT:
+            curr_key = self._create_key(key, curr)
+            try:
+                keyring.delete_password(APP_NAME, curr_key)
+                curr += 1
+            except keyring.errors.PasswordDeleteError:
+                print(f"`{key}` could not found in keyring to delete. Skipping...")
+                break
 
     def _create_backup_id(self) -> str:
         return f"backup_id_{generate_random_id()}"
@@ -253,6 +283,7 @@ class SecureStorage:
         if not backups:
             return
 
+        self._delete_password(SecureStorageKey.Backups)
         self._set_password(
             SecureStorageKey.Backups,
             SecureStorageKeyValue(
@@ -273,6 +304,7 @@ class SecureStorage:
         if not backups or len(backups["value"]) < 2:
             return
 
+        self._delete_password(SecureStorageKey.Backups)
         self._set_password(
             SecureStorageKey.Backups,
             SecureStorageKeyValue(

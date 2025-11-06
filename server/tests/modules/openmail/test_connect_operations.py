@@ -1,8 +1,8 @@
 import unittest
 import json
 
-from modules.openmail import Openmail
-from modules.openmail.utils import contains_non_ascii
+from src.modules.openmail import Openmail
+from src.modules.openmail.utils import contains_non_ascii
 
 class TestConnectOperations(unittest.TestCase):
     @classmethod

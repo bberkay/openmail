@@ -14,7 +14,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from internal.client_handler import ClientHandler
 from internal.account_manager import AccountManager
-from internal.file_system import FileSystem
+from internal.file_system import FileObject, Root
 from routers import account_tasks, mailbox_tasks
 from helpers.uvicorn_logger import UvicornLogger
 from helpers.port_scanner import PortScanner
@@ -91,7 +91,10 @@ def main():
             pass
 
     pid = str(os.getpid())
-    FileSystem().get_uvicorn_info().write(f"URL=http://{host}:{str(port)}\nPID={pid}\n")
+    etc = Root("etc")
+    uvicorn_info = FileObject("uvicorn.info")
+    etc.append(uvicorn_info)
+    uvicorn_info.write(f"URL=http://{host}:{str(port)}\nPID={pid}\n")
 
     uvicorn_logger.info("Starting server at http://%s:%d | PID: %s", host, port, pid)
     uvicorn.run(app, host=host, port=port)

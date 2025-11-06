@@ -124,7 +124,7 @@ class FileGenerator:
                 'https://example.com/image3.jpeg'
             ]
         """
-        file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), f"media/urls.txt")
+        file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "media/urls.txt")
         filtered_urls = []
         with open(file_path, "r") as f:
             urls = f.readlines()

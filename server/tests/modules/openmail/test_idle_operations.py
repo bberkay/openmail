@@ -4,9 +4,9 @@ import unittest
 import json
 import threading
 
-from modules.openmail import Openmail
-from modules.openmail.imap import IDLE_ACTIVATION_INTERVAL, IDLE_TIMEOUT, Folder
-from modules.openmail.types import Draft
+from src.modules.openmail import Openmail
+from src.modules.openmail.imap import IDLE_ACTIVATION_INTERVAL, IDLE_TIMEOUT, Folder
+from src.modules.openmail.types import Draft
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator
 

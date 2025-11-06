@@ -7,12 +7,12 @@ import time
 from typing import cast
 import unittest
 
-from modules.openmail import Openmail
-from modules.openmail.imap import Mark, Folder
-from modules.openmail.types import Draft, SearchCriteria
-from modules.openmail.parser import HTMLParser, MessageParser
-from modules.openmail.encoder import FileBase64Encoder
-from modules.openmail.converter import AttachmentConverter
+from src.modules.openmail import Openmail
+from src.modules.openmail.imap import Mark, Folder
+from src.modules.openmail.types import Draft, SearchCriteria
+from src.modules.openmail.parser import HTMLParser, MessageParser
+from src.modules.openmail.encoder import FileBase64Encoder
+from src.modules.openmail.converter import AttachmentConverter
 
 from .utils.dummy_operator import DummyOperator
 from .utils.name_generator import NameGenerator

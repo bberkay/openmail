@@ -1,6 +1,7 @@
 import sys
 import json
 import re
+from datetime import datetime
 
 import logging
 from typing import Any, Mapping
@@ -8,9 +9,9 @@ from logging.handlers import RotatingFileHandler
 
 from fastapi import WebSocket, Request
 
-from utils import make_size_human_readable, safe_json_loads
-from consts import APP_NAME
-from internal.file_system import FileSystem
+from ..utils import make_size_human_readable, safe_json_loads
+from ..consts import APP_NAME
+from ..internal.file_system import FileObject, Root
 
 """
 Constants
@@ -29,6 +30,10 @@ SENSITIVE_PATTERNS = [
     re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'),  # Email pattern
 ]
 
+uvicorn_logs = Root("logs")
+uvicorn_log = FileObject(f"uvicorn_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}.log")
+uvicorn_logs.append(uvicorn_log)
+
 class UvicornLogger(logging.Logger):
     def __init__(self):
         super().__init__(APP_NAME)
@@ -43,7 +48,7 @@ class UvicornLogger(logging.Logger):
         stream_handler.setFormatter(formatter)
 
         file_handler = RotatingFileHandler(
-            FileSystem().get_uvicorn_log().fullpath,
+            uvicorn_log.fullpath,
             maxBytes=MAX_BYTES_TO_LOG,
             backupCount=MAX_BACKUP_COUNT
         )
