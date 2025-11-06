@@ -15,9 +15,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        ext: ["", ".exe"]
-        simple_os: [linux, windows]
+        include:
+          - os: ubuntu-latest
+            ext: ""
+            simple_os: linux
+          - os: windows-latest
+            ext: ".exe"
+            simple_os: windows
 
     steps:
       - uses: actions/checkout@v5
@@ -37,9 +41,8 @@ jobs:
         shell: bash
         run: |
             uv sync --locked --all-extras --dev
-            source .venv/bin/activate
             uv pip install pyinstaller
-            pyinstaller --onefile --name openmail-server --paths=. src/main.py
+            uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
 
       - name: Rename executable to include version and OS
         working-directory: server/dist

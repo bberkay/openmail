@@ -1,0 +1,31 @@
+name: 'VirusTotal Scan'
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  virustotal:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Checkout code'
+        uses: actions/checkout@v4
+
+      - name: 'VirusTotal Scan'
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: |
+            *.exe
+            *.zip
+            *.msi
+            *.dmg
+            *.pkg
+            *.jar
+
+          # add VirusTotal report in release note.
+          update_release_body: true
+
+    permissions:
+      contents: write
