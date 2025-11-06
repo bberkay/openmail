@@ -9,8 +9,8 @@ from .secure_storage import (
     RSACipher,
     SecureStorageKeyValue,
 )
-from ..helpers.uvicorn_logger import UvicornLogger
-from ..modules.openmail import Openmail
+from helpers.uvicorn_logger import UvicornLogger
+from modules.openmail import Openmail
 
 uvicorn_logger = UvicornLogger()
 secure_storage = SecureStorage()

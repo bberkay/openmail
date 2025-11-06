@@ -5,7 +5,7 @@ from pathlib import Path
 
 from typing import TypeVar, Union
 
-from ..consts import APP_NAME
+from consts import APP_NAME
 
 T = TypeVar("T", bound=Union["DirObject", "FileObject"])
 
@@ -15,7 +15,7 @@ Constants
 if not APP_NAME:
     raise Exception("To create file system, app name must be provided")
 
-ROOT_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME)
+ROOT_DIR = os.path.join(os.path.expanduser("~"), "." + APP_NAME.lower())
 
 class FileObject:
     def __init__(self, name: str):

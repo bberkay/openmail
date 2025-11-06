@@ -9,9 +9,9 @@ from logging.handlers import RotatingFileHandler
 
 from fastapi import WebSocket, Request
 
-from ..utils import make_size_human_readable, safe_json_loads
-from ..consts import APP_NAME
-from ..internal.file_system import FileObject, Root
+from utils import make_size_human_readable, safe_json_loads
+from consts import APP_NAME
+from internal.file_system import FileObject, Root
 
 """
 Constants
