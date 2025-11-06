@@ -2,15 +2,15 @@ import asyncio
 from typing import cast
 from concurrent.futures import ThreadPoolExecutor
 
-from .account_manager import AccountManager, AccountWithPassword
-from .secure_storage import (
+from src.internal.account_manager import AccountManager, AccountWithPassword
+from src.internal.secure_storage import (
     SecureStorage,
     SecureStorageKey,
     RSACipher,
     SecureStorageKeyValue,
 )
-from helpers.uvicorn_logger import UvicornLogger
-from modules.openmail import Openmail
+from src.helpers.uvicorn_logger import UvicornLogger
+from src.modules.openmail import Openmail
 
 uvicorn_logger = UvicornLogger()
 secure_storage = SecureStorage()

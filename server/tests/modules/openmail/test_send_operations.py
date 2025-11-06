@@ -10,9 +10,9 @@ from src.modules.openmail.parser import HTMLParser, MessageParser
 from src.modules.openmail.encoder import FileBase64Encoder
 from src.modules.openmail.converter import AttachmentConverter
 
-from .utils.dummy_operator import DummyOperator
-from .utils.name_generator import NameGenerator
-from .utils.sample_file_generator import SampleDocumentGenerator, SampleImageGenerator, SampleVideoGenerator
+from tests.modules.openmail.utils.dummy_operator import DummyOperator
+from tests.modules.openmail.utils.name_generator import NameGenerator
+from tests.modules.openmail.utils.sample_file_generator import SampleDocumentGenerator, SampleImageGenerator, SampleVideoGenerator
 
 class TestSendOperations(unittest.TestCase):
     @classmethod

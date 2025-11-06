@@ -2,16 +2,16 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 
-from _types import Response
-from utils import err_msg, is_email_valid
-from modules.openmail import Openmail
-from internal.account_manager import AccountManager, Account, AccountWithPassword
-from internal.secure_storage import (
+from src._types import Response
+from src.utils import err_msg, is_email_valid
+from src.modules.openmail import Openmail
+from src.internal.account_manager import AccountManager, Account, AccountWithPassword
+from src.internal.secure_storage import (
     SecureStorage,
     SecureStorageKey,
     RSACipher,
 )
-from internal.client_handler import ClientHandler
+from src.internal.client_handler import ClientHandler
 
 client_handler = ClientHandler()
 secure_storage = SecureStorage()

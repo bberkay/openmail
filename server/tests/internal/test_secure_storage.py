@@ -2,7 +2,7 @@ import time
 import unittest
 from typing import cast
 
-from .utils.name_generator import NameGenerator
+from tests.internal.utils.name_generator import NameGenerator
 from src.internal.secure_storage import MAX_KEYRING_CHUNK_LIMIT, SecureStorage, SecureStorageKey, SecureStorageKeyValueType, InvalidSecureStorageKeyError, IllegalSecureStorageKeyError, InvalidSecureStorageKeyValueTypeError, RSACipher, NoPublicPemFoundError, NoPrivatePemFoundError
 from src.internal.secure_storage import SECURE_STORAGE_ILLEGAL_ACCESS_KEY_LIST
 from src.internal.secure_storage import SECURE_STORAGE_KEY_LIST

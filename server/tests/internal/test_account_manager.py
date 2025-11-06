@@ -1,6 +1,6 @@
 import unittest
 
-from .utils.name_generator import NameGenerator
+from tests.internal.utils.name_generator import NameGenerator
 from src.internal.account_manager import Account, AccountManager, AccountWithPassword, AccountAlreadyExists, AccountDoesNotExists
 from src.internal.secure_storage import NoPublicPemFoundError, RSACipher, SecureStorage, SecureStorageKey
 

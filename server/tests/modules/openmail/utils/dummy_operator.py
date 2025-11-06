@@ -1,11 +1,11 @@
 import time
 from typing import cast
 
-from modules.openmail import Openmail
-from modules.openmail.smtp import SMTPManagerException
-from modules.openmail.imap import IMAPManagerException
-from modules.openmail.types import Draft, SearchCriteria, Folder
-from .name_generator import NameGenerator
+from src.modules.openmail import Openmail
+from src.modules.openmail.smtp import SMTPManagerException
+from src.modules.openmail.imap import IMAPManagerException
+from src.modules.openmail.types import Draft, SearchCriteria, Folder
+from tests.modules.openmail.utils.name_generator import NameGenerator
 
 class DummyOperator:
     """Dummy operator for testing purposes."""

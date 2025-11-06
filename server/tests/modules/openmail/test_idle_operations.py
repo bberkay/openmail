@@ -7,8 +7,8 @@ import threading
 from src.modules.openmail import Openmail
 from src.modules.openmail.imap import IDLE_ACTIVATION_INTERVAL, IDLE_TIMEOUT, Folder
 from src.modules.openmail.types import Draft
-from .utils.dummy_operator import DummyOperator
-from .utils.name_generator import NameGenerator
+from tests.modules.openmail.utils.dummy_operator import DummyOperator
+from tests.modules.openmail.utils.name_generator import NameGenerator
 
 class TestIdleOperations(unittest.TestCase):
     @classmethod

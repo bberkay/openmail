@@ -4,13 +4,13 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Form, UploadFile
 from pydantic import BaseModel
 from typing import Optional, Annotated, TypeVar
 
-from _types import Response
-from utils import err_msg, safe_json_loads
-from internal.account_manager import AccountManager
-from internal.client_handler import ClientHandler
-from helpers.uvicorn_logger import UvicornLogger
-from modules.openmail.types import Email, Mailbox, Folder, Draft, Attachment, SearchCriteria
-from modules.openmail.utils import extract_email_address
+from src._types import Response
+from src.utils import err_msg, safe_json_loads
+from src.internal.account_manager import AccountManager
+from src.internal.client_handler import ClientHandler
+from src.helpers.uvicorn_logger import UvicornLogger
+from src.modules.openmail.types import Email, Mailbox, Folder, Draft, Attachment, SearchCriteria
+from src.modules.openmail.utils import extract_email_address
 
 client_handler = ClientHandler()
 account_manager = AccountManager()

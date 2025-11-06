@@ -1,6 +1,6 @@
 # Openmail - Roadmap:
 
-> [!INFO]
+> [!NOTE]
 > The roadmap is still a work in progress and will be updated frequently.
 
 Current status of the openmail development.

@@ -12,16 +12,16 @@ from fastapi import FastAPI, Request, Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from internal.client_handler import ClientHandler
-from internal.account_manager import AccountManager
-from internal.file_system import FileObject, Root
-from routers import account_tasks, mailbox_tasks
-from helpers.uvicorn_logger import UvicornLogger
-from helpers.port_scanner import PortScanner
+from src.internal.client_handler import ClientHandler
+from src.internal.account_manager import AccountManager
+from src.internal.file_system import FileObject, Root
+from src.routers import account_tasks, mailbox_tasks
+from src.helpers.uvicorn_logger import UvicornLogger
+from src.helpers.port_scanner import PortScanner
 
-from _types import Response
-from consts import HOST, TRUSTED_HOSTS, PORT_RANGE
-from utils import parse_err_msg
+from src._types import Response
+from src.consts import HOST, TRUSTED_HOSTS, PORT_RANGE
+from src.utils import parse_err_msg
 
 
 #################### SET UP #######################

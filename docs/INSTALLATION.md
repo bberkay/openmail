@@ -50,12 +50,12 @@ Each release contains the following assets:
 2. Make the binary executable:
 
    ```bash
-   chmod +x openmail-server
+   chmod +x Openmail-Server_*
    ```
 3. Run the server:
 
    ```bash
-   ./openmail-server
+   ./Openmail-Server_*
    ```
 4. [Configure server](#configuration).
 
@@ -78,7 +78,7 @@ Each release contains the following assets:
 
 ## Configuration
 
-> [!INFO]
+> [!NOTE]
 > The server currently has no graphical interface or dashboard.
 You can set configuration values through environment variables before starting the server.
 Check out the [.env.example](../../server/.env.example)
@@ -100,15 +100,14 @@ If you prefer to build manually:
 # Server
 cd server
 uv sync
-uv run pyinstaller --onefile --name openmail-server main.py
+source .venv\bin\activate # or .venv\Scripts\activate in windows
+pyinstaller --onefile --name openmail-server --paths=. src/main.py
 
 # App
 cd app
 bun install
 bun tauri build
 ```
-
----
 
 ## Updating
 
@@ -136,7 +135,7 @@ source .venv/bin/activate
 which pyinstaller  # should point inside .venv/bin/
 
 # Build the server executable
-pyinstaller --onefile --name openmail-server main.py
+pyinstaller --onefile --name openmail-server --paths=. src/main.py
 ```
 
 > **Note:**

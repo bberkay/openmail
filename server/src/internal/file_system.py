@@ -5,7 +5,7 @@ from pathlib import Path
 
 from typing import TypeVar, Union
 
-from consts import APP_NAME
+from src.consts import APP_NAME
 
 T = TypeVar("T", bound=Union["DirObject", "FileObject"])
 

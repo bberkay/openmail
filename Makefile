@@ -2,7 +2,7 @@ install:
 	./install.sh
 
 run-server:
-	cd server && uv run main.py
+	cd server && uv run -m src.main.py
 
 run-app:
-	cd app && bun tauri dev
+	cd app && bun run tauri dev

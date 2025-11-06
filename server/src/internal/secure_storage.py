@@ -12,8 +12,8 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 
-from utils import generate_random_id, safe_json_loads
-from consts import APP_NAME
+from src.utils import generate_random_id, safe_json_loads
+from src.consts import APP_NAME
 
 """
 Exceptions

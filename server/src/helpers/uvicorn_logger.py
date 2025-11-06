@@ -9,9 +9,9 @@ from logging.handlers import RotatingFileHandler
 
 from fastapi import WebSocket, Request
 
-from utils import make_size_human_readable, safe_json_loads
-from consts import APP_NAME
-from internal.file_system import FileObject, Root
+from src.utils import make_size_human_readable, safe_json_loads
+from src.consts import APP_NAME
+from src.internal.file_system import FileObject, Root
 
 """
 Constants
@@ -31,7 +31,7 @@ SENSITIVE_PATTERNS = [
 ]
 
 uvicorn_logs = Root("logs")
-uvicorn_log = FileObject(f"uvicorn_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}.log")
+uvicorn_log = FileObject(f"uvicorn_{datetime.now().strftime("%Y-%m-%dT%H_%M_S")}.log")
 uvicorn_logs.append(uvicorn_log)
 
 class UvicornLogger(logging.Logger):

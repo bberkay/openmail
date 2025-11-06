@@ -5,8 +5,8 @@ from email.message import EmailMessage
 
 from src.modules.openmail import Openmail
 from src.modules.openmail.imap import Mark, Folder
-from .utils.dummy_operator import DummyOperator
-from .utils.name_generator import NameGenerator
+from tests.modules.openmail.utils.dummy_operator import DummyOperator
+from tests.modules.openmail.utils.name_generator import NameGenerator
 
 class TestEmailOperations(unittest.TestCase):
 
