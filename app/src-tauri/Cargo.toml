@@ -1,6 +1,6 @@
 [package]
 name = "Openmail"
-version = "0.0.1"
+version = "0.0.0-alpha0"
 description = "Self hosted email client"
 authors = ["berkaykayaforbusiness@gmail.com"]
 edition = "2021"

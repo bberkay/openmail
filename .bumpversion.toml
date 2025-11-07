@@ -1,0 +1,63 @@
+[tool.bumpversion]
+current_version = "0.0.0-alpha0"
+commit = true
+tag = true
+tag_name = "v{new_version}"
+message = "chore(release): Bumps version to {new_version}"
+
+# Verbose regex mode (?x) is used for readability
+parse = """(?x)
+    (?P<major>0|[1-9]\\d*)\\.
+    (?P<minor>0|[1-9]\\d*)\\.
+    (?P<patch>0|[1-9]\\d*)
+    (?:
+        -                             # dash separator for pre-release section
+        (?P<pre_l>[a-zA-Z-]+)         # pre-release label
+        (?P<pre_n>0|[1-9]\\d*)        # pre-release version number
+    )?                                # pre-release section is optional
+"""
+
+# The two serialization formats: with pre-release, and without (for final releases)
+serialize = [
+    "{major}.{minor}.{patch}-{pre_l}{pre_n}",
+    "{major}.{minor}.{patch}",
+]
+
+# --- Version Parts Configuration ---
+
+[tool.bumpversion.parts.pre_l]
+# Defines the order and available values for the pre-release label
+values = ["alpha", "beta", "rc", "final"]
+# When bumping major/minor/patch, this part resets to 'final'
+optional_value = "final"
+
+[tool.bumpversion.parts.pre_n]
+# Pre-release number starts at 0 and increments normally
+first_value = 0
+
+# --- File Configuration ---
+
+[[tool.bumpversion.files]]
+filename = "server/pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "app/package.json"
+search = '"version": "{current_version}"'
+replace = '"version": "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "app/src-tauri/tauri.conf.json"
+search = '"version": "{current_version}"'
+replace = '"version": "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "app/src-tauri/Cargo.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "docs/INSTALLATION.md"
+search = "Openmail-Server_v{current_version}_linux"
+replace = "Openmail-Server_v{new_version}_linux"
