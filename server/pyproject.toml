@@ -1,6 +1,6 @@
 [project]
 name = "openmail-server"
-version = "0.0.0-alpha0"
+version = "0.0.1-alpha0"
 description = "Self hosted email client"
 readme = "README.md"
 requires-python = ">=3.13"
