@@ -11,27 +11,27 @@ Openmail consists of two components:
 > [!WARNING]
 > Currently, only the Linux AppImage build is available. Additional distribution formats and platform-specific packages will be added in future releases.
 
-All builds are automatically published in each [GitHub Release](../../releases) after tagging a version (e.g. `v1.0.0`).
+All builds are automatically published in each [GitHub Release](../../releases) after tagging a version (e.g. `v0.0.0-alpha0`).
 Each release contains the following assets:
 
 | Platform   | Component        | File                                                                    |
 | ---------- | ---------------- | ----------------------------------------------------------------------- |
-| Windows | Server | `Openmail-Server_v0.0.0_windows.exe` |
-| Windows | App   | `Openmail_v0.0.0_windows.exe` |
-| Linux   | Server | `Openmail-Server_v0.0.0_linux` |
-| Linux   | App   | `Openmail_v0.0.0_linux.AppImage` |
+| Windows | Server | `Openmail-Server_v0.0.0-alpha0_windows.exe` |
+| Windows | App   | `Openmail_v0.0.0-alpha0_windows.exe` |
+| Linux   | Server | `Openmail-Server_v0.0.0-alpha0_linux` |
+| Linux   | App   | `Openmail_v0.0.0-alpha0_linux.AppImage` |
 
 ## Windows Installation
 
 ### 1. Server
 
-1. Download `Openmail-Server_v0.0.0_windows.exe` from the [latest release](../../releases/latest) (mostly in your server).
+1. Download `Openmail-Server_v0.0.0-alpha0_windows.exe` from the [latest release](../../releases/latest) (mostly in your server).
 2. Run the executable — it will start a FastAPI web server.
 3. [Configure server](#configuration).
 
 ### 2. App
 
-1. Download `Openmail_v0.0.0_windows.exe` from the [latest release](../../releases/latest) (in your computer).
+1. Download `Openmail_v0.0.0-alpha0_windows.exe` from the [latest release](../../releases/latest) (in your computer).
 2. Run the executable.
 3. Launch **Openmail** from the Start Menu or Desktop shortcut.
 4. [Configure app](#configuration).
@@ -40,7 +40,7 @@ Each release contains the following assets:
 
 ### 1. Server
 
-1. Download `Openmail-Server_v0.0.0_linux`.
+1. Download `Openmail-Server_v0.0.0-alpha0_linux`.
 2. Make the binary executable:
 
    ```bash
@@ -55,7 +55,7 @@ Each release contains the following assets:
 
 ### 2. App (AppImage)
 
-1. Download `Openmail_v0.0.0_linux.AppImage`.
+1. Download `Openmail_v0.0.0-alpha0_linux.AppImage`.
 2. Make the AppImage executable:
 
    ```bash
