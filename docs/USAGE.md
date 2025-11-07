@@ -1,2 +1,0 @@
-# Openmail - Usage
-Coming soon

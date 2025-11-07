@@ -79,12 +79,11 @@ Each release contains the following assets:
 ## Configuration
 
 > [!NOTE]
-> The server currently has no graphical interface or dashboard.
-You can set configuration values through environment variables before starting the server.
-Check out the [.env.example](../../server/.env.example)
+> The server currently has no graphical interface or dashboard, so you
+need to restart it to change the configuration.
 
-1- When you start the server, you’ll be prompted to enter the host and port where
-the API should run.
+1- When you start the server, you’ll be prompted to enter the host and port
+(and some other things too) where the API should run.
 2- When you launch the app, configure the same host and port during the initial setup
 (or later via the Settings page) so it can connect to your running server.
 3- Once the app is connected to the server, you can add your email accounts and start
@@ -99,9 +98,9 @@ If you prefer to build manually:
 ```bash
 # Server
 cd server
-uv sync
-source .venv\bin\activate # or .venv\Scripts\activate in windows
-pyinstaller --onefile --name openmail-server --paths=. src/main.py
+uv sync --locked --all-extras --dev
+uv pip install pyinstaller
+uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
 
 # App
 cd app
@@ -129,13 +128,19 @@ If the server build fails and PyInstaller cannot find your virtual environment o
 
 ```bash
 uv pip install pyinstaller
-source .venv/bin/activate
 
 # Verify PyInstaller is detected from the current .venv
 which pyinstaller  # should point inside .venv/bin/
 
-# Build the server executable
+# If pyinstaller is NOT in the .venv then:
+# you can try to install it within the .venv like
+source .venv/bin/activate # or .venv\Scripts\Activate for windows
+uv pip install pyinstaller
 pyinstaller --onefile --name openmail-server --paths=. src/main.py
+
+# If pyinstaller is IN the .venv then:
+uv pip install pyinstaller
+uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
 ```
 
 > **Note:**
@@ -148,6 +153,7 @@ pyinstaller --onefile --name openmail-server --paths=. src/main.py
 If the App build fails on Arch Linux (for example, during AppImage packaging), try the following fixes:
 
 ```bash
+rm -f ~/.cache/tauri/linuxdeploy-x86_64.AppImage
 yay -S linuxdeploy
 sudo pacman -S appstream desktop-file-utils fuse2 --needed
 

@@ -3,12 +3,20 @@ import json
 import random
 import time
 from typing import Any
+import ipaddress
 
 def get_key_by_value(obj: dict, value: Any) -> str | None:
     return next((k for k, v in obj.items() if v == value), None)
 
 def is_email_valid(email: str) -> bool:
     return bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email))
+
+def is_address_valid(addr: str) -> bool:
+    try:
+        ipaddress.ip_address(addr)
+        return True
+    except ValueError:
+        return False
 
 def make_size_human_readable(size: int | None) -> str:
     if size is None:
