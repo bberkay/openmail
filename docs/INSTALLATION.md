@@ -88,7 +88,7 @@ If you prefer to build manually:
 ```bash
 # Server
 cd server
-uv sync --locked --all-extras --dev
+uv sync
 uv pip install pyinstaller
 uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
 # Server build will be in ./dist/openmail-server

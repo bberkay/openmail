@@ -40,7 +40,7 @@ jobs:
         working-directory: server
         shell: bash
         run: |
-            uv sync --locked --all-extras --dev
+            uv sync
             uv pip install pyinstaller
             uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
 
