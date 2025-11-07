@@ -6,8 +6,6 @@ Openmail consists of two components:
 - Openmail App – the client application (referred to as app in this guide)
 - Openmail Server – the backend service (referred to as server in this guide)
 
----
-
 ## Downloads
 
 > [!WARNING]
@@ -18,35 +16,31 @@ Each release contains the following assets:
 
 | Platform   | Component        | File                                                                    |
 | ---------- | ---------------- | ----------------------------------------------------------------------- |
-| 🪟 Windows | App   | `Openmail_v1.0.0_windows.exe` |
-| 🪟 Windows | Server | `Openmail-Server_v1.0.0_windows.exe` |
-| 🐧 Linux   | App   | `Openmail_v1.0.0_linux.AppImage` |
-| 🐧 Linux   | Server | `Openmail-Server_v1.0.0_linux` |
-
----
+| Windows | Server | `Openmail-Server_v0.0.0_windows.exe` |
+| Windows | App   | `Openmail_v0.0.0_windows.exe` |
+| Linux   | Server | `Openmail-Server_v0.0.0_linux` |
+| Linux   | App   | `Openmail_v0.0.0_linux.AppImage` |
 
 ## Windows Installation
 
 ### 1. Server
 
-1. Download `Openmail-Server_v1.0.0_windows.exe` from the [latest release](../../releases/latest) (mostly in your server).
+1. Download `Openmail-Server_v0.0.0_windows.exe` from the [latest release](../../releases/latest) (mostly in your server).
 2. Run the executable — it will start a FastAPI web server.
 3. [Configure server](#configuration).
 
 ### 2. App
 
-1. Download `Openmail_v1.0.0_windows.exe` from the [latest release](../../releases/latest) (in your computer).
+1. Download `Openmail_v0.0.0_windows.exe` from the [latest release](../../releases/latest) (in your computer).
 2. Run the executable.
 3. Launch **Openmail** from the Start Menu or Desktop shortcut.
 4. [Configure app](#configuration).
-
----
 
 ## Linux Installation
 
 ### 1. Server
 
-1. Download `Openmail-Server_v1.0.0_linux`.
+1. Download `Openmail-Server_v0.0.0_linux`.
 2. Make the binary executable:
 
    ```bash
@@ -61,7 +55,7 @@ Each release contains the following assets:
 
 ### 2. App (AppImage)
 
-1. Download `Openmail_v1.0.0_linux.AppImage`.
+1. Download `Openmail_v0.0.0_linux.AppImage`.
 2. Make the AppImage executable:
 
    ```bash
@@ -73,8 +67,6 @@ Each release contains the following assets:
    ./Openmail_*.AppImage
    ```
 4. [Configure app](#configuration).
-
----
 
 ## Configuration
 
@@ -89,8 +81,6 @@ need to restart it to change the configuration.
 3- Once the app is connected to the server, you can add your email accounts and start
 exploring everything Openmail offers.
 
----
-
 ## Building from Source (Optional)
 
 If you prefer to build manually:
@@ -101,11 +91,13 @@ cd server
 uv sync --locked --all-extras --dev
 uv pip install pyinstaller
 uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
+# Server build will be in ./dist/openmail-server
 
 # App
 cd app
 bun install
 bun tauri build
+# App builds will be in ./app/src-tauri/target/release/bundle/
 ```
 
 ## Updating
@@ -117,8 +109,6 @@ bun tauri build
 2. Download the latest **app** and **server** builds for your operating system.
 3. Replace your existing `openmail` app and `openmail-server` files with the new ones.
 4. Restart both to complete the update.
-
----
 
 ## Troubleshooting
 
