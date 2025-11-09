@@ -44,7 +44,7 @@ Each release contains the following assets:
 2. Make the binary executable:
 
    ```bash
-   chmod +x Openmail-Server_*
+   chmod +x Openmail-Server_v0.0.1-alpha0_linux
    ```
 3. Run the server:
 
@@ -59,12 +59,12 @@ Each release contains the following assets:
 2. Make the AppImage executable:
 
    ```bash
-   chmod +x Openmail_*.AppImage
+   chmod +x Openmail_v0.0.1-alpha0_linux.AppImage
    ```
 3. Run it directly:
 
    ```bash
-   ./Openmail_*.AppImage
+   ./Openmail_v0.0.1-alpha0_linux.AppImage
    ```
 4. [Configure app](#configuration).
 
@@ -91,13 +91,13 @@ cd server
 uv sync
 uv pip install pyinstaller
 uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
-# Server build will be in ./dist/openmail-server
+# Server build outputs will be in ./dist/openmail-server
 
 # App
 cd app
 bun install
 bun tauri build
-# App builds will be in ./app/src-tauri/target/release/bundle/
+# App build outputs will be in ./app/src-tauri/target/release/bundle/
 ```
 
 ## Updating

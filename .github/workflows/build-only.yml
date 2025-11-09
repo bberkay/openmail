@@ -1,0 +1,100 @@
+name: Build Only (Server + App)
+
+on:
+  workflow_dispatch:
+
+env:
+  VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'dev-build' }}
+
+jobs:
+  build-server:
+    name: Build Server (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            ext: ""
+            simple_os: linux
+          - os: windows-latest
+            ext: ".exe"
+            simple_os: windows
+          - os: macos-latest
+            ext: ""
+            simple_os: macos
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: server/.python-version
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Build server executable
+        working-directory: server
+        shell: bash
+        run: |
+            uv sync
+            uv pip install pyinstaller
+            uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
+
+      - name: Rename executable to include version and OS
+        working-directory: server/dist
+        run: |
+          mv openmail-server${{ matrix.ext }} Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
+
+  build-app:
+    name: Build App (${{ matrix.platform }})
+    runs-on: ${{ matrix.platform }}
+    permissions:
+        contents: write
+    strategy:
+        fail-fast: false
+        matrix:
+          include:
+            - platform: 'macos-latest' # for Arm based macs (M1 and above).
+              args: '--target aarch64-apple-darwin'
+            - platform: 'macos-latest' # for Intel based macs.
+              args: '--target x86_64-apple-darwin'
+            - platform: 'ubuntu-22.04'
+              args: ''
+            - platform: 'windows-latest'
+              args: ''
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: app/.bun-version
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: bun install
+
+      - name: Build tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          args: ${{ matrix.args }}
