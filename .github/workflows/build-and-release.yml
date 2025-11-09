@@ -48,15 +48,15 @@ jobs:
             uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
 
       - name: Rename executable to include version and OS
-        working-directory: server/dist
         run: |
-          mv openmail-server${{ matrix.ext }} Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
+          mkdir -p dist
+          mv server/dist/openmail-server${{ matrix.ext }} dist/Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
 
       - name: Upload server artifact
         uses: actions/upload-artifact@v4
         with:
           name: Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}
-          path: server/dist/Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
+          path: dist/Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
 
   build-app:
     name: Build App (${{ matrix.platform }})
@@ -108,11 +108,50 @@ jobs:
           projectPath: app
           args: ${{ matrix.args }}
 
+      - name: Rename app executable (macOS)
+        if: startsWith(matrix.platform, 'macos')
+        shell: bash
+        run: |
+            mkdir -p dist
+            if [[ "${{ matrix.args }}" == *"aarch64-apple-darwin"* ]]; then
+                ARCH_NAME="macos-arm64"
+            elif [[ "${{ matrix.args }}" == *"x86_64-apple-darwin"* ]]; then
+                ARCH_NAME="macos-x64"
+            else
+                ARCH_NAME="macos"
+            fi
+            echo "ARCH_NAME=$ARCH_NAME" >> $GITHUB_ENV
+
+            mv app/src-tauri/target/*-apple-darwin/release/bundle/dmg/*.dmg \
+            dist/Openmail_${{ env.VERSION }}_${ARCH_NAME}.dmg
+
+      - name: Rename app executable (Linux)
+        if: startsWith(matrix.platform, 'ubuntu')
+        shell: bash
+        run: |
+            mkdir -p dist
+            echo "ARCH_NAME=linux" >> $GITHUB_ENV
+            mv app/src-tauri/target/release/bundle/appimage/*.AppImage \
+            dist/Openmail_${{ env.VERSION }}_linux.AppImage
+            mv app/src-tauri/target/release/bundle/deb/*.deb \
+            dist/Openmail_${{ env.VERSION }}_linux.deb
+            mv app/src-tauri/target/release/bundle/rpm/*.rpm \
+            dist/Openmail_${{ env.VERSION }}_linux.rpm
+
+      - name: Rename app executable (Windows)
+        if: startsWith(matrix.platform, 'windows')
+        shell: pwsh
+        run: |
+            New-Item -ItemType Directory -Force -Path dist | Out-Null
+            echo "ARCH_NAME=windows" >> $env:GITHUB_ENV
+            Move-Item "app/src-tauri/target/release/bundle/nsis/*.exe" `
+            "dist/Openmail_${{ env.VERSION }}_windows.exe"
+
       - name: Upload app artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Openmail_${{ env.VERSION }}_${{ matrix.simple_os }}
-          path: app/Openmail_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
+            name: Openmail_${{ env.VERSION }}_${{ env.ARCH_NAME }}
+            path: dist/Openmail_${{ env.VERSION }}_${{ env.ARCH_NAME }}.*
 
   release:
     name: Create GitHub Release with Changelog
