@@ -79,10 +79,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: app/.bun-version
+      - name: Manual Set up Bun
+        shell: bash
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "/root/.bun/bin" >> $GITHUB_PATH
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -90,24 +91,27 @@ jobs:
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: install dependencies (ubuntu only)
+      - name: Install dependencies (Linux)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
             sudo apt-get update
             sudo apt-get install -y \
-              libwebkit2gtk-4.1-0=2.44.0-2 \
-              libwebkit2gtk-4.1-dev=2.44.0-2 \
-              libjavascriptcoregtk-4.1-0=2.44.0-2 \
-              libjavascriptcoregtk-4.1-dev=2.44.0-2 \
-              gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
-              gir1.2-webkit2-4.1=2.44.0-2 \
+              libwebkit2gtk-4.1-0 \
+              libwebkit2gtk-4.1-dev \
+              libjavascriptcoregtk-4.1-0 \
+              libjavascriptcoregtk-4.1-dev \
+              gir1.2-javascriptcoregtk-4.1 \
+              gir1.2-webkit2-4.1 \
               libappindicator3-dev \
               librsvg2-dev \
               patchelf
 
       - name: Install frontend dependencies
         working-directory: app
-        run: bun install
+        shell: bash
+        run: |
+          export PATH="/root/.bun/bin:$PATH"
+          bun install
 
       - name: Build tauri app
         uses: tauri-apps/tauri-action@v0
