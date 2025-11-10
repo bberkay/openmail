@@ -4,10 +4,6 @@
 use tauri::Manager;
 
 fn main() {
-    // Disable GPU compositing on Linux to avoid EGL errors in AppImage builds
-    #[cfg(target_os = "linux")]
-    std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
-
     let mut builder = tauri::Builder::default();
 
     #[cfg(desktop)]
