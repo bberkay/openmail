@@ -1,9 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{Manager};
+use tauri::Manager;
 
 fn main() {
+    // Disable GPU compositing on Linux to avoid EGL errors in AppImage builds
+    #[cfg(target_os = "linux")]
+    std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+
     let mut builder = tauri::Builder::default();
 
     #[cfg(desktop)]
@@ -28,3 +32,4 @@ fn main() {
         .expect("Error building app")
         .run(move |_app_handle, _event| {});
 }
+
