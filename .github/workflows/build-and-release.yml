@@ -79,11 +79,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Manual Set up Bun
-        shell: bash
-        run: |
-          curl -fsSL https://bun.sh/install | bash
-          echo "/root/.bun/bin" >> $GITHUB_PATH
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: app/.bun-version
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -108,10 +107,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: app
-        shell: bash
-        run: |
-          export PATH="/root/.bun/bin:$PATH"
-          bun install
+        run: bun install
 
       - name: Build tauri app
         uses: tauri-apps/tauri-action@v0
