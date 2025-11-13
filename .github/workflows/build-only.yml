@@ -42,7 +42,7 @@ jobs:
         run: |
             uv sync
             uv pip install pyinstaller
-            uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
+            uv run pyinstaller --onefile --icon=assets/icons/icon.ico --name openmail-server --paths=. src/main.py
 
       - name: Rename executable to include version and OS
         run: |

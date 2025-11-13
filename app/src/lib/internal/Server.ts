@@ -13,10 +13,9 @@ async function loadAccounts(): Promise<void> {
 }
 
 export async function connectToServer(targetServerURL: string): Promise<boolean> {
-    console.log("wa a: ", targetServerURL);
     if (targetServerURL.length < 3)
         return false;
-    console.log("1231 a: ", targetServerURL);
+
     for (let i = 0; i < MAX_RETRY_COUNT; i++) {
         await new Promise(resolve => setTimeout(resolve, SERVER_CONNECTION_TRY_SLEEP_MS));
         try {

@@ -33,7 +33,14 @@
             "icons/128x128@2x.png",
             "icons/icon.icns",
             "icons/icon.ico"
-        ]
+        ],
+        "windows": {
+            "nsis": {
+                "headerImage": "icons/header450x171@installer-img.png",
+                "sidebarImage": "icons/sidebar443x848@installer-img.png",
+                "installerIcon": "icons/logo256x256@installer-img.png"
+            }
+        }
     },
     "plugins": {
         "fs": {

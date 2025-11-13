@@ -3,7 +3,16 @@
 > [!WARNING]
 > This project is still under active development and design. Expect breaking changes.
 
-Private, fast, secure, self hosted email client with latest technologies.
+![Static Badge](https://img.shields.io/badge/release-v.0.0.1--alpha0-green)
+![Static Badge](https://img.shields.io/badge/status-alpha-yellow)
+![Static Badge](https://img.shields.io/badge/platform-windows%20%7C%20macOS%20%7C%20linux-lightgrey)
+![Static Badge](https://img.shields.io/badge/roadmap-available-orange)
+![Static Badge](https://img.shields.io/badge/license-Apache2-blue)
+
+Openmail is a modern, privacy-focused desktop email client that runs entirely on your own infrastructure with no cloud dependencies,
+supporting multiple providers via standard IMAP and SMTP, and delivering a fast, lightweight, and ergonomic email experience.
+
+> Current designs are mostly for testing purposes and are likely to change as development continues.
 
 | ![Accounts](docs/screenshots/login.png)              |        ![Home](docs/screenshots/home.png)                 |
 | :------------------------------------------------------: | :-------------------------------------------------------------: |
@@ -12,9 +21,6 @@ Private, fast, secure, self hosted email client with latest technologies.
 |                      _Compose_                      |                       _Simple Search_                       |
 | ![Settings](docs/screenshots/settings.png)              |        ![Advanced Search](docs/screenshots/advanced-search.png)                 |
 |                      _Settings_                      |                          _Advanced Search_                           |
-
-> [!IMPORTANT]
-> These designs are mostly for testing purposes and are likely to change as development continues.
 
 ## Current Features
 
@@ -30,19 +36,14 @@ Some of the features that are already developed.
 
 ## Installation
 
-### Requirements
+Visit the [Releases](https://github.com/bberkay/openmail/releases) page to get the latest packages:
 
-- [**App:**](app/)
-  - Bun
-  - Rust (required for Tauri)
-- [**Server:**](server/)
-  - Python
+1. **Server**: Install `Openmail-Server_version_your-server-os` on your server machine.
+2. **Client**: Install `Openmail_version_your-pc-os` on your desktop.
 
-For detailed setup instructions, see the [Installation Guide](docs/INSTALLATION.md).
+Start the server first, then launch the client and connect it to your server.
 
-## Usage
-
-For step-by-step setup instructions, please refer to the [Usage Guide](docs/USAGE.md).
+For detailed setup instructions, please refer to the [Installation Guide](docs/INSTALLATION.md).
 
 ## Roadmap
 
