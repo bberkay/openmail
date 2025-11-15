@@ -16,12 +16,19 @@ jobs:
           - os: ubuntu-latest
             ext: ""
             simple_os: linux
+            icon: assets/icons/icon.ico
           - os: windows-latest
             ext: ".exe"
             simple_os: windows
+            icon: assets/icons/icon.ico
+          - os: macos-13
+            ext: ""
+            simple_os: macos-x64
+            icon: assets/icons/icon.icns
           - os: macos-latest
             ext: ""
-            simple_os: macos
+            simple_os: macos-arm64
+            icon: assets/icons/icon.icns
 
     steps:
       - uses: actions/checkout@v5
@@ -42,12 +49,18 @@ jobs:
         run: |
             uv sync
             uv pip install pyinstaller
-            uv run pyinstaller --onefile --icon=assets/icons/icon.ico --name openmail-server --paths=. src/main.py
+            uv run pyinstaller \
+                --onefile \
+                --name openmail-server \
+                --icon=${{ matrix.icon }} \
+                --paths=. \
+                src/main.py
 
       - name: Rename executable to include version and OS
         run: |
-          mkdir -p dist
-          mv server/dist/openmail-server${{ matrix.ext }} dist/Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
+            mkdir -p dist
+            mv server/dist/openmail-server${{ matrix.ext }} \
+               dist/Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
 
   build-app:
     name: Build App (${{ matrix.platform }})
