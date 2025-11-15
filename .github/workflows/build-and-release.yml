@@ -61,9 +61,8 @@ jobs:
 
       - name: Rename executable to include version and OS
         run: |
-            mkdir -p dist
-            mv server/dist/openmail-server${{ matrix.ext }} \
-               dist/Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
+          mkdir -p dist
+          mv server/dist/openmail-server${{ matrix.ext }} dist/Openmail-Server_${{ env.VERSION }}_${{ matrix.simple_os }}${{ matrix.ext }}
 
       - name: Upload server artifact
         uses: actions/upload-artifact@v4
