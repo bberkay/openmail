@@ -36,8 +36,8 @@
         ],
         "windows": {
             "nsis": {
-                "headerImage": "icons/header450x171@installer-img.png",
-                "sidebarImage": "icons/sidebar443x848@installer-img.png",
+                "headerImage": "icons/header450x171@installer-img.bmp",
+                "sidebarImage": "icons/sidebar443x848@installer-img.bmp",
                 "installerIcon": "icons/installer256x256@installer-icon.ico"
             }
         }
