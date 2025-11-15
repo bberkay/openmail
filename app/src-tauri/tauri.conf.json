@@ -38,8 +38,7 @@
             "nsis": {
                 "headerImage": "icons/header450x171@installer-img.png",
                 "sidebarImage": "icons/sidebar443x848@installer-img.png",
-                "installerIcon": "icons/installer256x256@installer-icon.ico",
-                "uninstallerIcon": "icons/uninstaller256x256@installer-icon.ico"
+                "installerIcon": "icons/installer256x256@installer-icon.ico"
             }
         }
     },
