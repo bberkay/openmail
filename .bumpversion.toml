@@ -62,3 +62,8 @@ replace = 'version = "{new_version}"'
 filename = "docs/INSTALLATION.md"
 search = "v{current_version}"
 replace = "v{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "docs/ROADMAP.md"
+search = "v{current_version}"
+replace = "v{new_version}"

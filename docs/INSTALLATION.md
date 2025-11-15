@@ -8,65 +8,176 @@ Openmail consists of two components:
 
 ## Downloads
 
-> [!WARNING]
-> Currently, only the Linux AppImage build is available. Additional distribution formats and platform-specific packages will be added in future releases.
-
 All builds are automatically published in each [GitHub Release](../../releases) after tagging a version (e.g. `v0.0.1-alpha0`).
 Each release contains the following assets:
 
-| Platform   | Component        | File                                                                    |
-| ---------- | ---------------- | ----------------------------------------------------------------------- |
-| Windows | Server | `Openmail-Server_v0.0.1-alpha0_windows.exe` |
-| Windows | App   | `Openmail_v0.0.1-alpha0_windows.exe` |
-| Linux   | Server | `Openmail-Server_v0.0.1-alpha0_linux` |
-| Linux   | App   | `Openmail_v0.0.1-alpha0_linux.AppImage` |
+| Platform                 | Component | File Name                                   |
+| ------------------------ | --------- | ------------------------------------------- |
+| Windows              | Server             | `Openmail-Server_v0.0.1-alpha0_windows.exe` |
+| Windows                  | App              | `Openmail_v0.0.1-alpha0_windows.exe`        |
+| macOS (Intel)        | Server          | `Openmail-Server_v0.0.1-alpha0_macos-x64`   |
+| macOS (Apple Silicon)    | Server            | `Openmail-Server_v0.0.1-alpha0_macos-arm64` |
+| macOS (Intel)            | App                 | `Openmail_v0.0.1-alpha0_macos-x64.dmg`      |
+| macOS (Apple Silicon)    | App               | `Openmail_v0.0.1-alpha0_macos-arm64.dmg`    |
+| Linux (Universal)        | Server           | `Openmail-Server_v0.0.1-alpha0_linux`       |
+| Linux (Debian-based) | App               | `Openmail_v0.0.1-alpha0_linux-amd64.deb`    |
+| Linux (Red Hat-based)    | App               | `Openmail_v0.0.1-alpha0_linux-amd64.rpm`    |
+| Linux (Universal)        | App            | `Openmail_v0.0.1-alpha0_linux.AppImage`     |
 
-## Windows Installation
 
-### 1. Server
+## Installation
 
-1. Download `Openmail-Server_v0.0.1-alpha0_windows.exe` from the [latest release](../../releases/latest) (mostly in your server).
-2. Run the executable — it will start a FastAPI web server.
-3. [Configure server](#configuration).
+### Server
+  * [Windows](#windows)
+  * [macOS (Intel-based or Apple Silicon)](#macos-intel--apple-silicon)
+  * [Debian-Based Linux](#debian-based-linux-ubuntu-mint)
+  * [Red Hat-Based Linux](#red-hat-based-fedora-rhel)
+  * [Other Linux Distributions](#other-linux-distributions)
+### App
+  * [Windows](#windows-1)
+  * [macOS (Intel-based or Apple Silicon)](#macos-intel--apple-silicon-1)
+  * [Debian-Based Linux](#debian-based-linux-ubuntu-mint-1)
+  * [Red Hat-Based Linux](#red-hat-based-fedora-rhel-1)
+  * [Other Linux Distributions](#other-linux-distributions-1)
 
-### 2. App
+## Server Installation
 
-1. Download `Openmail_v0.0.1-alpha0_windows.exe` from the [latest release](../../releases/latest) (in your computer).
+### Windows
+
+1. Download **`Openmail-Server_v0.0.1-alpha0_windows.exe`**.
 2. Run the executable.
-3. Launch **Openmail** from the Start Menu or Desktop shortcut.
-4. [Configure app](#configuration).
+3. The server will start immediately.
+4. Continue to install [app](#windows-1)
 
-## Linux Installation
+### macOS (Intel & Apple Silicon)
 
-### 1. Server
+1. Download the correct file for your chipset:
+   * **Intel:** `Openmail-Server_v0.0.1-alpha0_macos-x64`
+   * **Apple Silicon (M1/M2/M3):** `Openmail-Server_v0.0.1-alpha0_macos-arm64`
+2. Make it executable:
+   ```bash
+   chmod +x Openmail-Server_v0.0.1-alpha0_macos-*
+   ```
+3. Run it:
+   ```bash
+   ./Openmail-Server_v0.0.1-alpha0_macos-*
+   ```
+4. Continue to install [app](#macos-intel--apple-silicon-1)
 
-1. Download `Openmail-Server_v0.0.1-alpha0_linux`.
-2. Make the binary executable:
+### Debian-Based Linux (Ubuntu, Mint...)
 
+1. Download:
+   ```
+   Openmail-Server_v0.0.1-alpha0_linux-amd64.deb
+   ```
+2. Install:
+   ```bash
+   sudo dpkg -i Openmail-Server_v0.0.1-alpha0_linux-amd64.deb
+   ```
+3. Start the server:
+   ```bash
+   openmail-server
+   ```
+4. Continue to install [app](#debian-based-linux-ubuntu-mint-1)
+
+### Red Hat-Based (Fedora, RHEL...)
+
+1. Download:
+   ```
+   Openmail-Server_v0.0.1-alpha0_linux-amd64.rpm
+   ```
+2. Install:
+   ```bash
+   sudo rpm -i Openmail-Server_v0.0.1-alpha0_linux-amd64.rpm
+   ```
+3. Run:
+   ```bash
+   openmail-server
+   ```
+4. Continue to install [app](#red-hat-based-fedora-rhel-1)
+
+### Other Linux Distributions
+
+1. Download the standalone binary:
+   ```
+   Openmail-Server_v0.0.1-alpha0_linux
+   ```
+2. Make executable:
    ```bash
    chmod +x Openmail-Server_v0.0.1-alpha0_linux
    ```
-3. Run the server:
-
+3. Run:
    ```bash
-   ./Openmail-Server_*
+   ./Openmail-Server_v0.0.1-alpha0_linux
    ```
-4. [Configure server](#configuration).
+4. Continue to install [app](#other-linux-distributions-1)
 
-### 2. App (AppImage)
+## App Installation
 
-1. Download `Openmail_v0.0.1-alpha0_linux.AppImage`.
-2. Make the AppImage executable:
+### Windows
 
+1. Download **`Openmail_v0.0.1-alpha0_windows.exe`**.
+2. Run the installer.
+3. Launch **Openmail** from Start Menu or Desktop.
+4. Continue with [configuration](#configuration).
+
+### macOS (Intel & Apple Silicon)
+
+1. Download the appropriate DMG:
+   * **Intel:** `Openmail_v0.0.1-alpha0_macos-x64.dmg`
+   * **Apple Silicon (arm):** `Openmail_v0.0.1-alpha0_macos-arm64.dmg`
+2. Open the `.dmg`.
+3. Drag **Openmail.app** into Applications.
+4. Open it (you may need to right-click → Open for Gatekeeper).
+5. Continue with [configuration](#configuration).
+
+### Debian-Based Linux (Ubuntu, Mint…)
+
+1. Download:
+   ```
+   Openmail_v0.0.1-alpha0_linux-amd64.deb
+   ```
+2. Install:
+   ```bash
+   sudo dpkg -i Openmail_v0.0.1-alpha0_linux-amd64.deb
+   ```
+3. Launch:
+   ```bash
+   openmail
+   ```
+4. Continue with [configuration](#configuration).
+
+### Red Hat-Based (Fedora, RHEL…)
+
+1. Download:
+   ```
+   Openmail_v0.0.1-alpha0_linux-amd64.rpm
+   ```
+2. Install:
+   ```bash
+   sudo rpm -i Openmail_v0.0.1-alpha0_linux-amd64.rpm
+   ```
+3. Launch:
+   ```bash
+   openmail
+   ```
+4. Continue with [configuration](#configuration).
+
+### Other Linux Distributions
+
+1. Download the AppImage:
+   ```
+   Openmail_v0.0.1-alpha0_linux.AppImage
+   ```
+2. Make it executable:
    ```bash
    chmod +x Openmail_v0.0.1-alpha0_linux.AppImage
    ```
-3. Run it directly:
-
+3. Launch:
    ```bash
    ./Openmail_v0.0.1-alpha0_linux.AppImage
    ```
-4. [Configure app](#configuration).
+4. Continue with [configuration](#configuration).
 
 ## Configuration
 
@@ -133,12 +244,9 @@ uv pip install pyinstaller
 uv run pyinstaller --onefile --name openmail-server --paths=. src/main.py
 ```
 
-> **Note:**
-> This ensures that PyInstaller correctly packages all dependencies from your `.venv`'s `site-packages` directory.
-
 ---
 
-### 2. App Build Fails on Arch Linux
+### 2. App Build Fails on Arch Linux (or other linux distributions)
 
 If the App build fails on Arch Linux (for example, during AppImage packaging), try the following fixes:
 
@@ -153,10 +261,6 @@ export NO_STRIP=true
 # Rebuild the App
 bun tauri build
 ```
-
-> **Tip:**
-> Missing `fuse2` or `linuxdeploy` are common causes of Tauri build failures on Arch-based systems.
-
 
 ---
 
