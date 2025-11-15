@@ -24,7 +24,7 @@ jobs:
             ext: ".exe"
             simple_os: windows
             icon: assets/icons/icon.ico
-          - os: macos-13 # for Intel based macs.
+          - os: macos-15-intel # for Intel based macs.
             ext: ""
             simple_os: macos-x64
             icon: assets/icons/icon.icns
