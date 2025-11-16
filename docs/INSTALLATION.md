@@ -20,8 +20,8 @@ Each release contains the following assets:
 | macOS (Intel)            | App                 | `Openmail_v0.0.1-alpha0_macos-x64.dmg`      |
 | macOS (Apple Silicon)    | App               | `Openmail_v0.0.1-alpha0_macos-arm64.dmg`    |
 | Linux (Universal)        | Server           | `Openmail-Server_v0.0.1-alpha0_linux`       |
-| Linux (Debian-based) | App               | `Openmail_v0.0.1-alpha0_linux-amd64.deb`    |
-| Linux (Red Hat-based)    | App               | `Openmail_v0.0.1-alpha0_linux-amd64.rpm`    |
+| Linux (Debian-based) | App               | `Openmail_v0.0.1-alpha0_linux.deb`    |
+| Linux (Red Hat-based)    | App               | `Openmail_v0.0.1-alpha0_linux.rpm`    |
 | Linux (Universal)        | App            | `Openmail_v0.0.1-alpha0_linux.AppImage`     |
 
 
@@ -64,39 +64,7 @@ Each release contains the following assets:
    ```
 4. Continue to install [app](#macos-intel--apple-silicon-1)
 
-### Debian-Based Linux (Ubuntu, Mint...)
-
-1. Download:
-   ```
-   Openmail-Server_v0.0.1-alpha0_linux-amd64.deb
-   ```
-2. Install:
-   ```bash
-   sudo dpkg -i Openmail-Server_v0.0.1-alpha0_linux-amd64.deb
-   ```
-3. Start the server:
-   ```bash
-   openmail-server
-   ```
-4. Continue to install [app](#debian-based-linux-ubuntu-mint-1)
-
-### Red Hat-Based (Fedora, RHEL...)
-
-1. Download:
-   ```
-   Openmail-Server_v0.0.1-alpha0_linux-amd64.rpm
-   ```
-2. Install:
-   ```bash
-   sudo rpm -i Openmail-Server_v0.0.1-alpha0_linux-amd64.rpm
-   ```
-3. Run:
-   ```bash
-   openmail-server
-   ```
-4. Continue to install [app](#red-hat-based-fedora-rhel-1)
-
-### Other Linux Distributions
+### Linux
 
 1. Download the standalone binary:
    ```
@@ -110,7 +78,7 @@ Each release contains the following assets:
    ```bash
    ./Openmail-Server_v0.0.1-alpha0_linux
    ```
-4. Continue to install [app](#other-linux-distributions-1)
+4. Continue to install [app](#app)
 
 ## App Installation
 
@@ -135,15 +103,15 @@ Each release contains the following assets:
 
 1. Download:
    ```
-   Openmail_v0.0.1-alpha0_linux-amd64.deb
+   Openmail_v0.0.1-alpha0_linux.deb
    ```
 2. Install:
    ```bash
-   sudo dpkg -i Openmail_v0.0.1-alpha0_linux-amd64.deb
+   sudo apt install Openmail_v0.0.1-alpha0_linux.deb
    ```
 3. Launch:
    ```bash
-   openmail
+   Openmail
    ```
 4. Continue with [configuration](#configuration).
 
@@ -151,15 +119,15 @@ Each release contains the following assets:
 
 1. Download:
    ```
-   Openmail_v0.0.1-alpha0_linux-amd64.rpm
+   Openmail_v0.0.1-alpha0_linux.rpm
    ```
 2. Install:
    ```bash
-   sudo rpm -i Openmail_v0.0.1-alpha0_linux-amd64.rpm
+   sudo dnf install Openmail_v0.0.1-alpha0_linux.rpm
    ```
 3. Launch:
    ```bash
-   openmail
+   Openmail
    ```
 4. Continue with [configuration](#configuration).
 
