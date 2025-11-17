@@ -1,5 +1,8 @@
 name: 'VirusTotal Scan'
 
+permissions:
+  contents: write
+
 on:
   release:
     types: [published]
@@ -17,14 +20,7 @@ jobs:
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
           files: |
-            .*\.AppImage$
-            .*\.deb$
-            .*\.rpm$
-            .*\.exe$
-            .*\.dmg$
+            ^Openmail.*$
 
           # add VirusTotal report in release note.
           update_release_body: true
-
-    permissions:
-      contents: write
